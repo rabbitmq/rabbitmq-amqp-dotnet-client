@@ -1,0 +1,1 @@
+# rabbitmq-amqp-dotnet-client
