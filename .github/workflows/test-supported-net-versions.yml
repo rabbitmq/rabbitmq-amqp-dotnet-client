@@ -9,6 +9,17 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout tls-gen
+        uses: actions/checkout@v4
+        with:
+          repository: rabbitmq/tls-gen
+          path: './tls-gen'
+      - name: Start broker
+        run: ci/start-broker.sh
+      - name: Start toxiproxy
+        run: ci/start-toxiproxy.sh
+
+      - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: |
@@ -22,14 +33,6 @@ jobs:
           key: ${{ runner.os }}-v2-nuget-${{ hashFiles('**/*.csproj') }}
           restore-keys: |
             ${{ runner.os }}-v2-nuget-
-      - uses: actions/checkout@v4
-      - name: Checkout tls-gen
-        uses: actions/checkout@v4
-        with:
-          repository: rabbitmq/tls-gen
-          path: './tls-gen'
-      - name: Start broker
-        run: ci/start-broker.sh
       - name: Display DotNet version
         run: dotnet --version
         - name: Restore
