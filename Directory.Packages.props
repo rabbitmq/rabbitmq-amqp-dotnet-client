@@ -1,0 +1,30 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- RabbitMQ.Amqp.Client -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.1.1" />
+    <PackageVersion Include="MinVer" Version="4.3.0" />
+    <!-- Tests -->
+    <PackageVersion Include="AltCover" Version="8.6.45" />
+    <PackageVersion Include="xunit" Version="2.4.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5" />
+    <PackageVersion Include="Xunit.SkippableFact" Version="1.4.13" />
+    <PackageVersion Include="coverlet.collector" Version="3.2.0" />
+    <!-- docs/**/*.csproj -->
+  </ItemGroup>
+  <ItemGroup Label=".NET 6 Specific" Condition="'$(TargetFramework)' == 'net6.0'">
+    <!-- RabbitMQ.Stream.Client -->
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
+  </ItemGroup>
+  <ItemGroup Label=".NET 7 Specific" Condition="'$(TargetFramework)' == 'net7.0'">
+    <!-- RabbitMQ.Stream.Client -->
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+  </ItemGroup>
+  <ItemGroup Label=".NET 8 Specific" Condition="'$(TargetFramework)' == 'net8.0'">
+    <!-- RabbitMQ.Amqp.Client -->
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+  </ItemGroup>
+</Project>

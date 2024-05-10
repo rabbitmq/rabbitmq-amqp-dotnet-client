@@ -1,0 +1,25 @@
+name: Publish documentation
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+      - name: Publish Documentation
+        run: |
+          git config user.name "rabbitmq-ci"
+          git config user.email "rabbitmq-ci@users.noreply.github.com"
+          ci/publish-documentation-to-github-pages.sh
