@@ -7,6 +7,12 @@
 
   <ItemGroup>
     <ProjectReference Include="RabbitMQ.AMQP.Client/RabbitMQ.AMQP.Client.csproj" />
+    <ProjectReference Include="Tests/Tests.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+  </ItemGroup>
+
 
 </Project>
