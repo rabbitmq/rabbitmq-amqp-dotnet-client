@@ -30,8 +30,6 @@ jobs:
           path: './tls-gen'
       - name: Start broker
         run: ci/start-broker.sh
-      # - name: Start toxiproxy
-      #   run: ci/start-toxiproxy.sh
       - name: Display DotNet version
         run: dotnet --version
         - name: Restore
