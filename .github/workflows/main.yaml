@@ -1,0 +1,11 @@
+name: rabbitmq-stream-dotnet-client
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  call-build-test:
+    uses: ./.github/workflows/test-supported-net-versions.yml
