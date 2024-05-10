@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.Build.Traversal/3.2.0">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <MinVerSkip>true</MinVerSkip>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="RabbitMQ.AMQP.Client/RabbitMQ.AMQP.Client.csproj" />
+  </ItemGroup>
+
+</Project>
