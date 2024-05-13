@@ -22,10 +22,19 @@ public class ByteCapacityTests
         Assert.Equal(expectedBytes, ByteCapacity.From(input).ToBytes());
     }
 
-    [Fact]
-    public void FromShouldThrowExceptionWhenInvalidInput()
+    [Theory]
+    [InlineData("invalid")]
+    [InlineData("-1")]
+    [InlineData("!1.2")]
+    [InlineData("-1.2b")]
+    [InlineData("1.2kb")]
+    [InlineData("1.2hb")]
+    [InlineData("1.2gb")]
+    [InlineData("1.2tb")]
+
+    public void FromShouldThrowExceptionWhenInvalidInput(string input)
     {
-        Assert.Throws<ArgumentException>(() => ByteCapacity.From("invalid"));
+        Assert.Throws<ArgumentException>(() => ByteCapacity.From(input));
     }
 
     [Fact]
