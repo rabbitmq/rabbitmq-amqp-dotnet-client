@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.AMQP.Client", "Rab
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{A10086DA-3583-4590-BE86-43EAE3852FB4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amqp", "..\..\Azure\amqpnetlite\src\Amqp.csproj", "{355BFFDE-39FF-46E2-9268-28AC1642C00A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{A10086DA-3583-4590-BE86-43EAE3852FB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A10086DA-3583-4590-BE86-43EAE3852FB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A10086DA-3583-4590-BE86-43EAE3852FB4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{355BFFDE-39FF-46E2-9268-28AC1642C00A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{355BFFDE-39FF-46E2-9268-28AC1642C00A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{355BFFDE-39FF-46E2-9268-28AC1642C00A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{355BFFDE-39FF-46E2-9268-28AC1642C00A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

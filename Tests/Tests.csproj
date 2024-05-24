@@ -32,6 +32,7 @@
     </ItemGroup>
 
     <ItemGroup>
+    <ProjectReference Include="..\..\..\Azure\amqpnetlite\src\Amqp.csproj" />
     <ProjectReference Include="..\RabbitMQ.AMQP.Client\RabbitMQ.AMQP.Client.csproj" />
     </ItemGroup>
 
