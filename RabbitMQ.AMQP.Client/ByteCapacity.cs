@@ -4,7 +4,7 @@ namespace RabbitMQ.AMQP.Client;
 
 public partial class ByteCapacity : IEquatable<ByteCapacity>
 {
-    private long _bytes;
+    private readonly long _bytes;
     private string _input;
 
     private ByteCapacity(long bytes, string input)

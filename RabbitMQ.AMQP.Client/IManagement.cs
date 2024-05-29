@@ -1,5 +1,6 @@
 namespace RabbitMQ.AMQP.Client;
 
+
 public interface IManagement
 {
     IQueueSpecification Queue();
@@ -11,4 +12,8 @@ public interface IQueueSpecification
     IQueueSpecification Name(string name);
     IQueueSpecification Exclusive(bool exclusive);
     IQueueSpecification AutoDelete(bool autoDelete);
+    
+    IQueueSpecification Durable(bool durable);
+    
+    Task Declare();
 }

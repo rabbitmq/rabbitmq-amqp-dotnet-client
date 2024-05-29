@@ -4,7 +4,7 @@
 // <summary>
 // Represents a network address.
 // </summary>
-public class Address(string host, int port)
+public class AmqpAddress(string host, int port)
 {
     public string Host { get; } = host;
     public int Port { get; } = port;
@@ -18,7 +18,7 @@ public class Address(string host, int port)
     {
         if (this == o) return true;
         if (o == null || GetType() != o.GetType()) return false;
-        var address = (Address)o;
+        var address = (AmqpAddress)o;
         return Port == address.Port && Host.Equals(address.Host);
     }
 

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Amqp;
 using Amqp.Framing;
 using Amqp.Types;
+using RabbitMQ.AMQP.Client;
 using Xunit;
 using Message = Amqp.Message;
 
@@ -12,6 +13,17 @@ namespace Tests;
 
 public class ManagementTests()
 {
+    [Fact]
+    public async void DeclareFirstQueue()
+    {
+        AmqpConnection connection = new();
+        await connection.ConnectAsync(new AmqpAddress("localhost", 5672));
+        var management = connection.Management();
+        await management.Queue().Name("dot_test").Durable(true).Declare();
+        await connection.CloseAsync();
+    }
+
+
     [Fact]
     public void DeclareQueue()
     {
@@ -77,7 +89,7 @@ public class ManagementTests()
 
         var sender = new SenderLink(
             managementSession, "management-link-pair", senderAttach, null);
-        
+
         var receiver = new ReceiverLink(
             managementSession, "management-link-pair", receiveAttach, null);
 
