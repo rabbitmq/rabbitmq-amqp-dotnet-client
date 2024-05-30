@@ -1,8 +1,15 @@
 namespace RabbitMQ.AMQP.Client;
 
+public enum ManagementStatus
+{
+    Closed,
+    Initializing,
+    Open,
+}
 
 public interface IManagement
 {
+    ManagementStatus Status { get;}
     IQueueSpecification Queue();
     IQueueSpecification Queue(string name);
 }

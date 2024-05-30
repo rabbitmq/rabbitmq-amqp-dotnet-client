@@ -40,7 +40,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         return this;
     }
 
-    public Task Declare()
+    public async Task Declare()
     {
         if (_name == null)
         {
@@ -53,15 +53,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
             { "exclusive", _exclusive },
             { "auto_delete", _autoDelete }
         };
-        var message = new Message(kv);
-        message.Properties = new Properties
-        {
-            MessageId = "0",
-            To = $"/queues/{_name}",
-            Subject = "PUT",
-            ReplyTo = "$me"
-        };
-
-        return _management.SendAsync(message);
+        await _management.Request(kv, $"/queues/{_name}",
+            AmqpManagement.Put, new[] { AmqpManagement.Code200 });
     }
 }
