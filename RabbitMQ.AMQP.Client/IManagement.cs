@@ -22,5 +22,5 @@ public interface IQueueSpecification
     
     IQueueSpecification Durable(bool durable);
     
-    Task Declare();
+    Task<IQueueInfo> Declare();
 }

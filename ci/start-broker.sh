@@ -11,13 +11,14 @@ wait_for_message() {
 }
 
 make -C "${PWD}"/tls-gen/basic
+rm -rf rabbitmq-configuration
 
 mkdir -p rabbitmq-configuration/tls
 cp -R "${PWD}"/tls-gen/basic/result/* rabbitmq-configuration/tls
 chmod o+r rabbitmq-configuration/tls/*
 chmod g+r rabbitmq-configuration/tls/*
 
-echo "[rabbitmq_auth_mechanism_ssl]." >> rabbitmq-configuration/enabled_plugins
+echo "[rabbitmq_auth_mechanism_ssl,rabbitmq_management]." >> rabbitmq-configuration/enabled_plugins
 
 echo "loopback_users = none
 
@@ -37,7 +38,7 @@ echo "Running RabbitMQ ${RABBITMQ_IMAGE}"
 
 docker rm -f rabbitmq 2>/dev/null || echo "rabbitmq was not running"
 docker run -d --name rabbitmq \
-    --network host \
+    -p 5672:5672 -p 15672:15672 \
     -v "${PWD}"/rabbitmq-configuration:/etc/rabbitmq \
     "${RABBITMQ_IMAGE}"
 

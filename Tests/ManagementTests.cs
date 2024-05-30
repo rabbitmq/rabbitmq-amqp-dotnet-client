@@ -1,10 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
-using Amqp;
 using Amqp.Framing;
-using Amqp.Types;
 using RabbitMQ.AMQP.Client;
 using Xunit;
 using Message = Amqp.Message;
@@ -20,7 +16,7 @@ internal class TestAmqpManagement : AmqpManagement
 
     public void TestHandleResponseMessage(Message msg)
     {
-        base.HandleResponseMessage(msg);
+        HandleResponseMessage(msg);
     }
 }
 
@@ -44,41 +40,51 @@ public class ManagementTests()
     }
 
     [Fact]
-    public async Task RaiseInvalidOperationException()
+    public void RaiseModelException()
     {
         var management = new TestAmqpManagement();
-        management.SetOpen();
-        
+
         const string messageId = "my_id";
-        var t = Task.Run(async () =>
+
+        var sent = new Message()
         {
-            await Task.Delay(1000);
-            management.TestHandleResponseMessage(new Message()
+            Properties = new Properties()
             {
-                Properties = new Properties()
-                {
-                    CorrelationId = messageId,
-                    Subject = "Not_a_Number",
-                }
-            });
-        });
+                MessageId = messageId,
+            }
+        };
 
-        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-            await management.Request(messageId, "", "", "", 
-                [111]));
-    
 
-        await t.WaitAsync(TimeSpan.FromMilliseconds(1000));
-        await management.CloseAsync();
+        var receive = new Message()
+        {
+            Properties = new Properties()
+            {
+                CorrelationId = messageId,
+                Subject = "Not_a_Number",
+            }
+        };
+
+        Assert.Throws<ModelException>(() =>
+            management.CheckResponse(sent, [], receive));
+
+
+        receive.Properties.Subject = "200";
+        Assert.Throws<InvalidCodeException>(() =>
+            management.CheckResponse(sent, [201], receive));
+
+
+        receive.Properties.CorrelationId = "not_my_id";
+        Assert.Throws<ModelException>(() =>
+            management.CheckResponse(sent, [], receive));
     }
-    
-    
+
+
     [Fact]
     public async Task RaiseInvalidCodeException()
     {
         var management = new TestAmqpManagement();
         management.SetOpen();
-        
+
         const string messageId = "my_id";
         var t = Task.Run(async () =>
         {
@@ -94,9 +100,9 @@ public class ManagementTests()
         });
 
         await Assert.ThrowsAsync<InvalidCodeException>(async () =>
-            await management.Request(messageId, "", "", "", 
+            await management.Request(messageId, "", "", "",
                 [200]));
-        
+
         await t.WaitAsync(TimeSpan.FromMilliseconds(1000));
         await management.CloseAsync();
         Assert.Equal(ManagementStatus.Closed, management.Status);
@@ -106,7 +112,7 @@ public class ManagementTests()
     public async Task RaiseManagementClosedException()
     {
         var management = new TestAmqpManagement();
-        await Assert.ThrowsAsync<ManagementClosedException>(async () =>
+        await Assert.ThrowsAsync<ModelException>(async () =>
             await management.Request(new Message(), [200]));
         Assert.Equal(ManagementStatus.Closed, management.Status);
     }
@@ -116,12 +122,11 @@ public class ManagementTests()
     public async void DeclareFirstQueue()
     {
         AmqpConnection connection = new();
-        await connection.ConnectAsync(new AmqpAddress("localhost", 5672));
+        await connection.ConnectAsync(new AmqpAddressBuilder().Build());
         var management = connection.Management();
         await management.Queue().Name("dot_test_1").Durable(true).Declare();
         await connection.CloseAsync();
         Assert.Equal(ManagementStatus.Closed, management.Status);
-        
     }
 
 

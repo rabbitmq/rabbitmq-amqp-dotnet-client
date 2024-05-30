@@ -9,22 +9,43 @@ public class ConnectionTests
     [Fact]
     public void ValidateAddress()
     {
-        AmqpAddress amqpAddress = new("localhost", 5672);
-        Assert.Equal("localhost", amqpAddress.Host);
-        Assert.Equal(5672, amqpAddress.Port);
-        Assert.Equal("Address{host='localhost', port=5672}", amqpAddress.ToString());
+        AmqpAddress amqpAddress = new("localhost", 5672, "guest-user",
+            "guest-password", "path/", "amqp1");
+        Assert.Equal("localhost", amqpAddress.Host());
+        Assert.Equal(5672, amqpAddress.Port());
+        Assert.Equal("guest-user", amqpAddress.User());
+        Assert.Equal("guest-password", amqpAddress.Password());
+        Assert.Equal("path/", amqpAddress.Path());
+        Assert.Equal("amqp1", amqpAddress.Scheme());
 
-        AmqpAddress address2 = new("localhost", 5672);
-        Assert.Equal(amqpAddress, address2);
+        AmqpAddress second = new("localhost", 5672, "guest-user",
+            "guest-password", "path/", "amqp1");
 
-        AmqpAddress address3 = new("localhost", 5673);
-        Assert.NotEqual(amqpAddress, address3);
+        Assert.Equal(amqpAddress, second);
 
-        AmqpAddress address4 = new("localhost", 5672);
-        Assert.Equal(amqpAddress.GetHashCode(), address4.GetHashCode());
+        AmqpAddress third = new("localhost", 5672, "guest-user",
+            "guest-password", "path/", "amqp2");
 
-        AmqpAddress address5 = new("localhost", 5673);
-        Assert.NotEqual(amqpAddress.GetHashCode(), address5.GetHashCode());
+        Assert.NotEqual(amqpAddress, third);
     }
 
+    [Fact]
+    public void ValidateAddressBuilder()
+    {
+        AmqpAddress address = new AmqpAddressBuilder()
+            .Host("localhost")
+            .Port(5672)
+            .Path("path/")
+            .User("guest-t")
+            .Password("guest-w")
+            .Scheme("amqp1")
+            .Build();
+
+        Assert.Equal("localhost", address.Host());
+        Assert.Equal(5672, address.Port());
+        Assert.Equal("guest-t", address.User());
+        Assert.Equal("guest-w", address.Password());
+        Assert.Equal("path/", address.Path());
+        Assert.Equal("amqp1", address.Scheme());
+    }
 }

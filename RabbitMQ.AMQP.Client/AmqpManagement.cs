@@ -5,8 +5,6 @@ using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client;
 
-
-
 public class AmqpManagement : IManagement
 {
     private readonly ConcurrentDictionary<string, TaskCompletionSource<Message>> _requests = new();
@@ -22,10 +20,10 @@ public class AmqpManagement : IManagement
     // private static readonly string PUT = "PUT";
     // private static readonly string DELETE = "DELETE";
     internal const int Code200 = 200;
+    internal const int Code201 = 201;
     internal const string Put = "PUT";
 
     internal const string ReplyTo = "$me";
-    // private static readonly int CODE_201 = 201;
     // private static readonly int CODE_204 = 204;
     // private static readonly int CODE_409 = 409;
 
@@ -144,14 +142,14 @@ public class AmqpManagement : IManagement
         }
     }
 
-    internal async ValueTask<int> Request(object body, string path, string method,
+    internal async ValueTask<Message> Request(object body, string path, string method,
         int[] expectedResponseCodes, TimeSpan? timeout = null)
     {
         var id = Guid.NewGuid().ToString();
         return await Request(id, body, path, method, expectedResponseCodes, timeout);
     }
 
-    internal async ValueTask<int> Request(string id, object body, string path, string method,
+    internal async ValueTask<Message> Request(string id, object body, string path, string method,
         int[] expectedResponseCodes, TimeSpan? timeout = null)
     {
         var message = new Message(body);
@@ -166,11 +164,11 @@ public class AmqpManagement : IManagement
         return await Request(message, expectedResponseCodes, timeout);
     }
 
-    internal async ValueTask<int> Request(Message message, int[] expectedResponseCodes, TimeSpan? timeout = null)
+    internal async ValueTask<Message> Request(Message message, int[] expectedResponseCodes, TimeSpan? timeout = null)
     {
         if (Status != ManagementStatus.Open)
         {
-            throw new ManagementClosedException("Management is not open");
+            throw new ModelException("Management is not open");
         }
 
         TaskCompletionSource<Message> mre = new(false);
@@ -182,19 +180,26 @@ public class AmqpManagement : IManagement
 
         await InternalSendAsync(message);
         var result = await mre.Task.WaitAsync(cts.Token);
+        CheckResponse(message, expectedResponseCodes, result);
+        return result;
+    }
 
-        if (!int.TryParse(result.Properties.Subject, out var responseCode))
-            throw new InvalidOperationException("Response code is not a number");
+    internal void CheckResponse(Message sentMessage, int[] expectedResponseCodes, Message receivedMessage)
+    {
+        if (!int.TryParse(receivedMessage.Properties.Subject, out var responseCode))
+            throw new ModelException($"Response code is not a number {receivedMessage.Properties.Subject}");
+
+        if (sentMessage.Properties.MessageId != receivedMessage.Properties.CorrelationId)
+            throw new ModelException(
+                $"CorrelationId does not match, expected {sentMessage.Properties.MessageId} but got {receivedMessage.Properties.CorrelationId}");
 
         var any = expectedResponseCodes.Any(c => c == responseCode);
-
         if (!any)
         {
             throw new InvalidCodeException(
-                $"Expected response codes: {expectedResponseCodes}, got: {responseCode}");
+                $"Unexpected response code: {responseCode} instead of {expectedResponseCodes.Aggregate("", (s, i) => s + i + ", ")}"
+            );
         }
-
-        return responseCode;
     }
 
     protected virtual async Task InternalSendAsync(Message message)
@@ -212,7 +217,6 @@ public class AmqpManagement : IManagement
     }
 }
 
-
-
 public class InvalidCodeException(string message) : Exception(message);
-public class ManagementClosedException(string message) : Exception(message);
+
+public class ModelException(string message) : Exception(message);
