@@ -119,12 +119,22 @@ public class ManagementTests()
 
 
     [Fact]
-    public async void DeclareFirstQueue()
+    public async void DeclareQueueWithQueueInfoValidation()
     {
         AmqpConnection connection = new();
         await connection.ConnectAsync(new AmqpAddressBuilder().Build());
         var management = connection.Management();
-        await management.Queue().Name("dot_test_1").Durable(true).Declare();
+        var queueInfo = await management.Queue().Name("validate_queue_info").Durable(true).Declare();
+        Assert.Equal("validate_queue_info", queueInfo.Name());
+        Assert.Equal((ulong)0, queueInfo.MessageCount());
+        Assert.Equal((uint)0, queueInfo.ConsumerCount());
+        Assert.Equal(QueueType.CLASSIC , queueInfo.Type());
+        Assert.Single(queueInfo.Replicas());
+        Assert.NotNull(queueInfo.Leader());
+        Assert.True(queueInfo.Durable());
+        Assert.False(queueInfo.AutoDelete());
+        Assert.False(queueInfo.Exclusive());
+        await management.QueueDeletion().Delete("validate_queue_info");
         await connection.CloseAsync();
         Assert.Equal(ManagementStatus.Closed, management.Status);
     }

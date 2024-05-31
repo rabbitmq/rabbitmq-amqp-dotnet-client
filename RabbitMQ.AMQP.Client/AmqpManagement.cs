@@ -21,7 +21,10 @@ public class AmqpManagement : IManagement
     // private static readonly string DELETE = "DELETE";
     internal const int Code200 = 200;
     internal const int Code201 = 201;
+    internal const int Code204 = 204;
+    internal const int Code409 = 409;
     internal const string Put = "PUT";
+    internal const string Delete = "DELETE";
 
     internal const string ReplyTo = "$me";
     // private static readonly int CODE_204 = 204;
@@ -39,6 +42,11 @@ public class AmqpManagement : IManagement
     public IQueueSpecification Queue(string name)
     {
         return Queue().Name(name);
+    }
+
+    public IQueueDeletion QueueDeletion()
+    {
+        return new AmqpQueueDeletion(this);
     }
 
     private Session? _managementSession;
@@ -142,14 +150,14 @@ public class AmqpManagement : IManagement
         }
     }
 
-    internal async ValueTask<Message> Request(object body, string path, string method,
+    internal async ValueTask<Message> Request(object? body, string path, string method,
         int[] expectedResponseCodes, TimeSpan? timeout = null)
     {
         var id = Guid.NewGuid().ToString();
         return await Request(id, body, path, method, expectedResponseCodes, timeout);
     }
 
-    internal async ValueTask<Message> Request(string id, object body, string path, string method,
+    internal async ValueTask<Message> Request(string id, object? body, string path, string method,
         int[] expectedResponseCodes, TimeSpan? timeout = null)
     {
         var message = new Message(body);
@@ -189,9 +197,16 @@ public class AmqpManagement : IManagement
         if (!int.TryParse(receivedMessage.Properties.Subject, out var responseCode))
             throw new ModelException($"Response code is not a number {receivedMessage.Properties.Subject}");
 
+        switch (responseCode)
+        {
+            case Code409:
+                throw new PreconditionFailException($"Precondition Fail. Message: {receivedMessage.Body}");
+        }
+
         if (sentMessage.Properties.MessageId != receivedMessage.Properties.CorrelationId)
             throw new ModelException(
                 $"CorrelationId does not match, expected {sentMessage.Properties.MessageId} but got {receivedMessage.Properties.CorrelationId}");
+
 
         var any = expectedResponseCodes.Any(c => c == responseCode);
         if (!any)
@@ -220,3 +235,5 @@ public class AmqpManagement : IManagement
 public class InvalidCodeException(string message) : Exception(message);
 
 public class ModelException(string message) : Exception(message);
+
+public class PreconditionFailException(string message) : Exception(message);

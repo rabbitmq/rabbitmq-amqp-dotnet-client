@@ -139,9 +139,21 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
             AmqpManagement.Put, new[]
             {
                 AmqpManagement.Code200,
-                AmqpManagement.Code201
+                AmqpManagement.Code201,
+                AmqpManagement.Code409
             });
 
         return new DefaultQueueInfo((Map)result.Body);
+    }
+}
+
+public class AmqpQueueDeletion(AmqpManagement management) : IQueueDeletion
+{
+    public async Task Delete(string name)
+    {
+        await management.Request(null, $"/queues/{name}", AmqpManagement.Delete, new[]
+        {
+            AmqpManagement.Code200,
+        });
     }
 }
