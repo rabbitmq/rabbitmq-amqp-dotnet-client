@@ -33,7 +33,7 @@ public class DefaultQueueInfo : IQueueInfo
 
         this._leader = (string)response["leader"];
         var replicas = (string[])response["replicas"];
-        this._replicas = replicas.Length == 0 ? [] : [..replicas];
+        this._replicas = replicas.Length == 0 ? [] : [.. replicas];
         this._messageCount = ((ulong)response["message_count"]);
         this._consumerCount = ((uint)response["consumer_count"]);
     }

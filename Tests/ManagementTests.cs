@@ -128,7 +128,7 @@ public class ManagementTests()
         Assert.Equal("validate_queue_info", queueInfo.Name());
         Assert.Equal((ulong)0, queueInfo.MessageCount());
         Assert.Equal((uint)0, queueInfo.ConsumerCount());
-        Assert.Equal(QueueType.CLASSIC , queueInfo.Type());
+        Assert.Equal(QueueType.CLASSIC, queueInfo.Type());
         Assert.Single(queueInfo.Replicas());
         Assert.NotNull(queueInfo.Leader());
         Assert.True(queueInfo.Durable());
