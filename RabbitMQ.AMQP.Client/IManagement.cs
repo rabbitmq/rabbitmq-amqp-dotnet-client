@@ -1,15 +1,8 @@
 namespace RabbitMQ.AMQP.Client;
 
-public enum ManagementStatus
-{
-    Closed,
-    Initializing,
-    Open,
-}
 
-public interface IManagement
+public interface IManagement : IResource
 {
-    ManagementStatus Status { get; }
     IQueueSpecification Queue();
     IQueueSpecification Queue(string name);
 

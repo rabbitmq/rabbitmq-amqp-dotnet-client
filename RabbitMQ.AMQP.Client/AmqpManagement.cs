@@ -1,7 +1,10 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using Amqp;
 using Amqp.Framing;
 using Amqp.Types;
+using Trace = Amqp.Trace;
+using TraceLevel = Amqp.TraceLevel;
 
 namespace RabbitMQ.AMQP.Client;
 
@@ -12,6 +15,7 @@ public class AmqpManagement : IManagement
     // private static readonly long IdSequence = 0;
     //
     private const string ManagementNodeAddress = "/management";
+    private const string LinkPairName = "management-link-pair";
 
     // private static readonly string REPLY_TO = "$me";
     //
@@ -26,12 +30,12 @@ public class AmqpManagement : IManagement
     internal const string Put = "PUT";
     internal const string Delete = "DELETE";
 
-    internal const string ReplyTo = "$me";
+    private const string ReplyTo = "$me";
     // private static readonly int CODE_204 = 204;
     // private static readonly int CODE_409 = 409;
 
 
-    public ManagementStatus Status { get; private set; } = ManagementStatus.Closed;
+    public virtual Status Status { get; protected set; } = Status.Closed;
 
 
     public IQueueSpecification Queue()
@@ -52,89 +56,118 @@ public class AmqpManagement : IManagement
     private Session? _managementSession;
     private Connection? _nativeConnection;
     private SenderLink? _senderLink;
+    private ReceiverLink? _receiverLink;
 
-    internal void SetOpen()
-    {
-        Status = ManagementStatus.Open;
-    }
 
     internal void Init(Connection connection)
     {
         _nativeConnection = connection;
-        _managementSession = new Session(connection);
+        if (_managementSession == null || _managementSession.IsClosed)
+            _managementSession = new Session(connection);
 
-        var senderAttach = new Attach
-        {
-            SndSettleMode = SenderSettleMode.Settled,
-            RcvSettleMode = ReceiverSettleMode.First,
-
-            Properties = new Fields
-            {
-                { new Symbol("paired"), true }
-            },
-            LinkName = "management-link-pair",
-            Source = new Source()
-            {
-                Address = ManagementNodeAddress,
-                ExpiryPolicy = new Symbol("LINK_DETACH"),
-                Timeout = 0,
-                Dynamic = false,
-                Durable = 0
-            },
-            Handle = 0,
-            Target = new Target()
-            {
-                Address = ManagementNodeAddress,
-                ExpiryPolicy = new Symbol("SESSION_END"),
-                Timeout = 0,
-                Dynamic = false,
-            },
-        };
-
-        var receiveAttach = new Attach()
-        {
-            SndSettleMode = SenderSettleMode.Settled,
-            RcvSettleMode = ReceiverSettleMode.First,
-            Properties = new Fields
-            {
-                { new Symbol("paired"), true }
-            },
-            LinkName = "management-link-pair",
-            Source = new Source()
-            {
-                Address = ManagementNodeAddress,
-            },
-            Handle = 1,
-            Target = new Target()
-            {
-                Address = ManagementNodeAddress,
-            },
-        };
-
-        _senderLink = new SenderLink(
-            _managementSession, "management-link-pair", senderAttach, null);
-
+        EnsureSenderLink();
         Thread.Sleep(500);
-        var receiver = new ReceiverLink(
-            _managementSession, "management-link-pair", receiveAttach, null);
-        receiver.SetCredit(100);
-        SetOpen();
+        EnsureReceiverLink();
 
         _ = Task.Run(async () =>
         {
-            while (Status == ManagementStatus.Open)
+            while (_managementSession.IsClosed == false &&
+                   _nativeConnection.IsClosed == false)
             {
-                var msg = await receiver.ReceiveAsync();
+                if (_receiverLink == null) continue;
+                var msg = await _receiverLink.ReceiveAsync();
                 if (msg == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("Received null message");
+                    Trace.WriteLine(TraceLevel.Warning, "Received null message");
                     continue;
                 }
 
-                receiver.Accept(msg);
+                _receiverLink.Accept(msg);
                 HandleResponseMessage(msg);
             }
+
+            Trace.WriteLine(TraceLevel.Information, "Management session closed");
         });
+        _managementSession.Closed += (sender, error) =>
+        {
+            var unexpected = Status != Status.Closed;
+            Status = Status.Closed;
+            
+            Closed?.Invoke(this,  unexpected);
+            Trace.WriteLine(TraceLevel.Warning, $"Management session closed " +
+                                                $"{sender} {error} {Status} {_senderLink?.IsClosed}" +
+                                                $"{_receiverLink?.IsClosed} {_managementSession.IsClosed}" +
+                                                $"{_nativeConnection.IsClosed}");
+        };
+        Status = Status.Open;
+    }
+
+    private void EnsureReceiverLink()
+    {
+        if (_receiverLink == null || _receiverLink.IsClosed)
+        {
+            var receiveAttach = new Attach()
+            {
+                SndSettleMode = SenderSettleMode.Settled,
+                RcvSettleMode = ReceiverSettleMode.First,
+                Properties = new Fields
+                {
+                    { new Symbol("paired"), true }
+                },
+                LinkName = LinkPairName,
+                Source = new Source()
+                {
+                    Address = ManagementNodeAddress,
+                },
+                Handle = 1,
+                Target = new Target()
+                {
+                    Address = ManagementNodeAddress,
+                },
+            };
+            _receiverLink = new ReceiverLink(
+                _managementSession, LinkPairName, receiveAttach, null);
+
+            _receiverLink.SetCredit(100);
+        }
+    }
+
+    private void EnsureSenderLink()
+    {
+        if (_senderLink == null || _senderLink.IsClosed)
+        {
+            var senderAttach = new Attach
+            {
+                SndSettleMode = SenderSettleMode.Settled,
+                RcvSettleMode = ReceiverSettleMode.First,
+
+                Properties = new Fields
+                {
+                    { new Symbol("paired"), true }
+                },
+                LinkName = LinkPairName,
+                Source = new Source()
+                {
+                    Address = ManagementNodeAddress,
+                    ExpiryPolicy = new Symbol("LINK_DETACH"),
+                    Timeout = 0,
+                    Dynamic = false,
+                    Durable = 0
+                },
+                Handle = 0,
+                Target = new Target()
+                {
+                    Address = ManagementNodeAddress,
+                    ExpiryPolicy = new Symbol("SESSION_END"),
+                    Timeout = 0,
+                    Dynamic = false,
+                },
+            };
+
+
+            _senderLink = new SenderLink(
+                _managementSession, LinkPairName, senderAttach, null);
+        }
     }
 
     protected void HandleResponseMessage(Message msg)
@@ -146,7 +179,7 @@ public class AmqpManagement : IManagement
         }
         else
         {
-            System.Diagnostics.Debug.WriteLine("Received unexpected message");
+            Trace.WriteLine(TraceLevel.Error, $"No request found for message {msg.Properties.CorrelationId}");
         }
     }
 
@@ -174,7 +207,7 @@ public class AmqpManagement : IManagement
 
     internal async ValueTask<Message> Request(Message message, int[] expectedResponseCodes, TimeSpan? timeout = null)
     {
-        if (Status != ManagementStatus.Open)
+        if (Status != Status.Open)
         {
             throw new ModelException("Management is not open");
         }
@@ -224,12 +257,14 @@ public class AmqpManagement : IManagement
 
     public async Task CloseAsync()
     {
-        Status = ManagementStatus.Closed;
-        if (_nativeConnection != null)
+        Status = Status.Closed;
+        if (_managementSession is { IsClosed: false })
         {
-            await _nativeConnection.CloseAsync();
+            await _managementSession.CloseAsync();
         }
     }
+
+    public event IResource.ClosedEventHandler? Closed;
 }
 
 public class InvalidCodeException(string message) : Exception(message);

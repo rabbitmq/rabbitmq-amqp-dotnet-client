@@ -10,7 +10,7 @@ public class ConnectionTests
     public void ValidateAddress()
     {
         AmqpAddress amqpAddress = new("localhost", 5672, "guest-user",
-            "guest-password", "path/", "amqp1");
+            "guest-password", "path/", "amqp1", "connection_name");
         Assert.Equal("localhost", amqpAddress.Host());
         Assert.Equal(5672, amqpAddress.Port());
         Assert.Equal("guest-user", amqpAddress.User());
@@ -19,12 +19,12 @@ public class ConnectionTests
         Assert.Equal("amqp1", amqpAddress.Scheme());
 
         AmqpAddress second = new("localhost", 5672, "guest-user",
-            "guest-password", "path/", "amqp1");
+            "guest-password", "path/", "amqp1", "connection_name");
 
         Assert.Equal(amqpAddress, second);
 
         AmqpAddress third = new("localhost", 5672, "guest-user",
-            "guest-password", "path/", "amqp2");
+            "guest-password", "path/", "amqp2", "connection_name");
 
         Assert.NotEqual(amqpAddress, third);
     }

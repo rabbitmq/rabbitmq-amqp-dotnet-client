@@ -13,4 +13,6 @@ public interface IAddress
     string Password();
 
     string Scheme();
+    
+    string ConnectionName();
 }

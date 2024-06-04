@@ -10,6 +10,8 @@ public class AmqpAddressBuilder
     private string _password = "guest";
     private string _path = "/";
     private string _scheme = "AMQP";
+    private string _connection = "AMQP.NET";
+
 
     public AmqpAddressBuilder Host(string host)
     {
@@ -47,9 +49,17 @@ public class AmqpAddressBuilder
         return this;
     }
 
+    public AmqpAddressBuilder ConnectionName(string connection)
+    {
+        _connection = connection;
+        return this;
+    }
+
     public AmqpAddress Build()
     {
-        return new AmqpAddress(_host, _port, _user, _password, _path, _scheme);
+        return new AmqpAddress(_host, _port, _user,
+            _password, _path,
+            _scheme, _connection);
     }
 }
 
@@ -60,6 +70,8 @@ public class AmqpAddress : IAddress
 {
     internal Address Address { get; }
 
+    private readonly string _connectionName = "AMQP.NET";
+
 
     public AmqpAddress(string address)
     {
@@ -69,9 +81,10 @@ public class AmqpAddress : IAddress
     public AmqpAddress(string host, int port,
         string user,
         string password,
-        string path, string scheme)
+        string path, string scheme, string connectionName)
     {
         Address = new Address(host, port, user, password, path, scheme);
+        _connectionName = connectionName;
     }
 
     public string Host()
@@ -106,6 +119,11 @@ public class AmqpAddress : IAddress
     public string Scheme()
     {
         return Address.Scheme;
+    }
+
+    public string ConnectionName()
+    {
+        return _connectionName;
     }
 
     public override string ToString()
