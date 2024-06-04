@@ -92,8 +92,8 @@ public class AmqpManagement : IManagement
         {
             var unexpected = Status != Status.Closed;
             Status = Status.Closed;
-            
-            Closed?.Invoke(this,  unexpected);
+
+            Closed?.Invoke(this, unexpected);
             Trace.WriteLine(TraceLevel.Warning, $"Management session closed " +
                                                 $"{sender} {error} {Status} {_senderLink?.IsClosed}" +
                                                 $"{_receiverLink?.IsClosed} {_managementSession.IsClosed}" +

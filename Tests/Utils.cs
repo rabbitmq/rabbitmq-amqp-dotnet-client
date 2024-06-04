@@ -27,7 +27,7 @@ namespace Tests
             WaitUntilTaskCompletes(tasks, true, TimeSpan.FromSeconds(10));
         }
 
-        public void WaitUntilTaskCompletes(TaskCompletionSource<TResult> tasks, 
+        public void WaitUntilTaskCompletes(TaskCompletionSource<TResult> tasks,
             bool expectToComplete = true)
         {
             WaitUntilTaskCompletes(tasks, expectToComplete, TimeSpan.FromSeconds(10));

@@ -64,7 +64,7 @@ public class AmqpConnection : IConnection, IResource
     public async Task CloseAsync()
     {
         Status = Status.Closed;
-        if (_nativeConnection is { IsClosed: false })   await _nativeConnection.CloseAsync();
+        if (_nativeConnection is { IsClosed: false }) await _nativeConnection.CloseAsync();
         await _management.CloseAsync();
     }
 
