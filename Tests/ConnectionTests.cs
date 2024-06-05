@@ -57,30 +57,30 @@ public class ConnectionTests
     public async void RaiseErrorsIfTheParametersAreNotValid()
     {
         AmqpConnection connection = new();
-        await Assert.ThrowsAsync<ConnectionException>( async () =>  await connection.ConnectAsync(new 
+        await Assert.ThrowsAsync<ConnectionException>(async () => await connection.ConnectAsync(new
         AmqpAddressBuilder().VirtualHost("wrong_vhost").Build()));
         Assert.Equal(Status.Closed, connection.Status);
 
 
-        await Assert.ThrowsAsync<SocketException>( async () =>  await connection.ConnectAsync(new 
+        await Assert.ThrowsAsync<SocketException>(async () => await connection.ConnectAsync(new
             AmqpAddressBuilder().Host("wrong_host").Build()));
         Assert.Equal(Status.Closed, connection.Status);
-        
-        
-        await Assert.ThrowsAsync<ConnectionException>( async () =>  await connection.ConnectAsync(new 
+
+
+        await Assert.ThrowsAsync<ConnectionException>(async () => await connection.ConnectAsync(new
             AmqpAddressBuilder().Password("wrong_password").Build()));
         Assert.Equal(Status.Closed, connection.Status);
-        
-        await Assert.ThrowsAsync<ConnectionException>( async () =>  await connection.ConnectAsync(new 
+
+        await Assert.ThrowsAsync<ConnectionException>(async () => await connection.ConnectAsync(new
             AmqpAddressBuilder().User("wrong_user").Build()));
         Assert.Equal(Status.Closed, connection.Status);
-        
-        await Assert.ThrowsAsync<SocketException>( async () =>  await connection.ConnectAsync(new 
+
+        await Assert.ThrowsAsync<SocketException>(async () => await connection.ConnectAsync(new
             AmqpAddressBuilder().Port(0).Build()));
         Assert.Equal(Status.Closed, connection.Status);
-        
-        
-        await Assert.ThrowsAsync<ConnectionException>( async () =>  await connection.ConnectAsync(new 
+
+
+        await Assert.ThrowsAsync<ConnectionException>(async () => await connection.ConnectAsync(new
             AmqpAddressBuilder().Scheme("wrong_scheme").Build()));
         Assert.Equal(Status.Closed, connection.Status);
     }

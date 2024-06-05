@@ -8,7 +8,7 @@ using Xunit;
 
 public class ConnectionRecoverTests
 {
-    
+
     [Fact]
     public async void NormalCloseShouldSetUnexpectedFlagToFalse()
     {

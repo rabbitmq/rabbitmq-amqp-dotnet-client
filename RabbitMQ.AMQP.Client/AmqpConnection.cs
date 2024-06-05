@@ -71,14 +71,14 @@ public class AmqpConnection : IConnection, IResource
             // wrong virtual host
             throw new ConnectionException("OperationCanceledException: Connection failed", e);
         }
-        
+
         catch (NotSupportedException e)
         {
             // wrong schema
             throw new ConnectionException("NotSupportedException: Connection failed", e);
         }
-        
-        
+
+
     }
 
 
