@@ -1,0 +1,40 @@
+name: Test against supported .NET
+
+on:
+  - workflow_call
+
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout tls-gen
+        uses: actions/checkout@v4
+        with:
+          repository: rabbitmq/tls-gen
+          path: './tls-gen'
+      - name: Start broker
+        run: ci/start-broker.sh
+      - name: Start toxiproxy
+        run: ci/start-toxiproxy.sh
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            7.x
+            8.x
+      - name: Display DotNet version
+        run: dotnet --version
+      - name: Restore
+        run: dotnet restore ./rabbitmq-amqp-dotnet-client.sln --verbosity=normal
+      - name: Verify
+        run: dotnet format ./rabbitmq-amqp-dotnet-client.sln --no-restore --verbosity=diagnostic --verify-no-changes
+      - name: Build
+        run: dotnet build ./rabbitmq-amqp-dotnet-client.sln --no-restore --verbosity=normal
+      - name: Test
+        run: dotnet test ./rabbitmq-amqp-dotnet-client.sln --no-build --logger "console;verbosity=detailed" /p:AltCover=true
+      - name: Stop toxiproxy
+        run: docker stop toxiproxy && docker rm toxiproxy
+      - name: Stop broker
+        run: docker stop rabbitmq && docker rm rabbitmq
