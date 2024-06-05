@@ -50,7 +50,7 @@ public class ConnectionTests
         Assert.Equal("guest-t", address.User());
         Assert.Equal("guest-w", address.Password());
         Assert.Equal("v1", address.VirtualHost());
-        Assert.Equal("amqp1", address.Scheme());
+        Assert.Equal("amqp12", address.Scheme());
     }
 
     [Fact]
