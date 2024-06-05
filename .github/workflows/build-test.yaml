@@ -33,7 +33,7 @@ jobs:
       - name: Build
         run: dotnet build ./Build.csproj --no-restore --verbosity=normal
       - name: Test
-        run: dotnet test ./Build.csproj --no-build --logger "console;verbosity=detailed" /p:AltCover=true
+        run: dotnet test ./Build.csproj --logger "console;verbosity=detailed" /p:AltCover=true
       - name: Stop toxiproxy
         run: docker stop toxiproxy && docker rm toxiproxy
       - name: Stop broker
