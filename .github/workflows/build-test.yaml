@@ -24,14 +24,6 @@ jobs:
           dotnet-version: |
             7.x
             8.x
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.nuget/packages
-            ~/.local/share/NuGet/v4-cache
-          key: ${{ runner.os }}-v2-nuget-${{ hashFiles('**/*.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-v2-nuget-
       - name: Display DotNet version
         run: dotnet --version
       - name: Restore

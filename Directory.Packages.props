@@ -6,7 +6,7 @@
     <!-- RabbitMQ.Amqp.Client -->
     <PackageVersion Include="AMQPNetLite.Core" Version="2.4.10" />
     <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.1.1" />
     <PackageVersion Include="MinVer" Version="4.3.0" />
     <!-- Tests -->
