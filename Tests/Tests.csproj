@@ -7,6 +7,8 @@
         <Authors>Broadcom</Authors>
         <Company>Broadcom Inc. and/or its subsidiaries.</Company>
         <TargetFramework>net8.0</TargetFramework>
+        <TargetFrameworks />
+        <OutputType>Library</OutputType>
         <!-- <ImplicitUsings>enable</ImplicitUsings> -->
         <!-- <Nullable>enable</Nullable> -->
         <!-- <RootNamespace>Test</RootNamespace> -->
