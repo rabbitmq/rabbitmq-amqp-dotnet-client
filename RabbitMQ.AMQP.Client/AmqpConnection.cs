@@ -22,7 +22,7 @@ public class AmqpConnection : IConnection, IResource
             .Port(address.Port())
             .User(address.User())
             .Password(address.Password())
-            .Path(address.Path())
+            .VirtualHost(address.VirtualHost())
             .ConnectionName(address.ConnectionName())
             .Scheme(address.Scheme())
             .Build();
@@ -32,32 +32,53 @@ public class AmqpConnection : IConnection, IResource
 
     internal async Task EnsureConnectionAsync()
     {
-        if (_nativeConnection == null || _nativeConnection.IsClosed)
+        try
         {
-            var open = new Open
+            if (_nativeConnection == null || _nativeConnection.IsClosed)
             {
-                Properties = new Fields()
+                var open = new Open
                 {
-                    [new Symbol("connection_name")] = _address.ConnectionName()
-                }
-            };
-            var connection = await Connection.Factory.CreateAsync(_address.Address, open);
-            connection.Closed += (sender, error) =>
-            {
-                var unexpected = Status != Status.Closed;
-                Status = Status.Closed;
+                    HostName = $"vhost:{_address.VirtualHost()}",
+                    Properties = new Fields()
+                    {
+                        [new Symbol("connection_name")] = _address.ConnectionName(),
+                    }
+                };
+                var connection = await Connection.Factory.CreateAsync(_address.Address, open);
+                connection.Closed += (sender, error) =>
+                {
+                    var unexpected = Status != Status.Closed;
+                    Status = Status.Closed;
 
-                Closed?.Invoke(this, unexpected);
+                    Closed?.Invoke(this, unexpected);
 
-                Trace.WriteLine(TraceLevel.Warning, $"connection is closed " +
-                                                    $"{sender} {error} {Status} " +
-                                                    $"{connection.IsClosed}");
-            };
-            _nativeConnection = connection;
-            _management.Init(connection);
+                    Trace.WriteLine(TraceLevel.Warning, $"connection is closed " +
+                                                        $"{sender} {error} {Status} " +
+                                                        $"{connection.IsClosed}");
+                };
+                _nativeConnection = connection;
+                _management.Init(connection);
+            }
+
+            Status = Status.Open;
         }
-
-        Status = Status.Open;
+        catch (Amqp.AmqpException e)
+        {
+            throw new ConnectionException("AmqpException: Connection failed", e);
+        }
+        catch (System.OperationCanceledException e)
+        {
+            // wrong virtual host
+            throw new ConnectionException("OperationCanceledException: Connection failed", e);
+        }
+        
+        catch (NotSupportedException e)
+        {
+            // wrong schema
+            throw new ConnectionException("NotSupportedException: Connection failed", e);
+        }
+        
+        
     }
 
 

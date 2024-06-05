@@ -130,11 +130,11 @@ namespace Tests
             var result = await client.GetAsync("http://localhost:15672/api/connections");
             if (!result.IsSuccessStatusCode)
             {
-                throw new XunitException(string.Format("HTTP GET failed: {0} {1}", result.StatusCode,
-                    result.ReasonPhrase));
+                throw new XunitException($"HTTP GET failed: {result.StatusCode} {result.ReasonPhrase}");
             }
 
-            var obj = await JsonSerializer.DeserializeAsync(result.Content.ReadAsStream(), typeof(IEnumerable<Connection>));
+            var obj = await JsonSerializer.DeserializeAsync(await result.Content.ReadAsStreamAsync(),
+                typeof(IEnumerable<Connection>));
             if (obj == null) return false;
             var connections = obj as IEnumerable<Connection>;
             isOpen = connections.Any(x => x.client_properties["connection_name"].Contains(connectionName));
@@ -191,6 +191,13 @@ namespace Tests
             }
 
             return killed;
+        }
+
+        public static int WaitUntilConnectionIsKilled(string connectionName)
+        {
+            Wait();
+            WaitUntilAsync(async () => await HttpKillConnections(connectionName) == 1);
+            return 1;
         }
 
         private static HttpClient CreateHttpClient()

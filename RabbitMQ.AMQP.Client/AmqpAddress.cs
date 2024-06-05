@@ -8,9 +8,9 @@ public class AmqpAddressBuilder
     private int _port = 5672;
     private string _user = "guest";
     private string _password = "guest";
-    private string _path = "/";
     private string _scheme = "AMQP";
     private string _connection = "AMQP.NET";
+    private string _virtualHost = "/";
 
 
     public AmqpAddressBuilder Host(string host)
@@ -37,11 +37,6 @@ public class AmqpAddressBuilder
         return this;
     }
 
-    public AmqpAddressBuilder Path(string path)
-    {
-        _path = path;
-        return this;
-    }
 
     public AmqpAddressBuilder Scheme(string scheme)
     {
@@ -55,10 +50,16 @@ public class AmqpAddressBuilder
         return this;
     }
 
+    public AmqpAddressBuilder VirtualHost(string virtualHost)
+    {
+        _virtualHost = virtualHost;
+        return this;
+    }
+
     public AmqpAddress Build()
     {
         return new AmqpAddress(_host, _port, _user,
-            _password, _path,
+            _password, _virtualHost,
             _scheme, _connection);
     }
 }
@@ -71,6 +72,7 @@ public class AmqpAddress : IAddress
     internal Address Address { get; }
 
     private readonly string _connectionName = "AMQP.NET";
+    private readonly string _virtualHost = "/";
 
 
     public AmqpAddress(string address)
@@ -81,10 +83,11 @@ public class AmqpAddress : IAddress
     public AmqpAddress(string host, int port,
         string user,
         string password,
-        string path, string scheme, string connectionName)
+        string virtualHost, string scheme, string connectionName)
     {
-        Address = new Address(host, port, user, password, path, scheme);
+        Address = new Address(host, port, user, password, "/", scheme);
         _connectionName = connectionName;
+        _virtualHost = virtualHost;
     }
 
     public string Host()
@@ -99,9 +102,10 @@ public class AmqpAddress : IAddress
     }
 
 
-    public string Path()
+
+    public string VirtualHost()
     {
-        return Address.Path;
+        return _virtualHost;
     }
 
     public string User()

@@ -6,7 +6,8 @@ public interface IAddress
 
     int Port();
 
-    string Path();
+    string VirtualHost();
+    
 
     string User();
 
