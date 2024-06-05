@@ -27,13 +27,13 @@ jobs:
       - name: Display DotNet version
         run: dotnet --version
       - name: Restore
-        run: dotnet restore ./Build.csproj --verbosity=normal
+        run: dotnet restore ./rabbitmq-amqp-dotnet-client.sln --verbosity=normal
       - name: Build
-        run: dotnet build ./Build.csproj --no-restore --verbosity=normal
+        run: dotnet build ./rabbitmq-amqp-dotnet-client.sln --no-restore --verbosity=normal
       - name: Verify
         run: dotnet format ./rabbitmq-amqp-dotnet-client.sln --no-restore --verbosity=diagnostic --verify-no-changes
       - name: Test
-        run: dotnet test ./Build.csproj --no-build --logger "console;verbosity=detailed" /p:AltCover=true
+        run: dotnet test ./rabbitmq-amqp-dotnet-client.sln --no-build --logger "console;verbosity=detailed" /p:AltCover=true
       - name: Stop toxiproxy
         run: docker stop toxiproxy && docker rm toxiproxy
       - name: Stop broker
