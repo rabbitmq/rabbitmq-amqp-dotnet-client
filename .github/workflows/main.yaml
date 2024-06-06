@@ -1,4 +1,4 @@
-name: rabbitmq-stream-dotnet-client
+name: rabbitmq-amqp-dotnet-client
 
 on:
   push:
@@ -8,4 +8,4 @@ on:
 
 jobs:
   call-build-test:
-    uses: ./.github/workflows/test-supported-net-versions.yml
+    uses: ./.github/workflows/build-test.yaml

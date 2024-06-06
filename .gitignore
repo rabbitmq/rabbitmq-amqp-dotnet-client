@@ -124,4 +124,5 @@ projects/Unit*/TestResult.xml
 Tests/coverage.*
 ##
 docs/temp/
-
+tls-gen/
+rabbitmq-configuration/
