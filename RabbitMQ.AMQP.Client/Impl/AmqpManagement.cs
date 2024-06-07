@@ -14,18 +14,13 @@ public class AmqpManagement : IManagement
 
     // private static readonly long IdSequence = 0;
     //
+    private readonly RecordingTopologyListener _recordingTopologyListener = new();
     private const string ManagementNodeAddress = "/management";
     private const string LinkPairName = "management-link-pair";
 
-    // private static readonly string REPLY_TO = "$me";
-    //
-    // private static readonly string GET = "GET";
-    // private static readonly string POST = "POST";
-    // private static readonly string PUT = "PUT";
-    // private static readonly string DELETE = "DELETE";
     internal const int Code200 = 200;
     internal const int Code201 = 201;
-    internal const int Code204 = 204;
+    internal const int Code204 = 204; // TODO: handle 204
     internal const int Code409 = 409;
     internal const string Put = "PUT";
     internal const string Delete = "DELETE";
@@ -51,6 +46,10 @@ public class AmqpManagement : IManagement
         return new AmqpQueueDeletion(this);
     }
 
+    public ITopologyListener TopologyListener()
+    {
+        return _recordingTopologyListener;
+    }
 
     private Session? _managementSession;
     private Connection? _nativeConnection;
@@ -261,7 +260,9 @@ public class AmqpManagement : IManagement
     }
 
     public event IClosable.ClosedEventHandler? Closed;
+
+
+    
 }
 
 public class InvalidCodeException(string message) : Exception(message);
-

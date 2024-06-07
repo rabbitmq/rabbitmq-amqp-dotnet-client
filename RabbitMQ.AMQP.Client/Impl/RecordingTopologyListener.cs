@@ -15,4 +15,9 @@ public class RecordingTopologyListener : ITopologyListener
     {
         _queueSpecifications.TryRemove(name, out _);
     }
+
+    public int QueueCount()
+    {
+        return _queueSpecifications.Count;
+    }
 }

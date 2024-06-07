@@ -10,5 +10,7 @@ public interface IManagement : IClosable
     IQueueSpecification Queue(string name);
 
     IQueueDeletion QueueDeletion();
+    
+    ITopologyListener TopologyListener();
 }
 

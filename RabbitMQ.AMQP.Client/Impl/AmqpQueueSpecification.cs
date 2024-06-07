@@ -165,7 +165,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
             });
 
         var result = new DefaultQueueInfo((Map)request.Body);
-
+        management.TopologyListener().QueueDeclared(this);
         return result;
     }
 }
@@ -182,6 +182,7 @@ public class AmqpQueueDeletion(AmqpManagement management) : IQueueDeletion
         {
             AmqpManagement.Code200,
         });
+        management.TopologyListener().QueueDeleted(name);
         return new DefaultQueueDeletionInfo();
     }
 }
