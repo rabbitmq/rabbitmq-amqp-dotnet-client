@@ -1,7 +1,10 @@
 namespace RabbitMQ.AMQP.Client;
 
+public class ModelException(string message) : Exception(message);
 
-public interface IManagement : IResource
+public class PreconditionFailException(string message) : Exception(message);
+
+public interface IManagement : IClosable
 {
     IQueueSpecification Queue();
     IQueueSpecification Queue(string name);
@@ -9,19 +12,3 @@ public interface IManagement : IResource
     IQueueDeletion QueueDeletion();
 }
 
-public interface IQueueSpecification
-{
-    IQueueSpecification Name(string name);
-    IQueueSpecification Exclusive(bool exclusive);
-    IQueueSpecification AutoDelete(bool autoDelete);
-
-    IQueueSpecification Durable(bool durable);
-
-    Task<IQueueInfo> Declare();
-}
-
-public interface IQueueDeletion
-{
-    // TODO consider returning a QueueStatus object with some info after deletion
-    Task Delete(string name);
-}

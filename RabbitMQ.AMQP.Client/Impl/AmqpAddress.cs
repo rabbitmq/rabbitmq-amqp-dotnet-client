@@ -1,6 +1,6 @@
 ﻿using Amqp;
 
-namespace RabbitMQ.AMQP.Client;
+namespace RabbitMQ.AMQP.Client.Impl;
 
 public class AmqpAddressBuilder
 {

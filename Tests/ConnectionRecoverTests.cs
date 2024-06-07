@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
+using RabbitMQ.AMQP.Client.Impl;
 
 namespace Tests;
 

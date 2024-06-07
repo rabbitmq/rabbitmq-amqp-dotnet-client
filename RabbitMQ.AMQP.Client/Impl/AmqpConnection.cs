@@ -2,9 +2,9 @@ using Amqp;
 using Amqp.Framing;
 using Amqp.Types;
 
-namespace RabbitMQ.AMQP.Client;
+namespace RabbitMQ.AMQP.Client.Impl;
 
-public class AmqpConnection : IConnection, IResource
+public class AmqpConnection : IConnection
 {
     private Connection? _nativeConnection;
     private AmqpAddress _address = null!;
@@ -62,11 +62,11 @@ public class AmqpConnection : IConnection, IResource
 
             Status = Status.Open;
         }
-        catch (Amqp.AmqpException e)
+        catch (AmqpException e)
         {
             throw new ConnectionException("AmqpException: Connection failed", e);
         }
-        catch (System.OperationCanceledException e)
+        catch (OperationCanceledException e)
         {
             // wrong virtual host
             throw new ConnectionException("OperationCanceledException: Connection failed", e);
@@ -77,8 +77,6 @@ public class AmqpConnection : IConnection, IResource
             // wrong schema
             throw new ConnectionException("NotSupportedException: Connection failed", e);
         }
-
-
     }
 
 
@@ -89,7 +87,7 @@ public class AmqpConnection : IConnection, IResource
         await _management.CloseAsync();
     }
 
-    public event IResource.ClosedEventHandler? Closed;
+    public event IClosable.ClosedEventHandler? Closed;
 
 
     public Status Status { get; private set; } = Status.Closed;

@@ -2,7 +2,7 @@ using Amqp;
 using Amqp.Framing;
 using Amqp.Types;
 
-namespace RabbitMQ.AMQP.Client;
+namespace RabbitMQ.AMQP.Client.Impl;
 
 public class DefaultQueueInfo : IQueueInfo
 {
@@ -21,21 +21,21 @@ public class DefaultQueueInfo : IQueueInfo
     internal DefaultQueueInfo(Map response)
     {
         _name = (string)response["name"];
-        this._durable = (bool)response["durable"];
-        this._autoDelete = (bool)response["auto_delete"];
-        this._exclusive = (bool)response["exclusive"];
+        _durable = (bool)response["durable"];
+        _autoDelete = (bool)response["auto_delete"];
+        _exclusive = (bool)response["exclusive"];
         var x = (QueueType)Enum.Parse(typeof(QueueType), ((string)response["type"]).ToUpperInvariant());
-        this._type = x;
+        _type = x;
         var m = (Map)response["arguments"];
-        this._arguments = m.Count == 0
+        _arguments = m.Count == 0
             ? new Dictionary<string, object>()
             : m.ToDictionary(kv => (string)kv.Key, kv => kv.Value);
 
-        this._leader = (string)response["leader"];
+        _leader = (string)response["leader"];
         var replicas = (string[])response["replicas"];
-        this._replicas = replicas.Length == 0 ? [] : [.. replicas];
-        this._messageCount = ((ulong)response["message_count"]);
-        this._consumerCount = ((uint)response["consumer_count"]);
+        _replicas = replicas.Length == 0 ? [] : [.. replicas];
+        _messageCount = (ulong)response["message_count"];
+        _consumerCount = (uint)response["consumer_count"];
     }
 
     public string Name()
@@ -96,11 +96,15 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
     private bool _autoDelete = false;
     private bool _durable = false;
 
-
     public IQueueSpecification Name(string name)
     {
         _name = name;
         return this;
+    }
+
+    public string Name()
+    {
+        return _name ?? "";
     }
 
 
@@ -110,11 +114,23 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         return this;
     }
 
+    public bool Exclusive()
+    {
+        return _exclusive;
+    }
+
+    public bool AutoDelete()
+    {
+        return _autoDelete;
+    }
+
+
     public IQueueSpecification AutoDelete(bool autoDelete)
     {
         _autoDelete = autoDelete;
         return this;
     }
+
 
     public IQueueSpecification Durable(bool durable)
     {
@@ -122,11 +138,16 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         return this;
     }
 
+    public bool Durable()
+    {
+        return _durable;
+    }
+
     public async Task<IQueueInfo> Declare()
     {
-        if (_name == null)
+        if (string.IsNullOrEmpty(_name) || _name.Trim() == "")
         {
-            throw new InvalidOperationException("Queue name is required");
+            _name = Utils.GenerateQueueName();
         }
 
         var kv = new Map
@@ -135,7 +156,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
             { "exclusive", _exclusive },
             { "auto_delete", _autoDelete }
         };
-        var result = await management.Request(kv, $"/queues/{_name}",
+        var request = await management.Request(kv, $"/queues/{_name}",
             AmqpManagement.Put, new[]
             {
                 AmqpManagement.Code200,
@@ -143,17 +164,24 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
                 AmqpManagement.Code409
             });
 
-        return new DefaultQueueInfo((Map)result.Body);
+        var result = new DefaultQueueInfo((Map)request.Body);
+
+        return result;
     }
+}
+
+public class DefaultQueueDeletionInfo : IEntityInfo
+{
 }
 
 public class AmqpQueueDeletion(AmqpManagement management) : IQueueDeletion
 {
-    public async Task Delete(string name)
+    public async Task<IEntityInfo> Delete(string name)
     {
         await management.Request(null, $"/queues/{name}", AmqpManagement.Delete, new[]
         {
             AmqpManagement.Code200,
         });
+        return new DefaultQueueDeletionInfo();
     }
 }

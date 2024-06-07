@@ -6,7 +6,7 @@ using Amqp.Types;
 using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
 
-namespace RabbitMQ.AMQP.Client;
+namespace RabbitMQ.AMQP.Client.Impl;
 
 public class AmqpManagement : IManagement
 {
@@ -31,8 +31,6 @@ public class AmqpManagement : IManagement
     internal const string Delete = "DELETE";
 
     private const string ReplyTo = "$me";
-    // private static readonly int CODE_204 = 204;
-    // private static readonly int CODE_409 = 409;
 
 
     public virtual Status Status { get; protected set; } = Status.Closed;
@@ -53,6 +51,7 @@ public class AmqpManagement : IManagement
         return new AmqpQueueDeletion(this);
     }
 
+
     private Session? _managementSession;
     private Connection? _nativeConnection;
     private SenderLink? _senderLink;
@@ -68,7 +67,6 @@ public class AmqpManagement : IManagement
         EnsureSenderLink();
         Thread.Sleep(500);
         EnsureReceiverLink();
-
         _ = Task.Run(async () =>
         {
             while (_managementSession.IsClosed == false &&
@@ -163,8 +161,6 @@ public class AmqpManagement : IManagement
                     Dynamic = false,
                 },
             };
-
-
             _senderLink = new SenderLink(
                 _managementSession, LinkPairName, senderAttach, null);
         }
@@ -264,11 +260,8 @@ public class AmqpManagement : IManagement
         }
     }
 
-    public event IResource.ClosedEventHandler? Closed;
+    public event IClosable.ClosedEventHandler? Closed;
 }
 
 public class InvalidCodeException(string message) : Exception(message);
 
-public class ModelException(string message) : Exception(message);
-
-public class PreconditionFailException(string message) : Exception(message);

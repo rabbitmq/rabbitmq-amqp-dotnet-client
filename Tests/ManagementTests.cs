@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Amqp.Framing;
 using RabbitMQ.AMQP.Client;
+using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
 using Message = Amqp.Message;
 
@@ -124,6 +127,20 @@ public class ManagementTests()
         Assert.Equal(Status.Closed, management.Status);
     }
 
+    
+    [Fact]
+    public async void DeclareQueueWithNoNameShouldGenerateClientSideName()
+    {
+        AmqpConnection connection = new();
+        await connection.ConnectAsync(new AmqpAddressBuilder().Build());
+        var management = connection.Management();
+        var queueInfo = await management.Queue().Declare();
+        Assert.Contains("client.gen-", queueInfo.Name());
+        
+        await management.QueueDeletion().Delete(queueInfo.Name());
+        await connection.CloseAsync();
+        Assert.Equal(Status.Closed, management.Status);
+    }
 
     [Fact]
     public async void DeclareQueueWithQueueInfoValidation()

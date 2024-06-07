@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using Amqp;
 using Amqp.Framing;
 using RabbitMQ.AMQP.Client;
+using RabbitMQ.AMQP.Client.Impl;
 
 namespace Tests;
 

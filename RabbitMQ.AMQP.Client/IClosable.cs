@@ -6,7 +6,7 @@ public enum Status
     Open,
 }
 
-public interface IResource
+public interface IClosable
 {
     public Status Status { get; }
 

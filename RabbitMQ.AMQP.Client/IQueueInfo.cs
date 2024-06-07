@@ -7,7 +7,7 @@ public enum QueueType
     STREAM
 }
 
-public interface IQueueInfo
+public interface IQueueInfo : IEntityInfo
 {
     string Name();
 

@@ -1,0 +1,29 @@
+namespace RabbitMQ.AMQP.Client;
+
+public interface IEntityInfo
+{
+}
+
+public interface IEntityDeclaration<T> where T : IEntityInfo
+{ 
+    Task<T> Declare();
+}
+
+public interface IQueueSpecification : IEntityDeclaration<IQueueInfo>
+{
+    IQueueSpecification Name(string name);
+    public string Name();
+    IQueueSpecification Exclusive(bool exclusive); 
+    public bool Exclusive();
+    IQueueSpecification AutoDelete(bool autoDelete);
+    public bool AutoDelete();
+    IQueueSpecification Durable(bool durable);
+    public bool Durable();
+}
+
+
+public interface IQueueDeletion
+{
+    // TODO consider returning a QueueStatus object with some info after deletion
+    Task<IEntityInfo> Delete(string name);
+}
