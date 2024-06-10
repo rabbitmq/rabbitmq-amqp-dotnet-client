@@ -128,13 +128,16 @@ public class ManagementTests()
     }
 
 
-    [Fact]
-    public async void DeclareQueueWithNoNameShouldGenerateClientSideName()
+    [Theory]
+    [InlineData(QueueType.QUORUM)]
+    [InlineData(QueueType.CLASSIC)]
+    [InlineData(QueueType.STREAM)]
+    public async void DeclareQueueWithNoNameShouldGenerateClientSideName(QueueType type)
     {
         AmqpConnection connection = new();
         await connection.ConnectAsync(new AmqpAddressBuilder().Build());
         var management = connection.Management();
-        var queueInfo = await management.Queue().Declare();
+        var queueInfo = await management.Queue().Type(type).Declare();
         Assert.Contains("client.gen-", queueInfo.Name());
         await management.QueueDeletion().Delete(queueInfo.Name());
         await connection.CloseAsync();
@@ -142,10 +145,12 @@ public class ManagementTests()
     }
 
     [Theory]
+    [InlineData(true, false, false, QueueType.QUORUM)]
     [InlineData(true, false, false, QueueType.CLASSIC)]
     [InlineData(false, false, false, QueueType.CLASSIC)]
     [InlineData(false, false, true, QueueType.CLASSIC)]
     [InlineData(false, true, true, QueueType.CLASSIC)]
+    [InlineData(true, false, false, QueueType.STREAM)]
     public async void DeclareQueueWithQueueInfoValidation(
         bool durable, bool autoDelete, bool exclusive, QueueType type)
     {
@@ -153,7 +158,9 @@ public class ManagementTests()
         await connection.ConnectAsync(new AmqpAddressBuilder().Build());
         var management = connection.Management();
         var queueInfo = await management.Queue().Name("validate_queue_info").
-            Durable(durable).AutoDelete(autoDelete).Exclusive(exclusive)
+            Durable(durable).AutoDelete(autoDelete).
+            Exclusive(exclusive).
+            Type(type)
             .Declare();
         Assert.Equal("validate_queue_info", queueInfo.Name());
         Assert.Equal((ulong)0, queueInfo.MessageCount());

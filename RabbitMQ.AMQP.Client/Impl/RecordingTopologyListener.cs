@@ -21,3 +21,37 @@ public class RecordingTopologyListener : ITopologyListener
         return _queueSpecifications.Count;
     }
 }
+
+
+
+internal class QueueSpec {
+
+    public string Name { get; init;}
+    // private  bool exclusive;
+    
+    public bool Exclusive
+    {
+        get;
+        init;
+    }
+    
+    // private  bool autoDelete;
+    
+    public bool AutoDelete
+    {
+        get;
+        init;
+    }
+    
+    // private Dictionary<string, object> arguments();
+    
+    public Dictionary<string, object> Arguments { get; init; } = new();
+
+    public QueueSpec(AmqpQueueSpecification specification) {
+        Name = specification.Name();
+        Exclusive = specification.Exclusive();
+        AutoDelete = specification.AutoDelete();
+        // specification. (this.arguments::put);
+    }
+
+}

@@ -95,6 +95,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
     private bool _exclusive = false;
     private bool _autoDelete = false;
     private bool _durable = false;
+    private readonly Map _arguments = new();
 
     public IQueueSpecification Name(string name)
     {
@@ -143,8 +144,48 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         return _durable;
     }
 
+    public IQueueSpecification Arguments(Dictionary<object, object> arguments)
+    {
+        foreach (var (key, value) in arguments)
+        {
+            _arguments[key] = value;
+        }
+
+        return this;
+    }
+
+    public Dictionary<object, object> Arguments()
+    {
+        var result = new Dictionary<object, object>();
+        foreach (var (key, value) in _arguments)
+        {
+            result[key] = value;
+        }
+
+        return result;
+    }
+
+    public IQueueSpecification Type(QueueType type)
+    {
+        _arguments["x-queue-type"] = type.ToString().ToLower();
+        return this;
+    }
+
+    public QueueType Type()
+    {
+        if (!_arguments.ContainsKey("x-queue-type")) return QueueType.CLASSIC;
+        var type = (string)_arguments["x-queue-type"];
+        return (QueueType)Enum.Parse(typeof(QueueType), type.ToUpperInvariant());
+    }
+
     public async Task<IQueueInfo> Declare()
     {
+        if (Type() is QueueType.QUORUM or QueueType.STREAM)
+        {
+            // mandatory arguments for quorum queues and streams
+            Exclusive(false).AutoDelete(false).Durable(true);
+        }
+
         if (string.IsNullOrEmpty(_name) || _name.Trim() == "")
         {
             _name = Utils.GenerateQueueName();
@@ -154,7 +195,8 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         {
             { "durable", _durable },
             { "exclusive", _exclusive },
-            { "auto_delete", _autoDelete }
+            { "auto_delete", _autoDelete },
+            { "arguments", _arguments }
         };
         var request = await management.Request(kv, $"/queues/{_name}",
             AmqpManagement.Put, new[]
