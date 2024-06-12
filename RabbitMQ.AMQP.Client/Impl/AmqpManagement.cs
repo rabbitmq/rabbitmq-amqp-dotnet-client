@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Threading.Tasks.Sources;
 using Amqp;
 using Amqp.Framing;
 using Amqp.Types;
@@ -14,7 +15,7 @@ public class AmqpManagement : IManagement
 
     // private static readonly long IdSequence = 0;
     //
-    private readonly RecordingTopologyListener _recordingTopologyListener = new();
+    private RecordingTopologyListener? _recordingTopologyListener;
     private const string ManagementNodeAddress = "/management";
     private const string LinkPairName = "management-link-pair";
 
@@ -41,6 +42,14 @@ public class AmqpManagement : IManagement
         return Queue().Name(name);
     }
 
+    public IQueueSpecification Queue(QueueSpec spec)
+    {
+        return Queue().Name(spec.Name)
+            .AutoDelete(spec.AutoDelete)
+            .Exclusive(spec.Exclusive)
+            .Arguments(spec.Arguments);
+    }
+
     public IQueueDeletion QueueDeletion()
     {
         return new AmqpQueueDeletion(this);
@@ -48,20 +57,24 @@ public class AmqpManagement : IManagement
 
     public ITopologyListener TopologyListener()
     {
-        return _recordingTopologyListener;
+        return _recordingTopologyListener!;
     }
 
     private Session? _managementSession;
-    private Connection? _nativeConnection;
     private SenderLink? _senderLink;
     private ReceiverLink? _receiverLink;
+    private AmqpConnection? _amqpConnection;
 
 
-    internal void Init(Connection connection)
+    internal void Init(AmqpManagementParameters parameters)
     {
-        _nativeConnection = connection;
+        if (Status == Status.Open)
+            return;
+
+        _amqpConnection = parameters.Connection();
         if (_managementSession == null || _managementSession.IsClosed)
-            _managementSession = new Session(connection);
+            _managementSession = new Session(_amqpConnection.NativeConnection());
+        _recordingTopologyListener = parameters.TopologyListener();
 
         EnsureSenderLink();
         Thread.Sleep(500);
@@ -69,10 +82,10 @@ public class AmqpManagement : IManagement
         _ = Task.Run(async () =>
         {
             while (_managementSession.IsClosed == false &&
-                   _nativeConnection.IsClosed == false)
+                   _amqpConnection.NativeConnection()!.IsClosed == false)
             {
                 if (_receiverLink == null) continue;
-                var msg = await _receiverLink.ReceiveAsync();
+                var msg = await _receiverLink.ReceiveAsync(TimeSpan.FromSeconds(1));
                 if (msg == null)
                 {
                     Trace.WriteLine(TraceLevel.Warning, "Received null message");
@@ -81,9 +94,10 @@ public class AmqpManagement : IManagement
 
                 _receiverLink.Accept(msg);
                 HandleResponseMessage(msg);
+                msg.Dispose();
             }
 
-            Trace.WriteLine(TraceLevel.Information, "Management session closed");
+            Trace.WriteLine(TraceLevel.Information, "* AMQP Management session closed");
         });
         _managementSession.Closed += (sender, error) =>
         {
@@ -91,13 +105,14 @@ public class AmqpManagement : IManagement
             Status = Status.Closed;
 
             Closed?.Invoke(this, unexpected);
-            Trace.WriteLine(TraceLevel.Warning, $"Management session closed " +
-                                                $"{sender} {error} {Status} {_senderLink?.IsClosed}" +
-                                                $"{_receiverLink?.IsClosed} {_managementSession.IsClosed}" +
-                                                $"{_nativeConnection.IsClosed}");
+            // Trace.WriteLine(TraceLevel.Warning, $"Management session closed " +
+            //                                     $"{sender} {error} {Status} {_senderLink?.IsClosed}" +
+            //                                     $"{_receiverLink?.IsClosed} {_managementSession.IsClosed}" +
+            //                                     $"{_amqpConnection.NativeConnection()!.IsClosed}");
         };
         Status = Status.Open;
     }
+
 
     private void EnsureReceiverLink()
     {
@@ -170,7 +185,10 @@ public class AmqpManagement : IManagement
         if (msg.Properties.CorrelationId != null &&
             _requests.TryRemove(msg.Properties.CorrelationId, out var mre))
         {
-            mre.SetResult(msg);
+            if (mre.TrySetResult(msg))
+            {
+                Trace.WriteLine(TraceLevel.Information, $"*****OK Set result for  {msg.Properties.CorrelationId}");
+            }
         }
         else
         {
@@ -207,17 +225,17 @@ public class AmqpManagement : IManagement
             throw new ModelException("Management is not open");
         }
 
-        TaskCompletionSource<Message> mre = new(false);
+        TaskCompletionSource<Message> mre = new(TaskCreationOptions.RunContinuationsAsynchronously);
         _requests.TryAdd(message.Properties.MessageId, mre);
-
         using var cts = new CancellationTokenSource(timeout ?? TimeSpan.FromSeconds(5));
-        cts.Token.Register(() => { _requests.TryRemove(message.Properties.MessageId, out _); }
-        );
-
-        await InternalSendAsync(message);
-        var result = await mre.Task.WaitAsync(cts.Token);
-        CheckResponse(message, expectedResponseCodes, result);
-        return result;
+        await using (cts.Token.Register(
+                         () => { _requests.TryRemove(message.Properties.MessageId, out _); }))
+        {
+            await InternalSendAsync(message);
+            var result = await mre.Task.WaitAsync(cts.Token);
+            CheckResponse(message, expectedResponseCodes, result);
+            return result;
+        }
     }
 
     internal void CheckResponse(Message sentMessage, int[] expectedResponseCodes, Message receivedMessage)
@@ -260,9 +278,6 @@ public class AmqpManagement : IManagement
     }
 
     public event IClosable.ClosedEventHandler? Closed;
-
-
-    
 }
 
 public class InvalidCodeException(string message) : Exception(message);

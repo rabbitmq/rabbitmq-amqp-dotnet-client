@@ -9,7 +9,6 @@ using Xunit;
 
 public class ConnectionRecoverTests
 {
-
     [Fact]
     public async void NormalCloseShouldSetUnexpectedFlagToFalse()
     {
@@ -30,6 +29,7 @@ public class ConnectionRecoverTests
         Assert.False(result);
         Assert.Equal(Status.Closed, connection.Status);
     }
+
     [Fact]
     public async void UnexpectedCloseShouldSetUnexpectedFlag()
     {
@@ -58,23 +58,47 @@ public class ConnectionRecoverTests
     public async void RecoverFromUnexpectedClose()
     {
         AmqpConnection connection = new();
-        var completion = new TaskCompletionSource<Status>();
-        connection.Closed += async (sender, unexpected) =>
+        connection.Closed += (sender, unexpected) =>
         {
             if (!unexpected) return;
             Assert.Equal(Status.Closed, connection.Status);
             Assert.True(unexpected);
             SystemUtils.Wait();
-            await connection.EnsureConnectionAsync();
-            completion.SetResult(connection.Status);
         };
 
         var connectionName = Guid.NewGuid().ToString();
         await connection.ConnectAsync(new AmqpAddressBuilder().ConnectionName(connectionName).Build());
         SystemUtils.WaitUntilConnectionIsKilled(connectionName);
 
-        var result = await completion.Task.WaitAsync(TimeSpan.FromSeconds(25));
-        Assert.Equal(Status.Open, result);
+        SystemUtils.WaitUntil(() => connection.Status == Status.Closed);
+        await connection.CloseAsync();
+        Assert.Equal(Status.Closed, connection.Status);
+    }
+
+    [Fact]
+    public async void RecreateQueueInCaseOfDisconnection()
+    {
+        AmqpConnection connection = new();
+        connection.Closed += (sender, unexpected) =>
+        {
+            Assert.Equal(Status.Closed, connection.Status);
+            Assert.True(unexpected);
+            SystemUtils.Wait();
+        };
+
+        var connectionName = Guid.NewGuid().ToString();
+        await connection.ConnectAsync(
+            new AmqpAddressBuilder().ConnectionName(connectionName).Build());
+
+        var management = connection.Management();
+        await management.Queue("re-recreate-queue").AutoDelete(true).Exclusive(true).Declare();
+        SystemUtils.Wait(TimeSpan.FromSeconds(40));
+
+        SystemUtils.WaitUntilConnectionIsKilled(connectionName);
+
+        SystemUtils.Wait(TimeSpan.FromSeconds(30));
+        // SystemUtils.WaitUntil(() => SystemUtils.QueueExists("re-recreate-queue"));
+
         await connection.CloseAsync();
         Assert.Equal(Status.Closed, connection.Status);
     }

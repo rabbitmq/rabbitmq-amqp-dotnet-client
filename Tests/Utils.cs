@@ -206,6 +206,16 @@ namespace Tests
             return new HttpClient(handler);
         }
 
+
+
+        public static bool QueueExists(string queue)
+        {
+            var task = CreateHttpClient().GetAsync($"http://localhost:15672/api/queues/%2F/{queue}");
+            task.Wait(TimeSpan.FromSeconds(10));
+            var result = task.Result;
+            return result.IsSuccessStatusCode;
+        }
+        
         public static int HttpGetQMsgCount(string queue)
         {
             var task = CreateHttpClient().GetAsync($"http://localhost:15672/api/queues/%2F/{queue}");

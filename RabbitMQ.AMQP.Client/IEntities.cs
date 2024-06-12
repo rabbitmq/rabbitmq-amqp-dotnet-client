@@ -17,8 +17,6 @@ public interface IQueueSpecification : IEntityDeclaration<IQueueInfo>
     public bool Exclusive();
     IQueueSpecification AutoDelete(bool autoDelete);
     public bool AutoDelete();
-    IQueueSpecification Durable(bool durable);
-    public bool Durable();
 
     IQueueSpecification Arguments(Dictionary<object, object> arguments);
 

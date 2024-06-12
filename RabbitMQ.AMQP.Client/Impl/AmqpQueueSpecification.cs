@@ -94,7 +94,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
     private string? _name;
     private bool _exclusive = false;
     private bool _autoDelete = false;
-    private bool _durable = false;
+    private const bool Durable = true;
     private readonly Map _arguments = new();
 
     public IQueueSpecification Name(string name)
@@ -133,16 +133,6 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
     }
 
 
-    public IQueueSpecification Durable(bool durable)
-    {
-        _durable = durable;
-        return this;
-    }
-
-    public bool Durable()
-    {
-        return _durable;
-    }
 
     public IQueueSpecification Arguments(Dictionary<object, object> arguments)
     {
@@ -183,7 +173,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         if (Type() is QueueType.QUORUM or QueueType.STREAM)
         {
             // mandatory arguments for quorum queues and streams
-            Exclusive(false).AutoDelete(false).Durable(true);
+            Exclusive(false).AutoDelete(false);
         }
 
         if (string.IsNullOrEmpty(_name) || _name.Trim() == "")
@@ -193,11 +183,12 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
 
         var kv = new Map
         {
-            { "durable", _durable },
+            { "durable", Durable },
             { "exclusive", _exclusive },
             { "auto_delete", _autoDelete },
             { "arguments", _arguments }
         };
+        // TODO: encodePathSegment(queues)
         var request = await management.Request(kv, $"/queues/{_name}",
             AmqpManagement.Put, new[]
             {

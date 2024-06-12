@@ -4,11 +4,26 @@ using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
+internal class Visitor(AmqpManagement management) : IVisitor
+{
+    private AmqpManagement Management { get; } = management;
+
+
+    public void VisitQueues(List<QueueSpec> queueSpec)
+    {
+        foreach (var spec in queueSpec)
+        {
+            Management.Queue(spec).Declare();
+        }
+    }
+}
+
 public class AmqpConnection : IConnection
 {
     private Connection? _nativeConnection;
     private AmqpAddress _address = null!;
     private readonly AmqpManagement _management = new();
+    private readonly RecordingTopologyListener _recordingTopologyListener = new();
 
     public IManagement Management()
     {
@@ -36,6 +51,11 @@ public class AmqpConnection : IConnection
         {
             if (_nativeConnection == null || _nativeConnection.IsClosed)
             {
+                if (_nativeConnection != null)
+                {
+                    _nativeConnection.Closed -= MaybeRecoverConnection();
+                }
+
                 var open = new Open
                 {
                     HostName = $"vhost:{_address.VirtualHost()}",
@@ -44,20 +64,11 @@ public class AmqpConnection : IConnection
                         [new Symbol("connection_name")] = _address.ConnectionName(),
                     }
                 };
-                var connection = await Connection.Factory.CreateAsync(_address.Address, open);
-                connection.Closed += (sender, error) =>
-                {
-                    var unexpected = Status != Status.Closed;
-                    Status = Status.Closed;
+                _nativeConnection = await Connection.Factory.CreateAsync(_address.Address, open);
+                _management.Init(
+                    new AmqpManagementParameters(this).TopologyListener(_recordingTopologyListener));
 
-                    Closed?.Invoke(this, unexpected);
-
-                    Trace.WriteLine(TraceLevel.Warning, $"connection is closed " +
-                                                        $"{sender} {error} {Status} " +
-                                                        $"{connection.IsClosed}");
-                };
-                _nativeConnection = connection;
-                _management.Init(connection);
+                _nativeConnection.AddClosedCallback(MaybeRecoverConnection());
             }
 
             Status = Status.Open;
@@ -77,6 +88,38 @@ public class AmqpConnection : IConnection
             // wrong schema
             throw new ConnectionException("NotSupportedException: Connection failed", e);
         }
+    }
+
+    private ClosedCallback MaybeRecoverConnection()
+    {
+        return (sender, error) =>
+        {
+                var unexpected = Status != Status.Closed;
+            Status = Status.Closed;
+            Closed?.Invoke(this, unexpected);
+
+            if (unexpected)
+            {
+                Trace.WriteLine(TraceLevel.Warning, $"connection is closed unexpected" +
+                                                    $"{sender} {error} {Status} " +
+                                                    $"{_nativeConnection!.IsClosed}");
+                var t = Task.Run(async () => { await EnsureConnectionAsync(); });
+                t.WaitAsync(TimeSpan.FromSeconds(5));
+                _recordingTopologyListener.Accept(new Visitor(_management));
+            } else
+            {
+                Trace.WriteLine(TraceLevel.Verbose, $"connection is closed" +
+                                                    $"{sender} {error} {Status} " +
+                                                    $"{_nativeConnection!.IsClosed}");
+            }
+
+
+        };
+    }
+
+    internal Connection? NativeConnection()
+    {
+        return _nativeConnection;
     }
 
 

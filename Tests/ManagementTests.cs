@@ -147,9 +147,8 @@ public class ManagementTests()
     [Theory]
     [InlineData(true, false, false, QueueType.QUORUM)]
     [InlineData(true, false, false, QueueType.CLASSIC)]
-    [InlineData(false, false, false, QueueType.CLASSIC)]
-    [InlineData(false, false, true, QueueType.CLASSIC)]
-    [InlineData(false, true, true, QueueType.CLASSIC)]
+    [InlineData(true, false, true, QueueType.CLASSIC)]
+    [InlineData(true, true, true, QueueType.CLASSIC)]
     [InlineData(true, false, false, QueueType.STREAM)]
     public async void DeclareQueueWithQueueInfoValidation(
         bool durable, bool autoDelete, bool exclusive, QueueType type)
@@ -158,7 +157,7 @@ public class ManagementTests()
         await connection.ConnectAsync(new AmqpAddressBuilder().Build());
         var management = connection.Management();
         var queueInfo = await management.Queue().Name("validate_queue_info").
-            Durable(durable).AutoDelete(autoDelete).
+            AutoDelete(autoDelete).
             Exclusive(exclusive).
             Type(type)
             .Declare();
