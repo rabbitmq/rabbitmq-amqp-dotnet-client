@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Amqp.Framing;
 using RabbitMQ.AMQP.Client;
+using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
 using Message = Amqp.Message;
 
@@ -125,24 +128,71 @@ public class ManagementTests()
     }
 
 
-    [Fact]
-    public async void DeclareQueueWithQueueInfoValidation()
+    [Theory]
+    [InlineData(QueueType.QUORUM)]
+    [InlineData(QueueType.CLASSIC)]
+    [InlineData(QueueType.STREAM)]
+    public async void DeclareQueueWithNoNameShouldGenerateClientSideName(QueueType type)
     {
-        AmqpConnection connection = new();
-        await connection.ConnectAsync(new AmqpAddressBuilder().ConnectionName("my_connection").Build());
+        AmqpConnection connection = new(new ConnectionSettingBuilder().Build());
+        await connection.ConnectAsync();
         var management = connection.Management();
-        var queueInfo = await management.Queue().Name("validate_queue_info").Durable(true).Declare();
+        var queueInfo = await management.Queue().Type(type).Declare();
+        Assert.Contains("client.gen-", queueInfo.Name());
+        await management.QueueDeletion().Delete(queueInfo.Name());
+        await connection.CloseAsync();
+        Assert.Equal(Status.Closed, management.Status);
+    }
+
+    [Theory]
+    [InlineData(true, false, false, QueueType.QUORUM)]
+    [InlineData(true, false, false, QueueType.CLASSIC)]
+    [InlineData(true, false, true, QueueType.CLASSIC)]
+    [InlineData(true, true, true, QueueType.CLASSIC)]
+    [InlineData(true, false, false, QueueType.STREAM)]
+    public async void DeclareQueueWithQueueInfoValidation(
+        bool durable, bool autoDelete, bool exclusive, QueueType type)
+    {
+        AmqpConnection connection = new(new ConnectionSettingBuilder().Build());
+        await connection.ConnectAsync();
+        var management = connection.Management();
+        var queueInfo = await management.Queue().Name("validate_queue_info").
+            AutoDelete(autoDelete).
+            Exclusive(exclusive).
+            Type(type)
+            .Declare();
         Assert.Equal("validate_queue_info", queueInfo.Name());
         Assert.Equal((ulong)0, queueInfo.MessageCount());
         Assert.Equal((uint)0, queueInfo.ConsumerCount());
-        Assert.Equal(QueueType.CLASSIC, queueInfo.Type());
+        Assert.Equal(type, queueInfo.Type());
         Assert.Single(queueInfo.Replicas());
         Assert.NotNull(queueInfo.Leader());
-        Assert.True(queueInfo.Durable());
-        Assert.False(queueInfo.AutoDelete());
-        Assert.False(queueInfo.Exclusive());
+        Assert.Equal(queueInfo.Durable(), durable);
+        Assert.Equal(queueInfo.AutoDelete(), autoDelete);
+        Assert.Equal(queueInfo.Exclusive(),exclusive);
         await management.QueueDeletion().Delete("validate_queue_info");
         await connection.CloseAsync();
         Assert.Equal(Status.Closed, management.Status);
+    }
+
+    [Fact]
+    public async void TopologyCountShouldFollowTheQueueDeclaration()
+    {
+        AmqpConnection connection = new(new ConnectionSettingBuilder().Build());
+        await connection.ConnectAsync();
+        var management = connection.Management();
+        for (var i = 1; i < 7; i++)
+        {
+            await management.Queue().Name($"Q_{i}").Declare();
+            Assert.Equal(((RecordingTopologyListener)management.TopologyListener()).QueueCount(), i);
+        }
+
+        for (var i = 1; i < 7; i++)
+        {
+            await management.QueueDeletion().Delete($"Q_{i}");
+            Assert.Equal(((RecordingTopologyListener)management.TopologyListener()).QueueCount(), 6 - i);
+        }
+
+        await connection.CloseAsync();
     }
 }

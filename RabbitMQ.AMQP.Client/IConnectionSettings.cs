@@ -1,6 +1,6 @@
 namespace RabbitMQ.AMQP.Client;
 
-public interface IAddress
+public interface IConnectionSettings
 {
     string Host();
 
