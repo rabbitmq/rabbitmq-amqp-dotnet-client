@@ -5,5 +5,5 @@ public class ConnectionException(string? message, Exception? innerException) : E
 public interface IConnection : IClosable
 {
     IManagement Management();
-    Task ConnectAsync(IAddress amqpAddress);
+    Task ConnectAsync();
 }

@@ -1,6 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using System.Diagnostics;
+using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
@@ -11,60 +12,45 @@ ConsoleTraceListener consoleListener = new();
 Trace.TraceListener = (l, f, a) =>
     consoleListener.WriteLine(DateTime.Now.ToString("[hh:mm:ss.fff]") + " " + string.Format(f, a));
 
-// static async Task SendRequestAsync(TaskCompletionSource<string> tcs)
-// {
-//     Trace.WriteLine(TraceLevel.Information, "Sending request...");
-//         
-//     // Simulate some delay for the request
-//     await Task.Delay(2000);
-//         
-//     // Simulate setting the response
-//     tcs.SetResult("Response received!");
-//     
-//     Trace.WriteLine(TraceLevel.Information, "Request sent and response set");
-// }
-//
-// static async Task WaitForResponseAsync(TaskCompletionSource<string> tcs)
-// {
-//     Trace.WriteLine(TraceLevel.Information, "Waiting for response...");
-//
-//     
-//         
-//     // Wait for the response to be set
-//     string response = await tcs.Task;
-//     
-//     Trace.WriteLine(TraceLevel.Information, "Response received");
-//         
-//     await Task.Delay(20000);
-//     
-//     Trace.WriteLine(TraceLevel.Information, "Response processed");
-// }
-//
-// // Create a TaskCompletionSource to manage the response task
-// var tcs = new TaskCompletionSource<string>();
-//
-// // Start the request task
-// var requestTask = SendRequestAsync(tcs);
-//
-// // Start the response task
-// var responseTask = WaitForResponseAsync(tcs);
-//
-// // Wait for both tasks to complete
-// await Task.WhenAll(requestTask, responseTask);
-
-
-
-
-
 
 Trace.WriteLine(TraceLevel.Information, "Starting");
-AmqpConnection connection = new();
-
 var connectionName = Guid.NewGuid().ToString();
-await connection.ConnectAsync(new AmqpAddressBuilder().ConnectionName(connectionName).Build());
+AmqpConnection connection = new(
+    new ConnectionSettingBuilder().
+        ConnectionName(connectionName).
+        RecoveryConfiguration(new RecoveryConfiguration().
+            Activated(true).
+            Topology(true)).
+        Build());
+
+await connection.ConnectAsync();
 Trace.WriteLine(TraceLevel.Information, "Connected");
+
 var management = connection.Management();
-await management.Queue("re-recreate-queue").AutoDelete(true).Exclusive(true).Declare();
+for (int i = 0; i < 50; i++)
+{
+    if (management.Status != Status.Open)
+    {
+        Trace.WriteLine(TraceLevel.Information, "Connection closed");
+        Thread.Sleep(1000);
+        continue;
+    }
+
+    try
+    {
+        await management.Queue($"re-recreate-queue_{i}").AutoDelete(true).Exclusive(true).Declare();
+    }
+    catch (Exception e)
+    {
+        Console.WriteLine(e);
+    }
+
+    Trace.WriteLine(TraceLevel.Information, $"Queue {i} declared");
+    await Task.Delay(2000);
+}
+
+Trace.WriteLine(TraceLevel.Information, "******************************************All queues declared");
+
 // await management.Queue("re1-recreate-queue").AutoDelete(true).Exclusive(true).Declare();
 
 

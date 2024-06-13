@@ -11,7 +11,8 @@ public static class Utils
     {
         return GenerateName(DefaultPrefix);
     }
-   public static string GenerateName(string prefix)
+
+    private static string GenerateName(string prefix)
     {
         var uuid = Guid.NewGuid().ToString();
         var digest = MD5.HashData(Encoding.UTF8.GetBytes(uuid));
@@ -20,4 +21,25 @@ public static class Utils
             .Replace('/', '_')
             .Replace("=", "");
     }
+
+
+    public static RabbitMQ.AMQP.Client.Error? ConvertError(Amqp.Framing.Error? sourceError)
+    {
+        Error? resultError = null;
+
+        if (sourceError != null)
+        {
+            resultError = new Error
+            {
+                Description = sourceError.Description,
+                ErrorCode = sourceError.Condition.ToString()
+            };
+        }
+        
+        return resultError;
+
+    }
+        
+
+    
 }

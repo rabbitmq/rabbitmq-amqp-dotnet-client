@@ -13,15 +13,15 @@ internal class Visitor(AmqpManagement management) : IVisitor
     {
         foreach (var spec in queueSpec)
         {
+            Trace.WriteLine(TraceLevel.Information, $"Recovering queue {spec.Name}");
             Management.Queue(spec).Declare();
         }
     }
 }
 
-public class AmqpConnection : IConnection
+public class AmqpConnection(ConnectionSettings connectionSettings) : IConnection
 {
     private Connection? _nativeConnection;
-    private AmqpAddress _address = null!;
     private readonly AmqpManagement _management = new();
     private readonly RecordingTopologyListener _recordingTopologyListener = new();
 
@@ -30,18 +30,8 @@ public class AmqpConnection : IConnection
         return _management;
     }
 
-    public async Task ConnectAsync(IAddress address)
+    public async Task ConnectAsync()
     {
-        var amqpAddress = new AmqpAddressBuilder()
-            .Host(address.Host())
-            .Port(address.Port())
-            .User(address.User())
-            .Password(address.Password())
-            .VirtualHost(address.VirtualHost())
-            .ConnectionName(address.ConnectionName())
-            .Scheme(address.Scheme())
-            .Build();
-        _address = amqpAddress;
         await EnsureConnectionAsync();
     }
 
@@ -58,20 +48,20 @@ public class AmqpConnection : IConnection
 
                 var open = new Open
                 {
-                    HostName = $"vhost:{_address.VirtualHost()}",
+                    HostName = $"vhost:{connectionSettings.VirtualHost()}",
                     Properties = new Fields()
                     {
-                        [new Symbol("connection_name")] = _address.ConnectionName(),
+                        [new Symbol("connection_name")] = connectionSettings.ConnectionName(),
                     }
                 };
-                _nativeConnection = await Connection.Factory.CreateAsync(_address.Address, open);
+                _nativeConnection = await Connection.Factory.CreateAsync(connectionSettings.Address, open);
                 _management.Init(
                     new AmqpManagementParameters(this).TopologyListener(_recordingTopologyListener));
 
                 _nativeConnection.AddClosedCallback(MaybeRecoverConnection());
             }
 
-            Status = Status.Open;
+            OnNewStatus(Status.Open, null);
         }
         catch (AmqpException e)
         {
@@ -90,30 +80,55 @@ public class AmqpConnection : IConnection
         }
     }
 
+    private void OnNewStatus(Status newStatus, Error? error)
+    {
+        if (Status == newStatus) return;
+        var oldStatus = Status;
+        Status = newStatus;
+        ChangeStatus?.Invoke(this, oldStatus, newStatus, error);
+    }
+
     private ClosedCallback MaybeRecoverConnection()
     {
         return (sender, error) =>
         {
-                var unexpected = Status != Status.Closed;
-            Status = Status.Closed;
-            Closed?.Invoke(this, unexpected);
-
-            if (unexpected)
+            if (error != null)
             {
+                // TODO: Implement Dump Interface
                 Trace.WriteLine(TraceLevel.Warning, $"connection is closed unexpected" +
                                                     $"{sender} {error} {Status} " +
                                                     $"{_nativeConnection!.IsClosed}");
-                var t = Task.Run(async () => { await EnsureConnectionAsync(); });
-                t.WaitAsync(TimeSpan.FromSeconds(5));
-                _recordingTopologyListener.Accept(new Visitor(_management));
-            } else
-            {
-                Trace.WriteLine(TraceLevel.Verbose, $"connection is closed" +
-                                                    $"{sender} {error} {Status} " +
-                                                    $"{_nativeConnection!.IsClosed}");
+
+                if (!connectionSettings.RecoveryConfiguration.IsActivate())
+                {
+                    OnNewStatus(Status.Closed, Utils.ConvertError(error));
+                    return;
+                }
+
+
+                OnNewStatus(Status.Reconneting, Utils.ConvertError(error));
+
+                Thread.Sleep(1000);
+                // TODO: Replace with Backoff pattern
+                var t = Task.Run(async () =>
+                {
+                    Trace.WriteLine(TraceLevel.Information, "Recovering connection");
+                    await EnsureConnectionAsync();
+                    Trace.WriteLine(TraceLevel.Information, "Recovering topology");
+                    if (connectionSettings.RecoveryConfiguration.IsTopologyActive())
+                    {
+                        _recordingTopologyListener.Accept(new Visitor(_management));
+                    }
+                });
+                t.WaitAsync(TimeSpan.FromSeconds(10));
+                return;
             }
 
 
+            Trace.WriteLine(TraceLevel.Verbose, $"connection is closed" +
+                                                $"{sender} {error} {Status} " +
+                                                $"{_nativeConnection!.IsClosed}");
+            OnNewStatus(Status.Closed, Utils.ConvertError(error));
         };
     }
 
@@ -125,13 +140,12 @@ public class AmqpConnection : IConnection
 
     public async Task CloseAsync()
     {
-        Status = Status.Closed;
+        OnNewStatus(Status.Closed, null);
         if (_nativeConnection is { IsClosed: false }) await _nativeConnection.CloseAsync();
         await _management.CloseAsync();
     }
 
-    public event IClosable.ClosedEventHandler? Closed;
-
+    public event IClosable.ChangeStatusCallBack? ChangeStatus;
 
     public Status Status { get; private set; } = Status.Closed;
 }

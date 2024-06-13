@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
@@ -9,97 +11,79 @@ using Xunit;
 
 public class ConnectionRecoverTests
 {
-    [Fact]
-    public async void NormalCloseShouldSetUnexpectedFlagToFalse()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async void NormalCloseTheStatusShouldBeCorrectAndErrorNull(bool activeRecovery)
     {
-        AmqpConnection connection = new();
-        var completion = new TaskCompletionSource<bool>();
-        connection.Closed += (sender, unexpected) =>
+        var connectionName = Guid.NewGuid().ToString();
+        AmqpConnection connection = new(
+            new ConnectionSettingBuilder().ConnectionName(connectionName).RecoveryConfiguration(
+                new RecoveryConfiguration().Activated(activeRecovery).Topology(false)).Build());
+        var completion = new TaskCompletionSource();
+        var listFromStatus = new List<Status>();
+        var listToStatus = new List<Status>();
+        var listError = new List<Error>();
+        connection.ChangeStatus += (sender, from, to, error) =>
         {
-            Assert.Equal(Status.Closed, connection.Status);
-            completion.SetResult(unexpected);
+            listFromStatus.Add(from);
+            listToStatus.Add(to);
+            listError.Add(error);
+            if (to == Status.Closed)
+                completion.SetResult();
         };
 
-        var connectionName = Guid.NewGuid().ToString();
-        await connection.ConnectAsync(new AmqpAddressBuilder().ConnectionName(connectionName).Build());
+        await connection.ConnectAsync();
         Assert.Equal(Status.Open, connection.Status);
         await connection.CloseAsync();
-
-        var result = await completion.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.False(result);
         Assert.Equal(Status.Closed, connection.Status);
+        await completion.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(Status.Closed, listFromStatus[0]);
+        Assert.Equal(Status.Open, listToStatus[0]);
+        Assert.Null(listError[0]);
+        Assert.Equal(Status.Open, listFromStatus[1]);
+        Assert.Equal(Status.Closed, listToStatus[1]);
+        Assert.Null(listError[1]);
     }
 
     [Fact]
-    public async void UnexpectedCloseShouldSetUnexpectedFlag()
+    public async void UnexpectedCloseTheStatusShouldBeCorrectAndErrorNotNull()
     {
-        AmqpConnection connection = new();
-        var completion = new TaskCompletionSource<bool>();
-        connection.Closed += (sender, unexpected) =>
+        var connectionName = Guid.NewGuid().ToString();
+        AmqpConnection connection = new(
+            new ConnectionSettingBuilder().ConnectionName(connectionName).RecoveryConfiguration(
+                new RecoveryConfiguration().Activated(true).Topology(false)).Build());
+        var resetEvent = new ManualResetEvent(false);
+        var listFromStatus = new List<Status>();
+        var listToStatus = new List<Status>();
+        var listError = new List<Error>();
+        connection.ChangeStatus += (sender, from, to, error) =>
         {
-            if (!unexpected) return;
-            Assert.Equal(Status.Closed, connection.Status);
-            completion.SetResult(true);
+            listFromStatus.Add(from);
+            listToStatus.Add(to);
+            listError.Add(error);
+            if (listError.Count >= 3)
+                resetEvent.Set();
         };
 
-        var connectionName = Guid.NewGuid().ToString();
-        await connection.ConnectAsync(new AmqpAddressBuilder().ConnectionName(connectionName).Build());
+        await connection.ConnectAsync();
+        Assert.Equal(Status.Open, connection.Status);
         SystemUtils.WaitUntilConnectionIsKilled(connectionName);
-
-        var result = await completion.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.True(result);
-        Assert.Equal(Status.Closed, connection.Status);
+        resetEvent.WaitOne(TimeSpan.FromSeconds(5));
+        Assert.Equal(Status.Closed, listFromStatus[0]);
+        Assert.Equal(Status.Open, listToStatus[0]);
+        Assert.Null(listError[0]);
+        Assert.Equal(Status.Open, listFromStatus[1]);
+        Assert.Equal(Status.Reconneting, listToStatus[1]);
+        Assert.NotNull(listError[1]);
+        Assert.Equal(Status.Reconneting, listFromStatus[2]);
+        Assert.Equal(Status.Open, listToStatus[2]);
+        Assert.Null(listError[2]);
+        resetEvent.Reset();
         await connection.CloseAsync();
-        Assert.Equal(Status.Closed, connection.Status);
-    }
-
-
-    [Fact]
-    public async void RecoverFromUnexpectedClose()
-    {
-        AmqpConnection connection = new();
-        connection.Closed += (sender, unexpected) =>
-        {
-            if (!unexpected) return;
-            Assert.Equal(Status.Closed, connection.Status);
-            Assert.True(unexpected);
-            SystemUtils.Wait();
-        };
-
-        var connectionName = Guid.NewGuid().ToString();
-        await connection.ConnectAsync(new AmqpAddressBuilder().ConnectionName(connectionName).Build());
-        SystemUtils.WaitUntilConnectionIsKilled(connectionName);
-
-        SystemUtils.WaitUntil(() => connection.Status == Status.Closed);
-        await connection.CloseAsync();
-        Assert.Equal(Status.Closed, connection.Status);
-    }
-
-    [Fact]
-    public async void RecreateQueueInCaseOfDisconnection()
-    {
-        AmqpConnection connection = new();
-        connection.Closed += (sender, unexpected) =>
-        {
-            Assert.Equal(Status.Closed, connection.Status);
-            Assert.True(unexpected);
-            SystemUtils.Wait();
-        };
-
-        var connectionName = Guid.NewGuid().ToString();
-        await connection.ConnectAsync(
-            new AmqpAddressBuilder().ConnectionName(connectionName).Build());
-
-        var management = connection.Management();
-        await management.Queue("re-recreate-queue").AutoDelete(true).Exclusive(true).Declare();
-        SystemUtils.Wait(TimeSpan.FromSeconds(40));
-
-        SystemUtils.WaitUntilConnectionIsKilled(connectionName);
-
-        SystemUtils.Wait(TimeSpan.FromSeconds(30));
-        // SystemUtils.WaitUntil(() => SystemUtils.QueueExists("re-recreate-queue"));
-
-        await connection.CloseAsync();
-        Assert.Equal(Status.Closed, connection.Status);
+        resetEvent.WaitOne(TimeSpan.FromSeconds(5));
+        Assert.Equal(Status.Open, listFromStatus[3]);
+        Assert.Equal(Status.Closed, listToStatus[3]);
+        Assert.Null(listError[3]);
     }
 }

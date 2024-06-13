@@ -134,8 +134,8 @@ public class ManagementTests()
     [InlineData(QueueType.STREAM)]
     public async void DeclareQueueWithNoNameShouldGenerateClientSideName(QueueType type)
     {
-        AmqpConnection connection = new();
-        await connection.ConnectAsync(new AmqpAddressBuilder().Build());
+        AmqpConnection connection = new(new ConnectionSettingBuilder().Build());
+        await connection.ConnectAsync();
         var management = connection.Management();
         var queueInfo = await management.Queue().Type(type).Declare();
         Assert.Contains("client.gen-", queueInfo.Name());
@@ -153,8 +153,8 @@ public class ManagementTests()
     public async void DeclareQueueWithQueueInfoValidation(
         bool durable, bool autoDelete, bool exclusive, QueueType type)
     {
-        AmqpConnection connection = new();
-        await connection.ConnectAsync(new AmqpAddressBuilder().Build());
+        AmqpConnection connection = new(new ConnectionSettingBuilder().Build());
+        await connection.ConnectAsync();
         var management = connection.Management();
         var queueInfo = await management.Queue().Name("validate_queue_info").
             AutoDelete(autoDelete).
@@ -178,8 +178,8 @@ public class ManagementTests()
     [Fact]
     public async void TopologyCountShouldFollowTheQueueDeclaration()
     {
-        AmqpConnection connection = new();
-        await connection.ConnectAsync(new AmqpAddressBuilder().Build());
+        AmqpConnection connection = new(new ConnectionSettingBuilder().Build());
+        await connection.ConnectAsync();
         var management = connection.Management();
         for (var i = 1; i < 7; i++)
         {

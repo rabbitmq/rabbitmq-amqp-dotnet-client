@@ -2,7 +2,7 @@
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public class AmqpAddressBuilder
+public class ConnectionSettingBuilder
 {
     private string _host = "localhost";
     private int _port = 5672;
@@ -11,76 +11,88 @@ public class AmqpAddressBuilder
     private string _scheme = "AMQP";
     private string _connection = "AMQP.NET";
     private string _virtualHost = "/";
+    private IRecoveryConfiguration _recoveryConfiguration = new RecoveryConfiguration();
 
 
-    public AmqpAddressBuilder Host(string host)
+    public ConnectionSettingBuilder Host(string host)
     {
         _host = host;
         return this;
     }
 
-    public AmqpAddressBuilder Port(int port)
+    public ConnectionSettingBuilder Port(int port)
     {
         _port = port;
         return this;
     }
 
-    public AmqpAddressBuilder User(string user)
+    public ConnectionSettingBuilder User(string user)
     {
         _user = user;
         return this;
     }
 
-    public AmqpAddressBuilder Password(string password)
+    public ConnectionSettingBuilder Password(string password)
     {
         _password = password;
         return this;
     }
 
 
-    public AmqpAddressBuilder Scheme(string scheme)
+    public ConnectionSettingBuilder Scheme(string scheme)
     {
         _scheme = scheme;
         return this;
     }
 
-    public AmqpAddressBuilder ConnectionName(string connection)
+    public ConnectionSettingBuilder ConnectionName(string connection)
     {
         _connection = connection;
         return this;
     }
 
-    public AmqpAddressBuilder VirtualHost(string virtualHost)
+    public ConnectionSettingBuilder VirtualHost(string virtualHost)
     {
         _virtualHost = virtualHost;
         return this;
     }
 
-    public AmqpAddress Build()
+    public ConnectionSettingBuilder RecoveryConfiguration(IRecoveryConfiguration recoveryConfiguration)
     {
-        return new AmqpAddress(_host, _port, _user,
+        _recoveryConfiguration = recoveryConfiguration;
+        return this;
+    }
+
+    public ConnectionSettings Build()
+    {
+        var c = new ConnectionSettings(_host, _port, _user,
             _password, _virtualHost,
-            _scheme, _connection);
+            _scheme, _connection)
+        {
+            RecoveryConfiguration = (RecoveryConfiguration)_recoveryConfiguration
+        };
+
+        return c;
     }
 }
 
 // <summary>
 // Represents a network address.
 // </summary>
-public class AmqpAddress : IAddress
+public class ConnectionSettings : IConnectionSettings
 {
     internal Address Address { get; }
 
-    private readonly string _connectionName = "AMQP.NET";
+    private readonly string _connectionName = "";
     private readonly string _virtualHost = "/";
 
 
-    public AmqpAddress(string address)
+    public ConnectionSettings(string address)
     {
         Address = new Address(address);
     }
 
-    public AmqpAddress(string host, int port,
+    public ConnectionSettings(string host, int port,
         string user,
         string password,
         string virtualHost, string scheme, string connectionName)
@@ -100,7 +112,6 @@ public class AmqpAddress : IAddress
     {
         return Address.Port;
     }
-
 
 
     public string VirtualHost()
@@ -143,7 +154,7 @@ public class AmqpAddress : IAddress
             return false;
         }
 
-        var address = (AmqpAddress)obj;
+        var address = (ConnectionSettings)obj;
         return Address.Host == address.Address.Host &&
                Address.Port == address.Address.Port &&
                Address.Path == address.Address.Path &&
@@ -152,7 +163,7 @@ public class AmqpAddress : IAddress
                Address.Scheme == address.Address.Scheme;
     }
 
-    protected bool Equals(AmqpAddress other)
+    protected bool Equals(ConnectionSettings other)
     {
         return Address.Equals(other.Address);
     }
@@ -160,5 +171,36 @@ public class AmqpAddress : IAddress
     public override int GetHashCode()
     {
         return Address.GetHashCode();
+    }
+
+    public RecoveryConfiguration RecoveryConfiguration { get; set; } = new RecoveryConfiguration();
+}
+
+public class RecoveryConfiguration() : IRecoveryConfiguration
+{
+    private bool _active = true;
+    private bool _topology = false;
+
+    public IRecoveryConfiguration Activated(bool activated)
+    {
+        _active = activated;
+        return this;
+    }
+
+    public bool IsActivate()
+    {
+        return _active;
+    }
+
+
+    public IRecoveryConfiguration Topology(bool activated)
+    {
+        _topology = activated;
+        return this;
+    }
+
+    public bool IsTopologyActive()
+    {
+        return _topology;
     }
 }
