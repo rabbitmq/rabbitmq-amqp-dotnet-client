@@ -80,6 +80,7 @@ public class ConnectionRecoverTests
         Assert.Equal(Status.Open, listToStatus[2]);
         Assert.Null(listError[2]);
         resetEvent.Reset();
+        resetEvent.Set();
         await connection.CloseAsync();
         resetEvent.WaitOne(TimeSpan.FromSeconds(5));
         Assert.Equal(Status.Open, listFromStatus[3]);
