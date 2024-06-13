@@ -1,7 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-using System.Diagnostics;
-using RabbitMQ.AMQP.Client;
+﻿using System.Diagnostics;
 using RabbitMQ.AMQP.Client.Impl;
 using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
@@ -25,35 +22,11 @@ AmqpConnection connection = new(
 
 await connection.ConnectAsync();
 Trace.WriteLine(TraceLevel.Information, "Connected");
-
 var management = connection.Management();
-for (int i = 0; i < 50; i++)
-{
-    if (management.Status != Status.Open)
-    {
-        Trace.WriteLine(TraceLevel.Information, "Connection closed");
-        Thread.Sleep(1000);
-        continue;
-    }
-
-    try
-    {
-        await management.Queue($"re-recreate-queue_{i}").AutoDelete(true).Exclusive(true).Declare();
-    }
-    catch (Exception e)
-    {
-        Console.WriteLine(e);
-    }
-
-    Trace.WriteLine(TraceLevel.Information, $"Queue {i} declared");
-    await Task.Delay(2000);
-}
-
-Trace.WriteLine(TraceLevel.Information, "******************************************All queues declared");
-
-// await management.Queue("re1-recreate-queue").AutoDelete(true).Exclusive(true).Declare();
-
-
+await management.Queue($"my-first-queue").Declare();
+Trace.WriteLine(TraceLevel.Information, "Queue Created");
+await management.QueueDeletion().Delete("my-first-queue");
+Trace.WriteLine(TraceLevel.Information, "Queue Deleted");
 Console.WriteLine("Press any key to close connection");
 Console.ReadKey();
 await connection.CloseAsync();
