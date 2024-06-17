@@ -134,7 +134,7 @@ public class ManagementTests()
     [InlineData(QueueType.STREAM)]
     public async void DeclareQueueWithNoNameShouldGenerateClientSideName(QueueType type)
     {
-        AmqpConnection connection = new(new ConnectionSettingBuilder().Build());
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         await connection.ConnectAsync();
         var management = connection.Management();
         var queueInfo = await management.Queue().Type(type).Declare();
@@ -153,13 +153,11 @@ public class ManagementTests()
     public async void DeclareQueueWithQueueInfoValidation(
         bool durable, bool autoDelete, bool exclusive, QueueType type)
     {
-        AmqpConnection connection = new(new ConnectionSettingBuilder().Build());
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         await connection.ConnectAsync();
         var management = connection.Management();
-        var queueInfo = await management.Queue().Name("validate_queue_info").
-            AutoDelete(autoDelete).
-            Exclusive(exclusive).
-            Type(type)
+        var queueInfo = await management.Queue().Name("validate_queue_info").AutoDelete(autoDelete).Exclusive(exclusive)
+            .Type(type)
             .Declare();
         Assert.Equal("validate_queue_info", queueInfo.Name());
         Assert.Equal((ulong)0, queueInfo.MessageCount());
@@ -169,7 +167,7 @@ public class ManagementTests()
         Assert.NotNull(queueInfo.Leader());
         Assert.Equal(queueInfo.Durable(), durable);
         Assert.Equal(queueInfo.AutoDelete(), autoDelete);
-        Assert.Equal(queueInfo.Exclusive(),exclusive);
+        Assert.Equal(queueInfo.Exclusive(), exclusive);
         await management.QueueDeletion().Delete("validate_queue_info");
         await connection.CloseAsync();
         Assert.Equal(Status.Closed, management.Status);
@@ -178,7 +176,7 @@ public class ManagementTests()
     [Fact]
     public async void TopologyCountShouldFollowTheQueueDeclaration()
     {
-        AmqpConnection connection = new(new ConnectionSettingBuilder().Build());
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         await connection.ConnectAsync();
         var management = connection.Management();
         for (var i = 1; i < 7; i++)

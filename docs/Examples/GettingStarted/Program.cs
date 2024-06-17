@@ -12,15 +12,10 @@ Trace.TraceListener = (l, f, a) =>
 
 Trace.WriteLine(TraceLevel.Information, "Starting");
 var connectionName = Guid.NewGuid().ToString();
-AmqpConnection connection = new(
-    new ConnectionSettingBuilder().
-        ConnectionName(connectionName).
-        RecoveryConfiguration(new RecoveryConfiguration().
-            Activated(true).
-            Topology(true)).
-        Build());
+var connection = await AmqpConnection.CreateAsync(
+    ConnectionSettingBuilder.Create().ConnectionName(connectionName)
+        .RecoveryConfiguration(RecoveryConfiguration.Create().Activated(true).Topology(true)).Build());
 
-await connection.ConnectAsync();
 Trace.WriteLine(TraceLevel.Information, "Connected");
 var management = connection.Management();
 await management.Queue($"my-first-queue").Declare();

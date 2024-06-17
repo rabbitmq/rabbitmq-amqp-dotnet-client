@@ -19,11 +19,25 @@ internal class Visitor(AmqpManagement management) : IVisitor
     }
 }
 
-public class AmqpConnection(ConnectionSettings connectionSettings) : IConnection
+public class AmqpConnection : IConnection
 {
     private Connection? _nativeConnection;
     private readonly AmqpManagement _management = new();
     private readonly RecordingTopologyListener _recordingTopologyListener = new();
+    private readonly ConnectionSettings _connectionSettings;
+
+    public static async Task<AmqpConnection> CreateAsync(ConnectionSettings connectionSettings)
+    {
+        var connection = new AmqpConnection(connectionSettings);
+        await connection.EnsureConnectionAsync();
+        return connection;
+    }
+
+    private AmqpConnection(ConnectionSettings connectionSettings)
+    {
+        _connectionSettings = connectionSettings;
+    }
+
 
     public IManagement Management()
     {
@@ -48,13 +62,13 @@ public class AmqpConnection(ConnectionSettings connectionSettings) : IConnection
 
                 var open = new Open
                 {
-                    HostName = $"vhost:{connectionSettings.VirtualHost()}",
+                    HostName = $"vhost:{_connectionSettings.VirtualHost()}",
                     Properties = new Fields()
                     {
-                        [new Symbol("connection_name")] = connectionSettings.ConnectionName(),
+                        [new Symbol("connection_name")] = _connectionSettings.ConnectionName(),
                     }
                 };
-                _nativeConnection = await Connection.Factory.CreateAsync(connectionSettings.Address, open);
+                _nativeConnection = await Connection.Factory.CreateAsync(_connectionSettings.Address, open);
                 _management.Init(
                     new AmqpManagementParameters(this).TopologyListener(_recordingTopologyListener));
 
@@ -99,7 +113,7 @@ public class AmqpConnection(ConnectionSettings connectionSettings) : IConnection
                                                     $"{sender} {error} {Status} " +
                                                     $"{_nativeConnection!.IsClosed}");
 
-                if (!connectionSettings.RecoveryConfiguration.IsActivate())
+                if (!_connectionSettings.RecoveryConfiguration.IsActivate())
                 {
                     OnNewStatus(Status.Closed, Utils.ConvertError(error));
                     return;
@@ -115,7 +129,7 @@ public class AmqpConnection(ConnectionSettings connectionSettings) : IConnection
                     Trace.WriteLine(TraceLevel.Information, "Recovering connection");
                     await EnsureConnectionAsync();
                     Trace.WriteLine(TraceLevel.Information, "Recovering topology");
-                    if (connectionSettings.RecoveryConfiguration.IsTopologyActive())
+                    if (_connectionSettings.RecoveryConfiguration.IsTopologyActive())
                     {
                         _recordingTopologyListener.Accept(new Visitor(_management));
                     }

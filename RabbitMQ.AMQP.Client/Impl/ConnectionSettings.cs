@@ -11,9 +11,19 @@ public class ConnectionSettingBuilder
     private string _scheme = "AMQP";
     private string _connection = "AMQP.NET";
     private string _virtualHost = "/";
-    private IRecoveryConfiguration _recoveryConfiguration = new RecoveryConfiguration();
+    private IRecoveryConfiguration _recoveryConfiguration = Impl.RecoveryConfiguration.Create();
 
-
+    
+    private ConnectionSettingBuilder()
+    {
+    }
+    
+    public static ConnectionSettingBuilder Create()
+    {
+        return new ConnectionSettingBuilder();
+    }
+    
+    
     public ConnectionSettingBuilder Host(string host)
     {
         _host = host;
@@ -173,11 +183,20 @@ public class ConnectionSettings : IConnectionSettings
         return Address.GetHashCode();
     }
 
-    public RecoveryConfiguration RecoveryConfiguration { get; set; } = new RecoveryConfiguration();
+    public RecoveryConfiguration RecoveryConfiguration { get; set; } = RecoveryConfiguration.Create();
 }
 
-public class RecoveryConfiguration() : IRecoveryConfiguration
+public class RecoveryConfiguration : IRecoveryConfiguration
 {
+    public static RecoveryConfiguration Create()
+    {
+        return new RecoveryConfiguration();
+    }
+
+    private RecoveryConfiguration()
+    {
+    }
+
     private bool _active = true;
     private bool _topology = false;
 
