@@ -51,13 +51,21 @@ public class ManagementTests()
         await management.CloseAsync();
     }
 
+    /// <summary>
+    /// Test to raise a ModelException based on checking the response
+    /// the message _must_ respect the following rules:
+    /// - id and correlation id should match
+    /// - subject _must_ be a number
+    /// The test validate the following cases:
+    ///  - subject is not a number
+    ///  - code is not in the expected list
+    ///  - correlation id is not the same as the message id
+    /// </summary>
     [Fact]
     public void RaiseModelException()
     {
         var management = new TestAmqpManagement();
-
         const string messageId = "my_id";
-
         var sent = new Message()
         {
             Properties = new Properties()
@@ -128,6 +136,12 @@ public class ManagementTests()
     }
 
 
+    /// <summary>
+    /// Test to validate the queue declaration with the auto generated name.
+    /// The auto generated name is a client side generated.
+    /// The test validates all the queue types.  
+    /// </summary>
+    /// <param name="type"> queues type</param>
     [Theory]
     [InlineData(QueueType.QUORUM)]
     [InlineData(QueueType.CLASSIC)]
@@ -144,6 +158,10 @@ public class ManagementTests()
         Assert.Equal(Status.Closed, management.Status);
     }
 
+    /// <summary>
+    /// Validate the queue declaration.
+    /// The queue-info response should match the queue declaration.
+    /// </summary>
     [Theory]
     [InlineData(true, false, false, QueueType.QUORUM)]
     [InlineData(true, false, false, QueueType.CLASSIC)]
@@ -173,6 +191,30 @@ public class ManagementTests()
         Assert.Equal(Status.Closed, management.Status);
     }
 
+    
+    
+    [Fact]
+    public async void DeclareQueueWithPreconditionFailedException()
+    {
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        await connection.ConnectAsync();
+        var management = connection.Management();
+        await management.Queue().Name("precondition_queue").AutoDelete(false).Declare();
+        await Assert.ThrowsAsync<PreconditionFailedException>(async () =>
+            await management.Queue().Name("precondition_queue").AutoDelete(true).Declare());
+        await management.QueueDeletion().Delete("precondition_queue");
+        await connection.CloseAsync();
+    }
+    
+    
+    
+    ////////////// ----------------- Topology TESTS ----------------- //////////////
+    
+    /// <summary>
+    /// Validate the topology listener.
+    /// The listener should be able to record the queue declaration.
+    /// creation and deletion.
+    /// </summary>
     [Fact]
     public async void TopologyCountShouldFollowTheQueueDeclaration()
     {

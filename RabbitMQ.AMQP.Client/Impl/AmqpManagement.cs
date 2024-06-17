@@ -293,7 +293,7 @@ public class AmqpManagement : IManagement
     /// <param name="expectedResponseCodes"> The expected response codes  </param>
     /// <param name="receivedMessage">The message received from the server</param>
     /// <exception cref="ModelException"></exception>
-    /// <exception cref="PreconditionFailException"></exception>
+    /// <exception cref="PreconditionFailedException"></exception>
     /// <exception cref="InvalidCodeException"></exception>
     internal void CheckResponse(Message sentMessage, int[] expectedResponseCodes, Message receivedMessage)
     {
@@ -305,7 +305,7 @@ public class AmqpManagement : IManagement
         switch (responseCode)
         {
             case Code409:
-                throw new PreconditionFailException($"Precondition Fail. Message: {receivedMessage.Body}");
+                throw new PreconditionFailedException($"Precondition Fail. Message: {receivedMessage.Body}");
         }
 
         // Check if the correlationId is the same as the messageId

@@ -11,6 +11,14 @@ using Xunit;
 
 public class ConnectionRecoverTests
 {
+    
+    
+    /// <summary>
+    /// The normal close the status should be correct and error null
+    /// The test records the status change when the connection is closed normally.
+    /// The error _must_ be null when the connection is closed normally even the recovery is activated. 
+    /// </summary>
+    /// <param name="activeRecovery"> If the recovery is enabled.</param>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -44,6 +52,17 @@ public class ConnectionRecoverTests
         Assert.Null(listError[0]);
     }
 
+    
+    /// <summary>
+    /// The unexpected close the status should be correct and error not null.
+    /// The connection is closed unexpectedly using HTTP API.
+    /// The test validates the different status changes:
+    ///  - From Open to Reconnecting (With error)
+    ///  - From Reconnecting to Open
+    ///
+    /// then the connection is closed normally. so the status should be:
+    ///  - From Open to Closed
+    /// </summary>
     [Fact]
     public async void UnexpectedCloseTheStatusShouldBeCorrectAndErrorNotNull()
     {
