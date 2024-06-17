@@ -19,13 +19,24 @@ internal class Visitor(AmqpManagement management) : IVisitor
     }
 }
 
+
+/// <summary>
+/// AmqpConnection is the concrete implementation of <see cref="IConnection"/>
+/// It is a wrapper around the AMQP.Net Lite <see cref="Connection"/> class
+/// </summary>
 public class AmqpConnection : IConnection
 {
+    // The native AMQP.Net Lite connection
     private Connection? _nativeConnection;
     private readonly AmqpManagement _management = new();
     private readonly RecordingTopologyListener _recordingTopologyListener = new();
     private readonly ConnectionSettings _connectionSettings;
 
+    /// <summary>
+    /// Creates a new instance of <see cref="AmqpConnection"/>
+    /// </summary>
+    /// <param name="connectionSettings"></param>
+    /// <returns></returns>
     public static async Task<AmqpConnection> CreateAsync(ConnectionSettings connectionSettings)
     {
         var connection = new AmqpConnection(connectionSettings);
@@ -94,6 +105,7 @@ public class AmqpConnection : IConnection
         }
     }
 
+    
     private void OnNewStatus(Status newStatus, Error? error)
     {
         if (Status == newStatus) return;

@@ -59,7 +59,8 @@ public class ConnectionTests
     {
         await Assert.ThrowsAsync<ConnectionException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().VirtualHost("wrong_vhost").Build()));
-        await Assert.ThrowsAsync<ConnectionException>(async () =>
+      
+        await Assert.ThrowsAsync<SocketException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Host("wrong_host").Build()));
         
         

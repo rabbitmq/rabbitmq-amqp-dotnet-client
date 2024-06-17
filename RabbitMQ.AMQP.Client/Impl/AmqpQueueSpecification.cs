@@ -89,6 +89,11 @@ public class DefaultQueueInfo : IQueueInfo
     }
 }
 
+/// <summary>
+/// AmqpQueueSpecification is a concrete implementation of IQueueSpecification
+/// It contains the necessary information to declare a queue on the broker
+/// </summary>
+/// <param name="management"></param>
 public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecification
 {
     private string? _name;

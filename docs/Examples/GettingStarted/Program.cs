@@ -12,6 +12,7 @@ Trace.TraceListener = (l, f, a) =>
 
 Trace.WriteLine(TraceLevel.Information, "Starting");
 var connectionName = Guid.NewGuid().ToString();
+
 var connection = await AmqpConnection.CreateAsync(
     ConnectionSettingBuilder.Create().ConnectionName(connectionName)
         .RecoveryConfiguration(RecoveryConfiguration.Create().Activated(true).Topology(true)).Build());
