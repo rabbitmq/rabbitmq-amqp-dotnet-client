@@ -1,6 +1,4 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Threading.Tasks.Sources;
 using Amqp;
 using Amqp.Framing;
 using Amqp.Types;
@@ -9,6 +7,11 @@ using TraceLevel = Amqp.TraceLevel;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
+/// <summary>
+/// AmqpManagement implements the IManagement interface and is responsible for managing the AMQP resources.
+/// RabbitMQ uses AMQP end  point: "/management" to manage the resources like queues, exchanges, and bindings.
+/// The management endpoint works like an HTTP RPC endpoint where the client sends a request to the server
+/// </summary>
 public class AmqpManagement : IManagement
 {
     private readonly ConcurrentDictionary<string, TaskCompletionSource<Message>> _requests = new();
@@ -77,6 +80,9 @@ public class AmqpManagement : IManagement
         _recordingTopologyListener = parameters.TopologyListener();
 
         EnsureSenderLink();
+        // by the Management implementation the sender link _must_ be open before the receiver link
+        // this sleep is to ensure that the sender link is open before the receiver link
+        // TODO: find a better way to ensure that the sender link is open before the receiver link
         Thread.Sleep(500);
         EnsureReceiverLink();
         _ = Task.Run(async () =>

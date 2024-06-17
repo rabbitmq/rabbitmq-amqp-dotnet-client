@@ -19,11 +19,36 @@ internal class Visitor(AmqpManagement management) : IVisitor
     }
 }
 
-public class AmqpConnection(ConnectionSettings connectionSettings) : IConnection
+
+/// <summary>
+/// AmqpConnection is the concrete implementation of <see cref="IConnection"/>
+/// It is a wrapper around the AMQP.Net Lite <see cref="Connection"/> class
+/// </summary>
+public class AmqpConnection : IConnection
 {
+    // The native AMQP.Net Lite connection
     private Connection? _nativeConnection;
     private readonly AmqpManagement _management = new();
     private readonly RecordingTopologyListener _recordingTopologyListener = new();
+    private readonly ConnectionSettings _connectionSettings;
+
+    /// <summary>
+    /// Creates a new instance of <see cref="AmqpConnection"/>
+    /// </summary>
+    /// <param name="connectionSettings"></param>
+    /// <returns></returns>
+    public static async Task<AmqpConnection> CreateAsync(ConnectionSettings connectionSettings)
+    {
+        var connection = new AmqpConnection(connectionSettings);
+        await connection.EnsureConnectionAsync();
+        return connection;
+    }
+
+    private AmqpConnection(ConnectionSettings connectionSettings)
+    {
+        _connectionSettings = connectionSettings;
+    }
+
 
     public IManagement Management()
     {
@@ -48,13 +73,13 @@ public class AmqpConnection(ConnectionSettings connectionSettings) : IConnection
 
                 var open = new Open
                 {
-                    HostName = $"vhost:{connectionSettings.VirtualHost()}",
+                    HostName = $"vhost:{_connectionSettings.VirtualHost()}",
                     Properties = new Fields()
                     {
-                        [new Symbol("connection_name")] = connectionSettings.ConnectionName(),
+                        [new Symbol("connection_name")] = _connectionSettings.ConnectionName(),
                     }
                 };
-                _nativeConnection = await Connection.Factory.CreateAsync(connectionSettings.Address, open);
+                _nativeConnection = await Connection.Factory.CreateAsync(_connectionSettings.Address, open);
                 _management.Init(
                     new AmqpManagementParameters(this).TopologyListener(_recordingTopologyListener));
 
@@ -80,6 +105,7 @@ public class AmqpConnection(ConnectionSettings connectionSettings) : IConnection
         }
     }
 
+    
     private void OnNewStatus(Status newStatus, Error? error)
     {
         if (Status == newStatus) return;
@@ -99,7 +125,7 @@ public class AmqpConnection(ConnectionSettings connectionSettings) : IConnection
                                                     $"{sender} {error} {Status} " +
                                                     $"{_nativeConnection!.IsClosed}");
 
-                if (!connectionSettings.RecoveryConfiguration.IsActivate())
+                if (!_connectionSettings.RecoveryConfiguration.IsActivate())
                 {
                     OnNewStatus(Status.Closed, Utils.ConvertError(error));
                     return;
@@ -115,7 +141,7 @@ public class AmqpConnection(ConnectionSettings connectionSettings) : IConnection
                     Trace.WriteLine(TraceLevel.Information, "Recovering connection");
                     await EnsureConnectionAsync();
                     Trace.WriteLine(TraceLevel.Information, "Recovering topology");
-                    if (connectionSettings.RecoveryConfiguration.IsTopologyActive())
+                    if (_connectionSettings.RecoveryConfiguration.IsTopologyActive())
                     {
                         _recordingTopologyListener.Accept(new Visitor(_management));
                     }
