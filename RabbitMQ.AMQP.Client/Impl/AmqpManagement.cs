@@ -14,6 +14,8 @@ namespace RabbitMQ.AMQP.Client.Impl;
 /// </summary>
 public class AmqpManagement : IManagement
 {
+    // The requests are stored in a dictionary with the correlationId as the key
+    // The correlationId is used to match the request with the response
     private readonly ConcurrentDictionary<string, TaskCompletionSource<Message>> _requests = new();
 
     // private static readonly long IdSequence = 0;
@@ -85,34 +87,7 @@ public class AmqpManagement : IManagement
         // TODO: find a better way to ensure that the sender link is open before the receiver link
         Thread.Sleep(500);
         EnsureReceiverLink();
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                while (_managementSession.IsClosed == false &&
-                       _amqpConnection.NativeConnection()!.IsClosed == false)
-                {
-                    if (_receiverLink == null) continue;
-                    var msg = await _receiverLink.ReceiveAsync();
-                    if (msg == null)
-                    {
-                        Trace.WriteLine(TraceLevel.Warning, "Received null message");
-                        continue;
-                    }
-
-                    _receiverLink.Accept(msg);
-                    HandleResponseMessage(msg);
-                    msg.Dispose();
-                }
-            }
-            catch (Exception e)
-            {
-                Trace.WriteLine(TraceLevel.Error,
-                    $"Receiver link error in management session {e}. Receiver link closed: {_receiverLink?.IsClosed}");
-            }
-
-            Trace.WriteLine(TraceLevel.Information, "AMQP Management session closed");
-        });
+        _ = Task.Run(async () => { await ProcessResponses(); });
         _managementSession.Closed += (sender, error) =>
         {
             Trace.WriteLine(TraceLevel.Warning, $"Management session closed " +
@@ -124,6 +99,35 @@ public class AmqpManagement : IManagement
             OnNewStatus(Status.Closed, Utils.ConvertError(error));
         };
         OnNewStatus(Status.Open, null);
+    }
+
+    private async Task ProcessResponses()
+    {
+        try
+        {
+            while (_managementSession?.IsClosed == false &&
+                   _amqpConnection?.NativeConnection()!.IsClosed == false)
+            {
+                if (_receiverLink == null) continue;
+                var msg = await _receiverLink.ReceiveAsync();
+                if (msg == null)
+                {
+                    Trace.WriteLine(TraceLevel.Warning, "Received null message");
+                    continue;
+                }
+
+                _receiverLink.Accept(msg);
+                HandleResponseMessage(msg);
+                msg.Dispose();
+            }
+        }
+        catch (Exception e)
+        {
+            Trace.WriteLine(TraceLevel.Error,
+                $"Receiver link error in management session {e}. Receiver link closed: {_receiverLink?.IsClosed}");
+        }
+
+        Trace.WriteLine(TraceLevel.Information, "AMQP Management session closed");
     }
 
 
@@ -207,12 +211,12 @@ public class AmqpManagement : IManagement
         {
             if (mre.TrySetResult(msg))
             {
-                Trace.WriteLine(TraceLevel.Information, $"Set result for  {msg.Properties.CorrelationId}");
+                Trace.WriteLine(TraceLevel.Verbose, $"Set result for:  {msg.Properties.CorrelationId}");
             }
         }
         else
         {
-            Trace.WriteLine(TraceLevel.Error, $"No request found for message {msg.Properties.CorrelationId}");
+            Trace.WriteLine(TraceLevel.Error, $"No request found for message: {msg.Properties.CorrelationId}");
         }
     }
 
@@ -238,6 +242,20 @@ public class AmqpManagement : IManagement
         return await Request(message, expectedResponseCodes, timeout);
     }
 
+    /// <summary>
+    /// Core function to send a request and wait for the response
+    /// The request is an AMQP message with the following properties:
+    /// - Properties.MessageId: Mandatory to identify the request
+    /// - Properties.To: The path of the request, for example "/queues/my-queue"
+    /// - Properties.Subject: The method of the request, for example "PUT"
+    /// - Properties.ReplyTo: The address where the response will be sent. Default is: "$me"
+    /// - Body: The body of the request. For example the QueueSpec to create a queue
+    /// </summary>
+    /// <param name="message">Request Message. Contains all the info to create/delete a resource</param>
+    /// <param name="expectedResponseCodes"> The response codes expected for a specific call. See Code* Constants </param>
+    /// <param name="timeout"> Default timeout for a request </param>
+    /// <returns> A message with the Info response. For example in case of Queue creation is DefaultQueueInfo </returns>
+    /// <exception cref="ModelException"> Application errors, see <see cref="ModelException"/> </exception>
     internal async ValueTask<Message> Request(Message message, int[] expectedResponseCodes, TimeSpan? timeout = null)
     {
         if (Status != Status.Open)
@@ -246,8 +264,10 @@ public class AmqpManagement : IManagement
         }
 
         TaskCompletionSource<Message> mre = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        // Add TaskCompletionSource to the dictionary
         _requests.TryAdd(message.Properties.MessageId, mre);
-        using var cts = new CancellationTokenSource(timeout ?? TimeSpan.FromSeconds(5));
+        using var cts =
+            new CancellationTokenSource(timeout ?? TimeSpan.FromSeconds(5)); // TODO: make the timeout configurable
         await using (cts.Token.Register(
                          () =>
                          {
@@ -256,14 +276,29 @@ public class AmqpManagement : IManagement
                          }))
         {
             await InternalSendAsync(message);
+
+            // The response is handled in a separate thread, see ProcessResponses method in the Init method
             var result = await mre.Task.WaitAsync(cts.Token);
+            // Check the responses and throw exceptions if needed.
+
             CheckResponse(message, expectedResponseCodes, result);
             return result;
         }
     }
 
+    /// <summary>
+    /// Check the response of a request and throw exceptions if needed
+    /// </summary>
+    /// <param name="sentMessage">The message sent </param>
+    /// <param name="expectedResponseCodes"> The expected response codes  </param>
+    /// <param name="receivedMessage">The message received from the server</param>
+    /// <exception cref="ModelException"></exception>
+    /// <exception cref="PreconditionFailException"></exception>
+    /// <exception cref="InvalidCodeException"></exception>
     internal void CheckResponse(Message sentMessage, int[] expectedResponseCodes, Message receivedMessage)
     {
+        // Check if the response code is a number
+        // by protocol the response code is in the Subject property
         if (!int.TryParse(receivedMessage.Properties.Subject, out var responseCode))
             throw new ModelException($"Response code is not a number {receivedMessage.Properties.Subject}");
 
@@ -273,6 +308,7 @@ public class AmqpManagement : IManagement
                 throw new PreconditionFailException($"Precondition Fail. Message: {receivedMessage.Body}");
         }
 
+        // Check if the correlationId is the same as the messageId
         if (sentMessage.Properties.MessageId != receivedMessage.Properties.CorrelationId)
             throw new ModelException(
                 $"CorrelationId does not match, expected {sentMessage.Properties.MessageId} but got {receivedMessage.Properties.CorrelationId}");

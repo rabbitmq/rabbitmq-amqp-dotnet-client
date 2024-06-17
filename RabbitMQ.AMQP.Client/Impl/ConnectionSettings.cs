@@ -13,17 +13,17 @@ public class ConnectionSettingBuilder
     private string _virtualHost = "/";
     private IRecoveryConfiguration _recoveryConfiguration = Impl.RecoveryConfiguration.Create();
 
-    
+
     private ConnectionSettingBuilder()
     {
     }
-    
+
     public static ConnectionSettingBuilder Create()
     {
         return new ConnectionSettingBuilder();
     }
-    
-    
+
+
     public ConnectionSettingBuilder Host(string host)
     {
         _host = host;
@@ -153,9 +153,14 @@ public class ConnectionSettings : IConnectionSettings
 
     public override string ToString()
     {
-        return
-            $"Address{{host='{Address.Host}', port={Address.Port}, path='{Address.Path}', username='{Address.User}', password='{Address.Password}'}}";
+        var i = 
+            $"Address" +
+            $"host='{Address.Host}', " +
+            $"port={Address.Port}, VirtualHost='{_virtualHost}', path='{Address.Path}', " +
+            $"username='{Address.User}', ConnectionName='{_connectionName}'";
+        return i;
     }
+
 
     public override bool Equals(object? obj)
     {
@@ -186,6 +191,13 @@ public class ConnectionSettings : IConnectionSettings
     public RecoveryConfiguration RecoveryConfiguration { get; set; } = RecoveryConfiguration.Create();
 }
 
+/// <summary>
+/// RecoveryConfiguration is a class that represents the configuration of the recovery of the topology.
+/// It is used to configure the recovery of the topology of the server after a connection is established in case of a reconnection
+/// The RecoveryConfiguration can be disabled or enabled.
+/// If RecoveryConfiguration._active is disabled, the reconnect mechanism will not be activated.
+/// If RecoveryConfiguration._topology is disabled, the recovery of the topology will not be activated.
+/// </summary>
 public class RecoveryConfiguration : IRecoveryConfiguration
 {
     public static RecoveryConfiguration Create()
@@ -197,8 +209,13 @@ public class RecoveryConfiguration : IRecoveryConfiguration
     {
     }
 
+    // Activate the reconnect mechanism
     private bool _active = true;
+
+    // Activate the recovery of the topology
     private bool _topology = false;
+
+    private IBackOffDelayPolicy _backOffDelayPolicy = Impl.BackOffDelayPolicy.Create();
 
     public IRecoveryConfiguration Activated(bool activated)
     {
@@ -211,6 +228,17 @@ public class RecoveryConfiguration : IRecoveryConfiguration
         return _active;
     }
 
+    public IRecoveryConfiguration BackOffDelayPolicy(IBackOffDelayPolicy backOffDelayPolicy)
+    {
+        _backOffDelayPolicy = backOffDelayPolicy;
+        return this;
+    }
+
+    public IBackOffDelayPolicy GetBackOffDelayPolicy()
+    {
+        return _backOffDelayPolicy;
+    }
+
 
     public IRecoveryConfiguration Topology(bool activated)
     {
@@ -221,5 +249,33 @@ public class RecoveryConfiguration : IRecoveryConfiguration
     public bool IsTopologyActive()
     {
         return _topology;
+    }
+}
+
+public class BackOffDelayPolicy : IBackOffDelayPolicy
+{
+    public static BackOffDelayPolicy Create()
+    {
+        return new BackOffDelayPolicy();
+    }
+
+    private BackOffDelayPolicy()
+    {
+    }
+
+    private const int StartRandomMilliseconds = 1000;
+    private const int EndRandomMilliseconds = 2000;
+
+    private int _attempt = 1;
+
+    public int Next()
+    {
+        _attempt++;
+        return Random.Shared.Next(StartRandomMilliseconds, EndRandomMilliseconds) * _attempt;
+    }
+
+    public void Reset()
+    {
+        _attempt = 1;
     }
 }

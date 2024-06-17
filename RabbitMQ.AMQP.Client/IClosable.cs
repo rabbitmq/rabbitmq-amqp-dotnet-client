@@ -22,6 +22,4 @@ public interface IClosable
     public delegate void ChangeStatusCallBack(object sender, Status from, Status to, Error? error);
 
     event ChangeStatusCallBack ChangeStatus;
-     
-    
 }

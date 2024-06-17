@@ -6,10 +6,17 @@ public interface IRecoveryConfiguration
     
     bool IsActivate();
 
-    // IRecoveryConfiguration BackOffDelayPolicy(BackOffDelayPolicy backOffDelayPolicy);
+    IRecoveryConfiguration BackOffDelayPolicy(IBackOffDelayPolicy backOffDelayPolicy);
 
     IRecoveryConfiguration Topology(bool activated);
     
     bool IsTopologyActive();
 
+}
+
+
+public interface IBackOffDelayPolicy 
+{
+    int Next();
+    void Reset();
 }

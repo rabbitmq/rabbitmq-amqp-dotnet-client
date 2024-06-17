@@ -7,6 +7,12 @@ public interface IVisitor
     void VisitQueues(List<QueueSpec> queueSpec);
 }
 
+/// <summary>
+/// RecordingTopologyListener is a concrete implementation of <see cref="ITopologyListener"/>
+///  It is used to record the topology of the entities declared in the AMQP server ( like queues, exchanges, etc)
+/// It is used to recover the topology of the server after a connection is established in case of a reconnection
+/// Each time am entity is declared or deleted, the listener will record the event
+/// </summary>
 public class RecordingTopologyListener : ITopologyListener
 {
     private readonly ConcurrentDictionary<string, QueueSpec> _queueSpecifications = new();
