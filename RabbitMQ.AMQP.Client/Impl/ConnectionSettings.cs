@@ -2,8 +2,11 @@
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
+
 public class ConnectionSettingBuilder
 {
+    
+    // TODO: maybe add the event "LifeCycle" to the builder
     private string _host = "localhost";
     private int _port = 5672;
     private string _user = "guest";
@@ -153,7 +156,7 @@ public class ConnectionSettings : IConnectionSettings
 
     public override string ToString()
     {
-        var i = 
+        var i =
             $"Address" +
             $"host='{Address.Host}', " +
             $"port={Address.Port}, VirtualHost='{_virtualHost}', path='{Address.Path}', " +
@@ -250,6 +253,12 @@ public class RecoveryConfiguration : IRecoveryConfiguration
     {
         return _topology;
     }
+
+    public override string ToString()
+    {
+        return
+            $"RecoveryConfiguration{{ Active={_active}, Topology={_topology}, BackOffDelayPolicy={_backOffDelayPolicy} }}";
+    }
 }
 
 public class BackOffDelayPolicy : IBackOffDelayPolicy
@@ -263,19 +272,36 @@ public class BackOffDelayPolicy : IBackOffDelayPolicy
     {
     }
 
-    private const int StartRandomMilliseconds = 1000;
-    private const int EndRandomMilliseconds = 2000;
+    private const int StartRandomMilliseconds = 500;
+    private const int EndRandomMilliseconds = 1500;
 
     private int _attempt = 1;
+    private int _totalAttempt = 0;
 
-    public int Next()
+    private void ResetAfterMaxAttempt()
+    {
+        if (_attempt > 5)
+            _attempt = 1;
+    }
+
+    public int Delay()
     {
         _attempt++;
+        _totalAttempt++;
+        ResetAfterMaxAttempt();
         return Random.Shared.Next(StartRandomMilliseconds, EndRandomMilliseconds) * _attempt;
     }
 
     public void Reset()
     {
         _attempt = 1;
+        _totalAttempt = 0;
+    }
+
+    public bool IsActive => _totalAttempt < 12;
+
+    public override string ToString()
+    {
+        return $"BackOffDelayPolicy{{ Attempt={_attempt}, TotalAttempt={_totalAttempt}, IsActive={IsActive} }}";
     }
 }

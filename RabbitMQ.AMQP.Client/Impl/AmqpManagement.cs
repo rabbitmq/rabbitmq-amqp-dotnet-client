@@ -34,7 +34,7 @@ public class AmqpManagement : IManagement
     private const string ReplyTo = "$me";
 
 
-    public virtual Status Status { get; protected set; } = Status.Closed;
+    public virtual State State { get; protected set; } = State.Closed;
 
 
     public IQueueSpecification Queue()
@@ -73,7 +73,7 @@ public class AmqpManagement : IManagement
 
     internal void Init(AmqpManagementParameters parameters)
     {
-        if (Status == Status.Open)
+        if (State == State.Open)
             return;
 
         _amqpConnection = parameters.Connection();
@@ -92,13 +92,13 @@ public class AmqpManagement : IManagement
         {
             Trace.WriteLine(TraceLevel.Warning, $"Management session closed " +
                                                 $"sender: {sender} error: {error} " +
-                                                $"Amqp Status:{Status} senderLink closed:  {_senderLink?.IsClosed}" +
+                                                $"Amqp Status:{State} senderLink closed:  {_senderLink?.IsClosed}" +
                                                 $"_receiverLink closed: {_receiverLink?.IsClosed} " +
                                                 $"_managementSession is closed: {_managementSession.IsClosed}" +
                                                 $"native connection is closed: {_amqpConnection.NativeConnection()!.IsClosed}");
-            OnNewStatus(Status.Closed, Utils.ConvertError(error));
+            OnNewStatus(State.Closed, Utils.ConvertError(error));
         };
-        OnNewStatus(Status.Open, null);
+        OnNewStatus(State.Open, null);
     }
 
     private async Task ProcessResponses()
@@ -161,11 +161,11 @@ public class AmqpManagement : IManagement
         }
     }
 
-    private void OnNewStatus(Status newStatus, Error? error)
+    private void OnNewStatus(State newState, Error? error)
     {
-        var oldStatus = Status;
-        Status = newStatus;
-        ChangeStatus?.Invoke(this, oldStatus, Status, error);
+        var oldStatus = State;
+        State = newState;
+        ChangeState?.Invoke(this, oldStatus, State, error);
     }
 
     private void EnsureSenderLink()
@@ -258,7 +258,7 @@ public class AmqpManagement : IManagement
     /// <exception cref="ModelException"> Application errors, see <see cref="ModelException"/> </exception>
     internal async ValueTask<Message> Request(Message message, int[] expectedResponseCodes, TimeSpan? timeout = null)
     {
-        if (Status != Status.Open)
+        if (State != State.Open)
         {
             throw new ModelException("Management is not open");
         }
@@ -330,14 +330,14 @@ public class AmqpManagement : IManagement
 
     public async Task CloseAsync()
     {
-        Status = Status.Closed;
+        State = State.Closed;
         if (_managementSession is { IsClosed: false })
         {
             await _managementSession.CloseAsync();
         }
     }
 
-    public event IClosable.ChangeStatusCallBack? ChangeStatus;
+    public event IClosable.LifeCycleCallBack? ChangeState;
 }
 
 public class InvalidCodeException(string message) : Exception(message);

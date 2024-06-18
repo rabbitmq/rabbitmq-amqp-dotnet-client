@@ -66,7 +66,7 @@ namespace Tests
             }
         }
 
-        public static async void WaitUntilAsync(Func<Task<bool>> func, ushort retries = 10)
+        public static async Task WaitUntilAsync(Func<Task<bool>> func, ushort retries = 10)
         {
             Wait();
             while (!await func())
@@ -193,11 +193,11 @@ namespace Tests
             return killed;
         }
 
-        public static int WaitUntilConnectionIsKilled(string connectionName)
+        public static async Task WaitUntilConnectionIsKilled(string connectionName)
         {
+            await WaitUntilAsync(async () => await IsConnectionOpen(connectionName) );
             Wait();
-            WaitUntilAsync(async () => await HttpKillConnections(connectionName) == 1);
-            return 1;
+            await WaitUntilAsync(async () => await HttpKillConnections(connectionName) == 1);
         }
 
         private static HttpClient CreateHttpClient()

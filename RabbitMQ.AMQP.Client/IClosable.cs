@@ -1,10 +1,12 @@
 namespace RabbitMQ.AMQP.Client;
 
-public enum Status
+public enum State
 {
-    Closed,
-    Reconneting,
+    // Opening,
     Open,
+    Reconnecting,
+    Closing,
+    Closed,
 }
 
 public class Error
@@ -15,11 +17,11 @@ public class Error
 
 public interface IClosable
 {
-    public Status Status { get;  }
+    public State State { get;  }
 
     Task CloseAsync();
 
-    public delegate void ChangeStatusCallBack(object sender, Status from, Status to, Error? error);
+    public delegate void LifeCycleCallBack(object sender, State previousState, State currentState, Error? failureCause);
 
-    event ChangeStatusCallBack ChangeStatus;
+    event LifeCycleCallBack ChangeState;
 }

@@ -30,7 +30,7 @@ internal class TestAmqpManagementOpen : AmqpManagement
         HandleResponseMessage(msg);
     }
 
-    public override Status Status { get; protected set; } = Status.Open;
+    public override State State { get; protected set; } = State.Open;
 }
 
 public class ManagementTests()
@@ -132,7 +132,7 @@ public class ManagementTests()
         var management = new TestAmqpManagement();
         await Assert.ThrowsAsync<ModelException>(async () =>
             await management.Request(new Message(), [200]));
-        Assert.Equal(Status.Closed, management.Status);
+        Assert.Equal(State.Closed, management.State);
     }
 
 
@@ -155,7 +155,7 @@ public class ManagementTests()
         Assert.Contains("client.gen-", queueInfo.Name());
         await management.QueueDeletion().Delete(queueInfo.Name());
         await connection.CloseAsync();
-        Assert.Equal(Status.Closed, management.Status);
+        Assert.Equal(State.Closed, management.State);
     }
 
     /// <summary>
@@ -188,7 +188,7 @@ public class ManagementTests()
         Assert.Equal(queueInfo.Exclusive(), exclusive);
         await management.QueueDeletion().Delete("validate_queue_info");
         await connection.CloseAsync();
-        Assert.Equal(Status.Closed, management.Status);
+        Assert.Equal(State.Closed, management.State);
     }
 
     
@@ -203,6 +203,20 @@ public class ManagementTests()
         await Assert.ThrowsAsync<PreconditionFailedException>(async () =>
             await management.Queue().Name("precondition_queue").AutoDelete(true).Declare());
         await management.QueueDeletion().Delete("precondition_queue");
+        await connection.CloseAsync();
+    }
+    
+    
+    [Fact]
+    public async void DeclareAndDeleteTwoTimesShouldNotRaiseErrors()
+    {
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        await connection.ConnectAsync();
+        var management = connection.Management();
+        await management.Queue().Name("DeleteTwoTimes").AutoDelete(false).Declare();
+        await management.Queue().Name("DeleteTwoTimes").AutoDelete(false).Declare();
+        await management.QueueDeletion().Delete("DeleteTwoTimes");
+        await management.QueueDeletion().Delete("DeleteTwoTimes");
         await connection.CloseAsync();
     }
     

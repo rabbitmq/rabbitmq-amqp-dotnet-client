@@ -22,8 +22,11 @@ var connection = await AmqpConnection.CreateAsync(
             ).Build());
 
 Trace.WriteLine(TraceLevel.Information, "Connected");
+
 var management = connection.Management();
-await management.Queue($"my-first-queue").AutoDelete(true).Exclusive(true).Declare();
+await management.Queue($"my-first-queue").
+    AutoDelete(true).Exclusive(true).Declare();
+
 Trace.WriteLine(TraceLevel.Information, "Queue Created");
 Console.WriteLine("Press any key to delete the queue and close the connection.");
 Console.ReadKey();

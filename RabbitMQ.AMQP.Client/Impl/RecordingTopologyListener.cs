@@ -4,7 +4,7 @@ namespace RabbitMQ.AMQP.Client.Impl;
 
 public interface IVisitor
 {
-    void VisitQueues(List<QueueSpec> queueSpec);
+    Task VisitQueues(List<QueueSpec> queueSpec);
 }
 
 /// <summary>
