@@ -138,7 +138,6 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
     }
 
 
-
     public IQueueSpecification Arguments(Dictionary<object, object> arguments)
     {
         foreach (var (key, value) in arguments)
@@ -183,6 +182,10 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
 
         if (string.IsNullOrEmpty(_name) || _name.Trim() == "")
         {
+            // If the name is not set, generate a random name
+            // client side generated names are supported by the server
+            // but here we generate a name to make easier to track the queue
+            // and remove it later
             _name = Utils.GenerateQueueName();
         }
 

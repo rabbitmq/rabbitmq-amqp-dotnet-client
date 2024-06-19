@@ -1,6 +1,8 @@
-# RabbitMQ Amqp1.0 DotNet Client
+# RabbitMQ AMQP 1.0 DotNet Client
 
-See the [internal documentation](https://docs.google.com/document/d/1afO2ugGpTIZYUeXH_0GtMxedV51ZzmsbC3-mRdoSI_o/edit#heading=h.kqd38uu4iku) 
+
+This library is in early stages of development.
+It is meant to be used with RabbitMQ 4.0.
 
 
 

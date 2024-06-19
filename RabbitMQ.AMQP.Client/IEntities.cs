@@ -4,6 +4,11 @@ public interface IEntityInfo
 {
 }
 
+
+/// <summary>
+/// Generic interface for declaring entities
+/// </summary>
+/// <typeparam name="T"></typeparam>
 public interface IEntityDeclaration<T> where T : IEntityInfo
 {
     Task<T> Declare();

@@ -4,9 +4,15 @@ namespace RabbitMQ.AMQP.Client.Impl;
 
 public interface IVisitor
 {
-    void VisitQueues(List<QueueSpec> queueSpec);
+    Task VisitQueues(List<QueueSpec> queueSpec);
 }
 
+/// <summary>
+/// RecordingTopologyListener is a concrete implementation of <see cref="ITopologyListener"/>
+///  It is used to record the topology of the entities declared in the AMQP server ( like queues, exchanges, etc)
+/// It is used to recover the topology of the server after a connection is established in case of a reconnection
+/// Each time am entity is declared or deleted, the listener will record the event
+/// </summary>
 public class RecordingTopologyListener : ITopologyListener
 {
     private readonly ConcurrentDictionary<string, QueueSpec> _queueSpecifications = new();
@@ -21,14 +27,19 @@ public class RecordingTopologyListener : ITopologyListener
         _queueSpecifications.TryRemove(name, out _);
     }
 
+    public void Clear()
+    {
+        _queueSpecifications.Clear();
+    }
+
     public int QueueCount()
     {
         return _queueSpecifications.Count;
     }
 
-    public void Accept(IVisitor visitor)
+    public async Task Accept(IVisitor visitor)
     {
-        visitor.VisitQueues(_queueSpecifications.Values.ToList());
+        await visitor.VisitQueues(_queueSpecifications.Values.ToList());
     }
 }
 

@@ -30,7 +30,7 @@ internal class TestAmqpManagementOpen : AmqpManagement
         HandleResponseMessage(msg);
     }
 
-    public override Status Status { get; protected set; } = Status.Open;
+    public override State State { get; protected set; } = State.Open;
 }
 
 public class ManagementTests()
@@ -51,13 +51,21 @@ public class ManagementTests()
         await management.CloseAsync();
     }
 
+    /// <summary>
+    /// Test to raise a ModelException based on checking the response
+    /// the message _must_ respect the following rules:
+    /// - id and correlation id should match
+    /// - subject _must_ be a number
+    /// The test validate the following cases:
+    ///  - subject is not a number
+    ///  - code is not in the expected list
+    ///  - correlation id is not the same as the message id
+    /// </summary>
     [Fact]
     public void RaiseModelException()
     {
         var management = new TestAmqpManagement();
-
         const string messageId = "my_id";
-
         var sent = new Message()
         {
             Properties = new Properties()
@@ -124,10 +132,16 @@ public class ManagementTests()
         var management = new TestAmqpManagement();
         await Assert.ThrowsAsync<ModelException>(async () =>
             await management.Request(new Message(), [200]));
-        Assert.Equal(Status.Closed, management.Status);
+        Assert.Equal(State.Closed, management.State);
     }
 
 
+    /// <summary>
+    /// Test to validate the queue declaration with the auto generated name.
+    /// The auto generated name is a client side generated.
+    /// The test validates all the queue types.  
+    /// </summary>
+    /// <param name="type"> queues type</param>
     [Theory]
     [InlineData(QueueType.QUORUM)]
     [InlineData(QueueType.CLASSIC)]
@@ -141,9 +155,13 @@ public class ManagementTests()
         Assert.Contains("client.gen-", queueInfo.Name());
         await management.QueueDeletion().Delete(queueInfo.Name());
         await connection.CloseAsync();
-        Assert.Equal(Status.Closed, management.Status);
+        Assert.Equal(State.Closed, management.State);
     }
 
+    /// <summary>
+    /// Validate the queue declaration.
+    /// The queue-info response should match the queue declaration.
+    /// </summary>
     [Theory]
     [InlineData(true, false, false, QueueType.QUORUM)]
     [InlineData(true, false, false, QueueType.CLASSIC)]
@@ -170,9 +188,47 @@ public class ManagementTests()
         Assert.Equal(queueInfo.Exclusive(), exclusive);
         await management.QueueDeletion().Delete("validate_queue_info");
         await connection.CloseAsync();
-        Assert.Equal(Status.Closed, management.Status);
+        Assert.Equal(State.Closed, management.State);
     }
 
+    
+    
+    [Fact]
+    public async void DeclareQueueWithPreconditionFailedException()
+    {
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        await connection.ConnectAsync();
+        var management = connection.Management();
+        await management.Queue().Name("precondition_queue").AutoDelete(false).Declare();
+        await Assert.ThrowsAsync<PreconditionFailedException>(async () =>
+            await management.Queue().Name("precondition_queue").AutoDelete(true).Declare());
+        await management.QueueDeletion().Delete("precondition_queue");
+        await connection.CloseAsync();
+    }
+    
+    
+    [Fact]
+    public async void DeclareAndDeleteTwoTimesShouldNotRaiseErrors()
+    {
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        await connection.ConnectAsync();
+        var management = connection.Management();
+        await management.Queue().Name("DeleteTwoTimes").AutoDelete(false).Declare();
+        await management.Queue().Name("DeleteTwoTimes").AutoDelete(false).Declare();
+        await management.QueueDeletion().Delete("DeleteTwoTimes");
+        await management.QueueDeletion().Delete("DeleteTwoTimes");
+        await connection.CloseAsync();
+    }
+    
+    
+    
+    ////////////// ----------------- Topology TESTS ----------------- //////////////
+    
+    /// <summary>
+    /// Validate the topology listener.
+    /// The listener should be able to record the queue declaration.
+    /// creation and deletion.
+    /// </summary>
     [Fact]
     public async void TopologyCountShouldFollowTheQueueDeclaration()
     {
@@ -188,7 +244,7 @@ public class ManagementTests()
         for (var i = 1; i < 7; i++)
         {
             await management.QueueDeletion().Delete($"Q_{i}");
-            Assert.Equal(((RecordingTopologyListener)management.TopologyListener()).QueueCount(), 6 - i);
+            Assert.Equal((management.TopologyListener()).QueueCount(), 6 - i);
         }
 
         await connection.CloseAsync();
