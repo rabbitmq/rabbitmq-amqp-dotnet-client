@@ -37,7 +37,6 @@ internal class FakeFastBackOffDelay : IBackOffDelayPolicy
     public bool IsActive => true;
 }
 
-
 public class ConnectionRecoverTests
 {
     /// <summary>
@@ -182,6 +181,18 @@ public class ConnectionRecoverTests
         Assert.Equal(State.Closed, connection.State);
     }
 
+
+    /// <summary>
+    /// Test when the connection is closed unexpectedly and the recovery is enabled and the topology-recover  can be:
+    /// - Enabled
+    /// - Disabled
+    ///
+    /// When the topology-recover is Enabled the temp queues should be recovered.
+    /// When the topology-recover is  Disabled the temp queues should not be recovered.
+    /// the Queue is a temp queue with the Auto-Delete and Exclusive flag set to true. 
+    /// </summary>
+    /// <param name="topologyRecoveryEnabled"> enable/disable topology-recover </param>
+    /// <param name="events"> the number of the events expected on the ChangeState event </param>
     [Theory]
     [InlineData(true, 2)]
     [InlineData(false, 1)]
@@ -206,10 +217,15 @@ public class ConnectionRecoverTests
         };
         var management = connection.Management();
         await management.Queue().Name(queueName).AutoDelete(true).Exclusive(true).Declare();
+        Assert.Equal(1, management.TopologyListener().QueueCount());
+
 
         await SystemUtils.WaitUntilConnectionIsKilled(connectionName);
         await completion.Task.WaitAsync(TimeSpan.FromSeconds(2));
         SystemUtils.WaitUntil(() => SystemUtils.QueueExists(queueName) == topologyRecoveryEnabled);
+        
+        
         await connection.CloseAsync();
+        Assert.Equal(0, management.TopologyListener().QueueCount());
     }
 }

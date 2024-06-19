@@ -195,7 +195,7 @@ public class AmqpConnection : IConnection
                     if (_connectionSettings.RecoveryConfiguration.IsTopologyActive())
                     {
                         Trace.WriteLine(TraceLevel.Information, $"Recovering topology. Info: {ToString()}");
-                        _recordingTopologyListener.Accept(new Visitor(_management));
+                        await _recordingTopologyListener.Accept(new Visitor(_management));
                     }
                 });
                 return;
@@ -215,6 +215,7 @@ public class AmqpConnection : IConnection
 
     public async Task CloseAsync()
     {
+        _recordingTopologyListener.Clear();
         if (State == State.Closed) return;
         OnNewStatus(State.Closing, null);
         if (_nativeConnection is { IsClosed: false }) await _nativeConnection.CloseAsync();

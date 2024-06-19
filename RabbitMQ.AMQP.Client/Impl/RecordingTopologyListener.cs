@@ -27,14 +27,19 @@ public class RecordingTopologyListener : ITopologyListener
         _queueSpecifications.TryRemove(name, out _);
     }
 
+    public void Clear()
+    {
+        _queueSpecifications.Clear();
+    }
+
     public int QueueCount()
     {
         return _queueSpecifications.Count;
     }
 
-    public void Accept(IVisitor visitor)
+    public async Task Accept(IVisitor visitor)
     {
-        visitor.VisitQueues(_queueSpecifications.Values.ToList());
+        await visitor.VisitQueues(_queueSpecifications.Values.ToList());
     }
 }
 

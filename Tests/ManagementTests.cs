@@ -244,7 +244,7 @@ public class ManagementTests()
         for (var i = 1; i < 7; i++)
         {
             await management.QueueDeletion().Delete($"Q_{i}");
-            Assert.Equal(((RecordingTopologyListener)management.TopologyListener()).QueueCount(), 6 - i);
+            Assert.Equal((management.TopologyListener()).QueueCount(), 6 - i);
         }
 
         await connection.CloseAsync();
