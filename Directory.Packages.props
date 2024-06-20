@@ -11,7 +11,6 @@
     <PackageVersion Include="MinVer" Version="4.3.0" />
     <!-- Tests -->
     <PackageVersion Include="AltCover" Version="8.6.45" />
-    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
     <PackageVersion Include="xunit" Version="2.4.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5" />
     <PackageVersion Include="Xunit.SkippableFact" Version="1.4.13" />
@@ -26,5 +25,9 @@
   <ItemGroup Label=".NET 7 Specific" Condition="'$(TargetFramework)' == 'net7.0'">
     <!-- RabbitMQ.Amqp.Client -->
     <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="7.0.0" />
+  </ItemGroup>
+    <ItemGroup Label=".NET 8 Specific" Condition="'$(TargetFramework)' == 'net8.0'">
+    <!-- RabbitMQ.Amqp.Client -->
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
   </ItemGroup>
 </Project>

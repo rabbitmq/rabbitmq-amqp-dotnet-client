@@ -5,7 +5,7 @@ namespace RabbitMQ.AMQP.Client.Impl;
 
 public class ConnectionSettingBuilder
 {
-    
+
     // TODO: maybe add the event "LifeCycle" to the builder
     private string _host = "localhost";
     private int _port = 5672;

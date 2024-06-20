@@ -17,7 +17,7 @@ public class Error
 
 public interface IClosable
 {
-    public State State { get;  }
+    public State State { get; }
 
     Task CloseAsync();
 

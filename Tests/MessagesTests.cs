@@ -21,7 +21,7 @@ public class MessagesTests
         Assert.Equal("Subject_9123", message.Subject());
         Assert.Equal("my_body", message.Body());
     }
-    
+
     [Fact]
     public void ThrowExceptionIfPropertiesNotSet()
     {
@@ -31,5 +31,5 @@ public class MessagesTests
         Assert.Throws<PropertiesNotSetException>(() => message.CorrelationId());
         Assert.Throws<PropertiesNotSetException>(() => message.ReplyTo());
     }
-    
+
 }

@@ -6,7 +6,7 @@ namespace RabbitMQ.AMQP.Client.Impl;
 public static class Utils
 {
     private const string DefaultPrefix = "client.gen-";
-    
+
     public static string GenerateQueueName()
     {
         return GenerateName(DefaultPrefix);
@@ -35,11 +35,11 @@ public static class Utils
                 ErrorCode = sourceError.Condition.ToString()
             };
         }
-        
+
         return resultError;
 
     }
-        
 
-    
+
+
 }

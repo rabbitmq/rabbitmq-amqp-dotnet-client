@@ -225,8 +225,8 @@ public class ConnectionRecoverTests
         await SystemUtils.WaitUntilConnectionIsKilled(connectionName);
         await completion.Task.WaitAsync(TimeSpan.FromSeconds(2));
         SystemUtils.WaitUntil(() => SystemUtils.QueueExists(queueName) == topologyRecoveryEnabled);
-        
-        
+
+
         await connection.CloseAsync();
         Assert.Equal(0, management.TopologyListener().QueueCount());
     }

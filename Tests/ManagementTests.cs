@@ -191,8 +191,8 @@ public class ManagementTests()
         Assert.Equal(State.Closed, management.State);
     }
 
-    
-    
+
+
     [Fact]
     public async void DeclareQueueWithPreconditionFailedException()
     {
@@ -205,8 +205,8 @@ public class ManagementTests()
         await management.QueueDeletion().Delete("precondition_queue");
         await connection.CloseAsync();
     }
-    
-    
+
+
     [Fact]
     public async void DeclareAndDeleteTwoTimesShouldNotRaiseErrors()
     {
@@ -219,11 +219,11 @@ public class ManagementTests()
         await management.QueueDeletion().Delete("DeleteTwoTimes");
         await connection.CloseAsync();
     }
-    
-    
-    
+
+
+
     ////////////// ----------------- Topology TESTS ----------------- //////////////
-    
+
     /// <summary>
     /// Validate the topology listener.
     /// The listener should be able to record the queue declaration.

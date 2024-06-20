@@ -56,11 +56,11 @@ public class ConnectionTests
     {
         await Assert.ThrowsAsync<ConnectionException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().VirtualHost("wrong_vhost").Build()));
-      
+
         await Assert.ThrowsAsync<SocketException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Host("wrong_host").Build()));
-        
-        
+
+
         await Assert.ThrowsAsync<ConnectionException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Password("wrong_password").Build()));
 
@@ -69,7 +69,7 @@ public class ConnectionTests
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().User("wrong_user").Build()));
 
         await Assert.ThrowsAsync<SocketException>(async () =>
-            await AmqpConnection.CreateAsync( ConnectionSettingBuilder.Create().Port(1234).Build()));
-        
+            await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Port(1234).Build()));
+
     }
 }
