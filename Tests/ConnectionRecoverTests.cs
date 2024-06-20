@@ -27,7 +27,7 @@ internal class FakeFastBackOffDelay : IBackOffDelayPolicy
 {
     public int Delay()
     {
-        return 100;
+        return 500;
     }
 
     public void Reset()
@@ -99,7 +99,10 @@ public class ConnectionRecoverTests
         var connectionName = Guid.NewGuid().ToString();
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create().ConnectionName(connectionName).RecoveryConfiguration(
-                RecoveryConfiguration.Create().Activated(true).Topology(false)).Build());
+                RecoveryConfiguration.Create().
+                    Activated(true).
+                    Topology(false).
+                    BackOffDelayPolicy(new FakeFastBackOffDelay())).Build());
         var resetEvent = new ManualResetEvent(false);
         var listFromStatus = new List<State>();
         var listToStatus = new List<State>();
@@ -113,7 +116,6 @@ public class ConnectionRecoverTests
                 resetEvent.Set();
         };
 
-        await connection.ConnectAsync();
         Assert.Equal(State.Open, connection.State);
         await SystemUtils.WaitUntilConnectionIsKilled(connectionName);
         resetEvent.WaitOne(TimeSpan.FromSeconds(5));

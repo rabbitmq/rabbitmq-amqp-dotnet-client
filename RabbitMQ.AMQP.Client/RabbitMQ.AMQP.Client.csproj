@@ -18,6 +18,11 @@
 
     <ItemGroup>
       <PackageReference Include="AMQPNetLite.Core" />
+      <PackageReference Include="System.Diagnostics.DiagnosticSource" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Metrics\" />
     </ItemGroup>
 
 </Project>

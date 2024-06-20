@@ -1,7 +1,4 @@
-﻿using System;
-using System.Net.Sockets;
-using Amqp;
-using Amqp.Framing;
+﻿using System.Net.Sockets;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 

@@ -222,6 +222,7 @@ public class AmqpConnection : IConnection
         await _management.CloseAsync();
     }
 
+    // TODO: maybe add a listener like java client
     public event IClosable.LifeCycleCallBack? ChangeState;
 
     public State State { get; private set; } = State.Closed;
