@@ -20,6 +20,12 @@ internal class TestAmqpManagement : AmqpManagement
 
 internal class TestAmqpManagementOpen : AmqpManagement
 {
+    
+    public TestAmqpManagementOpen()
+    {
+        State = State.Open;
+    }
+    
     protected override async Task InternalSendAsync(Message message)
     {
         await Task.Delay(1000);
@@ -30,7 +36,6 @@ internal class TestAmqpManagementOpen : AmqpManagement
         HandleResponseMessage(msg);
     }
 
-    public override State State { get; protected set; } = State.Open;
 }
 
 public class ManagementTests()
@@ -130,7 +135,7 @@ public class ManagementTests()
     public async Task RaiseManagementClosedException()
     {
         var management = new TestAmqpManagement();
-        await Assert.ThrowsAsync<ModelException>(async () =>
+        await Assert.ThrowsAsync<AmqpClosedException>(async () =>
             await management.Request(new Message(), [200]));
         Assert.Equal(State.Closed, management.State);
     }

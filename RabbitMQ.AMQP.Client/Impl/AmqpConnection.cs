@@ -21,7 +21,8 @@ internal class Visitor(AmqpManagement management) : IVisitor
             }
             catch (Exception e)
             {
-                Trace.WriteLine(TraceLevel.Error, $"Error recovering queue {spec.Name}. Error: {e}. Management Status: {Management}");
+                Trace.WriteLine(TraceLevel.Error,
+                    $"Error recovering queue {spec.Name}. Error: {e}. Management Status: {Management}");
             }
         }
     }
@@ -31,7 +32,7 @@ internal class Visitor(AmqpManagement management) : IVisitor
 /// AmqpConnection is the concrete implementation of <see cref="IConnection"/>
 /// It is a wrapper around the AMQP.Net Lite <see cref="Connection"/> class
 /// </summary>
-public class AmqpConnection : IConnection
+public class AmqpConnection : AbstractClosable, IConnection
 {
     private const string ConnectionNotRecoveredCode = "CONNECTION_NOT_RECOVERED";
     private const string ConnectionNotRecoveredMessage = "Connection not recovered";
@@ -67,6 +68,32 @@ public class AmqpConnection : IConnection
         return connection;
     }
 
+    private void PauseAllPublishers()
+    {
+        foreach (var publisher in Publishers.Values)
+        {
+            publisher.PausePublishing();
+        }
+    }
+
+    private void ResumeAllPublishers()
+    {
+        foreach (var publisher in Publishers.Values)
+        {
+            publisher.ResumePublishing();
+        }
+    }
+
+    private async Task CloseAllPublishers()
+    {
+        var cloned = new List<AmqpPublisher>(Publishers.Values);
+
+        foreach (var publisher in cloned)
+        {
+            await publisher.CloseAsync();
+        }
+    }
+
     private AmqpConnection(ConnectionSettings connectionSettings)
     {
         _connectionSettings = connectionSettings;
@@ -94,7 +121,7 @@ public class AmqpConnection : IConnection
         OnNewStatus(State.Open, null);
     }
 
-    internal async Task EnsureConnectionAsync()
+    private async Task EnsureConnectionAsync()
     {
         await _semaphore.WaitAsync();
         try
@@ -138,24 +165,10 @@ public class AmqpConnection : IConnection
     }
 
 
-    private void OnNewStatus(State newState, Error? error)
-    {
-        if (State == newState) return;
-        var oldStatus = State;
-        State = newState;
-        ChangeState?.Invoke(this, oldStatus, newState, error);
-    }
-
     private ClosedCallback MaybeRecoverConnection()
     {
         return async (sender, error) =>
         {
-            if (State is State.Closing or State.Closed && error != null)
-            {
-                Trace.WriteLine(TraceLevel.Information, $"Connection is closing. Info: {ToString()}");
-                return;
-            }
-
             if (error != null)
             {
                 Trace.WriteLine(TraceLevel.Warning, $"connection is closed unexpectedly. " +
@@ -221,7 +234,6 @@ public class AmqpConnection : IConnection
                         return;
                     }
 
-
                     if (_connectionSettings.RecoveryConfiguration.IsTopologyActive())
                     {
                         Trace.WriteLine(TraceLevel.Information, $"Recovering topology. Info: {ToString()}");
@@ -247,13 +259,15 @@ public class AmqpConnection : IConnection
 
     public IPublisherBuilder PublisherBuilder()
     {
+        ThrowIfClosed();
         var publisherBuilder = new AmqpPublisherBuilder(this);
         return publisherBuilder;
     }
 
 
-    public async Task CloseAsync()
+    public override async Task CloseAsync()
     {
+        await CloseAllPublishers();
         _recordingTopologyListener.Clear();
         if (State == State.Closed) return;
         OnNewStatus(State.Closing, null);
@@ -261,10 +275,6 @@ public class AmqpConnection : IConnection
         await _management.CloseAsync();
     }
 
-    // TODO: maybe add a listener like java client
-    public event IClosable.LifeCycleCallBack? ChangeState;
-
-    public State State { get; private set; } = State.Closed;
 
     public override string ToString()
     {

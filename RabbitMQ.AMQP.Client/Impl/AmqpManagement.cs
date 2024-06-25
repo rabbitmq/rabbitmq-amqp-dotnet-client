@@ -12,7 +12,7 @@ namespace RabbitMQ.AMQP.Client.Impl;
 /// RabbitMQ uses AMQP end  point: "/management" to manage the resources like queues, exchanges, and bindings.
 /// The management endpoint works like an HTTP RPC endpoint where the client sends a request to the server
 /// </summary>
-public class AmqpManagement : IManagement // TODO: Implement ToString()
+public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement ToString()
 {
     // The requests are stored in a dictionary with the correlationId as the key
     // The correlationId is used to match the request with the response
@@ -34,11 +34,9 @@ public class AmqpManagement : IManagement // TODO: Implement ToString()
     private const string ReplyTo = "$me";
 
 
-    public virtual State State { get; protected set; } = State.Closed;
-
-
     public IQueueSpecification Queue()
     {
+        ThrowIfClosed();
         return new AmqpQueueSpecification(this);
     }
 
@@ -161,12 +159,6 @@ public class AmqpManagement : IManagement // TODO: Implement ToString()
         }
     }
 
-    private void OnNewStatus(State newState, Error? error)
-    {
-        var oldStatus = State;
-        State = newState;
-        ChangeState?.Invoke(this, oldStatus, State, error);
-    }
 
     private void EnsureSenderLink()
     {
@@ -258,10 +250,7 @@ public class AmqpManagement : IManagement // TODO: Implement ToString()
     /// <exception cref="ModelException"> Application errors, see <see cref="ModelException"/> </exception>
     internal async ValueTask<Message> Request(Message message, int[] expectedResponseCodes, TimeSpan? timeout = null)
     {
-        if (State != State.Open)
-        {
-            throw new ModelException("Management is not open");
-        }
+        ThrowIfClosed();
 
         TaskCompletionSource<Message> mre = new(TaskCreationOptions.RunContinuationsAsynchronously);
         // Add TaskCompletionSource to the dictionary it will be used to set the result of the request
@@ -328,7 +317,7 @@ public class AmqpManagement : IManagement // TODO: Implement ToString()
         await _senderLink!.SendAsync(message);
     }
 
-    public async Task CloseAsync()
+    public override async Task CloseAsync()
     {
         State = State.Closed;
         if (_managementSession is { IsClosed: false })
@@ -336,8 +325,6 @@ public class AmqpManagement : IManagement // TODO: Implement ToString()
             await _managementSession.CloseAsync();
         }
     }
-
-    public event IClosable.LifeCycleCallBack? ChangeState;
 }
 
 public class InvalidCodeException(string message) : Exception(message);

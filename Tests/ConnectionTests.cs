@@ -70,6 +70,26 @@ public class ConnectionTests
 
         await Assert.ThrowsAsync<SocketException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Port(1234).Build()));
+    }
+    
+    [Fact]
+    public async void ThrowAmqpClosedExceptionWhenItemIsClosed()
+    {
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        var management = connection.Management();
+        await management.Queue().Name("ThrowAmqpClosedExceptionWhenItemIsClosed").Declare();
+        var publisher = connection.PublisherBuilder().Queue("ThrowAmqpClosedExceptionWhenItemIsClosed").Build();
+        await publisher.CloseAsync();
+        await Assert.ThrowsAsync<AmqpClosedException>(async () =>
+            await publisher.Publish(new AmqpMessage("Hello wold!")));
+        await management.QueueDeletion().Delete("ThrowAmqpClosedExceptionWhenItemIsClosed");
+        await connection.CloseAsync();
+        Assert.Empty(connection.GetPublishers());
 
+        Assert.Throws<AmqpClosedException>(() =>
+            connection.PublisherBuilder().Queue("ThrowAmqpClosedExceptionWhenItemIsClosed").Build());
+        
+        await Assert.ThrowsAsync<AmqpClosedException>(async () =>
+            await management.Queue().Name("ThrowAmqpClosedExceptionWhenItemIsClosed").Declare());
     }
 }

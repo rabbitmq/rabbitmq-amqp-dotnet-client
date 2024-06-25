@@ -38,7 +38,31 @@ public class PublisherTests
         var publisher = connection.PublisherBuilder().Queue("queue_to_send").Build();
         await publisher.Publish(new AmqpMessage("Hello wold!"));
         SystemUtils.WaitUntil(() => SystemUtils.HttpGetQMsgCount("queue_to_send") == 1);
+        Assert.Single(connection.GetPublishers());
+        await publisher.CloseAsync();
+        Assert.Empty(connection.GetPublishers());
         await management.QueueDeletion().Delete("queue_to_send");
         await connection.CloseAsync();
     }
+
+
+    [Fact]
+    public async void ValidatePublishersCount()
+    {
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        var management = connection.Management();
+        await management.Queue().Name("queue_publishers_count").Declare();
+
+        for (var i = 1; i <= 10; i++)
+        {
+            var publisher = connection.PublisherBuilder().Queue("queue_publishers_count").Build();
+            await publisher.Publish(new AmqpMessage("Hello wold!"));
+            Assert.Equal(i, connection.GetPublishers().Count);
+        }
+
+        await management.QueueDeletion().Delete("queue_publishers_count");
+        await connection.CloseAsync();
+        Assert.Empty(connection.GetPublishers());
+    }
+    
 }
