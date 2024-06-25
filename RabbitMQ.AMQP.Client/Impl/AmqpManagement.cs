@@ -12,7 +12,7 @@ namespace RabbitMQ.AMQP.Client.Impl;
 /// RabbitMQ uses AMQP end  point: "/management" to manage the resources like queues, exchanges, and bindings.
 /// The management endpoint works like an HTTP RPC endpoint where the client sends a request to the server
 /// </summary>
-public class AmqpManagement : IManagement
+public class AmqpManagement : IManagement // TODO: Implement ToString()
 {
     // The requests are stored in a dictionary with the correlationId as the key
     // The correlationId is used to match the request with the response
@@ -264,10 +264,10 @@ public class AmqpManagement : IManagement
         }
 
         TaskCompletionSource<Message> mre = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        // Add TaskCompletionSource to the dictionary
+        // Add TaskCompletionSource to the dictionary it will be used to set the result of the request
         _requests.TryAdd(message.Properties.MessageId, mre);
         using var cts =
-            new CancellationTokenSource(timeout ?? TimeSpan.FromSeconds(5)); // TODO: make the timeout configurable
+            new CancellationTokenSource(timeout ?? TimeSpan.FromSeconds(10)); // TODO: make the timeout configurable
         await using (cts.Token.Register(
                          () =>
                          {

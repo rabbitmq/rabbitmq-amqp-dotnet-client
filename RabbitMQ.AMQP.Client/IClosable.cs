@@ -15,7 +15,7 @@ public class Error
     public string? ErrorCode { get; internal set; }
 }
 
-public interface IClosable
+public interface IClosable // TODO: Create an abstract class with the event and the State property
 {
     public State State { get; }
 

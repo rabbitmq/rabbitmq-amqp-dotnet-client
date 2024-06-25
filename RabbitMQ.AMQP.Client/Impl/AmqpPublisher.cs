@@ -2,14 +2,24 @@ using Amqp;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public class AmqpPublisher(SenderLink senderLink) : IPublisher
+public class AmqpPublisher(AmqpConnection connection, string address) : IPublisher
 {
-    private readonly SenderLink _senderLink = senderLink;
+    public string Id { get; } = Guid.NewGuid().ToString();
+
+    private readonly SenderLink _senderLink = new(connection.GetNativeSession(), "sender-link", address);
+
 
     public async Task Publish(IMessage message)
     {
-        using var nMessage = ((AmqpMessage)message).NativeMessage;
-        await _senderLink.SendAsync(nMessage);
+        try
+        {
+            using var nMessage = ((AmqpMessage)message).NativeMessage;
+            await _senderLink.SendAsync(nMessage);
+        }
+        catch (Exception e)
+        {
+            throw new PublisherException("Failed to publish message", e);
+        }
     }
 
 
@@ -17,7 +27,10 @@ public class AmqpPublisher(SenderLink senderLink) : IPublisher
 
     public Task CloseAsync()
     {
-        throw new NotImplementedException();
+        ChangeState?.Invoke(this, State.Closing, State.Closed, null);
+        connection.Publishers.TryRemove(Id, out _);
+
+        return Task.CompletedTask;
     }
 
     public event IClosable.LifeCycleCallBack? ChangeState;

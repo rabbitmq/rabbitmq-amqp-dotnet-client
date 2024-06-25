@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
 using Amqp;
 using Amqp.Framing;
 using Amqp.Types;
@@ -13,7 +15,14 @@ internal class Visitor(AmqpManagement management) : IVisitor
         foreach (var spec in queueSpec)
         {
             Trace.WriteLine(TraceLevel.Information, $"Recovering queue {spec.Name}");
-            await Management.Queue(spec).Declare();
+            try
+            {
+                await Management.Queue(spec).Declare();
+            }
+            catch (Exception e)
+            {
+                Trace.WriteLine(TraceLevel.Error, $"Error recovering queue {spec.Name}. Error: {e}. Management Status: {Management}");
+            }
         }
     }
 }
@@ -29,12 +38,19 @@ public class AmqpConnection : IConnection
 
     // The native AMQP.Net Lite connection
     private Connection? _nativeConnection;
+    private Session? _nativeSession;
     private readonly AmqpManagement _management = new();
 
-
     private readonly RecordingTopologyListener _recordingTopologyListener = new();
-
     private readonly ConnectionSettings _connectionSettings;
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
+
+    internal ConcurrentDictionary<string, AmqpPublisher> Publishers { get; } = new();
+
+    public ReadOnlyCollection<AmqpPublisher> GetPublishers()
+    {
+        return Publishers.Values.ToList().AsReadOnly();
+    }
 
     /// <summary>
     /// Creates a new instance of <see cref="AmqpConnection"/>
@@ -47,14 +63,23 @@ public class AmqpConnection : IConnection
     public static async Task<AmqpConnection> CreateAsync(ConnectionSettings connectionSettings)
     {
         var connection = new AmqpConnection(connectionSettings);
-        await connection.EnsureConnectionAsync();
-
+        await connection.ConnectAsync();
         return connection;
     }
 
     private AmqpConnection(ConnectionSettings connectionSettings)
     {
         _connectionSettings = connectionSettings;
+    }
+
+    internal Session GetNativeSession()
+    {
+        if (_nativeSession == null || _nativeSession.IsClosed)
+        {
+            _nativeSession = new Session(_nativeConnection);
+        }
+
+        return _nativeSession;
     }
 
 
@@ -66,19 +91,16 @@ public class AmqpConnection : IConnection
     public async Task ConnectAsync()
     {
         await EnsureConnectionAsync();
+        OnNewStatus(State.Open, null);
     }
 
     internal async Task EnsureConnectionAsync()
     {
+        await _semaphore.WaitAsync();
         try
         {
             if (_nativeConnection == null || _nativeConnection.IsClosed)
             {
-                if (_nativeConnection != null)
-                {
-                    _nativeConnection.Closed -= MaybeRecoverConnection();
-                }
-
                 var open = new Open
                 {
                     HostName = $"vhost:{_connectionSettings.VirtualHost()}",
@@ -91,10 +113,8 @@ public class AmqpConnection : IConnection
                 _management.Init(
                     new AmqpManagementParameters(this).TopologyListener(_recordingTopologyListener));
 
-                _nativeConnection.AddClosedCallback(MaybeRecoverConnection());
+                _nativeConnection.Closed += MaybeRecoverConnection();
             }
-
-            OnNewStatus(State.Open, null);
         }
         catch (AmqpException e)
         {
@@ -111,6 +131,10 @@ public class AmqpConnection : IConnection
             // wrong schema
             throw new ConnectionException($"NotSupportedException: Connection failed. Info: {ToString()}", e);
         }
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
 
@@ -126,6 +150,12 @@ public class AmqpConnection : IConnection
     {
         return async (sender, error) =>
         {
+            if (State is State.Closing or State.Closed && error != null)
+            {
+                Trace.WriteLine(TraceLevel.Information, $"Connection is closing. Info: {ToString()}");
+                return;
+            }
+
             if (error != null)
             {
                 Trace.WriteLine(TraceLevel.Warning, $"connection is closed unexpectedly. " +
@@ -197,6 +227,8 @@ public class AmqpConnection : IConnection
                         Trace.WriteLine(TraceLevel.Information, $"Recovering topology. Info: {ToString()}");
                         await _recordingTopologyListener.Accept(new Visitor(_management));
                     }
+
+                    OnNewStatus(State.Open, null);
                 });
                 return;
             }
@@ -210,6 +242,13 @@ public class AmqpConnection : IConnection
     internal Connection? NativeConnection()
     {
         return _nativeConnection;
+    }
+
+
+    public IPublisherBuilder PublisherBuilder()
+    {
+        var publisherBuilder = new AmqpPublisherBuilder(this);
+        return publisherBuilder;
     }
 
 

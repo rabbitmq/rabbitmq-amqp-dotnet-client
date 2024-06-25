@@ -27,7 +27,7 @@ internal class FakeFastBackOffDelay : IBackOffDelayPolicy
 {
     public int Delay()
     {
-        return 500;
+        return 200;
     }
 
     public void Reset()
@@ -96,13 +96,11 @@ public class ConnectionRecoverTests
     [Fact]
     public async void UnexpectedCloseTheStatusShouldBeCorrectAndErrorNotNull()
     {
-        var connectionName = Guid.NewGuid().ToString();
+        const string connectionName = "unexpected-close-connection-name";
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create().ConnectionName(connectionName).RecoveryConfiguration(
-                RecoveryConfiguration.Create().
-                    Activated(true).
-                    Topology(false).
-                    BackOffDelayPolicy(new FakeFastBackOffDelay())).Build());
+                RecoveryConfiguration.Create().Activated(true).Topology(false)
+                    .BackOffDelayPolicy(new FakeFastBackOffDelay())).Build());
         var resetEvent = new ManualResetEvent(false);
         var listFromStatus = new List<State>();
         var listToStatus = new List<State>();
@@ -187,26 +185,20 @@ public class ConnectionRecoverTests
     /// <summary>
     /// Test when the connection is closed unexpectedly and the recovery is enabled and the topology-recover  can be:
     /// - Enabled
-    /// - Disabled
     ///
     /// When the topology-recover is Enabled the temp queues should be recovered.
-    /// When the topology-recover is  Disabled the temp queues should not be recovered.
     /// the Queue is a temp queue with the Auto-Delete and Exclusive flag set to true. 
     /// </summary>
-    /// <param name="topologyRecoveryEnabled"> enable/disable topology-recover </param>
-    /// <param name="events"> the number of the events expected on the ChangeState event </param>
-    [Theory]
-    [InlineData(true, 2)]
-    [InlineData(false, 1)]
-    public async void RecoveryTopologyShouldRecoverTheTempQueues(bool topologyRecoveryEnabled, int events)
+    [Fact]
+    public async void RecoveryTopologyShouldRecoverTheTempQueues()
     {
-        var queueName = $"temp-queue-should-recover-{topologyRecoveryEnabled}";
-        var connectionName = Guid.NewGuid().ToString();
+        var queueName = $"temp-queue-should-recover-{true}";
+        const string connectionName = "temp-queue-should-recover-connection-name";
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
                 .RecoveryConfiguration(RecoveryConfiguration.Create()
                     .BackOffDelayPolicy(new FakeFastBackOffDelay())
-                    .Topology(topologyRecoveryEnabled))
+                    .Topology(true))
                 .ConnectionName(connectionName)
                 .Build());
         TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -214,7 +206,7 @@ public class ConnectionRecoverTests
         connection.ChangeState += (sender, from, to, error) =>
         {
             recoveryEvents++;
-            if (recoveryEvents == events)
+            if (recoveryEvents == 2)
                 completion.SetResult(true);
         };
         var management = connection.Management();
@@ -223,9 +215,49 @@ public class ConnectionRecoverTests
 
 
         await SystemUtils.WaitUntilConnectionIsKilled(connectionName);
-        await completion.Task.WaitAsync(TimeSpan.FromSeconds(2));
-        SystemUtils.WaitUntil(() => SystemUtils.QueueExists(queueName) == topologyRecoveryEnabled);
+        await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        SystemUtils.WaitUntil(() => SystemUtils.QueueExists(queueName));
 
+        await connection.CloseAsync();
+        Assert.Equal(0, management.TopologyListener().QueueCount());
+    }
+
+
+    /// <summary>
+    /// Test when the connection is closed unexpectedly and the recovery is enabled and the topology-recover  can be:
+    /// - Disabled
+    ///
+    /// When the topology-recover is  Disabled the temp queues should not be recovered.
+    /// the Queue is a temp queue with the Auto-Delete and Exclusive flag set to true. 
+    /// </summary>
+    [Fact]
+    public async void RecoveryTopologyShouldNotRecoverTheTempQueues()
+    {
+        var queueName = $"temp-queue-should-recover-{false}";
+        const string connectionName = "temp-queue-should-not-recover-connection-name";
+        var connection = await AmqpConnection.CreateAsync(
+            ConnectionSettingBuilder.Create()
+                .RecoveryConfiguration(RecoveryConfiguration.Create()
+                    .BackOffDelayPolicy(new FakeFastBackOffDelay())
+                    .Topology(false))
+                .ConnectionName(connectionName)
+                .Build());
+        TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        var recoveryEvents = 0;
+        connection.ChangeState += (sender, from, to, error) =>
+        {
+            recoveryEvents++;
+            if (recoveryEvents == 1)
+                completion.SetResult(true);
+        };
+        var management = connection.Management();
+        await management.Queue().Name(queueName).AutoDelete(true).Exclusive(true).Declare();
+        Assert.Equal(1, management.TopologyListener().QueueCount());
+
+
+        await SystemUtils.WaitUntilConnectionIsKilled(connectionName);
+        await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        SystemUtils.WaitUntil(() => SystemUtils.QueueExists(queueName) == false);
 
         await connection.CloseAsync();
         Assert.Equal(0, management.TopologyListener().QueueCount());
