@@ -81,7 +81,10 @@ public class ConnectionTests
         var publisher = connection.PublisherBuilder().Queue("ThrowAmqpClosedExceptionWhenItemIsClosed").Build();
         await publisher.CloseAsync();
         await Assert.ThrowsAsync<AmqpClosedException>(async () =>
-            await publisher.Publish(new AmqpMessage("Hello wold!")));
+            await publisher.Publish(new AmqpMessage("Hello wold!"), (message, descriptor) =>
+            {
+                // it doest matter
+            }));
         await management.QueueDeletion().Delete("ThrowAmqpClosedExceptionWhenItemIsClosed");
         await connection.CloseAsync();
         Assert.Empty(connection.GetPublishers());

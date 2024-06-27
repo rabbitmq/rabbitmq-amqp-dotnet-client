@@ -107,7 +107,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
                    _amqpConnection?.NativeConnection()!.IsClosed == false)
             {
                 if (_receiverLink == null) continue;
-                var msg = await _receiverLink.ReceiveAsync();
+                var msg =  await _receiverLink.ReceiveAsync();
                 if (msg == null)
                 {
                     Trace.WriteLine(TraceLevel.Warning, "Received null message");
@@ -145,17 +145,20 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
                 Source = new Source()
                 {
                     Address = ManagementNodeAddress,
+                    ExpiryPolicy = new Symbol("LINK_DETACH"),
                 },
                 Handle = 1,
                 Target = new Target()
                 {
                     Address = ManagementNodeAddress,
+                    ExpiryPolicy = new Symbol("SESSION_END"),
+                    
                 },
             };
             _receiverLink = new ReceiverLink(
                 _managementSession, LinkPairName, receiveAttach, null);
 
-            _receiverLink.SetCredit(100);
+            _receiverLink.SetCredit(1);
         }
     }
 
@@ -168,7 +171,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
             {
                 SndSettleMode = SenderSettleMode.Settled,
                 RcvSettleMode = ReceiverSettleMode.First,
-
+                
                 Properties = new Fields
                 {
                     { new Symbol("paired"), true }
@@ -256,7 +259,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
         // Add TaskCompletionSource to the dictionary it will be used to set the result of the request
         _requests.TryAdd(message.Properties.MessageId, mre);
         using var cts =
-            new CancellationTokenSource(timeout ?? TimeSpan.FromSeconds(10)); // TODO: make the timeout configurable
+            new CancellationTokenSource(timeout ?? TimeSpan.FromSeconds(1000)); // TODO: make the timeout configurable
         await using (cts.Token.Register(
                          () =>
                          {

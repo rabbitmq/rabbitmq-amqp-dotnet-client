@@ -39,12 +39,13 @@ public class AmqpConnection : AbstractClosable, IConnection
 
     // The native AMQP.Net Lite connection
     private Connection? _nativeConnection;
-    private Session? _nativeSession;
+    private Session? _nativeManagementSession;
     private readonly AmqpManagement _management = new();
 
     private readonly RecordingTopologyListener _recordingTopologyListener = new();
-    private readonly ConnectionSettings _connectionSettings;
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
+    internal readonly AmqpSessionManagement NativePubSubSessions;
+    internal readonly ConnectionSettings _connectionSettings;
+    // private readonly SemaphoreSlim _semaphore = new(1, 1);
 
     internal ConcurrentDictionary<string, AmqpPublisher> Publishers { get; } = new();
 
@@ -97,16 +98,17 @@ public class AmqpConnection : AbstractClosable, IConnection
     private AmqpConnection(ConnectionSettings connectionSettings)
     {
         _connectionSettings = connectionSettings;
+        NativePubSubSessions = new AmqpSessionManagement(this, 1);
     }
 
-    internal Session GetNativeSession()
+    internal Session GetManagementNativeSession()
     {
-        if (_nativeSession == null || _nativeSession.IsClosed)
+        if (_nativeManagementSession == null || _nativeManagementSession.IsClosed)
         {
-            _nativeSession = new Session(_nativeConnection);
+            _nativeManagementSession = new Session(_nativeConnection);
         }
 
-        return _nativeSession;
+        return _nativeManagementSession;
     }
 
 
@@ -115,15 +117,16 @@ public class AmqpConnection : AbstractClosable, IConnection
         return _management;
     }
 
-    public async Task ConnectAsync()
+    public Task ConnectAsync()
     {
-        await EnsureConnectionAsync();
+        EnsureConnectionAsync();
         OnNewStatus(State.Open, null);
+        return Task.CompletedTask;
     }
 
-    private async Task EnsureConnectionAsync()
+    private void EnsureConnectionAsync()
     {
-        await _semaphore.WaitAsync();
+        // await _semaphore.WaitAsync();
         try
         {
             if (_nativeConnection == null || _nativeConnection.IsClosed)
@@ -136,32 +139,43 @@ public class AmqpConnection : AbstractClosable, IConnection
                         [new Symbol("connection_name")] = _connectionSettings.ConnectionName(),
                     }
                 };
-                _nativeConnection = await Connection.Factory.CreateAsync(_connectionSettings.Address, open);
+                
+                var manualReset = new ManualResetEvent(false);
+                _nativeConnection = new Connection(_connectionSettings.Address, null, open, (connection, open1) =>
+                {
+                    manualReset.Set();
+                    Trace.WriteLine(TraceLevel.Information, $"Connection opened. Info: {ToString()}");
+                    OnNewStatus(State.Open, null);
+                });
+                
+                manualReset.WaitOne(TimeSpan.FromSeconds(5));
+                if (_nativeConnection.IsClosed)
+                {
+                    throw new ConnectionException($"Connection failed. Info: {ToString()}, error: {_nativeConnection.Error}");
+                }
+                
+
                 _management.Init(
                     new AmqpManagementParameters(this).TopologyListener(_recordingTopologyListener));
 
                 _nativeConnection.Closed += MaybeRecoverConnection();
             }
         }
+        
         catch (AmqpException e)
         {
-            throw new ConnectionException($"AmqpException: Connection failed. Info: {ToString()} ", e);
+            Trace.WriteLine(TraceLevel.Error, $"Error trying to connect. Info: {ToString()}, error: {e}");
+            throw new ConnectionException($"Error trying to connect. Info: {ToString()}, error: {e}");
         }
-        catch (OperationCanceledException e)
-        {
-            // wrong virtual host
-            throw new ConnectionException($"OperationCanceledException: Connection failed. Info: {ToString()}", e);
-        }
-
-        catch (NotSupportedException e)
-        {
-            // wrong schema
-            throw new ConnectionException($"NotSupportedException: Connection failed. Info: {ToString()}", e);
-        }
+        
+        
+        
         finally
         {
-            _semaphore.Release();
+            // _semaphore.Release();
         }
+
+        // return Task.CompletedTask;
     }
 
 
@@ -207,7 +221,7 @@ public class AmqpConnection : AbstractClosable, IConnection
                             await Task.Delay(
                                 TimeSpan.FromMilliseconds(next));
 
-                            await EnsureConnectionAsync();
+                            EnsureConnectionAsync();
                             connected = true;
                         }
                         catch (Exception e)

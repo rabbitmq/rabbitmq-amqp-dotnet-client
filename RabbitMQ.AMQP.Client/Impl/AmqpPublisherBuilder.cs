@@ -52,6 +52,7 @@ public class AmqpPublisherBuilder(AmqpConnection connection) : IPublisherBuilder
     private string? _exchange;
     private string? _key;
     private string? _queue;
+    private TimeSpan _timeout = TimeSpan.FromSeconds(10);
 
 
     public IPublisherBuilder Exchange(string exchange)
@@ -74,14 +75,14 @@ public class AmqpPublisherBuilder(AmqpConnection connection) : IPublisherBuilder
 
     public IPublisherBuilder PublishTimeout(TimeSpan timeout)
     {
-        throw new NotImplementedException();
+        _timeout = timeout;
+        return this;
     }
 
     public IPublisher Build()
     {
-        var newPublisher = new AmqpPublisher(connection,
-            new AddressBuilder().Exchange(_exchange).Queue(_queue).Key(_key).Address());
-        connection.Publishers.TryAdd(newPublisher.Id, newPublisher);
-        return newPublisher;
+        return new AmqpPublisher(connection,
+            new AddressBuilder().Exchange(_exchange).Queue(_queue).Key(_key).Address(),
+            _timeout);
     }
 }

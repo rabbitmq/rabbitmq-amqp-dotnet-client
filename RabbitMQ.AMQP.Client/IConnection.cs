@@ -1,6 +1,6 @@
 namespace RabbitMQ.AMQP.Client;
 
-public class ConnectionException(string? message, Exception? innerException) : Exception(message, innerException);
+public class ConnectionException(string? message) : Exception(message);
 
 public interface IConnection 
 {
