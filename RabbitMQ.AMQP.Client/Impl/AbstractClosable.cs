@@ -13,8 +13,8 @@ public abstract class AbstractClosable : IClosable
             throw new AmqpClosedException(GetType().Name);
         }
     }
-    
-    
+
+
     protected void OnNewStatus(State newState, Error? error)
     {
         if (State == newState) return;

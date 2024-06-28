@@ -71,7 +71,7 @@ public class ConnectionTests
         await Assert.ThrowsAsync<SocketException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Port(1234).Build()));
     }
-    
+
     [Fact]
     public async void ThrowAmqpClosedExceptionWhenItemIsClosed()
     {
@@ -91,7 +91,7 @@ public class ConnectionTests
 
         Assert.Throws<AmqpClosedException>(() =>
             connection.PublisherBuilder().Queue("ThrowAmqpClosedExceptionWhenItemIsClosed").Build());
-        
+
         await Assert.ThrowsAsync<AmqpClosedException>(async () =>
             await management.Queue().Name("ThrowAmqpClosedExceptionWhenItemIsClosed").Declare());
     }

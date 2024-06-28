@@ -12,16 +12,18 @@ public class AmqpPublisher : AbstractClosable, IPublisher
 {
     private SenderLink _senderLink = null!;
 
-    // private readonly ManualResetEvent _stopPublishing = new(true);
+    private readonly ManualResetEvent _pausePublishing = new(true);
     private readonly AmqpConnection _connection;
     private readonly TimeSpan _timeout;
     private readonly string _address;
+    private readonly int _maxInFlight;
 
-    public AmqpPublisher(AmqpConnection connection, string address, TimeSpan timeout)
+    public AmqpPublisher(AmqpConnection connection, string address, TimeSpan timeout, int maxInFlight)
     {
         _address = address;
         _connection = connection;
         _timeout = timeout;
+        _maxInFlight = maxInFlight;
         connection.Publishers.TryAdd(Id, this);
         Connect();
     }
@@ -30,19 +32,17 @@ public class AmqpPublisher : AbstractClosable, IPublisher
     {
         try
         {
-            var complete = new ManualResetEvent(false);
+            var attachCompleted = new ManualResetEvent(false);
             _senderLink = new SenderLink(_connection.NativePubSubSessions.GetOrCreateSession(), Id,
                 Utils.CreateSenderAttach(_address, DeliveryMode.AtLeastOnce, Id),
-                (link, attach) =>
-                {
-                    complete.Set();
-                });
-            complete.WaitOne(TimeSpan.FromSeconds(5));
+                (link, attach) => { attachCompleted.Set(); });
+            attachCompleted.WaitOne(TimeSpan.FromSeconds(5));
             if (_senderLink.LinkState != LinkState.Attached)
             {
                 throw new PublisherException("Failed to create sender link. Link state is not attached, error: " +
-                                             _senderLink.Error?.ToString() ?? "Unknown error");
+                    _senderLink.Error?.ToString() ?? "Unknown error");
             }
+
             OnNewStatus(State.Open, null);
         }
         catch (Exception e)
@@ -56,12 +56,30 @@ public class AmqpPublisher : AbstractClosable, IPublisher
 
     public void PausePublishing()
     {
-        // _stopPublishing.Reset();
+        _pausePublishing.Reset();
     }
 
-    public void ResumePublishing()
+    private void MaybeResumePublishing()
     {
-        // _stopPublishing.Set();
+        if (State is State.Closing or State.Closed or State.Reconnecting)
+        {
+            return;
+        }
+        // Can be resumed only if the publisher is open and the in-flight messages are less than the max allowed
+        // In case the publisher is closed, closing or reconnecting, the publishing will be paused
+        _pausePublishing.Set();
+    }
+
+    private void MaybeBackPressure()
+    {
+        if (_currentInFlight >= _maxInFlight)
+        {
+            PausePublishing();
+        }
+        else
+        {
+            MaybeResumePublishing();
+        }
     }
 
 
@@ -74,16 +92,22 @@ public class AmqpPublisher : AbstractClosable, IPublisher
     //     return batch;
     // }
 
+    private int _currentInFlight = 0;
     public Task Publish(IMessage message, OutcomeDescriptorCallback outcomeCallback)
     {
         ThrowIfClosed();
         try
         {
-            // _stopPublishing.WaitOne(_timeout);
+            _pausePublishing.WaitOne(_timeout);
+            Interlocked.Increment(ref _currentInFlight);
+
             var nMessage = ((AmqpMessage)message).NativeMessage;
             _senderLink.Send(nMessage,
                 (sender, outMessage, outcome, state) =>
                 {
+                    Interlocked.Decrement(ref _currentInFlight);
+                    MaybeBackPressure();
+
                     if (outMessage == nMessage &&
                         outMessage.GetEstimatedMessageSize() == nMessage.GetEstimatedMessageSize())
                     {
@@ -108,6 +132,7 @@ public class AmqpPublisher : AbstractClosable, IPublisher
 
                     nMessage.Dispose();
                 }, this);
+
         }
         catch (Exception e)
         {
@@ -138,5 +163,10 @@ public class AmqpPublisher : AbstractClosable, IPublisher
         }
 
         OnNewStatus(State.Closed, null);
+    }
+
+    public void ResumePublishing()
+    {
+        MaybeResumePublishing();
     }
 }

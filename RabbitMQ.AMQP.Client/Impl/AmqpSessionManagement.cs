@@ -4,7 +4,7 @@ namespace RabbitMQ.AMQP.Client.Impl;
 
 public class AmqpSessionManagement(AmqpConnection amqpConnection, int maxSessionsPerItem)
 {
-    private int MaxSessionsPerItem { get;  } = maxSessionsPerItem;
+    private int MaxSessionsPerItem { get; } = maxSessionsPerItem;
     private List<Session> Sessions { get; } = [];
 
     public Session GetOrCreateSession()

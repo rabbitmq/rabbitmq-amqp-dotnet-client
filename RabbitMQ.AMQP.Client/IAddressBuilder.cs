@@ -6,7 +6,7 @@ public interface IAddressBuilder<out T>
 {
 
     T Exchange(string exchange);
-    
+
     T Queue(string queue);
 
     T Key(string key);

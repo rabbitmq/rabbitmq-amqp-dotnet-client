@@ -17,31 +17,61 @@ Trace.WriteLine(TraceLevel.Information, "Starting");
 const string connectionName = "Hello-Connection";
 
 var connection = await AmqpConnection.CreateAsync(
-    ConnectionSettingBuilder.Create().VirtualHost("aaa").ConnectionName(connectionName).RecoveryConfiguration(
+    ConnectionSettingBuilder.Create().ConnectionName(connectionName).RecoveryConfiguration(
         RecoveryConfiguration.Create().Activated(true).Topology(true)
     ).Build());
 
 Trace.WriteLine(TraceLevel.Information, "Connected");
 
 var management = connection.Management();
-await management.Queue($"my-first-queue").Type(QueueType.QUORUM).Declare();
+await management.QueueDeletion().Delete("my-first-queue-n");
+await management.Queue($"my-first-queue-n").Type(QueueType.QUORUM).Declare();
+
 
 try
 {
-    var publisher = connection.PublisherBuilder().Queue("my-first-queue").Build();
+    var publisher = connection.PublisherBuilder().Queue("my-first-queue-n").Build();
+    // var c = new Connection(new Address("amqp://localhost:5672"));
+    // var s = new Session(c);
+    // var sender = new SenderLink(s, "sender-link", "/queue/my-first-queue-n");
+    //
+    var confirmed = 0;
 
-//
-    for (var i = 0; i < 500; i++)
+    var start = DateTime.Now;
+    const int total = 5_000_000;
+    for (var i = 0; i < total; i++)
     {
         try
         {
+            if (i % 200_000 == 0)
+            {
+                var endp = DateTime.Now;
+                Console.WriteLine($"Sending Time: {endp - start} - messages {i}");
+            }
+
+            // sender.Send(new Message(new byte[10]), (link, message, outcome, state) => { }, null);
+
             await publisher.Publish(
-                new AmqpMessage($"Hello World!{i}").MessageId($"id_{i}").CorrelationId(Guid.NewGuid().ToString())
-                    .ReplyTo($"Reply_to{i}"),
+                new AmqpMessage(new byte[10]),
                 (message, descriptor) =>
                 {
-                    Console.WriteLine(
-                        $"outcome result, state: {descriptor.State}, code: {descriptor.Code}, message_id: {message.MessageId()} Description: {descriptor.Description}, error: {descriptor.Error}");
+                    if (descriptor.State == OutcomeState.Accepted)
+                    {
+                        if (Interlocked.Increment(ref confirmed) % 200_000 != 0) return;
+                        var end = DateTime.Now;
+                        Console.WriteLine($"Confirmed Time: {end - start} {confirmed}");
+
+
+                        // Console.WriteLine(
+                        // $"outcome result, state: {descriptor.State}, code: {descriptor.Code}, message_id: {message.MessageId()} Description: {descriptor.Description}, error: {descriptor.Error}");
+                    }
+                    else
+                    {
+                        Console.WriteLine(
+                        $"outcome result, state: {descriptor.State}, code: {descriptor.Code}, message_id: " +
+                            $"{message.MessageId()} Description: {descriptor.Description}, error: {descriptor.Error}");
+                    }
+
                 });
         }
         catch (Exception e)
@@ -50,7 +80,8 @@ try
         }
     }
 
-    await publisher.CloseAsync();
+    var end = DateTime.Now;
+    Console.WriteLine($"Total Sent Time: {end - start}");
 }
 catch (Exception e)
 {
@@ -60,8 +91,9 @@ catch (Exception e)
 //
 Trace.WriteLine(TraceLevel.Information, "Queue Created");
 Console.WriteLine("Press any key to delete the queue and close the connection.");
+// await publisher.CloseAsync();
 Console.ReadKey();
-await management.QueueDeletion().Delete("my-first-queue");
+await management.QueueDeletion().Delete("my-first-queue-n");
 Trace.WriteLine(TraceLevel.Information, "Queue Deleted");
 Console.ReadKey();
 await connection.CloseAsync();

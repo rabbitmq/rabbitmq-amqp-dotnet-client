@@ -139,7 +139,7 @@ public class AmqpConnection : AbstractClosable, IConnection
                         [new Symbol("connection_name")] = _connectionSettings.ConnectionName(),
                     }
                 };
-                
+
                 var manualReset = new ManualResetEvent(false);
                 _nativeConnection = new Connection(_connectionSettings.Address, null, open, (connection, open1) =>
                 {
@@ -147,13 +147,13 @@ public class AmqpConnection : AbstractClosable, IConnection
                     Trace.WriteLine(TraceLevel.Information, $"Connection opened. Info: {ToString()}");
                     OnNewStatus(State.Open, null);
                 });
-                
+
                 manualReset.WaitOne(TimeSpan.FromSeconds(5));
                 if (_nativeConnection.IsClosed)
                 {
                     throw new ConnectionException($"Connection failed. Info: {ToString()}, error: {_nativeConnection.Error}");
                 }
-                
+
 
                 _management.Init(
                     new AmqpManagementParameters(this).TopologyListener(_recordingTopologyListener));
@@ -161,15 +161,15 @@ public class AmqpConnection : AbstractClosable, IConnection
                 _nativeConnection.Closed += MaybeRecoverConnection();
             }
         }
-        
+
         catch (AmqpException e)
         {
             Trace.WriteLine(TraceLevel.Error, $"Error trying to connect. Info: {ToString()}, error: {e}");
             throw new ConnectionException($"Error trying to connect. Info: {ToString()}, error: {e}");
         }
-        
-        
-        
+
+
+
         finally
         {
             // _semaphore.Release();
@@ -239,12 +239,7 @@ public class AmqpConnection : AbstractClosable, IConnection
                     if (!connected)
                     {
                         Trace.WriteLine(TraceLevel.Verbose, $"connection is closed. Info: {ToString()}");
-                        OnNewStatus(State.Closed, new Error()
-                        {
-                            Description =
-                                $"{ConnectionNotRecoveredMessage}, recover status: {_connectionSettings.RecoveryConfiguration}",
-                            ErrorCode = ConnectionNotRecoveredCode
-                        });
+                        OnNewStatus(State.Closed, new Error(ConnectionNotRecoveredCode, $"{ConnectionNotRecoveredMessage}, recover status: {_connectionSettings.RecoveryConfiguration}"));
                         return;
                     }
 

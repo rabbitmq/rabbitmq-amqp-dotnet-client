@@ -9,11 +9,11 @@ public enum State
     Closed,
 }
 
-public class Error
+public class Error(string? errorCode, string? description)
 {
-    public string? Description { get; internal set; }
-    public string? ErrorCode { get; internal set; }
-    
+    public string? Description { get; } = description;
+    public string? ErrorCode { get; } = errorCode;
+
     public override string ToString()
     {
         return $"Code: {ErrorCode} - Description: {Description}";

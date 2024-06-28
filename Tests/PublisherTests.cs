@@ -29,8 +29,8 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
     public async void RaiseErrorIfQueueDoesNotExist()
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-         Assert.Throws<PublisherException>(() =>
-            connection.PublisherBuilder().Queue("queue_does_not_exist").Build());
+        Assert.Throws<PublisherException>(() =>
+           connection.PublisherBuilder().Queue("queue_does_not_exist").Build());
 
         await connection.CloseAsync();
     }

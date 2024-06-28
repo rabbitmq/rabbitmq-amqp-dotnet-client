@@ -20,12 +20,12 @@ internal class TestAmqpManagement : AmqpManagement
 
 internal class TestAmqpManagementOpen : AmqpManagement
 {
-    
+
     public TestAmqpManagementOpen()
     {
         State = State.Open;
     }
-    
+
     protected override async Task InternalSendAsync(Message message)
     {
         await Task.Delay(1000);

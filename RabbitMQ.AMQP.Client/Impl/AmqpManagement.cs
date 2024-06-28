@@ -107,7 +107,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
                    _amqpConnection?.NativeConnection()!.IsClosed == false)
             {
                 if (_receiverLink == null) continue;
-                var msg =  await _receiverLink.ReceiveAsync();
+                var msg = await _receiverLink.ReceiveAsync();
                 if (msg == null)
                 {
                     Trace.WriteLine(TraceLevel.Warning, "Received null message");
@@ -152,7 +152,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
                 {
                     Address = ManagementNodeAddress,
                     ExpiryPolicy = new Symbol("SESSION_END"),
-                    
+
                 },
             };
             _receiverLink = new ReceiverLink(
@@ -171,7 +171,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
             {
                 SndSettleMode = SenderSettleMode.Settled,
                 RcvSettleMode = ReceiverSettleMode.First,
-                
+
                 Properties = new Fields
                 {
                     { new Symbol("paired"), true }

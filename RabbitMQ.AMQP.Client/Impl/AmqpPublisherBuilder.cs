@@ -53,6 +53,7 @@ public class AmqpPublisherBuilder(AmqpConnection connection) : IPublisherBuilder
     private string? _key;
     private string? _queue;
     private TimeSpan _timeout = TimeSpan.FromSeconds(10);
+    private int _maxInFlight = 1000;
 
 
     public IPublisherBuilder Exchange(string exchange)
@@ -79,10 +80,17 @@ public class AmqpPublisherBuilder(AmqpConnection connection) : IPublisherBuilder
         return this;
     }
 
+    public IPublisherBuilder MaxInFlight(int maxInFlight)
+    {
+        _maxInFlight = maxInFlight;
+        return this;
+    }
+
     public IPublisher Build()
     {
-        return new AmqpPublisher(connection,
+        return new AmqpPublisher(
+            connection,
             new AddressBuilder().Exchange(_exchange).Queue(_queue).Key(_key).Address(),
-            _timeout);
+            _timeout, _maxInFlight);
     }
 }
