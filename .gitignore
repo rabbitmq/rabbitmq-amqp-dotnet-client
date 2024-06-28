@@ -120,9 +120,8 @@ projects/Unit*/TestResult.xml
 .sw?
 .*.sw?
 
-#tests
+# tests
 Tests/coverage.*
-##
+
+# docs
 docs/temp/
-tls-gen/
-rabbitmq-configuration/

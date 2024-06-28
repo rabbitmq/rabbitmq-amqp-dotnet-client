@@ -1,9 +1,10 @@
-﻿using System.Net.Sockets;
-using RabbitMQ.AMQP.Client;
+﻿using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
+using System.Net.Sockets;
 
 namespace Tests;
 
+using System.Threading.Tasks;
 using Xunit;
 
 public class ConnectionTests
@@ -52,28 +53,26 @@ public class ConnectionTests
     }
 
     [Fact]
-    public async void RaiseErrorsIfTheParametersAreNotValid()
+    public async Task RaiseErrorsIfTheParametersAreNotValid()
     {
         await Assert.ThrowsAsync<ConnectionException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().VirtualHost("wrong_vhost").Build()));
 
-        await Assert.ThrowsAsync<SocketException>(async () =>
+        await Assert.ThrowsAnyAsync<SocketException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Host("wrong_host").Build()));
-
 
         await Assert.ThrowsAsync<ConnectionException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Password("wrong_password").Build()));
 
-
         await Assert.ThrowsAsync<ConnectionException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().User("wrong_user").Build()));
 
-        await Assert.ThrowsAsync<SocketException>(async () =>
+        await Assert.ThrowsAnyAsync<SocketException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Port(1234).Build()));
     }
 
     [Fact]
-    public async void ThrowAmqpClosedExceptionWhenItemIsClosed()
+    public async Task ThrowAmqpClosedExceptionWhenItemIsClosed()
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         var management = connection.Management();

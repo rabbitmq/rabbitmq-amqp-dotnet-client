@@ -1,41 +1,26 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <IsPackable>false</IsPackable>
-        <MinVerSkip>true</MinVerSkip>
-        <Copyright>Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term Broadcom refers to Broadcom Inc. and/or its subsidiaries.</Copyright>
-        <Authors>Broadcom</Authors>
-        <Company>Broadcom Inc. and/or its subsidiaries.</Company>
-        <TargetFramework>net8.0</TargetFramework>
-        <TargetFrameworks />
-        <OutputType>Library</OutputType>
-        <!-- <ImplicitUsings>enable</ImplicitUsings> -->
-        <!-- <Nullable>enable</Nullable> -->
-        <!-- <RootNamespace>Test</RootNamespace> -->
+      <MinVerSkip>true</MinVerSkip>
+      <IsTestProject>true</IsTestProject>
+      <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="AltCover" />
       <PackageReference Include="Microsoft.NET.Test.Sdk" />
       <PackageReference Include="xunit" />
-      <PackageReference Include="xunit.runner.visualstudio">
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        <PrivateAssets>all</PrivateAssets>
-      </PackageReference>
+      <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
       <PackageReference Include="Xunit.SkippableFact" />
-      <PackageReference Include="coverlet.collector">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-      </PackageReference>
+      <PackageReference Include="coverlet.collector" PrivateAssets="all" />
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>
-    <ProjectReference Include="..\RabbitMQ.AMQP.Client\RabbitMQ.AMQP.Client.csproj" />
+      <ProjectReference Include="../RabbitMQ.AMQP.Client/RabbitMQ.AMQP.Client.csproj" />
     </ItemGroup>
-
 
 </Project>

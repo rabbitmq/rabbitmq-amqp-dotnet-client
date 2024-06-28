@@ -18,17 +18,17 @@ public interface IQueueSpecification : IEntityDeclaration<IQueueInfo>
 {
     IQueueSpecification Name(string name);
     public string Name();
+
     IQueueSpecification Exclusive(bool exclusive);
     public bool Exclusive();
+
     IQueueSpecification AutoDelete(bool autoDelete);
     public bool AutoDelete();
 
     IQueueSpecification Arguments(Dictionary<object, object> arguments);
-
     public Dictionary<object, object> Arguments();
 
     IQueueSpecification Type(QueueType type);
-
     public QueueType Type();
 
     // IQuorumQueueSpecification Quorum();

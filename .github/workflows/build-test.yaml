@@ -9,32 +9,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Checkout tls-gen
-        uses: actions/checkout@v4
-        with:
-          repository: rabbitmq/tls-gen
-          path: './tls-gen'
-      - name: Start broker
-        run: ci/start-broker.sh
-      - name: Start toxiproxy
-        run: ci/start-toxiproxy.sh
-      - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: |
-            7.x
-            8.x
-      - name: Display DotNet version
-        run: dotnet --version
-      - name: Restore
-        run: dotnet restore ./Build.csproj --verbosity=normal
+          dotnet-version: 8.x
+      - name: Start RabbitMQ
+        id: start-rabbitmq
+        run: ${{ github.workspace }}/.ci/ubuntu/gha-setup.sh toxiproxy
+      - name: Build (Debug)
+        run: dotnet build ${{ github.workspace }}/Build.csproj
       - name: Verify
-        run: dotnet format ./Build.csproj --no-restore --verbosity=diagnostic --verify-no-changes
-      - name: Build
-        run: dotnet build ./Build.csproj --no-restore --verbosity=normal
+        run: dotnet format ${{ github.workspace }}/Build.csproj --no-restore --verify-no-changes
       - name: Test
-        run: dotnet test ./Build.csproj --logger "console;verbosity=detailed" /p:AltCover=true
-      - name: Stop toxiproxy
-        run: docker stop toxiproxy && docker rm toxiproxy
-      - name: Stop broker
-        run: docker stop rabbitmq && docker rm rabbitmq
+        run: dotnet test ${{ github.workspace }}/Build.csproj --no-restore --no-build --logger "console;verbosity=detailed" /p:AltCover=true
+      - name: Check for errors in RabbitMQ logs
+        run: ${{ github.workspace}}/.ci/ubuntu/gha-log-check.sh
+      - name: Maybe collect toxiproxy logs
+        if: failure()
+        run: docker logs rabbitmq-amqp-dotnet-client-toxiproxy > ${{ github.workspace }}/.ci/ubuntu/log/toxiproxy.log
+      - name: Maybe upload RabbitMQ logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rabbitmq-logs-integration-ubuntu
+          path: ${{ github.workspace }}/.ci/ubuntu/log/

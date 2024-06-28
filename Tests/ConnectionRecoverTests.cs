@@ -1,9 +1,9 @@
+using RabbitMQ.AMQP.Client;
+using RabbitMQ.AMQP.Client.Impl;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.AMQP.Client;
-using RabbitMQ.AMQP.Client.Impl;
 
 namespace Tests;
 
@@ -48,7 +48,7 @@ public class ConnectionRecoverTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async void NormalCloseTheStatusShouldBeCorrectAndErrorNull(bool activeRecovery)
+    public async Task NormalCloseTheStatusShouldBeCorrectAndErrorNull(bool activeRecovery)
     {
         var connectionName = Guid.NewGuid().ToString();
         var connection = await AmqpConnection.CreateAsync(
@@ -94,7 +94,7 @@ public class ConnectionRecoverTests
     ///  - From Open to Closed
     /// </summary>
     [Fact]
-    public async void UnexpectedCloseTheStatusShouldBeCorrectAndErrorNotNull()
+    public async Task UnexpectedCloseTheStatusShouldBeCorrectAndErrorNotNull()
     {
         const string connectionName = "unexpected-close-connection-name";
         var connection = await AmqpConnection.CreateAsync(
@@ -145,7 +145,7 @@ public class ConnectionRecoverTests
     /// See the BackOffDelayPolicy class for more details.
     /// </summary>
     [Fact]
-    public async void OverrideTheBackOffWithBackOffDisabled()
+    public async Task OverrideTheBackOffWithBackOffDisabled()
     {
         var connectionName = Guid.NewGuid().ToString();
         var connection = await AmqpConnection.CreateAsync(
@@ -190,7 +190,7 @@ public class ConnectionRecoverTests
     /// the Queue is a temp queue with the Auto-Delete and Exclusive flag set to true. 
     /// </summary>
     [Fact]
-    public async void RecoveryTopologyShouldRecoverTheTempQueues()
+    public async Task RecoveryTopologyShouldRecoverTheTempQueues()
     {
         var queueName = $"temp-queue-should-recover-{true}";
         const string connectionName = "temp-queue-should-recover-connection-name";
@@ -231,7 +231,7 @@ public class ConnectionRecoverTests
     /// the Queue is a temp queue with the Auto-Delete and Exclusive flag set to true. 
     /// </summary>
     [Fact]
-    public async void RecoveryTopologyShouldNotRecoverTheTempQueues()
+    public async Task RecoveryTopologyShouldNotRecoverTheTempQueues()
     {
         var queueName = $"temp-queue-should-recover-{false}";
         const string connectionName = "temp-queue-should-not-recover-connection-name";

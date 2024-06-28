@@ -22,8 +22,8 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client</RepositoryUrl>
-    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <LangVersion>default</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release' And '$(CI)' == 'true'">
