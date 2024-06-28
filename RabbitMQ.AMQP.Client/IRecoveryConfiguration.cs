@@ -13,7 +13,7 @@ public interface IRecoveryConfiguration
     /// <param name="activated"></param>
     /// <returns></returns>
     IRecoveryConfiguration Activated(bool activated);
-    
+
     bool IsActivate();
 
     /// <summary>
@@ -32,7 +32,7 @@ public interface IRecoveryConfiguration
     /// <param name="activated"></param>
     /// <returns></returns>
     IRecoveryConfiguration Topology(bool activated);
-    
+
     bool IsTopologyActive();
 
 }
@@ -41,23 +41,23 @@ public interface IRecoveryConfiguration
 /// Interface for the backoff delay policy.
 /// Used during the recovery of the connection.
 /// </summary>
-public interface IBackOffDelayPolicy 
+public interface IBackOffDelayPolicy
 {
     /// <summary>
     /// Get the next delay in milliseconds.
     /// </summary>
     /// <returns></returns>
     int Delay();
-    
+
     /// <summary>
     ///  Reset the backoff delay policy.
     /// </summary>
     void Reset();
-    
+
     /// <summary>
     /// Define if the backoff delay policy is active.
     /// Can be used to disable the backoff delay policy after a certain number of retries.
     /// or when the user wants to disable the backoff delay policy.
     /// </summary>
-    bool IsActive { get; }
+    bool IsActive();
 }

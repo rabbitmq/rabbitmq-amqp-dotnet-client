@@ -4,7 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- RabbitMQ.Amqp.Client -->
-    <PackageVersion Include="AMQPNetLite.Core" Version="2.4.10" />
+    <PackageVersion Include="AMQPNetLite.Core" Version="2.4.11" />
     <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.1.1" />
@@ -16,5 +16,17 @@
     <PackageVersion Include="Xunit.SkippableFact" Version="1.4.13" />
     <PackageVersion Include="coverlet.collector" Version="3.2.0" />
     <!-- docs/**/*.csproj -->
+  </ItemGroup>
+  <ItemGroup Label=".NET 6 Specific" Condition="'$(TargetFramework)' == 'net6.0'">
+    <!-- RabbitMQ.Amqp.Client -->
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="6.0.0" />
+  </ItemGroup>
+  <ItemGroup Label=".NET 7 Specific" Condition="'$(TargetFramework)' == 'net7.0'">
+    <!-- RabbitMQ.Amqp.Client -->
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="7.0.0" />
+  </ItemGroup>
+  <ItemGroup Label=".NET 8 Specific" Condition="'$(TargetFramework)' == 'net8.0'">
+    <!-- RabbitMQ.Amqp.Client -->
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
   </ItemGroup>
 </Project>

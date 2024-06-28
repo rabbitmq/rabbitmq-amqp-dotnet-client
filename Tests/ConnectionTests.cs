@@ -1,7 +1,4 @@
-﻿using System;
-using System.Net.Sockets;
-using Amqp;
-using Amqp.Framing;
+﻿using System.Net.Sockets;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 
@@ -59,11 +56,11 @@ public class ConnectionTests
     {
         await Assert.ThrowsAsync<ConnectionException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().VirtualHost("wrong_vhost").Build()));
-      
+
         await Assert.ThrowsAsync<SocketException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Host("wrong_host").Build()));
-        
-        
+
+
         await Assert.ThrowsAsync<ConnectionException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Password("wrong_password").Build()));
 
@@ -72,7 +69,30 @@ public class ConnectionTests
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().User("wrong_user").Build()));
 
         await Assert.ThrowsAsync<SocketException>(async () =>
-            await AmqpConnection.CreateAsync( ConnectionSettingBuilder.Create().Port(1234).Build()));
-        
+            await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Port(1234).Build()));
+    }
+
+    [Fact]
+    public async void ThrowAmqpClosedExceptionWhenItemIsClosed()
+    {
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        var management = connection.Management();
+        await management.Queue().Name("ThrowAmqpClosedExceptionWhenItemIsClosed").Declare();
+        var publisher = connection.PublisherBuilder().Queue("ThrowAmqpClosedExceptionWhenItemIsClosed").Build();
+        await publisher.CloseAsync();
+        await Assert.ThrowsAsync<AmqpClosedException>(async () =>
+            await publisher.Publish(new AmqpMessage("Hello wold!"), (message, descriptor) =>
+            {
+                // it doest matter
+            }));
+        await management.QueueDeletion().Delete("ThrowAmqpClosedExceptionWhenItemIsClosed");
+        await connection.CloseAsync();
+        Assert.Empty(connection.GetPublishers());
+
+        Assert.Throws<AmqpClosedException>(() =>
+            connection.PublisherBuilder().Queue("ThrowAmqpClosedExceptionWhenItemIsClosed").Build());
+
+        await Assert.ThrowsAsync<AmqpClosedException>(async () =>
+            await management.Queue().Name("ThrowAmqpClosedExceptionWhenItemIsClosed").Declare());
     }
 }

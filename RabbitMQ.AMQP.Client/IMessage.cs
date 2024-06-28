@@ -2,9 +2,7 @@ namespace RabbitMQ.AMQP.Client;
 
 public interface IMessage
 {
-    IMessage Body(object body);
-    object Body();
-
+    public object Body();
     // properties
     string MessageId();
     IMessage MessageId(string id);

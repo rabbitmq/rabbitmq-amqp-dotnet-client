@@ -26,11 +26,11 @@ public interface IQueueSpecification : IEntityDeclaration<IQueueInfo>
     IQueueSpecification Arguments(Dictionary<object, object> arguments);
 
     public Dictionary<object, object> Arguments();
-    
+
     IQueueSpecification Type(QueueType type);
-    
+
     public QueueType Type();
-    
+
     // IQuorumQueueSpecification Quorum();
 }
 

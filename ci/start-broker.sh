@@ -23,6 +23,7 @@ echo "[rabbitmq_auth_mechanism_ssl,rabbitmq_management]." >> rabbitmq-configurat
 echo "loopback_users = none
 
 listeners.ssl.default = 5671
+deprecated_features.permit.amqp_address_v1 = false
 
 ssl_options.cacertfile = /etc/rabbitmq/tls/ca_certificate.pem
 ssl_options.certfile   = /etc/rabbitmq/tls/server_$(hostname)_certificate.pem

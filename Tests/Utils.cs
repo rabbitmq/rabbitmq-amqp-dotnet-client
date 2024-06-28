@@ -195,7 +195,7 @@ namespace Tests
 
         public static async Task WaitUntilConnectionIsKilled(string connectionName)
         {
-            await WaitUntilAsync(async () => await IsConnectionOpen(connectionName) );
+            await WaitUntilAsync(async () => await IsConnectionOpen(connectionName));
             Wait();
             await WaitUntilAsync(async () => await HttpKillConnections(connectionName) == 1);
         }
@@ -215,7 +215,7 @@ namespace Tests
             var result = task.Result;
             return result.IsSuccessStatusCode;
         }
-        
+
         public static int HttpGetQMsgCount(string queue)
         {
             var task = CreateHttpClient().GetAsync($"http://localhost:15672/api/queues/%2F/{queue}");

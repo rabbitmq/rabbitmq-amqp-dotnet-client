@@ -12,7 +12,7 @@ namespace RabbitMQ.AMQP.Client.Impl;
 /// RabbitMQ uses AMQP end  point: "/management" to manage the resources like queues, exchanges, and bindings.
 /// The management endpoint works like an HTTP RPC endpoint where the client sends a request to the server
 /// </summary>
-public class AmqpManagement : IManagement
+public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement ToString()
 {
     // The requests are stored in a dictionary with the correlationId as the key
     // The correlationId is used to match the request with the response
@@ -34,11 +34,9 @@ public class AmqpManagement : IManagement
     private const string ReplyTo = "$me";
 
 
-    public virtual State State { get; protected set; } = State.Closed;
-
-
     public IQueueSpecification Queue()
     {
+        ThrowIfClosed();
         return new AmqpQueueSpecification(this);
     }
 
@@ -147,26 +145,23 @@ public class AmqpManagement : IManagement
                 Source = new Source()
                 {
                     Address = ManagementNodeAddress,
+                    ExpiryPolicy = new Symbol("LINK_DETACH"),
                 },
                 Handle = 1,
                 Target = new Target()
                 {
                     Address = ManagementNodeAddress,
+                    ExpiryPolicy = new Symbol("SESSION_END"),
+
                 },
             };
             _receiverLink = new ReceiverLink(
                 _managementSession, LinkPairName, receiveAttach, null);
 
-            _receiverLink.SetCredit(100);
+            _receiverLink.SetCredit(1);
         }
     }
 
-    private void OnNewStatus(State newState, Error? error)
-    {
-        var oldStatus = State;
-        State = newState;
-        ChangeState?.Invoke(this, oldStatus, State, error);
-    }
 
     private void EnsureSenderLink()
     {
@@ -258,16 +253,13 @@ public class AmqpManagement : IManagement
     /// <exception cref="ModelException"> Application errors, see <see cref="ModelException"/> </exception>
     internal async ValueTask<Message> Request(Message message, int[] expectedResponseCodes, TimeSpan? timeout = null)
     {
-        if (State != State.Open)
-        {
-            throw new ModelException("Management is not open");
-        }
+        ThrowIfClosed();
 
         TaskCompletionSource<Message> mre = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        // Add TaskCompletionSource to the dictionary
+        // Add TaskCompletionSource to the dictionary it will be used to set the result of the request
         _requests.TryAdd(message.Properties.MessageId, mre);
         using var cts =
-            new CancellationTokenSource(timeout ?? TimeSpan.FromSeconds(5)); // TODO: make the timeout configurable
+            new CancellationTokenSource(timeout ?? TimeSpan.FromSeconds(1000)); // TODO: make the timeout configurable
         await using (cts.Token.Register(
                          () =>
                          {
@@ -328,7 +320,7 @@ public class AmqpManagement : IManagement
         await _senderLink!.SendAsync(message);
     }
 
-    public async Task CloseAsync()
+    public override async Task CloseAsync()
     {
         State = State.Closed;
         if (_managementSession is { IsClosed: false })
@@ -336,8 +328,6 @@ public class AmqpManagement : IManagement
             await _managementSession.CloseAsync();
         }
     }
-
-    public event IClosable.LifeCycleCallBack? ChangeState;
 }
 
 public class InvalidCodeException(string message) : Exception(message);

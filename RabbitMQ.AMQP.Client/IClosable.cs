@@ -9,15 +9,20 @@ public enum State
     Closed,
 }
 
-public class Error
+public class Error(string? errorCode, string? description)
 {
-    public string? Description { get; internal set; }
-    public string? ErrorCode { get; internal set; }
+    public string? Description { get; } = description;
+    public string? ErrorCode { get; } = errorCode;
+
+    public override string ToString()
+    {
+        return $"Code: {ErrorCode} - Description: {Description}";
+    }
 }
 
-public interface IClosable
+public interface IClosable // TODO: Create an abstract class with the event and the State property
 {
-    public State State { get;  }
+    public State State { get; }
 
     Task CloseAsync();
 

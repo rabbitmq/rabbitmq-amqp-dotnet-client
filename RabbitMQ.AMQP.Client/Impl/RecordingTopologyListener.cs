@@ -50,7 +50,7 @@ public class QueueSpec(IQueueSpecification specification)
     public bool Exclusive { get; init; } = specification.Exclusive();
 
     public bool AutoDelete { get; init; } = specification.AutoDelete();
-    
+
 
     public Dictionary<object, object> Arguments { get; init; } = specification.Arguments();
 }

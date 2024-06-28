@@ -20,4 +20,8 @@
       <PackageReference Include="AMQPNetLite.Core" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Metrics\" />
+    </ItemGroup>
+
 </Project>
