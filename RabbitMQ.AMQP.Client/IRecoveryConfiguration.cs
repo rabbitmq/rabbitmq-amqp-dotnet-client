@@ -59,5 +59,5 @@ public interface IBackOffDelayPolicy
     /// Can be used to disable the backoff delay policy after a certain number of retries.
     /// or when the user wants to disable the backoff delay policy.
     /// </summary>
-    bool IsActive { get; }
+    bool IsActive();
 }

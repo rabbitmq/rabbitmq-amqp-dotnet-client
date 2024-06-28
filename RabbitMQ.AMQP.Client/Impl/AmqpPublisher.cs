@@ -24,11 +24,11 @@ public class AmqpPublisher : AbstractClosable, IPublisher
         _connection = connection;
         _timeout = timeout;
         _maxInFlight = maxInFlight;
-        connection.Publishers.TryAdd(Id, this);
         Connect();
+        connection.Publishers.TryAdd(Id, this);
     }
 
-    internal void Connect()
+    private void Connect()
     {
         try
         {
@@ -83,6 +83,9 @@ public class AmqpPublisher : AbstractClosable, IPublisher
     }
 
 
+    // TODO: Consider implementing this method with the send method
+    // a way to send a batch of messages
+    
     // protected override async Task<int> ExecuteAsync(SenderLink link)
     // {
     //     int batch = this.random.Next(1, this.role.Args.Batch);
@@ -129,7 +132,9 @@ public class AmqpPublisher : AbstractClosable, IPublisher
                         Trace.WriteLine(TraceLevel.Error, "Message not sent. Killing the process.");
                         Process.GetCurrentProcess().Kill();
                     }
-
+                    
+                    // is it correct to dispose the message here?
+                    // maybe we should expose a method to dispose the message
                     nMessage.Dispose();
                 }, this);
 

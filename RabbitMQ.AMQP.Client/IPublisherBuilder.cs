@@ -4,6 +4,6 @@ public interface IPublisherBuilder : IAddressBuilder<IPublisherBuilder>
 {
     IPublisherBuilder PublishTimeout(TimeSpan timeout);
 
-    IPublisherBuilder MaxInFlight(int maxInFlight);
+    IPublisherBuilder MaxInflightMessages(int maxInFlight);
     IPublisher Build();
 }

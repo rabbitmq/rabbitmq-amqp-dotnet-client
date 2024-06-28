@@ -39,14 +39,23 @@ public class AmqpConnection : AbstractClosable, IConnection
 
     // The native AMQP.Net Lite connection
     private Connection? _nativeConnection;
-    private Session? _nativeManagementSession;
-    private readonly AmqpManagement _management = new();
 
+    private readonly AmqpManagement _management = new();
     private readonly RecordingTopologyListener _recordingTopologyListener = new();
+
+    private readonly ConnectionSettings _connectionSettings;
     internal readonly AmqpSessionManagement NativePubSubSessions;
-    internal readonly ConnectionSettings _connectionSettings;
+
+    // TODO: Implement the semaphore to avoid multiple connections
     // private readonly SemaphoreSlim _semaphore = new(1, 1);
 
+
+    /// <summary>
+    /// Publishers contains all the publishers created by the connection.
+    /// Each connection can have multiple publishers.
+    /// They key is the publisher Id ( a Guid)  
+    /// See <see cref="AmqpPublisher"/>
+    /// </summary>
     internal ConcurrentDictionary<string, AmqpPublisher> Publishers { get; } = new();
 
     public ReadOnlyCollection<AmqpPublisher> GetPublishers()
@@ -85,6 +94,10 @@ public class AmqpConnection : AbstractClosable, IConnection
         }
     }
 
+    
+    /// <summary>
+    /// Closes all the publishers. It is called when the connection is closed.
+    /// </summary>
     private async Task CloseAllPublishers()
     {
         var cloned = new List<AmqpPublisher>(Publishers.Values);
@@ -100,17 +113,6 @@ public class AmqpConnection : AbstractClosable, IConnection
         _connectionSettings = connectionSettings;
         NativePubSubSessions = new AmqpSessionManagement(this, 1);
     }
-
-    internal Session GetManagementNativeSession()
-    {
-        if (_nativeManagementSession == null || _nativeManagementSession.IsClosed)
-        {
-            _nativeManagementSession = new Session(_nativeConnection);
-        }
-
-        return _nativeManagementSession;
-    }
-
 
     public IManagement Management()
     {
@@ -151,7 +153,8 @@ public class AmqpConnection : AbstractClosable, IConnection
                 manualReset.WaitOne(TimeSpan.FromSeconds(5));
                 if (_nativeConnection.IsClosed)
                 {
-                    throw new ConnectionException($"Connection failed. Info: {ToString()}, error: {_nativeConnection.Error}");
+                    throw new ConnectionException(
+                        $"Connection failed. Info: {ToString()}, error: {_nativeConnection.Error}");
                 }
 
 
@@ -169,7 +172,6 @@ public class AmqpConnection : AbstractClosable, IConnection
         }
 
 
-
         finally
         {
             // _semaphore.Release();
@@ -178,7 +180,15 @@ public class AmqpConnection : AbstractClosable, IConnection
         // return Task.CompletedTask;
     }
 
-
+    
+    
+    /// <summary>
+    /// Event handler for the connection closed event.
+    /// In case the error is null means that the connection is closed by the user.
+    /// The recover mechanism is activated only if the error is not null.
+    /// The connection maybe recovered if the recovery configuration is active.
+    /// </summary>
+    /// <returns></returns>
     private ClosedCallback MaybeRecoverConnection()
     {
         return async (sender, error) =>
@@ -188,6 +198,9 @@ public class AmqpConnection : AbstractClosable, IConnection
                 Trace.WriteLine(TraceLevel.Warning, $"connection is closed unexpectedly. " +
                                                     $"Info: {ToString()}");
 
+                // we have to check if the recovery is active.
+                // The user may want to disable the recovery mechanism
+                // the user can use the lifecycle callback to handle the error
                 if (!_connectionSettings.RecoveryConfiguration.IsActivate())
                 {
                     OnNewStatus(State.Closed, Utils.ConvertError(error));
@@ -203,15 +216,11 @@ public class AmqpConnection : AbstractClosable, IConnection
                     // as first step we try to recover the connection
                     // so the connected flag is false
                     while (!connected &&
-                           // we have to check if the recovery is active.
-                           // The user may want to disable the recovery mechanism
-                           // the user can use the lifecycle callback to handle the error
-                           _connectionSettings.RecoveryConfiguration.IsActivate() &&
                            // we have to check if the backoff policy is active
                            // the user may want to disable the backoff policy or 
                            // the backoff policy is not active due of some condition
                            // for example: Reaching the maximum number of retries and avoid the forever loop
-                           _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().IsActive)
+                           _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().IsActive())
                     {
                         try
                         {
@@ -239,7 +248,9 @@ public class AmqpConnection : AbstractClosable, IConnection
                     if (!connected)
                     {
                         Trace.WriteLine(TraceLevel.Verbose, $"connection is closed. Info: {ToString()}");
-                        OnNewStatus(State.Closed, new Error(ConnectionNotRecoveredCode, $"{ConnectionNotRecoveredMessage}, recover status: {_connectionSettings.RecoveryConfiguration}"));
+                        OnNewStatus(State.Closed,
+                            new Error(ConnectionNotRecoveredCode,
+                                $"{ConnectionNotRecoveredMessage}, recover status: {_connectionSettings.RecoveryConfiguration}"));
                         return;
                     }
 

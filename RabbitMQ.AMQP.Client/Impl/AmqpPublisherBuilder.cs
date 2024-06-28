@@ -80,7 +80,7 @@ public class AmqpPublisherBuilder(AmqpConnection connection) : IPublisherBuilder
         return this;
     }
 
-    public IPublisherBuilder MaxInFlight(int maxInFlight)
+    public IPublisherBuilder MaxInflightMessages(int maxInFlight)
     {
         _maxInFlight = maxInFlight;
         return this;

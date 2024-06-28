@@ -2,10 +2,8 @@
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-
 public class ConnectionSettingBuilder
 {
-
     // TODO: maybe add the event "LifeCycle" to the builder
     private string _host = "localhost";
     private int _port = 5672;
@@ -298,7 +296,11 @@ public class BackOffDelayPolicy : IBackOffDelayPolicy
         _totalAttempt = 0;
     }
 
-    public bool IsActive => _totalAttempt < 12;
+    public bool IsActive()
+    {
+        return _totalAttempt < 12;
+    }
+
 
     public override string ToString()
     {
