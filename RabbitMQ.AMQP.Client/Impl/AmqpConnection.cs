@@ -10,14 +10,15 @@ internal class Visitor(AmqpManagement management) : IVisitor
 {
     private AmqpManagement Management { get; } = management;
 
-    public async Task VisitQueues(List<QueueSpec> queueSpec)
+    public async Task VisitQueues(IEnumerable<QueueSpec> queueSpec)
     {
-        foreach (var spec in queueSpec)
+        foreach (QueueSpec spec in queueSpec)
         {
             Trace.WriteLine(TraceLevel.Information, $"Recovering queue {spec.Name}");
             try
             {
-                await Management.Queue(spec).Declare();
+                await Management.Queue(spec).Declare()
+                    .ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -74,13 +75,14 @@ public class AmqpConnection : AbstractClosable, IConnection
     public static async Task<AmqpConnection> CreateAsync(ConnectionSettings connectionSettings)
     {
         var connection = new AmqpConnection(connectionSettings);
-        await connection.ConnectAsync();
+        await connection.ConnectAsync()
+            .ConfigureAwait(false);
         return connection;
     }
 
     private void PauseAllPublishers()
     {
-        foreach (var publisher in Publishers.Values)
+        foreach (AmqpPublisher publisher in Publishers.Values)
         {
             publisher.PausePublishing();
         }
@@ -88,13 +90,13 @@ public class AmqpConnection : AbstractClosable, IConnection
 
     private void ResumeAllPublishers()
     {
-        foreach (var publisher in Publishers.Values)
+        foreach (AmqpPublisher publisher in Publishers.Values)
         {
             publisher.ResumePublishing();
         }
     }
 
-    
+
     /// <summary>
     /// Closes all the publishers. It is called when the connection is closed.
     /// </summary>
@@ -102,9 +104,10 @@ public class AmqpConnection : AbstractClosable, IConnection
     {
         var cloned = new List<AmqpPublisher>(Publishers.Values);
 
-        foreach (var publisher in cloned)
+        foreach (AmqpPublisher publisher in cloned)
         {
-            await publisher.CloseAsync();
+            await publisher.CloseAsync()
+                .ConfigureAwait(false);
         }
     }
 
@@ -121,12 +124,12 @@ public class AmqpConnection : AbstractClosable, IConnection
 
     public Task ConnectAsync()
     {
-        EnsureConnectionAsync();
+        EnsureConnection();
         OnNewStatus(State.Open, null);
         return Task.CompletedTask;
     }
 
-    private void EnsureConnectionAsync()
+    private void EnsureConnection()
     {
         // await _semaphore.WaitAsync();
         try
@@ -143,6 +146,7 @@ public class AmqpConnection : AbstractClosable, IConnection
                 };
 
                 var manualReset = new ManualResetEvent(false);
+                // TODO ConnectionFactory.CreateAsync
                 _nativeConnection = new Connection(_connectionSettings.Address, null, open, (connection, open1) =>
                 {
                     manualReset.Set();
@@ -156,7 +160,6 @@ public class AmqpConnection : AbstractClosable, IConnection
                     throw new ConnectionException(
                         $"Connection failed. Info: {ToString()}, error: {_nativeConnection.Error}");
                 }
-
 
                 _management.Init(
                     new AmqpManagementParameters(this).TopologyListener(_recordingTopologyListener));
@@ -180,8 +183,6 @@ public class AmqpConnection : AbstractClosable, IConnection
         // return Task.CompletedTask;
     }
 
-    
-    
     /// <summary>
     /// Event handler for the connection closed event.
     /// In case the error is null means that the connection is closed by the user.
@@ -212,7 +213,7 @@ public class AmqpConnection : AbstractClosable, IConnection
 
                 await Task.Run(async () =>
                 {
-                    var connected = false;
+                    bool connected = false;
                     // as first step we try to recover the connection
                     // so the connected flag is false
                     while (!connected &&
@@ -227,10 +228,10 @@ public class AmqpConnection : AbstractClosable, IConnection
                             var next = _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().Delay();
                             Trace.WriteLine(TraceLevel.Information,
                                 $"Trying Recovering connection in {next} milliseconds. Info: {ToString()})");
-                            await Task.Delay(
-                                TimeSpan.FromMilliseconds(next));
+                            await Task.Delay(TimeSpan.FromMilliseconds(next))
+                                .ConfigureAwait(false);
 
-                            EnsureConnectionAsync();
+                            EnsureConnection();
                             connected = true;
                         }
                         catch (Exception e)
@@ -241,7 +242,7 @@ public class AmqpConnection : AbstractClosable, IConnection
                     }
 
                     _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().Reset();
-                    var connectionDescription = connected ? "recovered" : "not recovered";
+                    string connectionDescription = connected ? "recovered" : "not recovered";
                     Trace.WriteLine(TraceLevel.Information,
                         $"Connection {connectionDescription}. Info: {ToString()}");
 
@@ -257,11 +258,13 @@ public class AmqpConnection : AbstractClosable, IConnection
                     if (_connectionSettings.RecoveryConfiguration.IsTopologyActive())
                     {
                         Trace.WriteLine(TraceLevel.Information, $"Recovering topology. Info: {ToString()}");
-                        await _recordingTopologyListener.Accept(new Visitor(_management));
+                        var visitor = new Visitor(_management);
+                        await _recordingTopologyListener.Accept(visitor)
+                            .ConfigureAwait(false);
                     }
 
                     OnNewStatus(State.Open, null);
-                });
+                }).ConfigureAwait(false);
                 return;
             }
 
@@ -276,7 +279,6 @@ public class AmqpConnection : AbstractClosable, IConnection
         return _nativeConnection;
     }
 
-
     public IPublisherBuilder PublisherBuilder()
     {
         ThrowIfClosed();
@@ -287,12 +289,25 @@ public class AmqpConnection : AbstractClosable, IConnection
 
     public override async Task CloseAsync()
     {
-        await CloseAllPublishers();
+        await CloseAllPublishers()
+            .ConfigureAwait(false);
+
         _recordingTopologyListener.Clear();
-        if (State == State.Closed) return;
+
+        if (State == State.Closed)
+        {
+            return;
+        }
+
         OnNewStatus(State.Closing, null);
-        if (_nativeConnection is { IsClosed: false }) await _nativeConnection.CloseAsync();
-        await _management.CloseAsync();
+
+        if (_nativeConnection is { IsClosed: false })
+        {
+            await _nativeConnection.CloseAsync()
+                .ConfigureAwait(false);
+        }
+        await _management.CloseAsync()
+            .ConfigureAwait(false);
     }
 
 
