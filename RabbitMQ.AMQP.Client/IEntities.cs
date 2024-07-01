@@ -4,7 +4,6 @@ public interface IEntityInfo
 {
 }
 
-
 /// <summary>
 /// Generic interface for declaring entities
 /// </summary>
@@ -39,10 +38,8 @@ public interface IQueueSpecification : IEntityDeclaration<IQueueInfo>
 //     IQueueSpecification Queue();
 // }
 
-
 public interface IQueueDeletion
 {
     // TODO consider returning a QueueStatus object with some info after deletion
     Task<IEntityInfo> Delete(string name);
 }
-

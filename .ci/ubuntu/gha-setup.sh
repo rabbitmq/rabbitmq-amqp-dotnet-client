@@ -44,6 +44,13 @@ set -o nounset
 declare -r rabbitmq_docker_name="$docker_name_prefix-rabbitmq"
 declare -r toxiproxy_docker_name="$docker_name_prefix-toxiproxy"
 
+if [[ $1 == 'stop' ]]
+then
+    docker stop "$rabbitmq_docker_name"
+    docker stop "$toxiproxy_docker_name"
+    exit 0
+fi
+
 function start_toxiproxy
 {
     if [[ $run_toxiproxy == 'true' ]]

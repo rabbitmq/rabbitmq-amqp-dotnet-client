@@ -1,5 +1,4 @@
 using Amqp;
-using Amqp.Framing;
 using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
@@ -196,14 +195,15 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
             { "auto_delete", _autoDelete },
             { "arguments", _arguments }
         };
+
         // TODO: encodePathSegment(queues)
-        var request = await management.Request(kv, $"/queues/{_name}",
-            AmqpManagement.Put, new[]
-            {
+        Message request = await management.Request(kv, $"/queues/{_name}",
+            AmqpManagement.Put,
+            [
                 AmqpManagement.Code200,
                 AmqpManagement.Code201,
                 AmqpManagement.Code409
-            });
+            ]).ConfigureAwait(false);
 
         var result = new DefaultQueueInfo((Map)request.Body);
         management.TopologyListener().QueueDeclared(this);
@@ -222,8 +222,10 @@ public class AmqpQueueDeletion(AmqpManagement management) : IQueueDeletion
         await management.Request(null, $"/queues/{name}", AmqpManagement.Delete, new[]
         {
             AmqpManagement.Code200,
-        });
+        }).ConfigureAwait(false);
+
         management.TopologyListener().QueueDeleted(name);
+
         return new DefaultQueueDeletionInfo();
     }
 }

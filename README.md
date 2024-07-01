@@ -1,16 +1,16 @@
-# RabbitMQ AMQP 1.0 DotNet Client
+# RabbitMQ AMQP 1.0 .NET Client
 
-
-This library is in early stages of development.
-It is meant to be used with RabbitMQ 4.0.
+This library is in early stages of development. It is meant to be used with RabbitMQ 4.0.
 
 ## How to Run
-- start the broker with `ci/start-broker.sh`
-- run the tests with ` dotnet test ./Build.csproj  --logger "console;verbosity=detailed" /p:AltCover=true`
+
+- Start the broker with `./.ci/ubuntu/gha-setup.sh`. Note that this has been tested on Ubuntu 22 with docker.
+- Run the tests with ` dotnet test ./Build.csproj  --logger "console;verbosity=detailed" /p:AltCover=true`
+- Stop RabbitMQ with `./.ci/ubuntu/gha-setup.sh stop`
 
 ## Getting Started
-You can find an example in: `docs/Examples/GettingStarted`
 
+You can find an example in: `docs/Examples/GettingStarted`
 
 ## TODO
 
