@@ -1,7 +1,7 @@
+using System.Collections.Concurrent;
 using Amqp;
 using Amqp.Framing;
 using Amqp.Types;
-using System.Collections.Concurrent;
 using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
 
@@ -72,20 +72,33 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
     internal void Init(AmqpManagementParameters parameters)
     {
         if (State == State.Open)
+        {
             return;
+        }
 
         _amqpConnection = parameters.Connection();
+
         if (_managementSession == null || _managementSession.IsClosed)
+        {
             _managementSession = new Session(_amqpConnection.NativeConnection());
+        }
+
         _recordingTopologyListener = parameters.TopologyListener();
 
         EnsureSenderLink();
+
         // by the Management implementation the sender link _must_ be open before the receiver link
         // this sleep is to ensure that the sender link is open before the receiver link
         // TODO: find a better way to ensure that the sender link is open before the receiver link
         Thread.Sleep(500);
+
         EnsureReceiverLink();
-        _ = Task.Run(async () => { await ProcessResponses(); });
+
+        _ = Task.Run(async () =>
+        {
+            await ProcessResponses().ConfigureAwait(false);
+        });
+
         _managementSession.Closed += (sender, error) =>
         {
             Trace.WriteLine(TraceLevel.Warning, $"Management session closed " +
@@ -106,17 +119,22 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
             while (_managementSession?.IsClosed == false &&
                    _amqpConnection?.NativeConnection()!.IsClosed == false)
             {
-                if (_receiverLink == null) continue;
-                var msg = await _receiverLink.ReceiveAsync();
-                if (msg == null)
+                if (_receiverLink == null)
                 {
-                    Trace.WriteLine(TraceLevel.Warning, "Received null message");
                     continue;
                 }
 
-                _receiverLink.Accept(msg);
-                HandleResponseMessage(msg);
-                msg.Dispose();
+                using (Message msg = await _receiverLink.ReceiveAsync().ConfigureAwait(false))
+                {
+                    if (msg == null)
+                    {
+                        Trace.WriteLine(TraceLevel.Warning, "Received null message");
+                        continue;
+                    }
+
+                    _receiverLink.Accept(msg);
+                    HandleResponseMessage(msg);
+                }
             }
         }
         catch (Exception e)
@@ -215,26 +233,28 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
         }
     }
 
-    internal async ValueTask<Message> Request(object? body, string path, string method,
+    internal ValueTask<Message> Request(object? body, string path, string method,
         int[] expectedResponseCodes, TimeSpan? timeout = null)
     {
-        var id = Guid.NewGuid().ToString();
-        return await Request(id, body, path, method, expectedResponseCodes, timeout);
+        string id = Guid.NewGuid().ToString();
+        return Request(id, body, path, method, expectedResponseCodes, timeout);
     }
 
-    internal async ValueTask<Message> Request(string id, object? body, string path, string method,
+    internal ValueTask<Message> Request(string id, object? body, string path, string method,
         int[] expectedResponseCodes, TimeSpan? timeout = null)
     {
-        var message = new Message(body);
-        message.Properties = new Properties
+        var message = new Message(body)
         {
-            MessageId = id,
-            To = path,
-            Subject = method,
-            ReplyTo = ReplyTo
+            Properties = new Properties
+            {
+                MessageId = id,
+                To = path,
+                Subject = method,
+                ReplyTo = ReplyTo
+            }
         };
 
-        return await Request(message, expectedResponseCodes, timeout);
+        return Request(message, expectedResponseCodes, timeout);
     }
 
     /// <summary>
@@ -256,26 +276,35 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
         ThrowIfClosed();
 
         TaskCompletionSource<Message> mre = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
         // Add TaskCompletionSource to the dictionary it will be used to set the result of the request
         _requests.TryAdd(message.Properties.MessageId, mre);
+
         using var cts =
             new CancellationTokenSource(timeout ?? TimeSpan.FromSeconds(1000)); // TODO: make the timeout configurable
-        await using (cts.Token.Register(
-                         () =>
-                         {
-                             Trace.WriteLine(TraceLevel.Warning, $"Request timeout for {message.Properties.MessageId}");
-                             _requests.TryRemove(message.Properties.MessageId, out _);
-                         }))
+
+        void requestTimeoutAction()
         {
-            await InternalSendAsync(message);
-
-            // The response is handled in a separate thread, see ProcessResponses method in the Init method
-            var result = await mre.Task.WaitAsync(cts.Token);
-            // Check the responses and throw exceptions if needed.
-
-            CheckResponse(message, expectedResponseCodes, result);
-            return result;
+            Trace.WriteLine(TraceLevel.Warning, $"Request timeout for {message.Properties.MessageId}");
+            if (_requests.TryRemove(message.Properties.MessageId, out TaskCompletionSource<Message>? timedOutMre))
+            {
+                timedOutMre.TrySetCanceled();
+            }
         }
+
+        using CancellationTokenRegistration ctsr = cts.Token.Register(requestTimeoutAction);
+
+        await InternalSendAsync(message)
+            .ConfigureAwait(false);
+
+        // The response is handled in a separate thread, see ProcessResponses method in the Init method
+        Message result = await mre.Task.WaitAsync(cts.Token)
+            .ConfigureAwait(false);
+
+        // Check the responses and throw exceptions if needed.
+        CheckResponse(message, expectedResponseCodes, result);
+
+        return result;
     }
 
     /// <summary>
@@ -306,7 +335,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
                 $"CorrelationId does not match, expected {sentMessage.Properties.MessageId} but got {receivedMessage.Properties.CorrelationId}");
 
 
-        var any = expectedResponseCodes.Any(c => c == responseCode);
+        bool any = expectedResponseCodes.Any(c => c == responseCode);
         if (!any)
         {
             throw new InvalidCodeException(
@@ -317,7 +346,8 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
 
     protected virtual async Task InternalSendAsync(Message message)
     {
-        await _senderLink!.SendAsync(message);
+        await _senderLink!.SendAsync(message)
+            .ConfigureAwait(false);
     }
 
     public override async Task CloseAsync()
@@ -325,7 +355,8 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
         State = State.Closed;
         if (_managementSession is { IsClosed: false })
         {
-            await _managementSession.CloseAsync();
+            await _managementSession.CloseAsync()
+                .ConfigureAwait(false);
         }
     }
 }
