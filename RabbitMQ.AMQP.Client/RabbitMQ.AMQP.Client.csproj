@@ -1,27 +1,27 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+  </PropertyGroup>
 
-    <ItemGroup>
+  <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-        <_Parameter1>Tests</_Parameter1>
-        </AssemblyAttribute>
-    </ItemGroup>
+      <_Parameter1>Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 
-    <ItemGroup>
-        <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
-    </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
 
-    <ItemGroup>
-      <PackageReference Include="AMQPNetLite.Core" />
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="AMQPNetLite.Core" />
+  </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Metrics\" />
-    </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Metrics/" />
+  </ItemGroup>
 
 </Project>

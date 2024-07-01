@@ -151,7 +151,7 @@ public class ManagementTests()
     [InlineData(QueueType.QUORUM)]
     [InlineData(QueueType.CLASSIC)]
     [InlineData(QueueType.STREAM)]
-    public async void DeclareQueueWithNoNameShouldGenerateClientSideName(QueueType type)
+    public async Task DeclareQueueWithNoNameShouldGenerateClientSideName(QueueType type)
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         await connection.ConnectAsync();
@@ -173,7 +173,7 @@ public class ManagementTests()
     [InlineData(true, false, true, QueueType.CLASSIC)]
     [InlineData(true, true, true, QueueType.CLASSIC)]
     [InlineData(true, false, false, QueueType.STREAM)]
-    public async void DeclareQueueWithQueueInfoValidation(
+    public async Task DeclareQueueWithQueueInfoValidation(
         bool durable, bool autoDelete, bool exclusive, QueueType type)
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
@@ -199,7 +199,7 @@ public class ManagementTests()
 
 
     [Fact]
-    public async void DeclareQueueWithPreconditionFailedException()
+    public async Task DeclareQueueWithPreconditionFailedException()
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         await connection.ConnectAsync();
@@ -213,7 +213,7 @@ public class ManagementTests()
 
 
     [Fact]
-    public async void DeclareAndDeleteTwoTimesShouldNotRaiseErrors()
+    public async Task DeclareAndDeleteTwoTimesShouldNotRaiseErrors()
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         await connection.ConnectAsync();
@@ -235,7 +235,7 @@ public class ManagementTests()
     /// creation and deletion.
     /// </summary>
     [Fact]
-    public async void TopologyCountShouldFollowTheQueueDeclaration()
+    public async Task TopologyCountShouldFollowTheQueueDeclaration()
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         await connection.ConnectAsync();

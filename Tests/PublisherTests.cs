@@ -13,7 +13,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
     private readonly ITestOutputHelper _testOutputHelper = testOutputHelper;
 
     [Fact]
-    public async void ValidateBuilderRaiseExceptionIfQueueOrExchangeAreNotSetCorrectly()
+    public async Task ValidateBuilderRaiseExceptionIfQueueOrExchangeAreNotSetCorrectly()
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         Assert.Throws<InvalidAddressException>(() =>
@@ -26,7 +26,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
 
 
     [Fact]
-    public async void RaiseErrorIfQueueDoesNotExist()
+    public async Task RaiseErrorIfQueueDoesNotExist()
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         Assert.Throws<PublisherException>(() =>
@@ -36,7 +36,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
-    public async void SendAMessageToAQueue()
+    public async Task SendAMessageToAQueue()
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         var management = connection.Management();
@@ -54,7 +54,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
 
 
     [Fact]
-    public async void ValidatePublishersCount()
+    public async Task ValidatePublishersCount()
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         var management = connection.Management();

@@ -1,7 +1,7 @@
-using System.Collections.Concurrent;
 using Amqp;
 using Amqp.Framing;
 using Amqp.Types;
+using System.Collections.Concurrent;
 using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
 
