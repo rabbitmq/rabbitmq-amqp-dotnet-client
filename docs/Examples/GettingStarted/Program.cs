@@ -13,31 +13,32 @@ Trace.TraceListener = (l, f, a) =>
 Trace.WriteLine(TraceLevel.Information, "Starting");
 const string connectionName = "Hello-Connection";
 
-var connection = await AmqpConnection.CreateAsync(
+AmqpConnection connection = await AmqpConnection.CreateAsync(
     ConnectionSettingBuilder.Create().ConnectionName(connectionName).RecoveryConfiguration(
         RecoveryConfiguration.Create().Activated(true).Topology(true)
     ).Build());
 
 Trace.WriteLine(TraceLevel.Information, "Connected");
 
-var management = connection.Management();
-await management.QueueDeletion().Delete("my-first-queue-n");
-await management.Queue($"my-first-queue-n").Type(QueueType.QUORUM).Declare();
+IManagement management = connection.Management();
 
+await management.QueueDeletion().Delete("my-first-queue-n");
+
+await management.Queue($"my-first-queue-n").Type(QueueType.QUORUM).Declare();
 
 try
 {
-    var publisher = connection.PublisherBuilder().Queue("my-first-queue-n").MaxInflightMessages(2000).Build();
-    var confirmed = 0;
- var start = DateTime.Now;
+    IPublisher publisher = connection.PublisherBuilder().Queue("my-first-queue-n").MaxInflightMessages(2000).Build();
+    int confirmed = 0;
+    DateTime start = DateTime.Now;
     const int total = 1_000_000;
-    for (var i = 0; i < total; i++)
+    for (int i = 0; i < total; i++)
     {
         try
         {
             if (i % 200_000 == 0)
             {
-                var endp = DateTime.Now;
+                DateTime endp = DateTime.Now;
                 Console.WriteLine($"Sending Time: {endp - start} - messages {i}");
             }
             await publisher.Publish(
@@ -47,7 +48,7 @@ try
                     if (descriptor.State == OutcomeState.Accepted)
                     {
                         if (Interlocked.Increment(ref confirmed) % 200_000 != 0) return;
-                        var end = DateTime.Now;
+                        DateTime end = DateTime.Now;
                         Console.WriteLine($"Confirmed Time: {end - start} {confirmed}");
                     }
                     else
@@ -65,7 +66,7 @@ try
         }
     }
 
-    var end = DateTime.Now;
+    DateTime end = DateTime.Now;
     Console.WriteLine($"Total Sent Time: {end - start}");
 }
 catch (Exception e)
@@ -73,7 +74,6 @@ catch (Exception e)
     Trace.WriteLine(TraceLevel.Error, $"{e.Message}");
 }
 
-//
 Trace.WriteLine(TraceLevel.Information, "Queue Created");
 Console.WriteLine("Press any key to delete the queue and close the connection.");
 Console.ReadKey();

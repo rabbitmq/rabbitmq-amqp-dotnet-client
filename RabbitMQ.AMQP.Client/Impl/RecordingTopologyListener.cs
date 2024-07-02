@@ -4,7 +4,7 @@ namespace RabbitMQ.AMQP.Client.Impl;
 
 public interface IVisitor
 {
-    Task VisitQueues(List<QueueSpec> queueSpec);
+    Task VisitQueues(IEnumerable<QueueSpec> queueSpec);
 }
 
 /// <summary>
@@ -39,7 +39,8 @@ public class RecordingTopologyListener : ITopologyListener
 
     public async Task Accept(IVisitor visitor)
     {
-        await visitor.VisitQueues(_queueSpecifications.Values.ToList());
+        await visitor.VisitQueues(_queueSpecifications.Values)
+            .ConfigureAwait(false);
     }
 }
 
@@ -50,7 +51,6 @@ public class QueueSpec(IQueueSpecification specification)
     public bool Exclusive { get; init; } = specification.Exclusive();
 
     public bool AutoDelete { get; init; } = specification.AutoDelete();
-
 
     public Dictionary<object, object> Arguments { get; init; } = specification.Arguments();
 }

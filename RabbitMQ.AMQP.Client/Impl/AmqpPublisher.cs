@@ -1,8 +1,6 @@
 using System.Diagnostics;
 using Amqp;
 using Amqp.Framing;
-using Amqp.Listener;
-using Amqp.Types;
 using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
 
@@ -85,7 +83,7 @@ public class AmqpPublisher : AbstractClosable, IPublisher
 
     // TODO: Consider implementing this method with the send method
     // a way to send a batch of messages
-    
+
     // protected override async Task<int> ExecuteAsync(SenderLink link)
     // {
     //     int batch = this.random.Next(1, this.role.Args.Batch);
@@ -132,7 +130,7 @@ public class AmqpPublisher : AbstractClosable, IPublisher
                         Trace.WriteLine(TraceLevel.Error, "Message not sent. Killing the process.");
                         Process.GetCurrentProcess().Kill();
                     }
-                    
+
                     // is it correct to dispose the message here?
                     // maybe we should expose a method to dispose the message
                     nMessage.Dispose();
@@ -156,11 +154,13 @@ public class AmqpPublisher : AbstractClosable, IPublisher
         }
 
         OnNewStatus(State.Closing, null);
+
         _connection.Publishers.TryRemove(Id, out _);
 
         try
         {
-            await _senderLink.CloseAsync();
+            await _senderLink.CloseAsync()
+                .ConfigureAwait(false);
         }
         catch (Exception e)
         {

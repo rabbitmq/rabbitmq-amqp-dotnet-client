@@ -5,7 +5,7 @@ set -o pipefail
 set -o xtrace
 set -o nounset
 
-readonly docker_name_prefix='rabbitmq-dotnet-client'
+readonly docker_name_prefix='rabbitmq-amqp-dotnet-client'
 
 declare -r rabbitmq_docker_name="$docker_name_prefix-rabbitmq"
 
