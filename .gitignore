@@ -125,3 +125,7 @@ Tests/coverage.*
 
 # docs
 docs/temp/
+
+# ci logs
+.ci/ubuntu/log/*
+
