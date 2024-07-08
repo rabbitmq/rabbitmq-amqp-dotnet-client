@@ -43,3 +43,16 @@ public interface IQueueDeletion
     // TODO consider returning a QueueStatus object with some info after deletion
     Task<IEntityInfo> Delete(string name);
 }
+
+public interface IExchangeSpecification : IEntityDeclaration<IExchangeInfo>
+{
+    IExchangeSpecification Name(string name);
+
+    IExchangeSpecification AutoDelete(bool autoDelete);
+
+    IExchangeSpecification Type(ExchangeType type);
+
+    IExchangeSpecification Type(string type);
+
+    IExchangeSpecification Argument(string key, object value);
+}

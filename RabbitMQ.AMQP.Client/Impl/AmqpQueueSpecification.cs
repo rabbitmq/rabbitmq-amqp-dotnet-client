@@ -31,7 +31,7 @@ public class DefaultQueueInfo : IQueueInfo
             : m.ToDictionary(kv => (string)kv.Key, kv => kv.Value);
 
         _leader = (string)response["leader"];
-        var replicas = (string[])response["replicas"];
+        string[]? replicas = (string[])response["replicas"];
         _replicas = replicas.Length == 0 ? [] : [.. replicas];
         _messageCount = (ulong)response["message_count"];
         _consumerCount = (uint)response["consumer_count"];
@@ -139,7 +139,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
 
     public IQueueSpecification Arguments(Dictionary<object, object> arguments)
     {
-        foreach (var (key, value) in arguments)
+        foreach ((object key, object value) in arguments)
         {
             _arguments[key] = value;
         }
@@ -150,7 +150,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
     public Dictionary<object, object> Arguments()
     {
         var result = new Dictionary<object, object>();
-        foreach (var (key, value) in _arguments)
+        foreach ((object? key, object? value) in _arguments)
         {
             result[key] = value;
         }
