@@ -35,7 +35,11 @@ public static class Utils
     public static RabbitMQ.AMQP.Client.Error? ConvertError(Amqp.Framing.Error? sourceError)
     {
         Error? resultError = null;
-        if (sourceError == null) return resultError;
+        if (sourceError == null)
+        {
+            return resultError;
+        }
+
         resultError = new Error(sourceError.Condition.ToString(), sourceError.Description);
         return resultError;
     }

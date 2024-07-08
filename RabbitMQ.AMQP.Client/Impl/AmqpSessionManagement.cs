@@ -9,7 +9,11 @@ public class AmqpSessionManagement(AmqpConnection amqpConnection, int maxSession
 
     public Session GetOrCreateSession()
     {
-        if (Sessions.Count >= MaxSessionsPerItem) return Sessions.First();
+        if (Sessions.Count >= MaxSessionsPerItem)
+        {
+            return Sessions.First();
+        }
+
         var session = new Session(amqpConnection.NativeConnection());
         Sessions.Add(session);
         return session;

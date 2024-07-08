@@ -47,7 +47,11 @@ try
                 {
                     if (descriptor.State == OutcomeState.Accepted)
                     {
-                        if (Interlocked.Increment(ref confirmed) % 200_000 != 0) return;
+                        if (Interlocked.Increment(ref confirmed) % 200_000 != 0)
+                        {
+                            return;
+                        }
+
                         DateTime end = DateTime.Now;
                         Console.WriteLine($"Confirmed Time: {end - start} {confirmed}");
                     }

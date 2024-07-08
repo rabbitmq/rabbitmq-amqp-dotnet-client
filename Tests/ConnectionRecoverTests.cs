@@ -1,9 +1,9 @@
-using RabbitMQ.AMQP.Client;
-using RabbitMQ.AMQP.Client.Impl;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQ.AMQP.Client;
+using RabbitMQ.AMQP.Client.Impl;
 
 namespace Tests;
 
@@ -65,7 +65,9 @@ public class ConnectionRecoverTests
             listToStatus.Add(to);
             listError.Add(error);
             if (to == State.Closed)
+            {
                 completion.SetResult();
+            }
         };
 
         await connection.ConnectAsync();
@@ -111,7 +113,9 @@ public class ConnectionRecoverTests
             listToStatus.Add(currentState);
             listError.Add(error);
             if (listError.Count >= 4)
+            {
                 resetEvent.Set();
+            }
         };
 
         Assert.Equal(State.Open, connection.State);
@@ -162,7 +166,9 @@ public class ConnectionRecoverTests
             listToStatus.Add(currentState);
             listError.Add(error);
             if (listError.Count >= 4)
+            {
                 resetEvent.Set();
+            }
         };
 
         await connection.ConnectAsync();
@@ -202,12 +208,14 @@ public class ConnectionRecoverTests
                 .ConnectionName(connectionName)
                 .Build());
         TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        var recoveryEvents = 0;
+        int recoveryEvents = 0;
         connection.ChangeState += (sender, from, to, error) =>
         {
             recoveryEvents++;
             if (recoveryEvents == 2)
+            {
                 completion.SetResult(true);
+            }
         };
         var management = connection.Management();
         await management.Queue().Name(queueName).AutoDelete(true).Exclusive(true).Declare();
@@ -233,7 +241,7 @@ public class ConnectionRecoverTests
     [Fact]
     public async Task RecoveryTopologyShouldNotRecoverTheTempQueues()
     {
-        var queueName = $"temp-queue-should-recover-{false}";
+        string queueName = $"temp-queue-should-recover-{false}";
         const string connectionName = "temp-queue-should-not-recover-connection-name";
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
@@ -243,12 +251,14 @@ public class ConnectionRecoverTests
                 .ConnectionName(connectionName)
                 .Build());
         TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        var recoveryEvents = 0;
+        int recoveryEvents = 0;
         connection.ChangeState += (sender, from, to, error) =>
         {
             recoveryEvents++;
             if (recoveryEvents == 1)
+            {
                 completion.SetResult(true);
+            }
         };
         var management = connection.Management();
         await management.Queue().Name(queueName).AutoDelete(true).Exclusive(true).Declare();

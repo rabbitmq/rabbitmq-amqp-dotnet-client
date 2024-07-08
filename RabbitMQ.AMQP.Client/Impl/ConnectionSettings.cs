@@ -279,7 +279,9 @@ public class BackOffDelayPolicy : IBackOffDelayPolicy
     private void ResetAfterMaxAttempt()
     {
         if (_attempt > 5)
+        {
             _attempt = 1;
+        }
     }
 
     public int Delay()

@@ -320,8 +320,10 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
     {
         // Check if the response code is a number
         // by protocol the response code is in the Subject property
-        if (!int.TryParse(receivedMessage.Properties.Subject, out var responseCode))
+        if (!int.TryParse(receivedMessage.Properties.Subject, out int responseCode))
+        {
             throw new ModelException($"Response code is not a number {receivedMessage.Properties.Subject}");
+        }
 
         switch (responseCode)
         {
@@ -331,8 +333,10 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
 
         // Check if the correlationId is the same as the messageId
         if (sentMessage.Properties.MessageId != receivedMessage.Properties.CorrelationId)
+        {
             throw new ModelException(
                 $"CorrelationId does not match, expected {sentMessage.Properties.MessageId} but got {receivedMessage.Properties.CorrelationId}");
+        }
 
 
         bool any = expectedResponseCodes.Any(c => c == responseCode);

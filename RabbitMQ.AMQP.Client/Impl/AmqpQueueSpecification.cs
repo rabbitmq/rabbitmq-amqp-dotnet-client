@@ -166,8 +166,12 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
 
     public QueueType Type()
     {
-        if (!_arguments.ContainsKey("x-queue-type")) return QueueType.CLASSIC;
-        var type = (string)_arguments["x-queue-type"];
+        if (!_arguments.ContainsKey("x-queue-type"))
+        {
+            return QueueType.CLASSIC;
+        }
+
+        string type = (string)_arguments["x-queue-type"];
         return (QueueType)Enum.Parse(typeof(QueueType), type.ToUpperInvariant());
     }
 

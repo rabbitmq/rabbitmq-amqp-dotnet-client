@@ -17,7 +17,11 @@ public abstract class AbstractClosable : IClosable
 
     protected void OnNewStatus(State newState, Error? error)
     {
-        if (State == newState) return;
+        if (State == newState)
+        {
+            return;
+        }
+
         var oldStatus = State;
         State = newState;
         ChangeState?.Invoke(this, oldStatus, newState, error);
