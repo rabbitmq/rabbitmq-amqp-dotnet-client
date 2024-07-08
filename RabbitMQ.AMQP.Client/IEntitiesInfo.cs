@@ -31,7 +31,8 @@ public interface IQueueInfo : IEntityInfo
 }
 
 
-public enum ExchangeType {
+public enum ExchangeType
+{
     DIRECT,
     FANOUT,
     TOPIC,

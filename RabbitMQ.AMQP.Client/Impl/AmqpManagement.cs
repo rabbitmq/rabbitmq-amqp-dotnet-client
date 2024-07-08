@@ -58,6 +58,17 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
         return new AmqpQueueDeletion(this);
     }
 
+    public IExchangeSpecification Exchange()
+    {
+        ThrowIfClosed();
+        return new AmqpExchangeSpecification(this);
+    }
+
+    public IExchangeSpecification Exchange(string name)
+    {
+        return Exchange().Name(name);
+    }
+
     public ITopologyListener TopologyListener()
     {
         return _recordingTopologyListener!;
@@ -283,16 +294,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
         using var cts =
             new CancellationTokenSource(timeout ?? TimeSpan.FromSeconds(1000)); // TODO: make the timeout configurable
 
-        void requestTimeoutAction()
-        {
-            Trace.WriteLine(TraceLevel.Warning, $"Request timeout for {message.Properties.MessageId}");
-            if (_requests.TryRemove(message.Properties.MessageId, out TaskCompletionSource<Message>? timedOutMre))
-            {
-                timedOutMre.TrySetCanceled();
-            }
-        }
-
-        using CancellationTokenRegistration ctsr = cts.Token.Register(requestTimeoutAction);
+        using CancellationTokenRegistration ctsr = cts.Token.Register(RequestTimeoutAction);
 
         await InternalSendAsync(message)
             .ConfigureAwait(false);
@@ -305,6 +307,15 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
         CheckResponse(message, expectedResponseCodes, result);
 
         return result;
+
+        void RequestTimeoutAction()
+        {
+            Trace.WriteLine(TraceLevel.Warning, $"Request timeout for {message.Properties.MessageId}");
+            if (_requests.TryRemove(message.Properties.MessageId, out TaskCompletionSource<Message>? timedOutMre))
+            {
+                timedOutMre.TrySetCanceled();
+            }
+        }
     }
 
     /// <summary>

@@ -225,6 +225,22 @@ public class ManagementTests()
         await connection.CloseAsync();
     }
 
+    ////////////// ----------------- Exchanges TESTS ----------------- //////////////
+
+
+    /// <summary>
+    /// Simple test to declare an exchange with the default values.
+    /// </summary>
+    [Fact]
+    public async Task DeclareExchangeWithName()
+    {
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        await connection.ConnectAsync();
+        var management = connection.Management();
+        var exchangeInfo = await management.Exchange("my_first_exchange_2").Type(ExchangeType.TOPIC).Declare();
+        Assert.NotNull(exchangeInfo);
+        await connection.CloseAsync();
+    }
 
 
     ////////////// ----------------- Topology TESTS ----------------- //////////////

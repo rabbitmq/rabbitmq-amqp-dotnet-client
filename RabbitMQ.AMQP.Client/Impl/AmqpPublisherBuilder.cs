@@ -47,10 +47,10 @@ public class AddressBuilder : IAddressBuilder<AddressBuilder>
 
             if (!string.IsNullOrEmpty(_key))
             {
-                return "/exchanges/" + _exchange + "/key/" + _key;
+                return $"/{Consts.Exchanges}/{_exchange}/{Consts.Key}/{_key}";
             }
 
-            return "/exchanges/" + _exchange;
+            return $"/{Consts.Exchanges}/{_exchange}";
         }
 
         if (_queue == null)
@@ -63,7 +63,7 @@ public class AddressBuilder : IAddressBuilder<AddressBuilder>
             throw new InvalidAddressException("Queue must be set");
         }
 
-        return "/queues/" + _queue;
+        return $"/{Consts.Queues}/{_queue}";
     }
 }
 

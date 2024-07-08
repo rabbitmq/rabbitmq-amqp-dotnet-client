@@ -201,7 +201,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         };
 
         // TODO: encodePathSegment(queues)
-        Message request = await management.Request(kv, $"/queues/{_name}",
+        Message request = await management.Request(kv, $"/{Consts.Queues}/{_name}",
             AmqpManagement.Put,
             [
                 AmqpManagement.Code200,
