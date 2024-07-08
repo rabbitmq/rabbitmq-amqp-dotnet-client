@@ -69,6 +69,11 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
         return Exchange().Name(name);
     }
 
+    public IExchangeDeletion ExchangeDeletion()
+    {
+        return new AmqpExchangeDeletion(this);
+    }
+
     public ITopologyListener TopologyListener()
     {
         return _recordingTopologyListener!;
@@ -105,10 +110,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
 
         EnsureReceiverLink();
 
-        _ = Task.Run(async () =>
-        {
-            await ProcessResponses().ConfigureAwait(false);
-        });
+        _ = Task.Run(async () => { await ProcessResponses().ConfigureAwait(false); });
 
         _managementSession.Closed += (sender, error) =>
         {
@@ -166,23 +168,11 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
             {
                 SndSettleMode = SenderSettleMode.Settled,
                 RcvSettleMode = ReceiverSettleMode.First,
-                Properties = new Fields
-                {
-                    { new Symbol("paired"), true }
-                },
+                Properties = new Fields { { new Symbol("paired"), true } },
                 LinkName = LinkPairName,
-                Source = new Source()
-                {
-                    Address = ManagementNodeAddress,
-                    ExpiryPolicy = new Symbol("LINK_DETACH"),
-                },
+                Source = new Source() { Address = ManagementNodeAddress, ExpiryPolicy = new Symbol("LINK_DETACH"), },
                 Handle = 1,
-                Target = new Target()
-                {
-                    Address = ManagementNodeAddress,
-                    ExpiryPolicy = new Symbol("SESSION_END"),
-
-                },
+                Target = new Target() { Address = ManagementNodeAddress, ExpiryPolicy = new Symbol("SESSION_END"), },
             };
             _receiverLink = new ReceiverLink(
                 _managementSession, LinkPairName, receiveAttach, null);
@@ -200,11 +190,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
             {
                 SndSettleMode = SenderSettleMode.Settled,
                 RcvSettleMode = ReceiverSettleMode.First,
-
-                Properties = new Fields
-                {
-                    { new Symbol("paired"), true }
-                },
+                Properties = new Fields { { new Symbol("paired"), true } },
                 LinkName = LinkPairName,
                 Source = new Source()
                 {
@@ -256,13 +242,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
     {
         var message = new Message(body)
         {
-            Properties = new Properties
-            {
-                MessageId = id,
-                To = path,
-                Subject = method,
-                ReplyTo = ReplyTo
-            }
+            Properties = new Properties { MessageId = id, To = path, Subject = method, ReplyTo = ReplyTo }
         };
 
         return Request(message, expectedResponseCodes, timeout);

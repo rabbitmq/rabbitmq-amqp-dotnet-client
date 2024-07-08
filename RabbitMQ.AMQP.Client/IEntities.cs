@@ -56,3 +56,10 @@ public interface IExchangeSpecification : IEntityDeclaration<IExchangeInfo>
 
     IExchangeSpecification Argument(string key, object value);
 }
+
+
+public interface IExchangeDeletion
+{
+    // TODO consider returning a ExchangeStatus object with some info after deletion
+    Task<IEntityInfo> Delete(string name);
+}

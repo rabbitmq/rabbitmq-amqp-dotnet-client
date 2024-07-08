@@ -84,3 +84,23 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
         return this;
     }
 }
+
+
+public class DefaultExchangeDeletionInfo : IEntityInfo
+{
+}
+
+public class AmqpExchangeDeletion(AmqpManagement management) : IExchangeDeletion
+{
+    public async Task<IEntityInfo> Delete(string name)
+    {
+        await management.Request(null, $"/{Consts.Exchanges}/{name}", AmqpManagement.Delete, new[]
+        {
+            AmqpManagement.Code204,
+        }).ConfigureAwait(false);
+
+        return new DefaultExchangeDeletionInfo();
+    }
+}
+
+

@@ -15,6 +15,8 @@ public interface IManagement : IClosable
 
     IExchangeSpecification Exchange(string name);
 
+    IExchangeDeletion ExchangeDeletion();
+
     ITopologyListener TopologyListener();
 }
 

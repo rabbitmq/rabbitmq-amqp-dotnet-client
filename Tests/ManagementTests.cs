@@ -232,15 +232,30 @@ public class ManagementTests()
     /// Simple test to declare an exchange with the default values.
     /// </summary>
     [Fact]
-    public async Task DeclareExchangeWithName()
+    public async Task SimpleDeclareAndDeleteExchangeWithName()
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         await connection.ConnectAsync();
         var management = connection.Management();
-        var exchangeInfo = await management.Exchange("my_first_exchange_2").Type(ExchangeType.TOPIC).Declare();
+        var exchangeInfo = await management.Exchange("my_first_exchange").Type(ExchangeType.TOPIC).Declare();
         Assert.NotNull(exchangeInfo);
+        SystemUtils.WaitUntil(() => SystemUtils.ExchangesExists("my_first_exchange"));
+        await management.ExchangeDeletion().Delete("my_first_exchange");
+        SystemUtils.WaitUntil(() => SystemUtils.ExchangesExists("my_first_exchange") == false);
         await connection.CloseAsync();
     }
+
+
+    [Fact]
+    public async Task ExchangeWithEmptyNameShouldRaiseAnException()
+    {
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        await connection.ConnectAsync();
+        var management = connection.Management();
+        await Assert.ThrowsAsync<ArgumentException>(() => management.Exchange("").Type(ExchangeType.TOPIC).Declare());
+        await connection.CloseAsync();
+    }
+
 
 
     ////////////// ----------------- Topology TESTS ----------------- //////////////

@@ -223,13 +223,12 @@ public class AmqpQueueDeletion(AmqpManagement management) : IQueueDeletion
 {
     public async Task<IEntityInfo> Delete(string name)
     {
-        await management.Request(null, $"/queues/{name}", AmqpManagement.Delete, new[]
+        await management.Request(null, $"/{Consts.Queues}/{name}", AmqpManagement.Delete, new[]
         {
             AmqpManagement.Code200,
         }).ConfigureAwait(false);
 
         management.TopologyListener().QueueDeleted(name);
-
         return new DefaultQueueDeletionInfo();
     }
 }
