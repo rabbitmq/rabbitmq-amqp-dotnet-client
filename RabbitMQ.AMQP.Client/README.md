@@ -1,0 +1,1 @@
+# RabbitMQ AMQP .NET Client
