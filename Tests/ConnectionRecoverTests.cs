@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
+using Xunit.Abstractions;
 
 namespace Tests;
 
@@ -37,8 +38,10 @@ internal class FakeFastBackOffDelay : IBackOffDelayPolicy
     public bool IsActive() => true;
 }
 
-public class ConnectionRecoverTests
+public class ConnectionRecoverTests(ITestOutputHelper testOutputHelper)
 {
+    public ITestOutputHelper TestOutputHelper { get; } = testOutputHelper;
+
     /// <summary>
     /// The normal close the status should be correct and error null
     /// The test records the status change when the connection is closed normally.
@@ -198,7 +201,7 @@ public class ConnectionRecoverTests
     [Fact]
     public async Task RecoveryTopologyShouldRecoverTheTempQueues()
     {
-        var queueName = $"temp-queue-should-recover-{true}";
+        string queueName = $"temp-queue-should-recover-{true}";
         const string connectionName = "temp-queue-should-recover-connection-name";
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
@@ -227,7 +230,11 @@ public class ConnectionRecoverTests
         SystemUtils.WaitUntil(() => SystemUtils.QueueExists(queueName));
 
         await connection.CloseAsync();
+        SystemUtils.WaitUntil(() => !SystemUtils.QueueExists(queueName));
         Assert.Equal(0, management.TopologyListener().QueueCount());
+        TestOutputHelper.WriteLine($"Recover: Queue count: { management.TopologyListener().QueueCount()} , events: {recoveryEvents}");
+
+        
     }
 
 
@@ -254,8 +261,7 @@ public class ConnectionRecoverTests
         int recoveryEvents = 0;
         connection.ChangeState += (sender, from, to, error) =>
         {
-            recoveryEvents++;
-            if (recoveryEvents == 1)
+            if (Interlocked.Increment(ref recoveryEvents) == 1)
             {
                 completion.SetResult(true);
             }
@@ -268,8 +274,8 @@ public class ConnectionRecoverTests
         await SystemUtils.WaitUntilConnectionIsKilled(connectionName);
         await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
         SystemUtils.WaitUntil(() => SystemUtils.QueueExists(queueName) == false);
-
         await connection.CloseAsync();
         Assert.Equal(0, management.TopologyListener().QueueCount());
+        TestOutputHelper.WriteLine($"NotRecover: Queue count: { management.TopologyListener().QueueCount()} , events: {recoveryEvents}");
     }
 }

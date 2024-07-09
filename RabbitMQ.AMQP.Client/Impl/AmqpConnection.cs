@@ -192,7 +192,7 @@ public class AmqpConnection : AbstractClosable, IConnection
     /// <returns></returns>
     private ClosedCallback MaybeRecoverConnection()
     {
-        return async (sender, error) =>
+        return (sender, error) =>
         {
             if (error != null)
             {
@@ -211,7 +211,7 @@ public class AmqpConnection : AbstractClosable, IConnection
                 // TODO: Block the publishers and consumers
                 OnNewStatus(State.Reconnecting, Utils.ConvertError(error));
 
-                await Task.Run(async () =>
+                Task.Run(async () =>
                 {
                     bool connected = false;
                     // as first step we try to recover the connection
@@ -221,11 +221,15 @@ public class AmqpConnection : AbstractClosable, IConnection
                            // the user may want to disable the backoff policy or 
                            // the backoff policy is not active due of some condition
                            // for example: Reaching the maximum number of retries and avoid the forever loop
-                           _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().IsActive())
+                           _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().IsActive() &&
+
+                           // even we set the status to reconnecting up, we need to check if the connection is still in the
+                           // reconnecting status. The user may close the connection in the meanwhile
+                           State == State.Reconnecting)
                     {
                         try
                         {
-                            var next = _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().Delay();
+                            int next = _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().Delay();
                             Trace.WriteLine(TraceLevel.Information,
                                 $"Trying Recovering connection in {next} milliseconds. Info: {ToString()})");
                             await Task.Delay(TimeSpan.FromMilliseconds(next))
@@ -265,6 +269,8 @@ public class AmqpConnection : AbstractClosable, IConnection
 
                     OnNewStatus(State.Open, null);
                 }).ConfigureAwait(false);
+
+
                 return;
             }
 
@@ -306,6 +312,7 @@ public class AmqpConnection : AbstractClosable, IConnection
             await _nativeConnection.CloseAsync()
                 .ConfigureAwait(false);
         }
+
         await _management.CloseAsync()
             .ConfigureAwait(false);
     }
