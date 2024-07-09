@@ -80,8 +80,16 @@ public partial class ByteCapacity : IEquatable<ByteCapacity>
 
     public bool Equals(ByteCapacity? other)
     {
-        if (ReferenceEquals(null, other)) return false;
-        if (ReferenceEquals(this, other)) return true;
+        if (ReferenceEquals(null, other))
+        {
+            return false;
+        }
+
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
         return _bytes == other._bytes;
     }
 }

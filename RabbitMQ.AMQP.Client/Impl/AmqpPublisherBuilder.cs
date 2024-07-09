@@ -28,22 +28,42 @@ public class AddressBuilder : IAddressBuilder<AddressBuilder>
 
     public string Address()
     {
-        if (_exchange == null && _queue == null) throw new InvalidAddressException("Exchange or Queue must be set");
+        if (_exchange == null && _queue == null)
+        {
+            throw new InvalidAddressException("Exchange or Queue must be set");
+        }
 
         if (_exchange != null && _queue != null)
+        {
             throw new InvalidAddressException("Exchange and Queue cannot be set together");
+        }
 
         if (_exchange != null)
         {
-            if (string.IsNullOrEmpty(_exchange)) throw new InvalidAddressException("Exchange must be set");
+            if (string.IsNullOrEmpty(_exchange))
+            {
+                throw new InvalidAddressException("Exchange must be set");
+            }
 
-            if (!string.IsNullOrEmpty(_key)) return "/exchange/" + _exchange + "/key/" + _key;
-            return "/exchange/" + _exchange;
+            if (!string.IsNullOrEmpty(_key))
+            {
+                return $"/{Consts.Exchanges}/{_exchange}/{Consts.Key}/{_key}";
+            }
+
+            return $"/{Consts.Exchanges}/{_exchange}";
         }
 
-        if (_queue == null) return "";
-        if (string.IsNullOrEmpty(_queue)) throw new InvalidAddressException("Queue must be set");
-        return "/queue/" + _queue;
+        if (_queue == null)
+        {
+            return "";
+        }
+
+        if (string.IsNullOrEmpty(_queue))
+        {
+            throw new InvalidAddressException("Queue must be set");
+        }
+
+        return $"/{Consts.Queues}/{_queue}";
     }
 }
 

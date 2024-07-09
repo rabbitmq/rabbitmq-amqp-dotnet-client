@@ -11,6 +11,12 @@ public interface IManagement : IClosable
 
     IQueueDeletion QueueDeletion();
 
+    IExchangeSpecification Exchange();
+
+    IExchangeSpecification Exchange(string name);
+
+    IExchangeDeletion ExchangeDeletion();
+
     ITopologyListener TopologyListener();
 }
 

@@ -1,6 +1,6 @@
-﻿using RabbitMQ.AMQP.Client;
+﻿using System.Net.Sockets;
+using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
-using System.Net.Sockets;
 
 namespace Tests;
 

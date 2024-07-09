@@ -31,7 +31,7 @@ public class DefaultQueueInfo : IQueueInfo
             : m.ToDictionary(kv => (string)kv.Key, kv => kv.Value);
 
         _leader = (string)response["leader"];
-        var replicas = (string[])response["replicas"];
+        string[]? replicas = (string[])response["replicas"];
         _replicas = replicas.Length == 0 ? [] : [.. replicas];
         _messageCount = (ulong)response["message_count"];
         _consumerCount = (uint)response["consumer_count"];
@@ -139,7 +139,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
 
     public IQueueSpecification Arguments(Dictionary<object, object> arguments)
     {
-        foreach (var (key, value) in arguments)
+        foreach ((object key, object value) in arguments)
         {
             _arguments[key] = value;
         }
@@ -150,7 +150,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
     public Dictionary<object, object> Arguments()
     {
         var result = new Dictionary<object, object>();
-        foreach (var (key, value) in _arguments)
+        foreach ((object? key, object? value) in _arguments)
         {
             result[key] = value;
         }
@@ -166,8 +166,12 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
 
     public QueueType Type()
     {
-        if (!_arguments.ContainsKey("x-queue-type")) return QueueType.CLASSIC;
-        var type = (string)_arguments["x-queue-type"];
+        if (!_arguments.ContainsKey("x-queue-type"))
+        {
+            return QueueType.CLASSIC;
+        }
+
+        string type = (string)_arguments["x-queue-type"];
         return (QueueType)Enum.Parse(typeof(QueueType), type.ToUpperInvariant());
     }
 
@@ -197,7 +201,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         };
 
         // TODO: encodePathSegment(queues)
-        Message request = await management.Request(kv, $"/queues/{_name}",
+        Message request = await management.Request(kv, $"/{Consts.Queues}/{_name}",
             AmqpManagement.Put,
             [
                 AmqpManagement.Code200,
@@ -219,13 +223,12 @@ public class AmqpQueueDeletion(AmqpManagement management) : IQueueDeletion
 {
     public async Task<IEntityInfo> Delete(string name)
     {
-        await management.Request(null, $"/queues/{name}", AmqpManagement.Delete, new[]
+        await management.Request(null, $"/{Consts.Queues}/{name}", AmqpManagement.Delete, new[]
         {
             AmqpManagement.Code200,
         }).ConfigureAwait(false);
 
         management.TopologyListener().QueueDeleted(name);
-
         return new DefaultQueueDeletionInfo();
     }
 }

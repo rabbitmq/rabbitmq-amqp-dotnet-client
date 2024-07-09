@@ -58,6 +58,22 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
         return new AmqpQueueDeletion(this);
     }
 
+    public IExchangeSpecification Exchange()
+    {
+        ThrowIfClosed();
+        return new AmqpExchangeSpecification(this);
+    }
+
+    public IExchangeSpecification Exchange(string name)
+    {
+        return Exchange().Name(name);
+    }
+
+    public IExchangeDeletion ExchangeDeletion()
+    {
+        return new AmqpExchangeDeletion(this);
+    }
+
     public ITopologyListener TopologyListener()
     {
         return _recordingTopologyListener!;
@@ -94,10 +110,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
 
         EnsureReceiverLink();
 
-        _ = Task.Run(async () =>
-        {
-            await ProcessResponses().ConfigureAwait(false);
-        });
+        _ = Task.Run(async () => { await ProcessResponses().ConfigureAwait(false); });
 
         _managementSession.Closed += (sender, error) =>
         {
@@ -155,23 +168,11 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
             {
                 SndSettleMode = SenderSettleMode.Settled,
                 RcvSettleMode = ReceiverSettleMode.First,
-                Properties = new Fields
-                {
-                    { new Symbol("paired"), true }
-                },
+                Properties = new Fields { { new Symbol("paired"), true } },
                 LinkName = LinkPairName,
-                Source = new Source()
-                {
-                    Address = ManagementNodeAddress,
-                    ExpiryPolicy = new Symbol("LINK_DETACH"),
-                },
+                Source = new Source() { Address = ManagementNodeAddress, ExpiryPolicy = new Symbol("LINK_DETACH"), },
                 Handle = 1,
-                Target = new Target()
-                {
-                    Address = ManagementNodeAddress,
-                    ExpiryPolicy = new Symbol("SESSION_END"),
-
-                },
+                Target = new Target() { Address = ManagementNodeAddress, ExpiryPolicy = new Symbol("SESSION_END"), },
             };
             _receiverLink = new ReceiverLink(
                 _managementSession, LinkPairName, receiveAttach, null);
@@ -189,11 +190,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
             {
                 SndSettleMode = SenderSettleMode.Settled,
                 RcvSettleMode = ReceiverSettleMode.First,
-
-                Properties = new Fields
-                {
-                    { new Symbol("paired"), true }
-                },
+                Properties = new Fields { { new Symbol("paired"), true } },
                 LinkName = LinkPairName,
                 Source = new Source()
                 {
@@ -245,13 +242,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
     {
         var message = new Message(body)
         {
-            Properties = new Properties
-            {
-                MessageId = id,
-                To = path,
-                Subject = method,
-                ReplyTo = ReplyTo
-            }
+            Properties = new Properties { MessageId = id, To = path, Subject = method, ReplyTo = ReplyTo }
         };
 
         return Request(message, expectedResponseCodes, timeout);
@@ -283,16 +274,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
         using var cts =
             new CancellationTokenSource(timeout ?? TimeSpan.FromSeconds(1000)); // TODO: make the timeout configurable
 
-        void requestTimeoutAction()
-        {
-            Trace.WriteLine(TraceLevel.Warning, $"Request timeout for {message.Properties.MessageId}");
-            if (_requests.TryRemove(message.Properties.MessageId, out TaskCompletionSource<Message>? timedOutMre))
-            {
-                timedOutMre.TrySetCanceled();
-            }
-        }
-
-        using CancellationTokenRegistration ctsr = cts.Token.Register(requestTimeoutAction);
+        using CancellationTokenRegistration ctsr = cts.Token.Register(RequestTimeoutAction);
 
         await InternalSendAsync(message)
             .ConfigureAwait(false);
@@ -305,6 +287,15 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
         CheckResponse(message, expectedResponseCodes, result);
 
         return result;
+
+        void RequestTimeoutAction()
+        {
+            Trace.WriteLine(TraceLevel.Warning, $"Request timeout for {message.Properties.MessageId}");
+            if (_requests.TryRemove(message.Properties.MessageId, out TaskCompletionSource<Message>? timedOutMre))
+            {
+                timedOutMre.TrySetCanceled();
+            }
+        }
     }
 
     /// <summary>
@@ -320,8 +311,10 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
     {
         // Check if the response code is a number
         // by protocol the response code is in the Subject property
-        if (!int.TryParse(receivedMessage.Properties.Subject, out var responseCode))
+        if (!int.TryParse(receivedMessage.Properties.Subject, out int responseCode))
+        {
             throw new ModelException($"Response code is not a number {receivedMessage.Properties.Subject}");
+        }
 
         switch (responseCode)
         {
@@ -331,8 +324,10 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
 
         // Check if the correlationId is the same as the messageId
         if (sentMessage.Properties.MessageId != receivedMessage.Properties.CorrelationId)
+        {
             throw new ModelException(
                 $"CorrelationId does not match, expected {sentMessage.Properties.MessageId} but got {receivedMessage.Properties.CorrelationId}");
+        }
 
 
         bool any = expectedResponseCodes.Any(c => c == responseCode);

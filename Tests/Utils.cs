@@ -125,7 +125,7 @@ namespace Tests
         {
             using var handler = new HttpClientHandler { Credentials = new NetworkCredential("guest", "guest"), };
             using var client = new HttpClient(handler);
-            var isOpen = false;
+            bool isOpen = false;
 
             var result = await client.GetAsync("http://localhost:15672/api/connections");
             if (!result.IsSuccessStatusCode)
@@ -133,11 +133,16 @@ namespace Tests
                 throw new XunitException($"HTTP GET failed: {result.StatusCode} {result.ReasonPhrase}");
             }
 
-            var obj = await JsonSerializer.DeserializeAsync(await result.Content.ReadAsStreamAsync(),
+            object obj = await JsonSerializer.DeserializeAsync(await result.Content.ReadAsStreamAsync(),
                 typeof(IEnumerable<Connection>));
-            if (obj == null) return false;
-            var connections = obj as IEnumerable<Connection>;
-            isOpen = connections.Any(x => x.client_properties["connection_name"].Contains(connectionName));
+            switch (obj)
+            {
+                case null:
+                    return false;
+                case IEnumerable<Connection> connections:
+                    isOpen = connections.Any(x => x.client_properties["connection_name"].Contains(connectionName));
+                    break;
+            }
 
             return isOpen;
         }
@@ -165,7 +170,7 @@ namespace Tests
             // leave the locator up and running to delete the stream
             var iEnumerable = connections.Where(x => x.client_properties["connection_name"].Contains(connectionName));
             var enumerable = iEnumerable as Connection[] ?? iEnumerable.ToArray();
-            var killed = 0;
+            int killed = 0;
             foreach (var conn in enumerable)
             {
                 /*
@@ -216,6 +221,16 @@ namespace Tests
             return result.IsSuccessStatusCode;
         }
 
+        public static bool ExchangesExists(string exchange)
+        {
+            var task = CreateHttpClient().GetAsync($"http://localhost:15672/api/exchanges/%2F/{exchange}");
+            task.Wait(TimeSpan.FromSeconds(10));
+            var result = task.Result;
+            return result.IsSuccessStatusCode;
+        }
+
+
+
         public static int HttpGetQMsgCount(string queue)
         {
             var task = CreateHttpClient().GetAsync($"http://localhost:15672/api/queues/%2F/{queue}");
@@ -228,7 +243,7 @@ namespace Tests
 
             var responseBody = result.Content.ReadAsStringAsync();
             responseBody.Wait(TimeSpan.FromSeconds(10));
-            var json = responseBody.Result;
+            string json = responseBody.Result;
             var obj = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
             if (obj == null)
             {
@@ -258,22 +273,21 @@ namespace Tests
             var result = task.Result;
             if (!result.IsSuccessStatusCode && result.StatusCode != HttpStatusCode.NotFound)
             {
-                throw new XunitException(string.Format("HTTP DELETE failed: {0} {1}", result.StatusCode,
-                    result.ReasonPhrase));
+                throw new XunitException($"HTTP DELETE failed: {result.StatusCode} {result.ReasonPhrase}");
             }
         }
 
         public static byte[] GetFileContent(string fileName)
         {
             var codeBaseUrl = new Uri(Assembly.GetExecutingAssembly().Location);
-            var codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);
-            var dirPath = Path.GetDirectoryName(codeBasePath);
+            string codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);
+            string dirPath = Path.GetDirectoryName(codeBasePath);
             if (dirPath == null)
             {
                 return null;
             }
 
-            var filename = Path.Combine(dirPath, "Resources", fileName);
+            string filename = Path.Combine(dirPath, "Resources", fileName);
             var fileTask = File.ReadAllBytesAsync(filename);
             fileTask.Wait(TimeSpan.FromSeconds(1));
             return fileTask.Result;

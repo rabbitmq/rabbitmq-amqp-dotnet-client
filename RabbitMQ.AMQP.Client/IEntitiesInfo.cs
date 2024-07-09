@@ -29,3 +29,16 @@ public interface IQueueInfo : IEntityInfo
 
     uint ConsumerCount();
 }
+
+
+public enum ExchangeType
+{
+    DIRECT,
+    FANOUT,
+    TOPIC,
+    HEADERS
+}
+
+public interface IExchangeInfo : IEntityInfo
+{
+}
