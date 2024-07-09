@@ -37,6 +37,8 @@ public class AmqpConnection : AbstractClosable, IConnection
 {
     private const string ConnectionNotRecoveredCode = "CONNECTION_NOT_RECOVERED";
     private const string ConnectionNotRecoveredMessage = "Connection not recovered";
+    private readonly SemaphoreSlim _semaphoreClose = new(1, 1);
+
 
     // The native AMQP.Net Lite connection
     private Connection? _nativeConnection;
@@ -192,91 +194,100 @@ public class AmqpConnection : AbstractClosable, IConnection
     /// <returns></returns>
     private ClosedCallback MaybeRecoverConnection()
     {
-        return (sender, error) =>
+        return async (sender, error) =>
         {
-            if (error != null)
+            await _semaphoreClose.WaitAsync().ConfigureAwait(false);
+
+            try
             {
-                Trace.WriteLine(TraceLevel.Warning, $"connection is closed unexpectedly. " +
-                                                    $"Info: {ToString()}");
-
-                // we have to check if the recovery is active.
-                // The user may want to disable the recovery mechanism
-                // the user can use the lifecycle callback to handle the error
-                if (!_connectionSettings.RecoveryConfiguration.IsActivate())
+                if (error != null)
                 {
-                    OnNewStatus(State.Closed, Utils.ConvertError(error));
-                    return;
-                }
+                    Trace.WriteLine(TraceLevel.Warning, $"connection is closed unexpectedly. " +
+                                                        $"Info: {ToString()}");
 
-                // TODO: Block the publishers and consumers
-                OnNewStatus(State.Reconnecting, Utils.ConvertError(error));
-
-                Task.Run(async () =>
-                {
-                    bool connected = false;
-                    // as first step we try to recover the connection
-                    // so the connected flag is false
-                    while (!connected &&
-                           // we have to check if the backoff policy is active
-                           // the user may want to disable the backoff policy or 
-                           // the backoff policy is not active due of some condition
-                           // for example: Reaching the maximum number of retries and avoid the forever loop
-                           _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().IsActive() &&
-
-                           // even we set the status to reconnecting up, we need to check if the connection is still in the
-                           // reconnecting status. The user may close the connection in the meanwhile
-                           State == State.Reconnecting)
+                    // we have to check if the recovery is active.
+                    // The user may want to disable the recovery mechanism
+                    // the user can use the lifecycle callback to handle the error
+                    if (!_connectionSettings.RecoveryConfiguration.IsActivate())
                     {
-                        try
-                        {
-                            int next = _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().Delay();
-                            Trace.WriteLine(TraceLevel.Information,
-                                $"Trying Recovering connection in {next} milliseconds. Info: {ToString()})");
-                            await Task.Delay(TimeSpan.FromMilliseconds(next))
-                                .ConfigureAwait(false);
-
-                            EnsureConnection();
-                            connected = true;
-                        }
-                        catch (Exception e)
-                        {
-                            Trace.WriteLine(TraceLevel.Warning,
-                                $"Error trying to recover connection {e}. Info: {this}");
-                        }
-                    }
-
-                    _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().Reset();
-                    string connectionDescription = connected ? "recovered" : "not recovered";
-                    Trace.WriteLine(TraceLevel.Information,
-                        $"Connection {connectionDescription}. Info: {ToString()}");
-
-                    if (!connected)
-                    {
-                        Trace.WriteLine(TraceLevel.Verbose, $"connection is closed. Info: {ToString()}");
-                        OnNewStatus(State.Closed,
-                            new Error(ConnectionNotRecoveredCode,
-                                $"{ConnectionNotRecoveredMessage}, recover status: {_connectionSettings.RecoveryConfiguration}"));
+                        OnNewStatus(State.Closed, Utils.ConvertError(error));
                         return;
                     }
 
-                    if (_connectionSettings.RecoveryConfiguration.IsTopologyActive())
+                    // TODO: Block the publishers and consumers
+                    OnNewStatus(State.Reconnecting, Utils.ConvertError(error));
+
+                    await Task.Run(async () =>
                     {
-                        Trace.WriteLine(TraceLevel.Information, $"Recovering topology. Info: {ToString()}");
-                        var visitor = new Visitor(_management);
-                        await _recordingTopologyListener.Accept(visitor)
-                            .ConfigureAwait(false);
-                    }
+                        bool connected = false;
+                        // as first step we try to recover the connection
+                        // so the connected flag is false
+                        while (!connected &&
+                               // we have to check if the backoff policy is active
+                               // the user may want to disable the backoff policy or 
+                               // the backoff policy is not active due of some condition
+                               // for example: Reaching the maximum number of retries and avoid the forever loop
+                               _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().IsActive() &&
 
-                    OnNewStatus(State.Open, null);
-                }).ConfigureAwait(false);
+                               // even we set the status to reconnecting up, we need to check if the connection is still in the
+                               // reconnecting status. The user may close the connection in the meanwhile
+                               State == State.Reconnecting)
+                        {
+                            try
+                            {
+                                int next = _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().Delay();
+                                Trace.WriteLine(TraceLevel.Information,
+                                    $"Trying Recovering connection in {next} milliseconds. Info: {ToString()})");
+                                await Task.Delay(TimeSpan.FromMilliseconds(next))
+                                    .ConfigureAwait(false);
+
+                                EnsureConnection();
+                                connected = true;
+                            }
+                            catch (Exception e)
+                            {
+                                Trace.WriteLine(TraceLevel.Warning,
+                                    $"Error trying to recover connection {e}. Info: {this}");
+                            }
+                        }
+
+                        _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().Reset();
+                        string connectionDescription = connected ? "recovered" : "not recovered";
+                        Trace.WriteLine(TraceLevel.Information,
+                            $"Connection {connectionDescription}. Info: {ToString()}");
+
+                        if (!connected)
+                        {
+                            Trace.WriteLine(TraceLevel.Verbose, $"connection is closed. Info: {ToString()}");
+                            OnNewStatus(State.Closed,
+                                new Error(ConnectionNotRecoveredCode,
+                                    $"{ConnectionNotRecoveredMessage}, recover status: {_connectionSettings.RecoveryConfiguration}"));
+                            return;
+                        }
+
+                        if (_connectionSettings.RecoveryConfiguration.IsTopologyActive())
+                        {
+                            Trace.WriteLine(TraceLevel.Information, $"Recovering topology. Info: {ToString()}");
+                            var visitor = new Visitor(_management);
+                            await _recordingTopologyListener.Accept(visitor)
+                                .ConfigureAwait(false);
+                        }
+
+                        OnNewStatus(State.Open, null);
+                    }).ConfigureAwait(false);
 
 
-                return;
+                    return;
+                }
+
+
+                Trace.WriteLine(TraceLevel.Verbose, $"connection is closed. Info: {ToString()}");
+                OnNewStatus(State.Closed, Utils.ConvertError(error));
             }
-
-
-            Trace.WriteLine(TraceLevel.Verbose, $"connection is closed. Info: {ToString()}");
-            OnNewStatus(State.Closed, Utils.ConvertError(error));
+            finally
+            {
+                _semaphoreClose.Release();
+            }
         };
     }
 
@@ -295,26 +306,35 @@ public class AmqpConnection : AbstractClosable, IConnection
 
     public override async Task CloseAsync()
     {
-        await CloseAllPublishers()
+        await _semaphoreClose.WaitAsync()
             .ConfigureAwait(false);
-
-        _recordingTopologyListener.Clear();
-
-        if (State == State.Closed)
+        try
         {
-            return;
-        }
+            await CloseAllPublishers()
+                .ConfigureAwait(false);
 
-        OnNewStatus(State.Closing, null);
+            _recordingTopologyListener.Clear();
 
-        if (_nativeConnection is { IsClosed: false })
-        {
-            await _nativeConnection.CloseAsync()
+            if (State == State.Closed)
+            {
+                return;
+            }
+
+            OnNewStatus(State.Closing, null);
+
+            if (_nativeConnection is { IsClosed: false })
+            {
+                await _nativeConnection.CloseAsync()
+                    .ConfigureAwait(false);
+            }
+
+            await _management.CloseAsync()
                 .ConfigureAwait(false);
         }
-
-        await _management.CloseAsync()
-            .ConfigureAwait(false);
+        finally
+        {
+            _semaphoreClose.Release();
+        }
     }
 
 

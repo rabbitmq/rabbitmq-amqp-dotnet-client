@@ -135,6 +135,8 @@ public class ConnectionRecoverTests(ITestOutputHelper testOutputHelper)
         resetEvent.Set();
         await connection.CloseAsync();
         resetEvent.WaitOne(TimeSpan.FromSeconds(5));
+        SystemUtils.WaitUntil(() => (listFromStatus.Count >= 4));
+
         Assert.Equal(State.Open, listFromStatus[2]);
         Assert.Equal(State.Closing, listToStatus[2]);
         Assert.Null(listError[2]);
@@ -231,8 +233,8 @@ public class ConnectionRecoverTests(ITestOutputHelper testOutputHelper)
 
         await connection.CloseAsync();
         SystemUtils.WaitUntil(() => !SystemUtils.QueueExists(queueName));
-        Assert.Equal(0, management.TopologyListener().QueueCount());
         TestOutputHelper.WriteLine($"Recover: Queue count: { management.TopologyListener().QueueCount()} , events: {recoveryEvents}");
+        Assert.Equal(0, management.TopologyListener().QueueCount());
 
         
     }
