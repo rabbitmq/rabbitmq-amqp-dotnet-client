@@ -156,7 +156,7 @@ public class ConnectionRecoverTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task OverrideTheBackOffWithBackOffDisabled()
     {
-        var connectionName = Guid.NewGuid().ToString();
+        string connectionName = Guid.NewGuid().ToString();
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create().ConnectionName(connectionName).RecoveryConfiguration(
                 RecoveryConfiguration.Create().Activated(true).Topology(false).BackOffDelayPolicy(
@@ -216,8 +216,7 @@ public class ConnectionRecoverTests(ITestOutputHelper testOutputHelper)
         int recoveryEvents = 0;
         connection.ChangeState += (sender, from, to, error) =>
         {
-            recoveryEvents++;
-            if (recoveryEvents == 2)
+            if (Interlocked.Increment(ref recoveryEvents) == 2)
             {
                 completion.SetResult(true);
             }
@@ -229,14 +228,14 @@ public class ConnectionRecoverTests(ITestOutputHelper testOutputHelper)
 
         await SystemUtils.WaitUntilConnectionIsKilled(connectionName);
         await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        SystemUtils.WaitUntil(() => recoveryEvents == 2);
         SystemUtils.WaitUntil(() => SystemUtils.QueueExists(queueName));
 
         await connection.CloseAsync();
         SystemUtils.WaitUntil(() => !SystemUtils.QueueExists(queueName));
-        TestOutputHelper.WriteLine($"Recover: Queue count: { management.TopologyListener().QueueCount()} , events: {recoveryEvents}");
+        TestOutputHelper.WriteLine(
+            $"Recover: Queue count: {management.TopologyListener().QueueCount()} , events: {recoveryEvents}");
         Assert.Equal(0, management.TopologyListener().QueueCount());
-
-        
     }
 
 
@@ -278,6 +277,7 @@ public class ConnectionRecoverTests(ITestOutputHelper testOutputHelper)
         SystemUtils.WaitUntil(() => SystemUtils.QueueExists(queueName) == false);
         await connection.CloseAsync();
         Assert.Equal(0, management.TopologyListener().QueueCount());
-        TestOutputHelper.WriteLine($"NotRecover: Queue count: { management.TopologyListener().QueueCount()} , events: {recoveryEvents}");
+        TestOutputHelper.WriteLine(
+            $"NotRecover: Queue count: {management.TopologyListener().QueueCount()} , events: {recoveryEvents}");
     }
 }

@@ -216,7 +216,6 @@ public class AmqpConnection : AbstractClosable, IConnection
 
                     // TODO: Block the publishers and consumers
                     OnNewStatus(State.Reconnecting, Utils.ConvertError(error));
-
                     await Task.Run(async () =>
                     {
                         bool connected = false;
