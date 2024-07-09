@@ -16,6 +16,11 @@ public interface IManagement : IClosable
     IExchangeSpecification Exchange(string name);
 
     IExchangeDeletion ExchangeDeletion();
+    
+    IBindingSpecification Binding();
+    
+    IUnbindSpecification Unbind();
+    
 
     ITopologyListener TopologyListener();
 }

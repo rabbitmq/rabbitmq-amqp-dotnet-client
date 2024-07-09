@@ -221,7 +221,7 @@ namespace Tests
             return result.IsSuccessStatusCode;
         }
 
-        public static bool ExchangesExists(string exchange)
+        public static bool ExchangeExists(string exchange)
         {
             var task = CreateHttpClient().GetAsync($"http://localhost:15672/api/exchanges/%2F/{exchange}");
             task.Wait(TimeSpan.FromSeconds(10));

@@ -47,7 +47,7 @@ public class AddressBuilder : IAddressBuilder<AddressBuilder>
 
             if (!string.IsNullOrEmpty(_key))
             {
-                return $"/{Consts.Exchanges}/{_exchange}/{Consts.Key}/{_key}";
+                return $"/{Consts.Exchanges}/{_exchange}/{_key}";
             }
 
             return $"/{Consts.Exchanges}/{_exchange}";

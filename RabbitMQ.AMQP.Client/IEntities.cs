@@ -5,15 +5,23 @@ public interface IEntityInfo
 }
 
 /// <summary>
-/// Generic interface for declaring entities
+/// Generic interface for declaring entities with result of type T
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public interface IEntityDeclaration<T> where T : IEntityInfo
+public interface IEntityInfoDeclaration<T> where T : IEntityInfo
 {
     Task<T> Declare();
 }
 
-public interface IQueueSpecification : IEntityDeclaration<IQueueInfo>
+/// <summary>
+/// Generic interface for declaring entities without result
+/// </summary>
+public interface IEntityDeclaration
+{
+    Task Declare();
+}
+
+public interface IQueueSpecification : IEntityInfoDeclaration<IQueueInfo>
 {
     IQueueSpecification Name(string name);
     public string Name();
@@ -44,7 +52,7 @@ public interface IQueueDeletion
     Task<IEntityInfo> Delete(string name);
 }
 
-public interface IExchangeSpecification : IEntityDeclaration<IExchangeInfo>
+public interface IExchangeSpecification : IEntityDeclaration
 {
     IExchangeSpecification Name(string name);
 
@@ -52,14 +60,47 @@ public interface IExchangeSpecification : IEntityDeclaration<IExchangeInfo>
 
     IExchangeSpecification Type(ExchangeType type);
 
-    IExchangeSpecification Type(string type);
+    IExchangeSpecification Type(string type); // TODO: Add this
 
     IExchangeSpecification Argument(string key, object value);
 }
 
-
 public interface IExchangeDeletion
 {
     // TODO consider returning a ExchangeStatus object with some info after deletion
-    Task<IEntityInfo> Delete(string name);
+    Task Delete(string name);
+}
+
+public interface IBindingSpecification
+{
+    IBindingSpecification SourceExchange(string exchange);
+
+    IBindingSpecification DestinationQueue(string queue);
+
+    IBindingSpecification DestinationExchange(string exchange);
+
+    IBindingSpecification Key(string key);
+
+    IBindingSpecification Argument(string key, object value);
+
+    IBindingSpecification Arguments(Dictionary<string, object> arguments);
+
+    Task Bind();
+}
+
+public interface IUnbindSpecification
+{
+    IUnbindSpecification SourceExchange(string exchange);
+
+    IUnbindSpecification DestinationQueue(string queue);
+
+    IUnbindSpecification DestinationExchange(string exchange);
+
+    IUnbindSpecification Key(string key);
+
+    IUnbindSpecification Argument(string key, object value);
+
+    IUnbindSpecification Arguments(Dictionary<string, object> arguments);
+
+    Task UnBind();
 }
