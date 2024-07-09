@@ -20,7 +20,6 @@ internal class TestAmqpManagement : AmqpManagement
 
 internal class TestAmqpManagementOpen : AmqpManagement
 {
-
     public TestAmqpManagementOpen()
     {
         State = State.Open;
@@ -35,7 +34,6 @@ internal class TestAmqpManagementOpen : AmqpManagement
     {
         HandleResponseMessage(msg);
     }
-
 }
 
 public class ManagementTests()
@@ -44,13 +42,7 @@ public class ManagementTests()
     public async Task RaiseTaskCanceledException()
     {
         var management = new TestAmqpManagementOpen();
-        var message = new Message()
-        {
-            Properties = new Properties()
-            {
-                MessageId = "a_random_id",
-            }
-        };
+        var message = new Message() { Properties = new Properties() { MessageId = "a_random_id", } };
         await Assert.ThrowsAsync<TaskCanceledException>(async () =>
             await management.Request(message, [200], TimeSpan.FromSeconds(1)));
         await management.CloseAsync();
@@ -71,22 +63,12 @@ public class ManagementTests()
     {
         var management = new TestAmqpManagement();
         const string messageId = "my_id";
-        var sent = new Message()
-        {
-            Properties = new Properties()
-            {
-                MessageId = messageId,
-            }
-        };
+        var sent = new Message() { Properties = new Properties() { MessageId = messageId, } };
 
 
         var receive = new Message()
         {
-            Properties = new Properties()
-            {
-                CorrelationId = messageId,
-                Subject = "Not_a_Number",
-            }
+            Properties = new Properties() { CorrelationId = messageId, Subject = "Not_a_Number", }
         };
 
         Assert.Throws<ModelException>(() =>
@@ -197,17 +179,16 @@ public class ManagementTests()
     }
 
 
-
     [Fact]
     public async Task DeclareQueueWithPreconditionFailedException()
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         await connection.ConnectAsync();
         var management = connection.Management();
-        await management.Queue().Name("precondition_queue").AutoDelete(false).Declare();
+        await management.Queue().Name("precondition_queue_fail").AutoDelete(false).Declare();
         await Assert.ThrowsAsync<PreconditionFailedException>(async () =>
-            await management.Queue().Name("precondition_queue").AutoDelete(true).Declare());
-        await management.QueueDeletion().Delete("precondition_queue");
+            await management.Queue().Name("precondition_queue_fail").AutoDelete(true).Declare());
+        await management.QueueDeletion().Delete("precondition_queue_fail");
         await connection.CloseAsync();
     }
 
@@ -256,6 +237,36 @@ public class ManagementTests()
         await connection.CloseAsync();
     }
 
+    [Fact]
+    public async Task ExchangeWithDifferentArgs()
+    {
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        await connection.ConnectAsync();
+        var management = connection.Management();
+        await management.Exchange("my_exchange_with_args").AutoDelete(true).Argument("my_key", "my _value").Declare();
+        SystemUtils.WaitUntil(() => SystemUtils.ExchangesExists("my_exchange_with_args"));
+        await management.ExchangeDeletion().Delete("my_exchange_with_args");
+        await connection.CloseAsync();
+        SystemUtils.WaitUntil(() => !SystemUtils.ExchangesExists("my_exchange_with_args"));
+    }
+
+
+    [Fact]
+    public async Task DeclareExchangeWithPreconditionFailedException()
+    {
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        await connection.ConnectAsync();
+        var management = connection.Management();
+        await management.Exchange("my_exchange_raise_precondition_fail").AutoDelete(true)
+            .Argument("my_key", "my _value").Declare();
+        await Assert.ThrowsAsync<PreconditionFailedException>(async () =>
+            await management.Exchange("my_exchange_raise_precondition_fail").AutoDelete(false)
+                .Argument("my_key_2", "my _value_2").Declare());
+        SystemUtils.WaitUntil(() => SystemUtils.ExchangesExists("my_exchange_raise_precondition_fail"));
+        await management.ExchangeDeletion().Delete("my_exchange_raise_precondition_fail");
+        await connection.CloseAsync();
+        SystemUtils.WaitUntil(() => !SystemUtils.ExchangesExists("my_exchange_raise_precondition_fail"));
+    }
 
 
     ////////////// ----------------- Topology TESTS ----------------- //////////////

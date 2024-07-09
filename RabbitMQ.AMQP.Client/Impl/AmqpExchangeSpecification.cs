@@ -11,18 +11,9 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
 {
     private string _name = "";
     private bool _autoDelete;
-    private ExchangeType _type;
-    private string _typeString = "";
+    private ExchangeType _type = ExchangeType.DIRECT;
+    private string _typeString = ""; // TODO: add this
     private readonly Map _arguments = new();
-
-
-    // Map<String, Object> body = new LinkedHashMap<>();
-    // body.put("type", this.type);
-    // body.put("durable", DURABLE);
-    // body.put("auto_delete", this.autoDelete);
-    // body.put("internal", INTERNAL);
-    // body.put("arguments", this.arguments);
-
 
     public async Task<IExchangeInfo> Declare()
     {
@@ -85,7 +76,6 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
     }
 }
 
-
 public class DefaultExchangeDeletionInfo : IEntityInfo
 {
 }
@@ -94,13 +84,10 @@ public class AmqpExchangeDeletion(AmqpManagement management) : IExchangeDeletion
 {
     public async Task<IEntityInfo> Delete(string name)
     {
-        await management.Request(null, $"/{Consts.Exchanges}/{name}", AmqpManagement.Delete, new[]
-        {
-            AmqpManagement.Code204,
-        }).ConfigureAwait(false);
+        await management
+            .Request(null, $"/{Consts.Exchanges}/{name}", AmqpManagement.Delete, new[] { AmqpManagement.Code204, })
+            .ConfigureAwait(false);
 
         return new DefaultExchangeDeletionInfo();
     }
 }
-
-
