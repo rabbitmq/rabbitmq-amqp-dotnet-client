@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Web;
 using Amqp;
 using Amqp.Framing;
 using Amqp.Types;
@@ -83,4 +84,37 @@ public static class Utils
         };
         return senderAttach;
     }
+    
+    // from Apache HttpComponents PercentCodec
+// static String encodePathSegment(String segment) {
+//     if (segment == null) {
+//         return null;
+//     }
+//     StringBuilder buf = new StringBuilder();
+//     final CharBuffer cb = CharBuffer.wrap(segment);
+//     final ByteBuffer bb = StandardCharsets.UTF_8.encode(cb);
+//     while (bb.hasRemaining()) {
+//         final int b = bb.get() & 0xff;
+//         if (UNRESERVED.get(b)) {
+//             buf.append((char) b);
+//         } else {
+//             buf.append("%");
+//             final char hex1 = Character.toUpperCase(Character.forDigit((b >> 4) & 0xF, RADIX));
+//             final char hex2 = Character.toUpperCase(Character.forDigit(b & 0xF, RADIX));
+//             buf.append(hex1);
+//             buf.append(hex2);
+//         }
+//     }
+//     return buf.toString();
+// }
+
+    public static string EncodePathSegment(string path)
+    {
+        return HttpUtility.UrlEncode(path);
+    }
+    
 }
+
+
+
+

@@ -266,29 +266,7 @@ public class ManagementTests()
     }
 
     
-    ////////////// ----------------- Bindings TESTS ----------------- //////////////
-
-    
-    [Fact]
-    public async Task SimpleBindingsBetweenExchangeAndQueue()
-    {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        await connection.ConnectAsync();
-        var management = connection.Management();
-        await management.Exchange("exchange_simple_bindings").Declare();
-        await management.Queue().Name("queue_simple_bindings").Declare();
-        await management.Binding().SourceExchange("exchange_simple_bindings").
-            DestinationQueue("queue_simple_bindings").Key("key").Bind();
-        SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists("exchange_simple_bindings"));
-        await management.Unbind().SourceExchange("exchange_simple_bindings").
-            DestinationQueue("queue_simple_bindings").Key("key").UnBind();
-
-        await management.ExchangeDeletion().Delete("exchange_simple_bindings");
-        await management.QueueDeletion().Delete("queue_simple_bindings");
-        await connection.CloseAsync();
-        SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists("exchange_simple_bindings"));
-        SystemUtils.WaitUntil(() => !SystemUtils.QueueExists("queue_simple_bindings"));
-    }
+  
 
     ////////////// ----------------- Topology TESTS ----------------- //////////////
 

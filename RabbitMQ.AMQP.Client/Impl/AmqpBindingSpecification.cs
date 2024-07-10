@@ -98,7 +98,6 @@ public class AmqpUnBindingSpecification(AmqpManagement management) : IUnbindSpec
     private bool _toQueue = true;
 
 
-
     public IUnbindSpecification SourceExchange(string exchange)
     {
         _source = exchange;
@@ -146,11 +145,12 @@ public class AmqpUnBindingSpecification(AmqpManagement management) : IUnbindSpec
         string destinationCharacter = _toQueue ? "dstq" : "dste";
 
         string target =
-            $"/{Consts.Bindings}/src={_source};" +
-            $"{($"{destinationCharacter}={_destination};key={_routingKey};args=")}";
+            $"/{Consts.Bindings}/src={Utils.EncodePathSegment(_source)};" +
+            $"{($"{destinationCharacter}={Utils.EncodePathSegment(_destination)};" +
+                $"key={Utils.EncodePathSegment(_routingKey)};args=")}";
 
         await Management.Request(
-            null, target, 
+            null, target,
             AmqpManagement.Delete, new[] { AmqpManagement.Code204 }).ConfigureAwait(false);
     }
 }
