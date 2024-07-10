@@ -30,7 +30,7 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
         // TODO: encodePathSegment(queues)
         // Message request = await management.Request(kv, $"/{Consts.Exchanges}/{_name}",
         // for the moment we won't use the message response
-        await management.Request(kv, $"/{Consts.Exchanges}/{_name}",
+        await management.Request(kv, $"/{Consts.Exchanges}/{Utils.EncodePathSegment(_name)}",
             AmqpManagement.Put,
             [
                 AmqpManagement.Code204,

@@ -265,8 +265,8 @@ public class ManagementTests()
         SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists("my_exchange_raise_precondition_fail"));
     }
 
-    
-  
+
+
 
     ////////////// ----------------- Topology TESTS ----------------- //////////////
 

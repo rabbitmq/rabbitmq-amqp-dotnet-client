@@ -29,8 +29,9 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
     internal const int Code204 = 204; // TODO: handle 204
     internal const int Code409 = 409;
     internal const string Put = "PUT";
+    internal const string Get = "GET";
     internal const string Post = "POST";
-    
+
     internal const string Delete = "DELETE";
 
     private const string ReplyTo = "$me";

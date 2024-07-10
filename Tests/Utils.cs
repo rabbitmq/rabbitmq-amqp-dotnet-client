@@ -228,20 +228,20 @@ namespace Tests
             var result = task.Result;
             return result.IsSuccessStatusCode;
         }
-        
+
         public static bool BindsBetweenExchangeAndQueueExists(string exchange, string queue)
         {
-            var resp =  CreateHttpClient().GetAsync($"http://localhost:15672/api/bindings/%2F/e/{exchange}/q/{queue}");
+            var resp = CreateHttpClient().GetAsync($"http://localhost:15672/api/bindings/%2F/e/{exchange}/q/{queue}");
             resp.Wait(TimeSpan.FromSeconds(10));
-            string body =resp.Result.Content.ReadAsStringAsync().Result;
+            string body = resp.Result.Content.ReadAsStringAsync().Result;
             return body != "[]" && resp.Result.IsSuccessStatusCode;
         }
-        
+
         public static bool BindsBetweenExchangeAndExchangeExists(string sourceExchange, string destinationExchange)
         {
-            var resp =  CreateHttpClient().GetAsync($"http://localhost:15672/api/bindings/%2F/e/{sourceExchange}/e/{destinationExchange}");
+            var resp = CreateHttpClient().GetAsync($"http://localhost:15672/api/bindings/%2F/e/{sourceExchange}/e/{destinationExchange}");
             resp.Wait(TimeSpan.FromSeconds(10));
-            string body =resp.Result.Content.ReadAsStringAsync().Result;
+            string body = resp.Result.Content.ReadAsStringAsync().Result;
             return body != "[]" && resp.Result.IsSuccessStatusCode;
         }
 

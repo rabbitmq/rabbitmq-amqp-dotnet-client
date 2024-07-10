@@ -84,35 +84,35 @@ public static class Utils
         };
         return senderAttach;
     }
-    
-    // from Apache HttpComponents PercentCodec
-// static String encodePathSegment(String segment) {
-//     if (segment == null) {
-//         return null;
-//     }
-//     StringBuilder buf = new StringBuilder();
-//     final CharBuffer cb = CharBuffer.wrap(segment);
-//     final ByteBuffer bb = StandardCharsets.UTF_8.encode(cb);
-//     while (bb.hasRemaining()) {
-//         final int b = bb.get() & 0xff;
-//         if (UNRESERVED.get(b)) {
-//             buf.append((char) b);
-//         } else {
-//             buf.append("%");
-//             final char hex1 = Character.toUpperCase(Character.forDigit((b >> 4) & 0xF, RADIX));
-//             final char hex2 = Character.toUpperCase(Character.forDigit(b & 0xF, RADIX));
-//             buf.append(hex1);
-//             buf.append(hex2);
-//         }
-//     }
-//     return buf.toString();
-// }
 
-    public static string EncodePathSegment(string path)
+    public static string EncodePathSegment(string url)
     {
-        return HttpUtility.UrlEncode(path);
+        return Uri.UnescapeDataString(url);
     }
-    
+
+    public static bool CompareMap(Map map1, Map map2)
+    {
+        if (map1.Count != map2.Count)
+        {
+            return false;
+        }
+
+        foreach (object? key in map1.Keys)
+        {
+            if (!map2.ContainsKey(key))
+            {
+                return false;
+            }
+
+            if (!map1[key].Equals(map2[key]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 }
 
 
