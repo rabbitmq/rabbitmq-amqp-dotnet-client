@@ -8,34 +8,36 @@ namespace Tests;
 public class BindingsTests
 {
     ////////////// ----------------- Bindings TESTS ----------------- //////////////
-
-
-    [Fact]
-    public async Task SimpleBindingsBetweenExchangeAndQueue()
+    [Theory]
+    [InlineData("my_source_exchange_!", "my_queue_destination__£$")]
+    [InlineData("@@@@@@@!", "~~~~my_queue_destination__;,.£$")]
+    [InlineData("التصمي", "~~~~my_التصمي__;,.£$")]
+    [InlineData("[7][8][~]他被广泛认为是理论计算机科学和人工智能之父。 ", ",,,£## επιρροή στην ανάπτυξη της")]
+    public async Task SimpleBindingsBetweenExchangeAndQueue(string sourceExchange, string queueDestination)
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         var management = connection.Management();
-        await management.Exchange("exchange_simple_bindings").Declare();
-        await management.Queue().Name("queue_simple_bindings").Declare();
-        await management.Binding().SourceExchange("exchange_simple_bindings").DestinationQueue("queue_simple_bindings")
+        await management.Exchange(sourceExchange).Declare();
+        await management.Queue().Name(queueDestination).Declare();
+        await management.Binding().SourceExchange(sourceExchange).DestinationQueue(queueDestination)
             .Key("key").Bind();
-        SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists("exchange_simple_bindings"));
+        SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists(sourceExchange));
         SystemUtils.WaitUntil(() =>
-            SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_simple_bindings",
-                "queue_simple_bindings"));
+            SystemUtils.BindsBetweenExchangeAndQueueExists(sourceExchange,
+                queueDestination));
 
-        await management.Unbind().SourceExchange("exchange_simple_bindings").DestinationQueue("queue_simple_bindings")
+        await management.Unbind().SourceExchange(sourceExchange).DestinationQueue(queueDestination)
             .Key("key").UnBind();
 
         SystemUtils.WaitUntil(() =>
-            !SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_simple_bindings",
-                "queue_simple_bindings"));
+            !SystemUtils.BindsBetweenExchangeAndQueueExists(sourceExchange,
+                queueDestination));
 
-        await management.ExchangeDeletion().Delete("exchange_simple_bindings");
-        await management.QueueDeletion().Delete("queue_simple_bindings");
+        await management.ExchangeDeletion().Delete(sourceExchange);
+        await management.QueueDeletion().Delete(queueDestination);
         await connection.CloseAsync();
-        SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists("exchange_simple_bindings"));
-        SystemUtils.WaitUntil(() => !SystemUtils.QueueExists("queue_simple_bindings"));
+        SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists(sourceExchange));
+        SystemUtils.WaitUntil(() => !SystemUtils.QueueExists(queueDestination));
     }
 
     [Fact]
@@ -80,7 +82,8 @@ public class BindingsTests
     [Theory]
     [InlineData("source_exchange", "destination_exchange", "mykey")]
     [InlineData("是英国数学家", "是英国数学家", "英国")]
-    [InlineData("[7][8][9] 他被广泛认为是理论计算机科学和人工智能之父。 ", "ίχε μεγάλη επιρροή στην ανάπτυξη της", "[7][8][9] 他被广泛认为是理论计算机科学和人工智能之父。")]
+    [InlineData("[7][8][9] 他被广泛认为是理论计算机科学和人工智能之父。 ", "ίχε μεγάλη επιρροή στην ανάπτυξη της",
+        "[7][8][9] 他被广泛认为是理论计算机科学和人工智能之父。")]
     [InlineData("ήταν Άγγλος μαθηματικός, επιστήμονας υπολογιστών",
         "ήταν Άγγλος μαθηματικός, επιστήμονας", "επι")]
     public async Task SimpleBindingsBetweenExchangeAndExchange(string sourceExchange, string destinationExchange,
@@ -153,5 +156,65 @@ public class BindingsTests
         await connection.CloseAsync();
         SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists("exchange_bindings_with_arguments"));
         SystemUtils.WaitUntil(() => !SystemUtils.QueueExists("queue_bindings_with_arguments"));
+    }
+
+    [Theory]
+    [InlineData("my_source_exchange_multi_123", "my_destination_789", "myKey")]
+    [InlineData("是英国v_", "destination_是英国v_", "μαθηματικός")]
+    public async Task MultiBindingsBetweenExchangeAndQueuesWithArgumentsDifferentValues(string source,
+        string destination, string key)
+    {
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        var management = connection.Management();
+        await management.Exchange(source).Declare();
+        await management.Queue().Name(destination).Declare();
+        // add 10 bindings to have a list of bindings to find
+        for (int i = 0; i < 10; i++)
+        {
+            await management.Binding().SourceExchange(source)
+                .DestinationQueue(destination)
+                .Key(key) // single key to use different args
+                .Arguments(new Dictionary<string, object>() { { $"是英国v_{i}", $"p_{i}" } })
+                .Bind();
+        }
+
+        var specialBind = new Dictionary<string, object>() { { $"v_8", $"p_8" }, { $"v_1", 1 }, { $"v_r", 1000L }, };
+        await management.Binding().SourceExchange(source)
+            .DestinationQueue(destination)
+            .Key(key) // single key to use different args
+            .Arguments(specialBind)
+            .Bind();
+        SystemUtils.WaitUntil(() =>
+            SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
+                destination, specialBind));
+
+        await management.Unbind().SourceExchange(source).DestinationQueue(destination).Key(key).Arguments(specialBind)
+            .UnBind();
+
+        SystemUtils.WaitUntil(() =>
+            !SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
+                destination, specialBind));
+
+        for (int i = 0; i < 10; i++)
+        {
+            var b = new Dictionary<string, object>() { { $"是英国v_{i}", $"p_{i}" } };
+            SystemUtils.WaitUntil(() =>
+                SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
+                    destination, b));
+            await management.Unbind().SourceExchange(source)
+                .DestinationQueue(destination)
+                .Key(key) // single key to use different args
+                .Arguments(b)
+                .UnBind();
+
+            SystemUtils.WaitUntil(() =>
+                !SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
+                    destination, b));
+        }
+
+
+        await management.ExchangeDeletion().Delete(source);
+        await management.QueueDeletion().Delete(destination);
+        await connection.CloseAsync();
     }
 }

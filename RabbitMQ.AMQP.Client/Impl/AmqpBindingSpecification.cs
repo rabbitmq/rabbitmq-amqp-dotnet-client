@@ -154,13 +154,17 @@ public class AmqpUnBindingSpecification(AmqpManagement management)
             return [];
         }
 
-        if (list.Count > 0 && list[0] is Map map)
+
+        var l = new List<Map>() { };
+        foreach (object o in list)
         {
-            return [map];
+            if (o is Map item)
+            {
+                l.Add(item);
+            }
         }
 
-
-        return [];
+        return l;
     }
 
     // private static Optional<String> matchBinding(
