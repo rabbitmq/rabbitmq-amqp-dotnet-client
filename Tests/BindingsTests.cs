@@ -77,79 +77,81 @@ public class BindingsTests
     }
 
 
-    [Fact]
-    public async Task SimpleBindingsBetweenExchangeAndExchange()
+    [Theory]
+    [InlineData("source_exchange", "destination_exchange", "mykey")]
+    [InlineData("是英国数学家", "是英国数学家", "英国")]
+    [InlineData("[7][8][9] 他被广泛认为是理论计算机科学和人工智能之父。 ", "ίχε μεγάλη επιρροή στην ανάπτυξη της", "[7][8][9] 他被广泛认为是理论计算机科学和人工智能之父。")]
+    [InlineData("ήταν Άγγλος μαθηματικός, επιστήμονας υπολογιστών",
+        "ήταν Άγγλος μαθηματικός, επιστήμονας", "επι")]
+    public async Task SimpleBindingsBetweenExchangeAndExchange(string sourceExchange, string destinationExchange,
+        string key)
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         var management = connection.Management();
-        await management.Exchange("exchange_simple_bindings").Declare();
-        await management.Exchange("exchange_simple_bindings_destination").Declare();
-        await management.Binding().SourceExchange("exchange_simple_bindings")
-            .DestinationExchange("exchange_simple_bindings_destination")
-            .Key("key").Bind();
-        SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists("exchange_simple_bindings"));
+        await management.Exchange(sourceExchange).Declare();
+        await management.Exchange(destinationExchange).Declare();
+        await management.Binding().SourceExchange(sourceExchange)
+            .DestinationExchange(destinationExchange)
+            .Key(key).Bind();
+        SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists(sourceExchange));
 
         SystemUtils.WaitUntil(() =>
-            SystemUtils.BindsBetweenExchangeAndExchangeExists("exchange_simple_bindings",
-                "exchange_simple_bindings_destination"));
+            SystemUtils.BindsBetweenExchangeAndExchangeExists(sourceExchange,
+                destinationExchange));
 
 
-        await management.Unbind().SourceExchange("exchange_simple_bindings")
-            .DestinationExchange("exchange_simple_bindings_destination")
-            .Key("key").UnBind();
+        await management.Unbind().SourceExchange(sourceExchange)
+            .DestinationExchange(destinationExchange)
+            .Key(key).UnBind();
 
         SystemUtils.WaitUntil(() =>
-            !SystemUtils.BindsBetweenExchangeAndExchangeExists("exchange_simple_bindings",
-                "exchange_simple_bindings_destination"));
+            !SystemUtils.BindsBetweenExchangeAndExchangeExists(sourceExchange,
+                destinationExchange));
 
-        await management.ExchangeDeletion().Delete("exchange_simple_bindings");
-        await management.ExchangeDeletion().Delete("exchange_simple_bindings_destination");
+        await management.ExchangeDeletion().Delete(sourceExchange);
+        await management.ExchangeDeletion().Delete(destinationExchange);
         await connection.CloseAsync();
-        SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists("exchange_simple_bindings"));
-        SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists("exchange_simple_bindings_destination"));
+        SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists(sourceExchange));
+        SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists(destinationExchange));
     }
 
-    [Fact]
-
-    public async Task BindingsBetweenExchangeAndQueuesWithArguments()
+    [Theory]
+    [InlineData("A", 10000, "Z", "是英国数学家")]
+    [InlineData("B", 10000L, "H", 0.0001)]
+    [InlineData("是英国", 10000.32, "W", 3.0001)]
+    [InlineData("是英国", "是英国23", "W", 3.0001)]
+    public async Task BindingsBetweenExchangeAndQueuesWithArgumentsDifferentValues(string key1, object value1,
+        string key2, object value2)
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         var management = connection.Management();
         await management.Exchange("exchange_bindings_with_arguments").Declare();
         await management.Queue().Name("queue_bindings_with_arguments").Declare();
-
-        var arguments = new Dictionary<string, object>
-        {
-            {"x-message-ttl", 10000},
-            {"x-expires", 10000}
-        };
-
-
+        var arguments = new Dictionary<string, object> { { key1, value1 }, { key2, value2 } };
         await management.Binding().SourceExchange("exchange_bindings_with_arguments")
             .DestinationQueue("queue_bindings_with_arguments")
             .Key("key")
             .Arguments(arguments)
             .Bind();
-
         SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists("exchange_bindings_with_arguments"));
-
         SystemUtils.WaitUntil(() =>
-            SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_bindings_with_arguments",
-                "queue_bindings_with_arguments"));
-
+            SystemUtils.ArgsBindsBetweenExchangeAndQueueExists("exchange_bindings_with_arguments",
+                "queue_bindings_with_arguments", arguments));
         await management.Unbind().SourceExchange("exchange_bindings_with_arguments")
             .DestinationQueue("queue_bindings_with_arguments")
             .Key("key").Arguments(arguments).UnBind();
+        SystemUtils.WaitUntil(() =>
+            !SystemUtils.ArgsBindsBetweenExchangeAndQueueExists("exchange_bindings_with_arguments",
+                "queue_bindings_with_arguments", arguments));
 
-        SystemUtils.WaitUntil(() => !SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_bindings_with_arguments", "queue_bindings_with_arguments"));
+        SystemUtils.WaitUntil(() =>
+            !SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_bindings_with_arguments",
+                "queue_bindings_with_arguments"));
 
         await management.ExchangeDeletion().Delete("exchange_bindings_with_arguments");
         await management.QueueDeletion().Delete("queue_bindings_with_arguments");
         await connection.CloseAsync();
         SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists("exchange_bindings_with_arguments"));
         SystemUtils.WaitUntil(() => !SystemUtils.QueueExists("queue_bindings_with_arguments"));
-
-
-
     }
 }

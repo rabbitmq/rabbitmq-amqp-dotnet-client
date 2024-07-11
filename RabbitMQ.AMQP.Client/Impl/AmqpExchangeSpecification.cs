@@ -75,7 +75,8 @@ public class AmqpExchangeDeletion(AmqpManagement management) : IExchangeDeletion
     public async Task Delete(string name)
     {
         await management
-            .Request(null, $"/{Consts.Exchanges}/{name}", AmqpManagement.Delete, new[] { AmqpManagement.Code204, })
+            .Request(null, $"/{Consts.Exchanges}/{Utils.EncodePathSegment(name)}", AmqpManagement.Delete,
+                new[] { AmqpManagement.Code204, })
             .ConfigureAwait(false);
     }
 }

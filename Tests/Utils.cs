@@ -212,7 +212,6 @@ namespace Tests
         }
 
 
-
         public static bool QueueExists(string queue)
         {
             var task = CreateHttpClient().GetAsync($"http://localhost:15672/api/queues/%2F/{queue}");
@@ -223,7 +222,7 @@ namespace Tests
 
         public static bool ExchangeExists(string exchange)
         {
-            var task = CreateHttpClient().GetAsync($"http://localhost:15672/api/exchanges/%2F/{exchange}");
+            var task = CreateHttpClient().GetAsync($"http://localhost:15672/api/exchanges/%2F/{Uri.EscapeDataString(exchange)}");
             task.Wait(TimeSpan.FromSeconds(10));
             var result = task.Result;
             return result.IsSuccessStatusCode;
@@ -237,14 +236,44 @@ namespace Tests
             return body != "[]" && resp.Result.IsSuccessStatusCode;
         }
 
+        public static bool ArgsBindsBetweenExchangeAndQueueExists(string exchange, string queue,
+            Dictionary<string, object> argumentsIn)
+        {
+            var resp = CreateHttpClient().GetAsync($"http://localhost:15672/api/bindings/%2F/e/{exchange}/q/{queue}");
+            resp.Wait(TimeSpan.FromSeconds(10));
+            string body = resp.Result.Content.ReadAsStringAsync().Result;
+            if (body == "[]")
+            {
+                return false;
+            }
+
+            var bindingsResults = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(body);
+            foreach (var argumentResult in bindingsResults)
+            {
+                var argumentsResult = JsonSerializer.Deserialize<Dictionary<string, object>>(
+                    argumentResult["arguments"].ToString() ??
+                    throw new InvalidOperationException());
+                // Check only the key to avoid conversion value problems 
+                // on the test is enough to avoid to put the same key
+                // at some point we could add keyValuePair.Value == keyValuePairResult.Value
+                // keyValuePairResult.Value is a json object
+                var results = argumentsResult.Keys.ToArray().
+                    Intersect(argumentsIn.Keys.ToArray(), StringComparer.OrdinalIgnoreCase);
+
+                return results.Count() == argumentsIn.Count;
+            }
+
+            return false;
+        }
+
         public static bool BindsBetweenExchangeAndExchangeExists(string sourceExchange, string destinationExchange)
         {
-            var resp = CreateHttpClient().GetAsync($"http://localhost:15672/api/bindings/%2F/e/{sourceExchange}/e/{destinationExchange}");
+            var resp = CreateHttpClient()
+                .GetAsync($"http://localhost:15672/api/bindings/%2F/e/{Uri.EscapeDataString(sourceExchange)}/e/{Uri.EscapeDataString(destinationExchange)}");
             resp.Wait(TimeSpan.FromSeconds(10));
             string body = resp.Result.Content.ReadAsStringAsync().Result;
             return body != "[]" && resp.Result.IsSuccessStatusCode;
         }
-
 
 
         public static int HttpGetQMsgCount(string queue)

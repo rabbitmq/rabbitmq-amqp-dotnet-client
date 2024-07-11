@@ -30,39 +30,11 @@ public class AmqpBindingSpecification(AmqpManagement management) : BindingSpecif
 
     public async Task Bind()
     {
-        // if (string.IsNullOrEmpty(_source))
-        // {
-        //     throw new ArgumentException("Source must be set");
-        // }
-        //
-        // if (string.IsNullOrEmpty(_destination))
-        // {
-        //     throw new ArgumentException("Destination must be set");
-        // }
-        //
-        // if (string.IsNullOrEmpty(_routingKey))
-        // {
-        //     throw new ArgumentException("Routing key must be set");
-        // }
-        // Map<String, Object> body = new LinkedHashMap<>();
-        // body.put("source", this.state.source);
-        // body.put("binding_key", this.state.key == null ? "" : this.state.key);
-        // body.put("arguments", this.state.arguments);
-        // if (this.state.toQueue) {
-        //     body.put("destination_queue", this.state.destination);
-        //     this.state.managememt.bind(body);
-        // } else {
-        //     body.put("destination_exchange", this.state.destination);
-        //     this.state.managememt.bind(body);
-        // }
-
-        Map argMap = ArgsToMap();
-
         var kv = new Map
         {
             { "source", Source },
             { "binding_key", RoutingKey },
-            { "arguments", argMap },
+            { "arguments", ArgsToMap() },
             { ToQueue ? "destination_queue" : "destination_exchange", Destination }
         };
 
@@ -162,13 +134,13 @@ public class AmqpUnBindingSpecification(AmqpManagement management)
         string destinationField, string source, string destination, string key)
     {
         return "/bindings?src="
-               + Utils.EncodePathSegment(source)
+               + Utils.EncodeHttpParameter(source)
                + "&"
                + destinationField
                + "="
-               + Utils.EncodePathSegment((destination))
+               + Utils.EncodeHttpParameter(destination)
                + "&key="
-               + Utils.EncodePathSegment(key);
+               + Utils.EncodeHttpParameter(key);
     }
 
     private async Task<List<Map>> GetBindings(string path)
