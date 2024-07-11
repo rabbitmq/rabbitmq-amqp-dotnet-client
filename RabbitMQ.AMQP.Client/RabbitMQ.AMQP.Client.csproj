@@ -1,27 +1,37 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+    <IsPackable>true</IsPackable>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <MinVerSkip>false</MinVerSkip>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerVerbosity>minimal</MinVerVerbosity>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageOutputPath>../packages</PackageOutputPath>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-      <_Parameter1>Tests</_Parameter1>
-    </AssemblyAttribute>
-  </ItemGroup>
-
-  <ItemGroup>
+    <None Remove="icon.png" />
+    <Content Include="icon.png" PackagePath="" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
+    <None Include="$(MSBuildThisFileDirectory)..\LICENSE" Pack="true" Visible="false" PackagePath="" />
+    <None Include="$(MSBuildThisFileDirectory)..\LICENSE-APACHE2" Pack="true" Visible="false" PackagePath="" />
+    <None Include="$(MSBuildThisFileDirectory)..\LICENSE-MPL-RabbitMQ" Pack="true" Visible="false" PackagePath="" />
+    <Folder Include="Metrics/" />
+    <InternalsVisibleTo Include="Tests" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AMQPNetLite.Core" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Metrics/" />
+    <PackageReference Include="MinVer" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>
