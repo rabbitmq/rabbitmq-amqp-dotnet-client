@@ -20,14 +20,14 @@ public class BindingsTests
         IManagement management = connection.Management();
         await management.Exchange(sourceExchange).Declare();
         await management.Queue().Name(queueDestination).Declare();
-        await management.CreateBindingSpecification().SourceExchange(sourceExchange).DestinationQueue(queueDestination)
+        await management.Binding().SourceExchange(sourceExchange).DestinationQueue(queueDestination)
             .Key("key").Bind();
         SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists(sourceExchange));
         SystemUtils.WaitUntil(() =>
             SystemUtils.BindsBetweenExchangeAndQueueExists(sourceExchange,
                 queueDestination));
 
-        await management.CreateBindingSpecification().SourceExchange(sourceExchange).DestinationQueue(queueDestination)
+        await management.Binding().SourceExchange(sourceExchange).DestinationQueue(queueDestination)
             .Key("key").Unbind();
 
         SystemUtils.WaitUntil(() =>
@@ -48,15 +48,15 @@ public class BindingsTests
         IManagement management = connection.Management();
         await management.Exchange("exchange_bind_two_times").Declare();
         await management.Queue().Name("queue_bind_two_times").Declare();
-        await management.CreateBindingSpecification().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
+        await management.Binding().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
             .Key("first_key").Bind();
-        await management.CreateBindingSpecification().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
+        await management.Binding().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
             .Key("second_key").Bind();
         SystemUtils.WaitUntil(() =>
             SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_bind_two_times",
                 "queue_bind_two_times"));
 
-        await management.CreateBindingSpecification().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
+        await management.Binding().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
             .Key("first_key")
             .Unbind();
 
@@ -64,7 +64,7 @@ public class BindingsTests
             SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_bind_two_times",
                 "queue_bind_two_times"));
 
-        await management.CreateBindingSpecification().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
+        await management.Binding().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
             .Key("second_key")
             .Unbind();
 
@@ -94,7 +94,7 @@ public class BindingsTests
         IManagement management = connection.Management();
         await management.Exchange(sourceExchange).Declare();
         await management.Exchange(destinationExchange).Declare();
-        await management.CreateBindingSpecification().SourceExchange(sourceExchange)
+        await management.Binding().SourceExchange(sourceExchange)
             .DestinationExchange(destinationExchange)
             .Key(key).Bind();
         SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists(sourceExchange));
@@ -103,7 +103,7 @@ public class BindingsTests
             SystemUtils.BindsBetweenExchangeAndExchangeExists(sourceExchange,
                 destinationExchange));
 
-        await management.CreateBindingSpecification().SourceExchange(sourceExchange)
+        await management.Binding().SourceExchange(sourceExchange)
             .DestinationExchange(destinationExchange)
             .Key(key).Unbind();
 
@@ -131,7 +131,7 @@ public class BindingsTests
         await management.Exchange("exchange_bindings_with_arguments").Declare();
         await management.Queue().Name("queue_bindings_with_arguments").Declare();
         var arguments = new Dictionary<string, object> { { key1, value1 }, { key2, value2 } };
-        await management.CreateBindingSpecification().SourceExchange("exchange_bindings_with_arguments")
+        await management.Binding().SourceExchange("exchange_bindings_with_arguments")
             .DestinationQueue("queue_bindings_with_arguments")
             .Key("key")
             .Arguments(arguments)
@@ -140,7 +140,7 @@ public class BindingsTests
         SystemUtils.WaitUntil(() =>
             SystemUtils.ArgsBindsBetweenExchangeAndQueueExists("exchange_bindings_with_arguments",
                 "queue_bindings_with_arguments", arguments));
-        await management.CreateBindingSpecification().SourceExchange("exchange_bindings_with_arguments")
+        await management.Binding().SourceExchange("exchange_bindings_with_arguments")
             .DestinationQueue("queue_bindings_with_arguments")
             .Key("key").Arguments(arguments).Unbind();
         SystemUtils.WaitUntil(() =>
@@ -171,7 +171,7 @@ public class BindingsTests
         // add 10 bindings to have a list of bindings to find
         for (int i = 0; i < 10; i++)
         {
-            await management.CreateBindingSpecification().SourceExchange(source)
+            await management.Binding().SourceExchange(source)
                 .DestinationQueue(destination)
                 .Key(key) // single key to use different args
                 .Arguments(new Dictionary<string, object>() { { $"是英国v_{i}", $"p_{i}" } })
@@ -179,7 +179,7 @@ public class BindingsTests
         }
 
         var specialBind = new Dictionary<string, object>() { { $"v_8", $"p_8" }, { $"v_1", 1 }, { $"v_r", 1000L }, };
-        await management.CreateBindingSpecification().SourceExchange(source)
+        await management.Binding().SourceExchange(source)
             .DestinationQueue(destination)
             .Key(key) // single key to use different args
             .Arguments(specialBind)
@@ -188,7 +188,7 @@ public class BindingsTests
             SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
                 destination, specialBind));
 
-        await management.CreateBindingSpecification().SourceExchange(source).DestinationQueue(destination).Key(key).Arguments(specialBind)
+        await management.Binding().SourceExchange(source).DestinationQueue(destination).Key(key).Arguments(specialBind)
             .Unbind();
 
         SystemUtils.WaitUntil(() =>
@@ -201,7 +201,7 @@ public class BindingsTests
             SystemUtils.WaitUntil(() =>
                 SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
                     destination, b));
-            await management.CreateBindingSpecification().SourceExchange(source)
+            await management.Binding().SourceExchange(source)
                 .DestinationQueue(destination)
                 .Key(key) // single key to use different args
                 .Arguments(b)

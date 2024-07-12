@@ -17,7 +17,7 @@ public interface IManagement : IClosable
 
     IExchangeDeletion ExchangeDeletion();
 
-    IBindingSpecification CreateBindingSpecification();
+    IBindingSpecification Binding();
 
     ITopologyListener TopologyListener();
 }
