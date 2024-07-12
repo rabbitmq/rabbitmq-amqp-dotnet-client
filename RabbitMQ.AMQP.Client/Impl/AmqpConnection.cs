@@ -45,6 +45,7 @@ public class AmqpConnection : AbstractClosable, IConnection
 
     private readonly AmqpManagement _management = new();
     private readonly RecordingTopologyListener _recordingTopologyListener = new();
+    private readonly TaskCompletionSource<bool> _connectionCloseTaskCompletionSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private readonly ConnectionSettings _connectionSettings;
     internal readonly AmqpSessionManagement NativePubSubSessions;
@@ -287,6 +288,8 @@ public class AmqpConnection : AbstractClosable, IConnection
             {
                 _semaphoreClose.Release();
             }
+            
+            _connectionCloseTaskCompletionSource.SetResult(true);
         };
     }
 
@@ -334,6 +337,11 @@ public class AmqpConnection : AbstractClosable, IConnection
         {
             _semaphoreClose.Release();
         }
+        
+        await _connectionCloseTaskCompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(10))
+            .ConfigureAwait(false);
+        
+        OnNewStatus(State.Closed, null);
     }
 
 
