@@ -1,4 +1,3 @@
-using Amqp;
 using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
@@ -45,6 +44,33 @@ public class AmqpBindingSpecification(AmqpManagement management) : BindingSpecif
             ]).ConfigureAwait(false);
     }
 
+    public async Task Unbind()
+    {
+        string destinationCharacter = ToQueue ? "dstq" : "dste";
+        if (_arguments.Count == 0)
+        {
+            string target =
+                $"/{Consts.Bindings}/src={Utils.EncodePathSegment(Source)};" +
+                $"{($"{destinationCharacter}={Utils.EncodePathSegment(Destination)};" +
+                    $"key={Utils.EncodePathSegment(RoutingKey)};args=")}";
+
+            await Management.Request(
+                null, target,
+                AmqpManagement.Delete, new[] { AmqpManagement.Code204 }).ConfigureAwait(false);
+        }
+        else
+        {
+            string path = BindingsTarget(destinationCharacter, Source, Destination, RoutingKey);
+            List<Map> bindings = await GetBindings(path).ConfigureAwait(false);
+            string? uri = MatchBinding(bindings, RoutingKey, ArgsToMap());
+            if (uri != null)
+            {
+                await Management.Request(
+                    null, uri,
+                    AmqpManagement.Delete, new[] { AmqpManagement.Code204 }).ConfigureAwait(false);
+            }
+        }
+    }
 
     public IBindingSpecification SourceExchange(string exchange)
     {
@@ -83,52 +109,6 @@ public class AmqpBindingSpecification(AmqpManagement management) : BindingSpecif
         _arguments = arguments;
         return this;
     }
-}
-
-public class AmqpUnBindingSpecification(AmqpManagement management)
-    : BindingSpecificationBase, IUnbindSpecification // TODO: Create a common class
-{
-    private AmqpManagement Management { get; } = management;
-
-
-    public IUnbindSpecification SourceExchange(string exchange)
-    {
-        Source = exchange;
-        return this;
-    }
-
-    public IUnbindSpecification DestinationQueue(string queue)
-    {
-        ToQueue = true;
-        Destination = queue;
-        return this;
-    }
-
-    public IUnbindSpecification DestinationExchange(string exchange)
-    {
-        ToQueue = false;
-        Destination = exchange;
-        return this;
-    }
-
-    public IUnbindSpecification Key(string key)
-    {
-        RoutingKey = key;
-        return this;
-    }
-
-    public IUnbindSpecification Argument(string key, object value)
-    {
-        _arguments[key] = value;
-        return this;
-    }
-
-    public IUnbindSpecification Arguments(Dictionary<string, object> arguments)
-    {
-        _arguments = arguments;
-        return this;
-    }
-
 
     private string BindingsTarget(
         string destinationField, string source, string destination, string key)
@@ -167,34 +147,6 @@ public class AmqpUnBindingSpecification(AmqpManagement management)
         return l;
     }
 
-    // private static Optional<String> matchBinding(
-    //     List<Map<String, Object>> bindings, String key, Map<String, Object> arguments) {
-    //     Optional<String> uri;
-    //     if (!bindings.isEmpty()) {
-    //         uri =
-    //             bindings.stream()
-    //                 .filter(
-    //                     binding -> {
-    //             String bindingKey = (String) binding.get("binding_key");
-    //             @SuppressWarnings("unchecked")
-    //             Map<String, Object> bindingArguments =
-    //                 (Map<String, Object>) binding.get("arguments");
-    //             if (key == null && bindingKey == null
-    //                 || key != null && key.equals(bindingKey)) {
-    //                 return arguments == null && bindingArguments == null
-    //                        || arguments != null && arguments.equals(bindingArguments);
-    //             }
-    //             return false;
-    //         })
-    //         .map(b -> b.get("location").toString())
-    //             .findFirst();
-    //     } else {
-    //         uri = Optional.empty();
-    //     }
-    //     return uri;
-    // }
-
-
     private string? MatchBinding(List<Map> bindings, string key, Map arguments)
     {
         string? uri = null;
@@ -214,34 +166,5 @@ public class AmqpUnBindingSpecification(AmqpManagement management)
         }
 
         return uri;
-    }
-
-
-    public async Task UnBind()
-    {
-        string destinationCharacter = ToQueue ? "dstq" : "dste";
-        if (_arguments.Count == 0)
-        {
-            string target =
-                $"/{Consts.Bindings}/src={Utils.EncodePathSegment(Source)};" +
-                $"{($"{destinationCharacter}={Utils.EncodePathSegment(Destination)};" +
-                    $"key={Utils.EncodePathSegment(RoutingKey)};args=")}";
-
-            await Management.Request(
-                null, target,
-                AmqpManagement.Delete, new[] { AmqpManagement.Code204 }).ConfigureAwait(false);
-        }
-        else
-        {
-            string path = BindingsTarget(destinationCharacter, Source, Destination, RoutingKey);
-            var bindings = await GetBindings(path).ConfigureAwait(false);
-            string? uri = MatchBinding(bindings, RoutingKey, ArgsToMap());
-            if (uri != null)
-            {
-                await Management.Request(
-                    null, uri,
-                    AmqpManagement.Delete, new[] { AmqpManagement.Code204 }).ConfigureAwait(false);
-            }
-        }
     }
 }

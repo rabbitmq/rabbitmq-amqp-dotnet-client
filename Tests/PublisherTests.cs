@@ -92,13 +92,13 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task SendAMessageToAnExchange()
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        var management = connection.Management();
+        AmqpConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IManagement management = connection.Management();
         await management.Queue().Name("queue_to_send_1").Declare();
         await management.Exchange().Name("exchange_to_send").Declare();
-        await management.Binding().SourceExchange("exchange_to_send").DestinationQueue("queue_to_send_1").Key("key")
+        await management.Binding.SourceExchange("exchange_to_send").DestinationQueue("queue_to_send_1").Key("key")
             .Bind();
-        var publisher = connection.PublisherBuilder().Exchange("exchange_to_send").Key("key").Build();
+        IPublisher publisher = connection.PublisherBuilder().Exchange("exchange_to_send").Key("key").Build();
         await publisher.Publish(new AmqpMessage("Hello wold!"),
             (message, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
         SystemUtils.WaitUntil(() => SystemUtils.HttpGetQMsgCount("queue_to_send_1") == 1);
@@ -106,8 +106,8 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
         await publisher.CloseAsync();
         Assert.Empty(connection.GetPublishers());
 
-        await management.Unbind().SourceExchange("exchange_to_send").DestinationQueue("queue_to_send_1").Key("key")
-            .UnBind();
+        await management.Binding.SourceExchange("exchange_to_send").DestinationQueue("queue_to_send_1").Key("key")
+            .Unbind();
         await management.ExchangeDeletion().Delete("exchange_to_send");
         await management.QueueDeletion().Delete("queue_to_send_1");
         await connection.CloseAsync();

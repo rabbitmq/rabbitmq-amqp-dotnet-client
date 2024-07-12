@@ -86,21 +86,5 @@ public interface IBindingSpecification
     IBindingSpecification Arguments(Dictionary<string, object> arguments);
 
     Task Bind();
-}
-
-public interface IUnbindSpecification
-{
-    IUnbindSpecification SourceExchange(string exchange);
-
-    IUnbindSpecification DestinationQueue(string queue);
-
-    IUnbindSpecification DestinationExchange(string exchange);
-
-    IUnbindSpecification Key(string key);
-
-    IUnbindSpecification Argument(string key, object value);
-
-    IUnbindSpecification Arguments(Dictionary<string, object> arguments);
-
-    Task UnBind();
+    Task Unbind();
 }

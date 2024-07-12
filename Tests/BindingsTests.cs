@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
 
@@ -15,19 +16,19 @@ public class BindingsTests
     [InlineData("[7][8][~]他被广泛认为是理论计算机科学和人工智能之父。 ", ",,,£## επιρροή στην ανάπτυξη της")]
     public async Task SimpleBindingsBetweenExchangeAndQueue(string sourceExchange, string queueDestination)
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        var management = connection.Management();
+        AmqpConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IManagement management = connection.Management();
         await management.Exchange(sourceExchange).Declare();
         await management.Queue().Name(queueDestination).Declare();
-        await management.Binding().SourceExchange(sourceExchange).DestinationQueue(queueDestination)
+        await management.Binding.SourceExchange(sourceExchange).DestinationQueue(queueDestination)
             .Key("key").Bind();
         SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists(sourceExchange));
         SystemUtils.WaitUntil(() =>
             SystemUtils.BindsBetweenExchangeAndQueueExists(sourceExchange,
                 queueDestination));
 
-        await management.Unbind().SourceExchange(sourceExchange).DestinationQueue(queueDestination)
-            .Key("key").UnBind();
+        await management.Binding.SourceExchange(sourceExchange).DestinationQueue(queueDestination)
+            .Key("key").Unbind();
 
         SystemUtils.WaitUntil(() =>
             !SystemUtils.BindsBetweenExchangeAndQueueExists(sourceExchange,
@@ -43,29 +44,29 @@ public class BindingsTests
     [Fact]
     public async Task BindBetweenExchangeAndQueueTwoTimes()
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        var management = connection.Management();
+        AmqpConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IManagement management = connection.Management();
         await management.Exchange("exchange_bind_two_times").Declare();
         await management.Queue().Name("queue_bind_two_times").Declare();
-        await management.Binding().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
+        await management.Binding.SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
             .Key("first_key").Bind();
-        await management.Binding().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
+        await management.Binding.SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
             .Key("second_key").Bind();
         SystemUtils.WaitUntil(() =>
             SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_bind_two_times",
                 "queue_bind_two_times"));
 
-        await management.Unbind().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
+        await management.Binding.SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
             .Key("first_key")
-            .UnBind();
+            .Unbind();
 
         SystemUtils.WaitUntil(() =>
             SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_bind_two_times",
                 "queue_bind_two_times"));
 
-        await management.Unbind().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
+        await management.Binding.SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
             .Key("second_key")
-            .UnBind();
+            .Unbind();
 
         SystemUtils.WaitUntil(() => !SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_bind_two_times",
             "queue_bind_two_times"));
@@ -89,11 +90,11 @@ public class BindingsTests
     public async Task SimpleBindingsBetweenExchangeAndExchange(string sourceExchange, string destinationExchange,
         string key)
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        var management = connection.Management();
+        AmqpConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IManagement management = connection.Management();
         await management.Exchange(sourceExchange).Declare();
         await management.Exchange(destinationExchange).Declare();
-        await management.Binding().SourceExchange(sourceExchange)
+        await management.Binding.SourceExchange(sourceExchange)
             .DestinationExchange(destinationExchange)
             .Key(key).Bind();
         SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists(sourceExchange));
@@ -102,10 +103,9 @@ public class BindingsTests
             SystemUtils.BindsBetweenExchangeAndExchangeExists(sourceExchange,
                 destinationExchange));
 
-
-        await management.Unbind().SourceExchange(sourceExchange)
+        await management.Binding.SourceExchange(sourceExchange)
             .DestinationExchange(destinationExchange)
-            .Key(key).UnBind();
+            .Key(key).Unbind();
 
         SystemUtils.WaitUntil(() =>
             !SystemUtils.BindsBetweenExchangeAndExchangeExists(sourceExchange,
@@ -126,12 +126,12 @@ public class BindingsTests
     public async Task BindingsBetweenExchangeAndQueuesWithArgumentsDifferentValues(string key1, object value1,
         string key2, object value2)
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        var management = connection.Management();
+        AmqpConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IManagement management = connection.Management();
         await management.Exchange("exchange_bindings_with_arguments").Declare();
         await management.Queue().Name("queue_bindings_with_arguments").Declare();
         var arguments = new Dictionary<string, object> { { key1, value1 }, { key2, value2 } };
-        await management.Binding().SourceExchange("exchange_bindings_with_arguments")
+        await management.Binding.SourceExchange("exchange_bindings_with_arguments")
             .DestinationQueue("queue_bindings_with_arguments")
             .Key("key")
             .Arguments(arguments)
@@ -140,9 +140,9 @@ public class BindingsTests
         SystemUtils.WaitUntil(() =>
             SystemUtils.ArgsBindsBetweenExchangeAndQueueExists("exchange_bindings_with_arguments",
                 "queue_bindings_with_arguments", arguments));
-        await management.Unbind().SourceExchange("exchange_bindings_with_arguments")
+        await management.Binding.SourceExchange("exchange_bindings_with_arguments")
             .DestinationQueue("queue_bindings_with_arguments")
-            .Key("key").Arguments(arguments).UnBind();
+            .Key("key").Arguments(arguments).Unbind();
         SystemUtils.WaitUntil(() =>
             !SystemUtils.ArgsBindsBetweenExchangeAndQueueExists("exchange_bindings_with_arguments",
                 "queue_bindings_with_arguments", arguments));
@@ -164,14 +164,14 @@ public class BindingsTests
     public async Task MultiBindingsBetweenExchangeAndQueuesWithArgumentsDifferentValues(string source,
         string destination, string key)
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        var management = connection.Management();
+        AmqpConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IManagement management = connection.Management();
         await management.Exchange(source).Declare();
         await management.Queue().Name(destination).Declare();
         // add 10 bindings to have a list of bindings to find
         for (int i = 0; i < 10; i++)
         {
-            await management.Binding().SourceExchange(source)
+            await management.Binding.SourceExchange(source)
                 .DestinationQueue(destination)
                 .Key(key) // single key to use different args
                 .Arguments(new Dictionary<string, object>() { { $"是英国v_{i}", $"p_{i}" } })
@@ -179,7 +179,7 @@ public class BindingsTests
         }
 
         var specialBind = new Dictionary<string, object>() { { $"v_8", $"p_8" }, { $"v_1", 1 }, { $"v_r", 1000L }, };
-        await management.Binding().SourceExchange(source)
+        await management.Binding.SourceExchange(source)
             .DestinationQueue(destination)
             .Key(key) // single key to use different args
             .Arguments(specialBind)
@@ -188,8 +188,8 @@ public class BindingsTests
             SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
                 destination, specialBind));
 
-        await management.Unbind().SourceExchange(source).DestinationQueue(destination).Key(key).Arguments(specialBind)
-            .UnBind();
+        await management.Binding.SourceExchange(source).DestinationQueue(destination).Key(key).Arguments(specialBind)
+            .Unbind();
 
         SystemUtils.WaitUntil(() =>
             !SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
@@ -201,17 +201,16 @@ public class BindingsTests
             SystemUtils.WaitUntil(() =>
                 SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
                     destination, b));
-            await management.Unbind().SourceExchange(source)
+            await management.Binding.SourceExchange(source)
                 .DestinationQueue(destination)
                 .Key(key) // single key to use different args
                 .Arguments(b)
-                .UnBind();
+                .Unbind();
 
             SystemUtils.WaitUntil(() =>
                 !SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
                     destination, b));
         }
-
 
         await management.ExchangeDeletion().Delete(source);
         await management.QueueDeletion().Delete(destination);

@@ -77,14 +77,12 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
         return new AmqpExchangeDeletion(this);
     }
 
-    public IBindingSpecification Binding()
+    public IBindingSpecification Binding
     {
-        return new AmqpBindingSpecification(this);
-    }
-
-    public IUnbindSpecification Unbind()
-    {
-        return new AmqpUnBindingSpecification(this);
+        get
+        {
+            return new AmqpBindingSpecification(this);
+        }
     }
 
     public ITopologyListener TopologyListener()
