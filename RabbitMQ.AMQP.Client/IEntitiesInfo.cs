@@ -39,6 +39,3 @@ public enum ExchangeType
     HEADERS
 }
 
-public interface IExchangeInfo : IEntityInfo
-{
-}

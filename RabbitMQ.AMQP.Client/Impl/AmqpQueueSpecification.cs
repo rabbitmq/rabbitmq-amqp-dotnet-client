@@ -201,7 +201,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         };
 
         // TODO: encodePathSegment(queues)
-        Message request = await management.Request(kv, $"/{Consts.Queues}/{_name}",
+        Message request = await management.Request(kv, $"/{Consts.Queues}/{Utils.EncodePathSegment(_name)}",
             AmqpManagement.Put,
             [
                 AmqpManagement.Code200,
@@ -223,10 +223,10 @@ public class AmqpQueueDeletion(AmqpManagement management) : IQueueDeletion
 {
     public async Task<IEntityInfo> Delete(string name)
     {
-        await management.Request(null, $"/{Consts.Queues}/{name}", AmqpManagement.Delete, new[]
-        {
-            AmqpManagement.Code200,
-        }).ConfigureAwait(false);
+        await management
+            .Request(null, $"/{Consts.Queues}/{Utils.EncodePathSegment(name)}", AmqpManagement.Delete,
+                new[] { AmqpManagement.Code200, })
+            .ConfigureAwait(false);
 
         management.TopologyListener().QueueDeleted(name);
         return new DefaultQueueDeletionInfo();

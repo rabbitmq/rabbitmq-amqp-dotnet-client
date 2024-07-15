@@ -216,11 +216,10 @@ public class ManagementTests()
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         await connection.ConnectAsync();
         var management = connection.Management();
-        var exchangeInfo = await management.Exchange("my_first_exchange").Type(ExchangeType.TOPIC).Declare();
-        Assert.NotNull(exchangeInfo);
-        SystemUtils.WaitUntil(() => SystemUtils.ExchangesExists("my_first_exchange"));
+        await management.Exchange("my_first_exchange").Type(ExchangeType.TOPIC).Declare();
+        SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists("my_first_exchange"));
         await management.ExchangeDeletion().Delete("my_first_exchange");
-        SystemUtils.WaitUntil(() => SystemUtils.ExchangesExists("my_first_exchange") == false);
+        SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists("my_first_exchange") == false);
         await connection.CloseAsync();
     }
 
@@ -242,10 +241,10 @@ public class ManagementTests()
         await connection.ConnectAsync();
         var management = connection.Management();
         await management.Exchange("my_exchange_with_args").AutoDelete(true).Argument("my_key", "my _value").Declare();
-        SystemUtils.WaitUntil(() => SystemUtils.ExchangesExists("my_exchange_with_args"));
+        SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists("my_exchange_with_args"));
         await management.ExchangeDeletion().Delete("my_exchange_with_args");
         await connection.CloseAsync();
-        SystemUtils.WaitUntil(() => !SystemUtils.ExchangesExists("my_exchange_with_args"));
+        SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists("my_exchange_with_args"));
     }
 
 
@@ -260,11 +259,13 @@ public class ManagementTests()
         await Assert.ThrowsAsync<PreconditionFailedException>(async () =>
             await management.Exchange("my_exchange_raise_precondition_fail").AutoDelete(false)
                 .Argument("my_key_2", "my _value_2").Declare());
-        SystemUtils.WaitUntil(() => SystemUtils.ExchangesExists("my_exchange_raise_precondition_fail"));
+        SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists("my_exchange_raise_precondition_fail"));
         await management.ExchangeDeletion().Delete("my_exchange_raise_precondition_fail");
         await connection.CloseAsync();
-        SystemUtils.WaitUntil(() => !SystemUtils.ExchangesExists("my_exchange_raise_precondition_fail"));
+        SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists("my_exchange_raise_precondition_fail"));
     }
+
+
 
 
     ////////////// ----------------- Topology TESTS ----------------- //////////////

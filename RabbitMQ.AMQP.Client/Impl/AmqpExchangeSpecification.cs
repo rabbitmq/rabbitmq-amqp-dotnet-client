@@ -3,10 +3,6 @@ using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public class AmqpExchangeInfo : IExchangeInfo
-{
-}
-
 public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpecification
 {
     private string _name = "";
@@ -15,7 +11,7 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
     private string _typeString = ""; // TODO: add this
     private readonly Map _arguments = new();
 
-    public async Task<IExchangeInfo> Declare()
+    public async Task Declare()
     {
         if (string.IsNullOrEmpty(_name))
         {
@@ -34,15 +30,13 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
         // TODO: encodePathSegment(queues)
         // Message request = await management.Request(kv, $"/{Consts.Exchanges}/{_name}",
         // for the moment we won't use the message response
-        await management.Request(kv, $"/{Consts.Exchanges}/{_name}",
+        await management.Request(kv, $"/{Consts.Exchanges}/{Utils.EncodePathSegment(_name)}",
             AmqpManagement.Put,
             [
                 AmqpManagement.Code204,
                 AmqpManagement.Code201,
                 AmqpManagement.Code409
             ]).ConfigureAwait(false);
-
-        return new AmqpExchangeInfo();
     }
 
     public IExchangeSpecification Name(string name)
@@ -76,18 +70,13 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
     }
 }
 
-public class DefaultExchangeDeletionInfo : IEntityInfo
-{
-}
-
 public class AmqpExchangeDeletion(AmqpManagement management) : IExchangeDeletion
 {
-    public async Task<IEntityInfo> Delete(string name)
+    public async Task Delete(string name)
     {
         await management
-            .Request(null, $"/{Consts.Exchanges}/{name}", AmqpManagement.Delete, new[] { AmqpManagement.Code204, })
+            .Request(null, $"/{Consts.Exchanges}/{Utils.EncodePathSegment(name)}", AmqpManagement.Delete,
+                new[] { AmqpManagement.Code204, })
             .ConfigureAwait(false);
-
-        return new DefaultExchangeDeletionInfo();
     }
 }
