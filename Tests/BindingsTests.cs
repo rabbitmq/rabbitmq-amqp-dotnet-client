@@ -165,6 +165,7 @@ public class BindingsTests
     [Theory]
     [InlineData("my_source_exchange_multi_123", "my_destination_789", "myKey")]
     [InlineData("是英国v_", "destination_是英国v_", "μαθηματικός")]
+    [InlineData("(~~~!!++@----./.,€€#####§¶¡€#¢)", ",,~~~!!++@----./.,€€#####§¶¡€#¢@@@", "===£!-=+")]
     public async Task MultiBindingsBetweenExchangeAndQueuesWithArgumentsDifferentValues(string source,
         string destination, string key)
     {
