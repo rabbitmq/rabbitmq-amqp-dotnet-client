@@ -158,6 +158,10 @@ public class BindingsTests
         SystemUtils.WaitUntil(() => !SystemUtils.QueueExists("queue_bindings_with_arguments"));
     }
 
+    // TODO: test with multi-bindings with parameters with list as value
+    // The unbinder should be able to unbind the binding with the same arguments
+    // The could be a problem when the binding has a list as value
+    
     [Theory]
     [InlineData("my_source_exchange_multi_123", "my_destination_789", "myKey")]
     [InlineData("是英国v_", "destination_是英国v_", "μαθηματικός")]
