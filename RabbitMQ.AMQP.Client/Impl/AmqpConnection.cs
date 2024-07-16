@@ -119,6 +119,17 @@ public class AmqpConnection : AbstractResourceStatus, IConnection
         }
     }
 
+    private async Task CloseAllConsumers()
+    {
+        var cloned = new List<IConsumer>(Consumers.Values);
+
+        foreach (IConsumer consumer in cloned)
+        {
+            await consumer.CloseAsync()
+                .ConfigureAwait(false);
+        }
+    }
+
     private AmqpConnection(ConnectionSettings connectionSettings)
     {
         _connectionSettings = connectionSettings;
@@ -322,8 +333,8 @@ public class AmqpConnection : AbstractResourceStatus, IConnection
             .ConfigureAwait(false);
         try
         {
-            await CloseAllPublishers()
-                .ConfigureAwait(false);
+            await CloseAllPublishers().ConfigureAwait(false);
+            await CloseAllConsumers().ConfigureAwait(false);
 
             _recordingTopologyListener.Clear();
 

@@ -8,7 +8,6 @@ public class AmqpConsumer : AbstractResourceStatus, IConsumer
     private readonly string _address;
     private readonly MessageHandler _messageHandler;
     private readonly int _initialCredits = 0;
-    private readonly IContext _context;
     private ReceiverLink? _receiverLink;
 
     public AmqpConsumer(AmqpConnection connection, string address, MessageHandler messageHandler, int initialCredits)
@@ -17,8 +16,8 @@ public class AmqpConsumer : AbstractResourceStatus, IConsumer
         _address = address;
         _messageHandler = messageHandler;
         _initialCredits = initialCredits;
-        _context = new DeliveryContext();
         Connect();
+        _connection.Consumers.TryAdd(Id, this); // TODO: Close all consumers on connection close
     }
 
 
@@ -51,10 +50,10 @@ public class AmqpConsumer : AbstractResourceStatus, IConsumer
         _receiverLink?.Start(_initialCredits,
             (link, message) =>
             {
-                _messageHandler(_context, new AmqpMessage(message));
-                link.Accept(message);
+                IContext context = new DeliveryContext(link, message);
+                _messageHandler(context,
+                    new AmqpMessage(message));
             });
-
     }
 
     public string Id { get; } = Guid.NewGuid().ToString();
@@ -75,5 +74,12 @@ public class AmqpConsumer : AbstractResourceStatus, IConsumer
     }
 
 
-    public Task CloseAsync() => throw new NotImplementedException();
+    public async Task CloseAsync()
+    {
+        if (_receiverLink == null)
+        {
+            return;
+        }
+        await (_receiverLink.CloseAsync()).ConfigureAwait(false);
+    }
 }
