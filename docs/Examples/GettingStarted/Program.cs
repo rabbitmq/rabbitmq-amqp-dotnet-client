@@ -13,7 +13,7 @@ Trace.TraceListener = (l, f, a) =>
 Trace.WriteLine(TraceLevel.Information, "Starting");
 const string connectionName = "Hello-Connection";
 
-AmqpConnection connection = await AmqpConnection.CreateAsync(
+IConnection connection = await AmqpConnection.CreateAsync(
     ConnectionSettingBuilder.Create().ConnectionName(connectionName).RecoveryConfiguration(
         RecoveryConfiguration.Create().Activated(true).Topology(true)
     ).Build());
@@ -41,6 +41,7 @@ try
                 DateTime endp = DateTime.Now;
                 Console.WriteLine($"Sending Time: {endp - start} - messages {i}");
             }
+
             await publisher.Publish(
                 new AmqpMessage(new byte[10]),
                 (message, descriptor) =>
@@ -58,10 +59,9 @@ try
                     else
                     {
                         Console.WriteLine(
-                        $"outcome result, state: {descriptor.State}, code: {descriptor.Code}, message_id: " +
+                            $"outcome result, state: {descriptor.State}, code: {descriptor.Code}, message_id: " +
                             $"{message.MessageId()} Description: {descriptor.Description}, error: {descriptor.Error}");
                     }
-
                 });
         }
         catch (Exception e)

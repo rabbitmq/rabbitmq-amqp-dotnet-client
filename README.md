@@ -15,8 +15,8 @@ You can find an example in: `docs/Examples/GettingStarted`
 ## TODO
 
 - [x] Declare queues
-- [ ] Declare exchanges
-- [ ] Declare bindings
+- [x] Declare exchanges
+- [x] Declare bindings
 - [x] Simple Publish messages
 - [x] Implement backpressure ( atm it is implemented with MaxInflightMessages `MaxInFlight(2000).`)
 - [ ] Simple Consume messages

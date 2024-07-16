@@ -15,7 +15,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task ValidateBuilderRaiseExceptionIfQueueOrExchangeAreNotSetCorrectly()
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         Assert.Throws<InvalidAddressException>(() =>
             connection.PublisherBuilder().Queue("does_not_matter").Exchange("i_should_not_stay_here").Build());
         Assert.Throws<InvalidAddressException>(() => connection.PublisherBuilder().Exchange("").Build());
@@ -80,7 +80,6 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
         await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
         foreach (var publisher in connection.GetPublishers())
         {
-            _testOutputHelper.WriteLine(publisher.Id);
             await publisher.CloseAsync();
         }
 
@@ -92,7 +91,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task SendAMessageToAnExchange()
     {
-        AmqpConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         IManagement management = connection.Management();
         await management.Queue().Name("queue_to_send_1").Declare();
         await management.Exchange().Name("exchange_to_send").Declare();

@@ -2,10 +2,9 @@ namespace RabbitMQ.AMQP.Client.Impl;
 
 public class AmqpClosedException(string message) : Exception(message);
 
-public abstract class AbstractClosable : IClosable
+public abstract class AbstractResourceStatus : IResourceStatus
 {
     public State State { get; internal set; } = State.Closed;
-    public abstract Task CloseAsync();
     protected void ThrowIfClosed()
     {
         if (State == State.Closed)
@@ -27,5 +26,5 @@ public abstract class AbstractClosable : IClosable
         ChangeState?.Invoke(this, oldStatus, newState, error);
     }
 
-    public event IClosable.LifeCycleCallBack? ChangeState;
+    public event LifeCycleCallBack? ChangeState;
 }

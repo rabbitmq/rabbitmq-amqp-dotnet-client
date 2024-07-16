@@ -16,9 +16,15 @@ public class AmqpMessage : IMessage
         NativeMessage = new Message();
     }
 
+
     public AmqpMessage(object body)
     {
         NativeMessage = new Message(body);
+    }
+
+    public AmqpMessage(Message nativeMessage)
+    {
+        NativeMessage = nativeMessage;
     }
 
     private void ThrowIfPropertiesNotSet()

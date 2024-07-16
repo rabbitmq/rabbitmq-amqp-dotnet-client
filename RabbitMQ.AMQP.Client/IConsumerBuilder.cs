@@ -7,7 +7,7 @@ public interface IConsumerBuilder
     IConsumerBuilder MessageHandler(MessageHandler handler);
 
     IConsumerBuilder InitialCredits(int initialCredits);
-    
+
     IStreamOptions Stream();
 
     IConsumer Build();

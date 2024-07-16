@@ -54,10 +54,10 @@ public static class Utils
     //         protonSender.setSenderSettleMode(SenderSettleMode.UNSETTLED);
     //         protonSender.setReceiverSettleMode(ReceiverSettleMode.FIRST);
     //         break;
-    public static Attach CreateSenderAttach(string address,
+    public static Attach CreateAttach(string address,
         DeliveryMode deliveryMode, string linkName)
     {
-        var senderAttach = new Attach
+        var attach = new Attach
         {
             SndSettleMode = deliveryMode == DeliveryMode.AtMostOnce
                 ? SenderSettleMode.Settled
@@ -67,7 +67,10 @@ public static class Utils
             // Role = true,
             Target = new Target()
             {
-                Address = address, ExpiryPolicy = new Symbol("SESSION_END"), Dynamic = false, Durable = 0,
+                Address = address,
+                ExpiryPolicy = new Symbol("SESSION_END"),
+                Dynamic = false,
+                Durable = 0,
             },
             Source = new Source()
             {
@@ -78,7 +81,7 @@ public static class Utils
                 Durable = 0,
             }
         };
-        return senderAttach;
+        return attach;
     }
 
 

@@ -133,9 +133,8 @@ public class ManagementTests()
     [InlineData(QueueType.STREAM)]
     public async Task DeclareQueueWithNoNameShouldGenerateClientSideName(QueueType type)
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        await connection.ConnectAsync();
-        var management = connection.Management();
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IManagement management = connection.Management();
         var queueInfo = await management.Queue().Type(type).Declare();
         Assert.Contains("client.gen-", queueInfo.Name());
         await management.QueueDeletion().Delete(queueInfo.Name());
@@ -156,9 +155,8 @@ public class ManagementTests()
     public async Task DeclareQueueWithQueueInfoValidation(
         bool durable, bool autoDelete, bool exclusive, QueueType type)
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        await connection.ConnectAsync();
-        var management = connection.Management();
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IManagement management = connection.Management();
         var queueInfo = await management.Queue().Name("validate_queue_info").AutoDelete(autoDelete).Exclusive(exclusive)
             .Type(type)
             .Declare();
@@ -181,7 +179,6 @@ public class ManagementTests()
     public async Task DeclareQueueWithPreconditionFailedException()
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        await connection.ConnectAsync();
         var management = connection.Management();
         await management.Queue().Name("precondition_queue_fail").AutoDelete(false).Declare();
         await Assert.ThrowsAsync<PreconditionFailedException>(async () =>
@@ -195,7 +192,6 @@ public class ManagementTests()
     public async Task DeclareAndDeleteTwoTimesShouldNotRaiseErrors()
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        await connection.ConnectAsync();
         var management = connection.Management();
         await management.Queue().Name("DeleteTwoTimes").AutoDelete(false).Declare();
         await management.Queue().Name("DeleteTwoTimes").AutoDelete(false).Declare();
@@ -213,9 +209,8 @@ public class ManagementTests()
     [Fact]
     public async Task SimpleDeclareAndDeleteExchangeWithName()
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        await connection.ConnectAsync();
-        var management = connection.Management();
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IManagement management = connection.Management();
         await management.Exchange("my_first_exchange").Type(ExchangeType.TOPIC).Declare();
         SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists("my_first_exchange"));
         await management.ExchangeDeletion().Delete("my_first_exchange");
@@ -227,9 +222,8 @@ public class ManagementTests()
     [Fact]
     public async Task ExchangeWithEmptyNameShouldRaiseAnException()
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        await connection.ConnectAsync();
-        var management = connection.Management();
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IManagement management = connection.Management();
         await Assert.ThrowsAsync<ArgumentException>(() => management.Exchange("").Type(ExchangeType.TOPIC).Declare());
         await connection.CloseAsync();
     }
@@ -237,9 +231,8 @@ public class ManagementTests()
     [Fact]
     public async Task ExchangeWithDifferentArgs()
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        await connection.ConnectAsync();
-        var management = connection.Management();
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IManagement management = connection.Management();
         await management.Exchange("my_exchange_with_args").AutoDelete(true).Argument("my_key", "my _value").Declare();
         SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists("my_exchange_with_args"));
         await management.ExchangeDeletion().Delete("my_exchange_with_args");
@@ -251,9 +244,8 @@ public class ManagementTests()
     [Fact]
     public async Task DeclareExchangeWithPreconditionFailedException()
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        await connection.ConnectAsync();
-        var management = connection.Management();
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IManagement management = connection.Management();
         await management.Exchange("my_exchange_raise_precondition_fail").AutoDelete(true)
             .Argument("my_key", "my _value").Declare();
         await Assert.ThrowsAsync<PreconditionFailedException>(async () =>
@@ -279,15 +271,14 @@ public class ManagementTests()
     public async Task TopologyCountShouldFollowTheQueueDeclaration()
     {
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        await connection.ConnectAsync();
         var management = connection.Management();
-        for (var i = 1; i < 7; i++)
+        for (int i = 1; i < 7; i++)
         {
             await management.Queue().Name($"Q_{i}").Declare();
             Assert.Equal(((RecordingTopologyListener)management.TopologyListener()).QueueCount(), i);
         }
 
-        for (var i = 1; i < 7; i++)
+        for (int i = 1; i < 7; i++)
         {
             await management.QueueDeletion().Delete($"Q_{i}");
             Assert.Equal((management.TopologyListener()).QueueCount(), 6 - i);

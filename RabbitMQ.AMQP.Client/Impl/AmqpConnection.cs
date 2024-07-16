@@ -33,7 +33,7 @@ internal class Visitor(AmqpManagement management) : IVisitor
 /// AmqpConnection is the concrete implementation of <see cref="IConnection"/>
 /// It is a wrapper around the AMQP.Net Lite <see cref="Connection"/> class
 /// </summary>
-public class AmqpConnection : AbstractClosable, IConnection
+public class AmqpConnection : AbstractResourceStatus, IConnection
 {
     private const string ConnectionNotRecoveredCode = "CONNECTION_NOT_RECOVERED";
     private const string ConnectionNotRecoveredMessage = "Connection not recovered";
@@ -45,7 +45,9 @@ public class AmqpConnection : AbstractClosable, IConnection
 
     private readonly AmqpManagement _management = new();
     private readonly RecordingTopologyListener _recordingTopologyListener = new();
-    private readonly TaskCompletionSource<bool> _connectionCloseTaskCompletionSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    private readonly TaskCompletionSource<bool> _connectionCloseTaskCompletionSource =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private readonly ConnectionSettings _connectionSettings;
     internal readonly AmqpSessionManagement NativePubSubSessions;
@@ -60,9 +62,12 @@ public class AmqpConnection : AbstractClosable, IConnection
     /// They key is the publisher Id ( a Guid)  
     /// See <see cref="AmqpPublisher"/>
     /// </summary>
-    internal ConcurrentDictionary<string, AmqpPublisher> Publishers { get; } = new();
+    internal ConcurrentDictionary<string, IPublisher> Publishers { get; } = new();
 
-    public ReadOnlyCollection<AmqpPublisher> GetPublishers()
+    internal ConcurrentDictionary<string, IConsumer> Consumers { get; } = new();
+
+
+    public ReadOnlyCollection<IPublisher> GetPublishers()
     {
         return Publishers.Values.ToList().AsReadOnly();
     }
@@ -75,7 +80,7 @@ public class AmqpConnection : AbstractClosable, IConnection
     /// </summary>
     /// <param name="connectionSettings"></param>
     /// <returns></returns>
-    public static async Task<AmqpConnection> CreateAsync(ConnectionSettings connectionSettings)
+    public static async Task<IConnection> CreateAsync(ConnectionSettings connectionSettings)
     {
         var connection = new AmqpConnection(connectionSettings);
         await connection.ConnectAsync()
@@ -105,9 +110,9 @@ public class AmqpConnection : AbstractClosable, IConnection
     /// </summary>
     private async Task CloseAllPublishers()
     {
-        var cloned = new List<AmqpPublisher>(Publishers.Values);
+        var cloned = new List<IPublisher>(Publishers.Values);
 
-        foreach (AmqpPublisher publisher in cloned)
+        foreach (IPublisher publisher in cloned)
         {
             await publisher.CloseAsync()
                 .ConfigureAwait(false);
@@ -125,7 +130,12 @@ public class AmqpConnection : AbstractClosable, IConnection
         return _management;
     }
 
-    public Task ConnectAsync()
+    public IConsumerBuilder ConsumerBuilder()
+    {
+        return new AmqpConsumerBuilder(this);
+    }
+
+    private Task ConnectAsync()
     {
         EnsureConnection();
         OnNewStatus(State.Open, null);
@@ -288,7 +298,7 @@ public class AmqpConnection : AbstractClosable, IConnection
             {
                 _semaphoreClose.Release();
             }
-            
+
             _connectionCloseTaskCompletionSource.SetResult(true);
         };
     }
@@ -306,7 +316,7 @@ public class AmqpConnection : AbstractClosable, IConnection
     }
 
 
-    public override async Task CloseAsync()
+    public async Task CloseAsync()
     {
         await _semaphoreClose.WaitAsync()
             .ConfigureAwait(false);
@@ -337,10 +347,10 @@ public class AmqpConnection : AbstractClosable, IConnection
         {
             _semaphoreClose.Release();
         }
-        
+
         await _connectionCloseTaskCompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(10))
             .ConfigureAwait(false);
-        
+
         OnNewStatus(State.Closed, null);
     }
 
