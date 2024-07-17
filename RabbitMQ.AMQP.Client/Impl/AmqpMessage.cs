@@ -1,5 +1,6 @@
 using Amqp;
 using Amqp.Framing;
+using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
@@ -117,7 +118,7 @@ public class AmqpMessage : IMessage
     public IMessage Annotation(string key, object value)
     {
         EnsureAnnotations();
-        NativeMessage.MessageAnnotations[key] = value;
+        NativeMessage.MessageAnnotations[new Symbol(key)] = value;
         return this;
     }
 

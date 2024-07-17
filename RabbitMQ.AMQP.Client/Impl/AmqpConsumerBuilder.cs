@@ -86,7 +86,7 @@ public class DefaultStreamOptions(IConsumerBuilder builder, Map filters)
 
     public IConsumerBuilder.IStreamOptions FilterValues(string[] values)
     {
-        filters[new Symbol("rabbitmq:stream-filter")] = values;
+        filters[new Symbol("rabbitmq:stream-filter")] = values.ToList();
         return this;
     }
 
