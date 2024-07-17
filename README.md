@@ -12,6 +12,10 @@ This library is in early stages of development. It is meant to be used with Rabb
 
 You can find an example in: `docs/Examples/GettingStarted`
 
+## Install
+
+The client is distributed via [NuGet](https://www.nuget.org/packages/RabbitMQ.AMQP.Client/).
+
 ## TODO
 
 - [x] Declare queues
