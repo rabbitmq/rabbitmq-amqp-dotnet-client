@@ -54,8 +54,9 @@ public static class Utils
     //         protonSender.setSenderSettleMode(SenderSettleMode.UNSETTLED);
     //         protonSender.setReceiverSettleMode(ReceiverSettleMode.FIRST);
     //         break;
+
     public static Attach CreateAttach(string address,
-        DeliveryMode deliveryMode, string linkName)
+        DeliveryMode deliveryMode, string linkName, Map? sourceFilter = null)
     {
         var attach = new Attach
         {
@@ -64,13 +65,11 @@ public static class Utils
                 : SenderSettleMode.Unsettled,
             RcvSettleMode = ReceiverSettleMode.First,
             LinkName = linkName,
+
             // Role = true,
             Target = new Target()
             {
-                Address = address,
-                ExpiryPolicy = new Symbol("SESSION_END"),
-                Dynamic = false,
-                Durable = 0,
+                Address = address, ExpiryPolicy = new Symbol("SESSION_END"), Dynamic = false, Durable = 0,
             },
             Source = new Source()
             {
@@ -79,6 +78,7 @@ public static class Utils
                 Timeout = 0,
                 Dynamic = false,
                 Durable = 0,
+                FilterSet = sourceFilter
             }
         };
         return attach;
@@ -115,7 +115,6 @@ public static class Utils
                 return false;
             }
         }
-
         return true;
     }
 }

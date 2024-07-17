@@ -25,12 +25,28 @@ IManagement management = connection.Management();
 await management.QueueDeletion().Delete("my-first-queue-n");
 
 await management.Queue($"my-first-queue-n").Type(QueueType.QUORUM).Declare();
+IPublisher publisher = connection.PublisherBuilder().Queue("my-first-queue-n").MaxInflightMessages(2000).Build();
+int received = 0;
+DateTime start = DateTime.Now;
+
+IConsumer consumer = connection.ConsumerBuilder().Queue("my-first-queue-n").InitialCredits(1000).MessageHandler(
+    (context, message) =>
+    {
+        received++;
+        if (received % 200_000 == 0)
+        {
+            DateTime end = DateTime.Now;
+            Console.WriteLine($"Received Time: {end - start} {received}");
+        }
+
+        context.Accept();
+    }
+).Stream().Offset(1).Builder().Build();
 
 try
 {
-    IPublisher publisher = connection.PublisherBuilder().Queue("my-first-queue-n").MaxInflightMessages(2000).Build();
     int confirmed = 0;
-    DateTime start = DateTime.Now;
+
     const int total = 1_000_000;
     for (int i = 0; i < total; i++)
     {
@@ -81,6 +97,10 @@ catch (Exception e)
 Trace.WriteLine(TraceLevel.Information, "Queue Created");
 Console.WriteLine("Press any key to delete the queue and close the connection.");
 Console.ReadKey();
+await publisher.CloseAsync();
+Trace.WriteLine(TraceLevel.Information, "Publisher Closed");
+await consumer.CloseAsync();
+Trace.WriteLine(TraceLevel.Information, "Consumer Closed");
 await management.QueueDeletion().Delete("my-first-queue-n");
 Trace.WriteLine(TraceLevel.Information, "Queue Deleted");
 await connection.CloseAsync();

@@ -1,4 +1,5 @@
 using Amqp;
+using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
@@ -8,14 +9,17 @@ public class AmqpConsumer : AbstractResourceStatus, IConsumer
     private readonly string _address;
     private readonly MessageHandler _messageHandler;
     private readonly int _initialCredits = 0;
+    private readonly Map _filters;
     private ReceiverLink? _receiverLink;
 
-    public AmqpConsumer(AmqpConnection connection, string address, MessageHandler messageHandler, int initialCredits)
+    public AmqpConsumer(AmqpConnection connection, string address,
+        MessageHandler messageHandler, int initialCredits, Map filters)
     {
         _connection = connection;
         _address = address;
         _messageHandler = messageHandler;
         _initialCredits = initialCredits;
+        _filters = filters;
         Connect();
         _connection.Consumers.TryAdd(Id, this); // TODO: Close all consumers on connection close
     }
@@ -27,8 +31,9 @@ public class AmqpConsumer : AbstractResourceStatus, IConsumer
         {
             var attachCompleted = new ManualResetEvent(false);
             _receiverLink = new ReceiverLink(_connection.NativePubSubSessions.GetOrCreateSession(), Id,
-                Utils.CreateAttach(_address, DeliveryMode.AtLeastOnce, Id),
+                Utils.CreateAttach(_address, DeliveryMode.AtLeastOnce, Id, _filters),
                 (link, attach) => { attachCompleted.Set(); });
+
             attachCompleted.WaitOne(TimeSpan.FromSeconds(5));
             if (_receiverLink.LinkState != LinkState.Attached)
             {
@@ -80,6 +85,7 @@ public class AmqpConsumer : AbstractResourceStatus, IConsumer
         {
             return;
         }
+
         await (_receiverLink.CloseAsync()).ConfigureAwait(false);
     }
 }

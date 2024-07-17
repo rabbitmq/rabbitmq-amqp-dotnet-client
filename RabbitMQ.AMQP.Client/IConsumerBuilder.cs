@@ -1,5 +1,13 @@
 namespace RabbitMQ.AMQP.Client;
 
+
+public enum StreamOffsetSpecification
+{
+    First,
+    Last,
+    Next
+}
+
 public interface IConsumerBuilder
 {
     IConsumerBuilder Queue(string queue);
@@ -29,10 +37,5 @@ public interface IConsumerBuilder
         IConsumerBuilder Builder();
     }
 
-    enum StreamOffsetSpecification
-    {
-        First,
-        Last,
-        Next
-    }
+    
 }

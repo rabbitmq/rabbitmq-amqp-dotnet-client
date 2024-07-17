@@ -2,7 +2,9 @@ namespace RabbitMQ.AMQP.Client;
 
 public interface IMessage
 {
+    // TODO: Complete the IMessage interface with all the  properties
     public object Body();
+
     // properties
     string MessageId();
     IMessage MessageId(string id);
@@ -16,4 +18,8 @@ public interface IMessage
     string Subject();
     IMessage Subject(string subject);
 
+
+    public IMessage Annotation(string key, object value);
+
+    public object Annotation(string key);
 }
