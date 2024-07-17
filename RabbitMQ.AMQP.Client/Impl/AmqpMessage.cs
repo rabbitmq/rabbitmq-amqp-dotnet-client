@@ -1,9 +1,10 @@
 using Amqp;
 using Amqp.Framing;
+using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public class PropertiesNotSetException : Exception
+public class FieldNotSetException : Exception
 {
 }
 
@@ -16,22 +17,42 @@ public class AmqpMessage : IMessage
         NativeMessage = new Message();
     }
 
+
     public AmqpMessage(object body)
     {
         NativeMessage = new Message(body);
+    }
+
+    public AmqpMessage(Message nativeMessage)
+    {
+        NativeMessage = nativeMessage;
     }
 
     private void ThrowIfPropertiesNotSet()
     {
         if (NativeMessage.Properties == null)
         {
-            throw new PropertiesNotSetException();
+            throw new FieldNotSetException();
         }
     }
 
     private void EnsureProperties()
     {
         NativeMessage.Properties ??= new Properties();
+    }
+
+
+    private void ThrowIfAnnotationsNotSet()
+    {
+        if (NativeMessage.MessageAnnotations == null)
+        {
+            throw new FieldNotSetException();
+        }
+    }
+
+    private void EnsureAnnotations()
+    {
+        NativeMessage.MessageAnnotations ??= new MessageAnnotations();
     }
 
 
@@ -90,5 +111,20 @@ public class AmqpMessage : IMessage
         EnsureProperties();
         NativeMessage.Properties.Subject = subject;
         return this;
+    }
+
+    // Annotations
+
+    public IMessage Annotation(string key, object value)
+    {
+        EnsureAnnotations();
+        NativeMessage.MessageAnnotations[new Symbol(key)] = value;
+        return this;
+    }
+
+    public object Annotation(string key)
+    {
+        ThrowIfAnnotationsNotSet();
+        return NativeMessage.MessageAnnotations[key];
     }
 }

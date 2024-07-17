@@ -16,7 +16,7 @@ public class BindingsTests
     [InlineData("[7][8][~]他被广泛认为是理论计算机科学和人工智能之父。 ", ",,,£## επιρροή στην ανάπτυξη της")]
     public async Task SimpleBindingsBetweenExchangeAndQueue(string sourceExchange, string queueDestination)
     {
-        AmqpConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         IManagement management = connection.Management();
         await management.Exchange(sourceExchange).Declare();
         await management.Queue().Name(queueDestination).Declare();
@@ -44,7 +44,7 @@ public class BindingsTests
     [Fact]
     public async Task BindBetweenExchangeAndQueueTwoTimes()
     {
-        AmqpConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         IManagement management = connection.Management();
         await management.Exchange("exchange_bind_two_times").Declare();
         await management.Queue().Name("queue_bind_two_times").Declare();
@@ -90,7 +90,7 @@ public class BindingsTests
     public async Task SimpleBindingsBetweenExchangeAndExchange(string sourceExchange, string destinationExchange,
         string key)
     {
-        AmqpConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         IManagement management = connection.Management();
         await management.Exchange(sourceExchange).Declare();
         await management.Exchange(destinationExchange).Declare();
@@ -126,7 +126,7 @@ public class BindingsTests
     public async Task BindingsBetweenExchangeAndQueuesWithArgumentsDifferentValues(string key1, object value1,
         string key2, object value2)
     {
-        AmqpConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         IManagement management = connection.Management();
         await management.Exchange("exchange_bindings_with_arguments").Declare();
         await management.Queue().Name("queue_bindings_with_arguments").Declare();
@@ -161,7 +161,7 @@ public class BindingsTests
     // TODO: test with multi-bindings with parameters with list as value
     // The unbinder should be able to unbind the binding with the same arguments
     // The could be a problem when the binding has a list as value
-    
+
     [Theory]
     [InlineData("my_source_exchange_multi_123", "my_destination_789", "myKey")]
     [InlineData("是英国v_", "destination_是英国v_", "μαθηματικός")]
@@ -170,7 +170,7 @@ public class BindingsTests
     public async Task MultiBindingsBetweenExchangeAndQueuesWithArgumentsDifferentValues(string source,
         string destination, string key)
     {
-        AmqpConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         IManagement management = connection.Management();
         await management.Exchange(source).Declare();
         await management.Queue().Name(destination).Declare();

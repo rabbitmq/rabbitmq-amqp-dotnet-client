@@ -73,7 +73,6 @@ public class ConnectionRecoverTests(ITestOutputHelper testOutputHelper)
             }
         };
 
-        await connection.ConnectAsync();
         Assert.Equal(State.Open, connection.State);
         await connection.CloseAsync();
         Assert.Equal(State.Closed, connection.State);
@@ -157,7 +156,7 @@ public class ConnectionRecoverTests(ITestOutputHelper testOutputHelper)
     public async Task OverrideTheBackOffWithBackOffDisabled()
     {
         string connectionName = Guid.NewGuid().ToString();
-        var connection = await AmqpConnection.CreateAsync(
+        IConnection connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create().ConnectionName(connectionName).RecoveryConfiguration(
                 RecoveryConfiguration.Create().Activated(true).Topology(false).BackOffDelayPolicy(
                     new FakeBackOffDelayPolicyDisabled())).Build());
@@ -176,7 +175,6 @@ public class ConnectionRecoverTests(ITestOutputHelper testOutputHelper)
             }
         };
 
-        await connection.ConnectAsync();
         Assert.Equal(State.Open, connection.State);
         await SystemUtils.WaitUntilConnectionIsKilled(connectionName);
         resetEvent.WaitOne(TimeSpan.FromSeconds(5));

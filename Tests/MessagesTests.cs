@@ -26,10 +26,10 @@ public class MessagesTests
     public void ThrowExceptionIfPropertiesNotSet()
     {
         IMessage message = new AmqpMessage("my_body");
-        Assert.Throws<PropertiesNotSetException>(() => message.MessageId());
-        Assert.Throws<PropertiesNotSetException>(() => message.Subject());
-        Assert.Throws<PropertiesNotSetException>(() => message.CorrelationId());
-        Assert.Throws<PropertiesNotSetException>(() => message.ReplyTo());
+        Assert.Throws<FieldNotSetException>(() => message.MessageId());
+        Assert.Throws<FieldNotSetException>(() => message.Subject());
+        Assert.Throws<FieldNotSetException>(() => message.CorrelationId());
+        Assert.Throws<FieldNotSetException>(() => message.ReplyTo());
     }
 
 }

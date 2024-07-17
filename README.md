@@ -15,11 +15,14 @@ You can find an example in: `docs/Examples/GettingStarted`
 ## TODO
 
 - [x] Declare queues
-- [ ] Declare exchanges
-- [ ] Declare bindings
+- [x] Declare exchanges
+- [x] Declare bindings
 - [x] Simple Publish messages
-- [x] Implement backpressure ( atm it is implemented with MaxInflightMessages `MaxInFlight(2000).`)
-- [ ] Simple Consume messages
+- [x] Implement backpressure (it is implemented with MaxInflightMessages `MaxInFlight(2000).`)
+- [x] Simple Consume messages
+- [ ] Complete the consumer part with `pause` and `unpause`
+- [ ] Complete the binding/unbinding with the special characters
+- [ ] Complete the queues/exchanges name with the special characters
 - [ ] Implement metrics ( See `System.Diagnostics.DiagnosticSource` [Link](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/metrics-instrumentation) )
 - [x] Recovery connection on connection lost
 - [x] Recovery management on connection lost

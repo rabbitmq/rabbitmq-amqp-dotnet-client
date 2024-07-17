@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using Amqp;
 using Amqp.Framing;
 using Amqp.Types;
@@ -12,7 +13,7 @@ namespace RabbitMQ.AMQP.Client.Impl;
 /// RabbitMQ uses AMQP end  point: "/management" to manage the resources like queues, exchanges, and bindings.
 /// The management endpoint works like an HTTP RPC endpoint where the client sends a request to the server
 /// </summary>
-public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement ToString()
+public class AmqpManagement : AbstractResourceStatus, IManagement // TODO: Implement ToString()
 {
     // The requests are stored in a dictionary with the correlationId as the key
     // The correlationId is used to match the request with the response
@@ -145,17 +146,15 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
                     continue;
                 }
 
-                using (Message msg = await _receiverLink.ReceiveAsync().ConfigureAwait(false))
+                using Message msg = await _receiverLink.ReceiveAsync().ConfigureAwait(false);
+                if (msg == null)
                 {
-                    if (msg == null)
-                    {
-                        Trace.WriteLine(TraceLevel.Warning, "Received null message");
-                        continue;
-                    }
-
-                    _receiverLink.Accept(msg);
-                    HandleResponseMessage(msg);
+                    Trace.WriteLine(TraceLevel.Warning, "Received null message");
+                    continue;
                 }
+
+                _receiverLink.Accept(msg);
+                HandleResponseMessage(msg);
             }
         }
         catch (Exception e)
@@ -282,7 +281,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
         using var cts =
             new CancellationTokenSource(timeout ?? TimeSpan.FromSeconds(1000)); // TODO: make the timeout configurable
 
-        using CancellationTokenRegistration ctsr = cts.Token.Register(RequestTimeoutAction);
+        await using ConfiguredAsyncDisposable ctsr = cts.Token.Register(RequestTimeoutAction).ConfigureAwait(false);
 
         await InternalSendAsync(message)
             .ConfigureAwait(false);
@@ -353,7 +352,7 @@ public class AmqpManagement : AbstractClosable, IManagement // TODO: Implement T
             .ConfigureAwait(false);
     }
 
-    public override async Task CloseAsync()
+    public async Task CloseAsync()
     {
         State = State.Closed;
         if (_managementSession is { IsClosed: false })

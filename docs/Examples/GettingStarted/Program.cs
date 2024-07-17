@@ -4,16 +4,16 @@ using RabbitMQ.AMQP.Client.Impl;
 using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
 
-Trace.TraceLevel = TraceLevel.Verbose;
+Trace.TraceLevel = TraceLevel.Information;
 
 ConsoleTraceListener consoleListener = new();
 Trace.TraceListener = (l, f, a) =>
     consoleListener.WriteLine($"[{DateTime.Now}] [{l}] - {f}");
 
 Trace.WriteLine(TraceLevel.Information, "Starting");
-const string connectionName = "Hello-Connection";
+const string connectionName = "GettingStarted-Connection";
 
-AmqpConnection connection = await AmqpConnection.CreateAsync(
+IConnection connection = await AmqpConnection.CreateAsync(
     ConnectionSettingBuilder.Create().ConnectionName(connectionName).RecoveryConfiguration(
         RecoveryConfiguration.Create().Activated(true).Topology(true)
     ).Build());
@@ -21,67 +21,46 @@ AmqpConnection connection = await AmqpConnection.CreateAsync(
 Trace.WriteLine(TraceLevel.Information, "Connected");
 
 IManagement management = connection.Management();
+const string queueName = "amqp10-client-test";
+await management.QueueDeletion().Delete(queueName).ConfigureAwait(false);
 
-await management.QueueDeletion().Delete("my-first-queue-n");
+await management.Queue(queueName).Type(QueueType.QUORUM).Declare();
+IPublisher publisher = connection.PublisherBuilder().Queue(queueName).MaxInflightMessages(2000).Build();
 
-await management.Queue($"my-first-queue-n").Type(QueueType.QUORUM).Declare();
-
-try
-{
-    IPublisher publisher = connection.PublisherBuilder().Queue("my-first-queue-n").MaxInflightMessages(2000).Build();
-    int confirmed = 0;
-    DateTime start = DateTime.Now;
-    const int total = 1_000_000;
-    for (int i = 0; i < total; i++)
+IConsumer consumer = connection.ConsumerBuilder().Queue(queueName).InitialCredits(100).MessageHandler(
+    (context, message) =>
     {
-        try
-        {
-            if (i % 200_000 == 0)
-            {
-                DateTime endp = DateTime.Now;
-                Console.WriteLine($"Sending Time: {endp - start} - messages {i}");
-            }
-            await publisher.Publish(
-                new AmqpMessage(new byte[10]),
-                (message, descriptor) =>
-                {
-                    if (descriptor.State == OutcomeState.Accepted)
-                    {
-                        if (Interlocked.Increment(ref confirmed) % 200_000 != 0)
-                        {
-                            return;
-                        }
-
-                        DateTime end = DateTime.Now;
-                        Console.WriteLine($"Confirmed Time: {end - start} {confirmed}");
-                    }
-                    else
-                    {
-                        Console.WriteLine(
-                        $"outcome result, state: {descriptor.State}, code: {descriptor.Code}, message_id: " +
-                            $"{message.MessageId()} Description: {descriptor.Description}, error: {descriptor.Error}");
-                    }
-
-                });
-        }
-        catch (Exception e)
-        {
-            Trace.WriteLine(TraceLevel.Error, $"{e.Message}");
-        }
+        Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.Body()} received");
+        context.Accept();
     }
+).Build();
 
-    DateTime end = DateTime.Now;
-    Console.WriteLine($"Total Sent Time: {end - start}");
-}
-catch (Exception e)
+const int total = 10;
+for (int i = 0; i < total; i++)
 {
-    Trace.WriteLine(TraceLevel.Error, $"{e.Message}");
+    await publisher.Publish(
+        new AmqpMessage($"Hello World_{i}"),
+        (message, descriptor) =>
+        {
+            if (descriptor.State == OutcomeState.Accepted)
+            {
+                Trace.WriteLine(TraceLevel.Information, $"[Publisher] Message: {message.Body()} confirmed");
+            }
+            else
+            {
+                Trace.WriteLine(TraceLevel.Error,
+                    $"outcome result, state: {descriptor.State}, code: {descriptor.Code}, message_id: " +
+                    $"{message.MessageId()} Description: {descriptor.Description}, error: {descriptor.Error}");
+            }
+        });
 }
+
 
 Trace.WriteLine(TraceLevel.Information, "Queue Created");
 Console.WriteLine("Press any key to delete the queue and close the connection.");
 Console.ReadKey();
-await management.QueueDeletion().Delete("my-first-queue-n");
-Trace.WriteLine(TraceLevel.Information, "Queue Deleted");
+await publisher.CloseAsync();
+await consumer.CloseAsync();
+await management.QueueDeletion().Delete(queueName);
 await connection.CloseAsync();
 Trace.WriteLine(TraceLevel.Information, "Closed");

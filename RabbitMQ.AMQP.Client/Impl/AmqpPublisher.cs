@@ -6,7 +6,7 @@ using TraceLevel = Amqp.TraceLevel;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public class AmqpPublisher : AbstractClosable, IPublisher
+public class AmqpPublisher : AbstractResourceStatus, IPublisher
 {
     private SenderLink _senderLink = null!;
 
@@ -32,7 +32,7 @@ public class AmqpPublisher : AbstractClosable, IPublisher
         {
             var attachCompleted = new ManualResetEvent(false);
             _senderLink = new SenderLink(_connection.NativePubSubSessions.GetOrCreateSession(), Id,
-                Utils.CreateSenderAttach(_address, DeliveryMode.AtLeastOnce, Id),
+                Utils.CreateAttach(_address, DeliveryMode.AtLeastOnce, Id),
                 (link, attach) => { attachCompleted.Set(); });
             attachCompleted.WaitOne(TimeSpan.FromSeconds(5));
             if (_senderLink.LinkState != LinkState.Attached)
@@ -63,6 +63,7 @@ public class AmqpPublisher : AbstractClosable, IPublisher
         {
             return;
         }
+
         // Can be resumed only if the publisher is open and the in-flight messages are less than the max allowed
         // In case the publisher is closed, closing or reconnecting, the publishing will be paused
         _pausePublishing.Set();
@@ -94,6 +95,7 @@ public class AmqpPublisher : AbstractClosable, IPublisher
     // }
 
     private int _currentInFlight = 0;
+
     public Task Publish(IMessage message, OutcomeDescriptorCallback outcomeCallback)
     {
         ThrowIfClosed();
@@ -135,7 +137,6 @@ public class AmqpPublisher : AbstractClosable, IPublisher
                     // maybe we should expose a method to dispose the message
                     nMessage.Dispose();
                 }, this);
-
         }
         catch (Exception e)
         {
@@ -146,7 +147,7 @@ public class AmqpPublisher : AbstractClosable, IPublisher
     }
 
 
-    public override async Task CloseAsync()
+    public async Task CloseAsync()
     {
         if (State == State.Closed)
         {
