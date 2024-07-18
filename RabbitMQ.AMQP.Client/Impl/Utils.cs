@@ -45,6 +45,48 @@ public static class Utils
         return resultError;
     }
 
+    public static void ValidateNonNegative(string label, long value, long max)
+    {
+        if (value < 0)
+        {
+            throw new ArgumentException($"'{label}' must be greater than or equal to 0");
+        }
+
+        if (max > 0)
+        {
+            if (value > max)
+            {
+                throw new ArgumentException($"'{label}' must be lesser than {max}");
+            }
+        }
+    }
+
+
+    public static void ValidatePositive(string label, long value, long max)
+    {
+        if (value <= 0)
+        {
+            throw new ArgumentException($"'{label}' must be greater than or equal to 0");
+        }
+
+        if (max >= 0)
+        {
+            if (value > max)
+            {
+                throw new ArgumentException($"'{label}' must be lesser than {max}");
+            }
+        }
+    }
+
+    public static void ValidatePositive(string label, long value)
+    {
+        if (value <= 0)
+        {
+            throw new ArgumentException($"'{label}' must be greater than or equal to 0");
+        }
+    }
+
+
     // switch (options.deliveryMode()) {
     //     case AT_MOST_ONCE:
     //         protonSender.setSenderSettleMode(SenderSettleMode.SETTLED);
@@ -69,7 +111,10 @@ public static class Utils
             // Role = true,
             Target = new Target()
             {
-                Address = address, ExpiryPolicy = new Symbol("SESSION_END"), Dynamic = false, Durable = 0,
+                Address = address,
+                ExpiryPolicy = new Symbol("SESSION_END"),
+                Dynamic = false,
+                Durable = 0,
             },
             Source = new Source()
             {

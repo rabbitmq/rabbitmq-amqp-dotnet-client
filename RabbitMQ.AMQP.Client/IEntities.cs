@@ -21,6 +21,19 @@ public interface IEntityDeclaration
     Task Declare();
 }
 
+public enum OverFlowStrategy
+{
+    DropHead,
+    RejectPublish,
+    RejectPublishDlx
+    // DROP_HEAD("drop-head"),
+    // REJECT_PUBLISH("reject-publish"),
+    // REJECT_PUBLISH_DLX("reject-publish-dlx");
+}
+
+
+
+
 public interface IQueueSpecification : IEntityInfoDeclaration<IQueueInfo>
 {
     IQueueSpecification Name(string name);
@@ -37,6 +50,31 @@ public interface IQueueSpecification : IEntityInfoDeclaration<IQueueInfo>
 
     IQueueSpecification Type(QueueType type);
     public QueueType Type();
+
+
+    IQueueSpecification DeadLetterExchange(string dlx);
+
+    IQueueSpecification DeadLetterRoutingKey(string dlrk);
+
+    IQueueSpecification OverflowStrategy(OverFlowStrategy overflow);
+
+    IQueueSpecification MaxLengthBytes(ByteCapacity maxLengthBytes);
+
+    IQueueSpecification SingleActiveConsumer(bool singleActiveConsumer);
+
+
+    IQueueSpecification Expires(TimeSpan expiration);
+
+
+
+    IQueueSpecification MaxLength(long maxLength);
+
+
+    IQueueSpecification MessageTtl(TimeSpan ttl);
+
+
+
+
 
     // IQuorumQueueSpecification Quorum();
 }

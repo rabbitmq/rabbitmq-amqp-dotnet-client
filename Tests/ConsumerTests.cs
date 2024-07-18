@@ -249,7 +249,7 @@ public class ConsumerTests(ITestOutputHelper testOutputHelper)
         await connection.CloseAsync();
     }
 
-    
+
     /// <summary>
     /// Test the offset value for the stream queue
     /// </summary>

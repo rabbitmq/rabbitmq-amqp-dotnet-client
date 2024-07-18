@@ -200,6 +200,61 @@ public class ManagementTests()
         await connection.CloseAsync();
     }
 
+
+    [Fact]
+    public async Task DeclareQueueWithDifferentArguments()
+    {
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        var management = connection.Management();
+
+        IQueueInfo q = await management.Queue().Name("DeclareQueueWithDifferentArguments")
+            .DeadLetterExchange("my_exchange")
+            .DeadLetterRoutingKey("my_key").OverflowStrategy(OverFlowStrategy.DropHead)
+            .MaxLengthBytes(ByteCapacity.Gb(1)).MaxLength(50000).MessageTtl(TimeSpan.FromSeconds(10))
+            .Expires(TimeSpan.FromSeconds(2)).SingleActiveConsumer(true).Declare();
+
+        Assert.Equal("DeclareQueueWithDifferentArguments", q.Name());
+        Assert.Equal("my_exchange", q.Arguments()["x-dead-letter-exchange"]);
+        Assert.Equal("my_key", q.Arguments()["x-dead-letter-routing-key"]);
+        Assert.Equal("drop-head", q.Arguments()["x-overflow"]);
+        Assert.Equal(50000L, q.Arguments()["x-max-length"]);
+        Assert.Equal(1000000000L, q.Arguments()["x-max-length-bytes"]);
+        Assert.Equal(10000L, q.Arguments()["x-message-ttl"]);
+        Assert.Equal(2000L, q.Arguments()["x-expires"]);
+        Assert.Equal(true, q.Arguments()["x-single-active-consumer"]);
+
+        await management.QueueDeletion().Delete("DeclareQueueWithDifferentArguments");
+        await connection.CloseAsync();
+    }
+
+
+    [Fact]
+    public async Task ValidateDeclareQueueArguments()
+    {
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IManagement management = connection.Management();
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            management.Queue().Name("ValidateDeclareQueueWithDifferentArguments").MessageTtl(TimeSpan.FromSeconds(-1))
+                .Declare());
+
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            management.Queue().Name("ValidateDeclareQueueWithDifferentArguments").Expires(TimeSpan.FromSeconds(0))
+                .Declare());
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            management.Queue().Name("ValidateDeclareQueueWithDifferentArguments").MaxLengthBytes(ByteCapacity.Gb(-1))
+                .Declare());
+
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            management.Queue().Name("ValidateDeclareQueueWithDifferentArguments").MaxLength(-1).Declare());
+
+        await connection.CloseAsync();
+    }
+
+
     ////////////// ----------------- Exchanges TESTS ----------------- //////////////
 
 
@@ -256,8 +311,6 @@ public class ManagementTests()
         await connection.CloseAsync();
         SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists("my_exchange_raise_precondition_fail"));
     }
-
-
 
 
     ////////////// ----------------- Topology TESTS ----------------- //////////////

@@ -95,6 +95,8 @@ public class DefaultQueueInfo : IQueueInfo
 /// <param name="management"></param>
 public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecification
 {
+    private static TimeSpan s_tenYears = TimeSpan.FromDays(365 * 10);
+
     private string? _name;
     private bool _exclusive = false;
     private bool _autoDelete = false;
@@ -173,6 +175,65 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
 
         string type = (string)_arguments["x-queue-type"];
         return (QueueType)Enum.Parse(typeof(QueueType), type.ToUpperInvariant());
+    }
+
+    public IQueueSpecification DeadLetterExchange(string dlx)
+    {
+        _arguments["x-dead-letter-exchange"] = dlx;
+        return this;
+    }
+
+    public IQueueSpecification DeadLetterRoutingKey(string dlrk)
+    {
+        _arguments["x-dead-letter-routing-key"] = dlrk;
+        return this;
+    }
+
+    public IQueueSpecification OverflowStrategy(OverFlowStrategy overflow)
+    {
+        _arguments["x-overflow"] = overflow switch
+        {
+            OverFlowStrategy.DropHead => "drop-head",
+            OverFlowStrategy.RejectPublish => "reject-publish",
+            OverFlowStrategy.RejectPublishDlx => "reject-publish-dlx",
+            _ => throw new ArgumentOutOfRangeException(nameof(overflow), overflow, null)
+        };
+        return this;
+    }
+
+    public IQueueSpecification MaxLengthBytes(ByteCapacity maxLengthBytes)
+    {
+
+        Utils.ValidatePositive("Max length", maxLengthBytes.ToBytes());
+        _arguments["x-max-length-bytes"] = maxLengthBytes.ToBytes();
+        return this;
+    }
+
+    public IQueueSpecification SingleActiveConsumer(bool singleActiveConsumer)
+    {
+        _arguments["x-single-active-consumer"] = singleActiveConsumer;
+        return this;
+    }
+
+    public IQueueSpecification Expires(TimeSpan expiration)
+    {
+        Utils.ValidatePositive("Expiration", (long)expiration.TotalMilliseconds, (long)s_tenYears.TotalMilliseconds);
+        _arguments["x-expires"] = (long)expiration.TotalMilliseconds;
+        return this;
+    }
+
+    public IQueueSpecification MaxLength(long maxLength)
+    {
+        Utils.ValidatePositive("Max length", maxLength);
+        _arguments["x-max-length"] = maxLength;
+        return this;
+    }
+
+    public IQueueSpecification MessageTtl(TimeSpan ttl)
+    {
+        Utils.ValidateNonNegative("TTL", (long)ttl.TotalMilliseconds, (long)s_tenYears.TotalMilliseconds);
+        _arguments["x-message-ttl"] = (long)ttl.TotalMilliseconds;
+        return this;
     }
 
     public async Task<IQueueInfo> Declare()
