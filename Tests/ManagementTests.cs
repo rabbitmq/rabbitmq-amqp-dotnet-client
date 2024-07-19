@@ -97,8 +97,7 @@ public class ManagementTests()
             {
                 Properties = new Properties()
                 {
-                    CorrelationId = messageId,
-                    Subject = "506", // 506 is not a valid code
+                    CorrelationId = messageId, Subject = "506", // 506 is not a valid code
                 }
             });
         });
@@ -225,6 +224,30 @@ public class ManagementTests()
 
         await management.QueueDeletion().Delete("DeclareQueueWithDifferentArguments");
         await connection.CloseAsync();
+    }
+
+
+    [Fact]
+    public async Task DeclareStreamQueueWithDifferentArguments()
+    {
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        var management = connection.Management();
+
+        IQueueInfo info = await management.Queue().Name("DeclareStreamQueueWithDifferentArguments")
+            .Stream().MaxAge(TimeSpan.FromSeconds(10)).
+            MaxSegmentSizeBytes(ByteCapacity.Kb(1024)).
+            InitialClusterSize(1).
+            Specification()
+            .Declare();
+        
+        Assert.Equal("DeclareStreamQueueWithDifferentArguments", info.Name());
+        Assert.Equal("10s", info.Arguments()["x-max-age"]);
+        Assert.Equal(1024000L, info.Arguments()["x-stream-max-segment-size-bytes"]);
+        Assert.Equal(1, info.Arguments()["x-initial-cluster-size"]);
+        await management.QueueDeletion().Delete("DeclareStreamQueueWithDifferentArguments");
+        await connection.CloseAsync();
+        
+        
     }
 
 

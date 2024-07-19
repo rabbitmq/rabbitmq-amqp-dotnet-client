@@ -25,14 +25,12 @@ public enum OverFlowStrategy
 {
     DropHead,
     RejectPublish,
+
     RejectPublishDlx
     // DROP_HEAD("drop-head"),
     // REJECT_PUBLISH("reject-publish"),
     // REJECT_PUBLISH_DLX("reject-publish-dlx");
 }
-
-
-
 
 public interface IQueueSpecification : IEntityInfoDeclaration<IQueueInfo>
 {
@@ -65,24 +63,25 @@ public interface IQueueSpecification : IEntityInfoDeclaration<IQueueInfo>
 
     IQueueSpecification Expires(TimeSpan expiration);
 
+    IStreamSpecification Stream();
 
 
     IQueueSpecification MaxLength(long maxLength);
 
 
     IQueueSpecification MessageTtl(TimeSpan ttl);
-
-
-
-
-
-    // IQuorumQueueSpecification Quorum();
 }
 
-// public interface IQuorumQueueSpecification 
-// {
-//     IQueueSpecification Queue();
-// }
+public interface IStreamSpecification
+{
+  public  IStreamSpecification MaxAge(TimeSpan maxAge);
+
+  public     IStreamSpecification MaxSegmentSizeBytes(ByteCapacity maxSegmentSize);
+
+  public   IStreamSpecification InitialClusterSize(int initialClusterSize);
+
+  public   IQueueSpecification Specification();
+}
 
 public interface IQueueDeletion
 {

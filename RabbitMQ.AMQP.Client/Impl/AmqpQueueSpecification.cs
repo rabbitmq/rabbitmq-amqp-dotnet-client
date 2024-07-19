@@ -95,13 +95,13 @@ public class DefaultQueueInfo : IQueueInfo
 /// <param name="management"></param>
 public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecification
 {
-    private static TimeSpan s_tenYears = TimeSpan.FromDays(365 * 10);
+    internal readonly TimeSpan _tenYears = TimeSpan.FromDays(365 * 10);
 
     private string? _name;
     private bool _exclusive = false;
     private bool _autoDelete = false;
     private const bool Durable = true;
-    private readonly Map _arguments = new();
+    internal readonly Map _arguments = new();
 
     public IQueueSpecification Name(string name)
     {
@@ -203,7 +203,6 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
 
     public IQueueSpecification MaxLengthBytes(ByteCapacity maxLengthBytes)
     {
-
         Utils.ValidatePositive("Max length", maxLengthBytes.ToBytes());
         _arguments["x-max-length-bytes"] = maxLengthBytes.ToBytes();
         return this;
@@ -217,9 +216,15 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
 
     public IQueueSpecification Expires(TimeSpan expiration)
     {
-        Utils.ValidatePositive("Expiration", (long)expiration.TotalMilliseconds, (long)s_tenYears.TotalMilliseconds);
+        Utils.ValidatePositive("Expiration", (long)expiration.TotalMilliseconds, (long)_tenYears.TotalMilliseconds);
         _arguments["x-expires"] = (long)expiration.TotalMilliseconds;
         return this;
+    }
+
+    public IStreamSpecification Stream()
+    {
+        Type(QueueType.STREAM);
+        return new AmqpStreamSpecification(this);
     }
 
     public IQueueSpecification MaxLength(long maxLength)
@@ -231,7 +236,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
 
     public IQueueSpecification MessageTtl(TimeSpan ttl)
     {
-        Utils.ValidateNonNegative("TTL", (long)ttl.TotalMilliseconds, (long)s_tenYears.TotalMilliseconds);
+        Utils.ValidateNonNegative("TTL", (long)ttl.TotalMilliseconds, (long)_tenYears.TotalMilliseconds);
         _arguments["x-message-ttl"] = (long)ttl.TotalMilliseconds;
         return this;
     }
@@ -273,6 +278,38 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         var result = new DefaultQueueInfo((Map)request.Body);
         management.TopologyListener().QueueDeclared(this);
         return result;
+    }
+}
+
+public class AmqpStreamSpecification(AmqpQueueSpecification specification) : IStreamSpecification
+{
+    private readonly AmqpQueueSpecification _specification = specification;
+
+    public IStreamSpecification MaxAge(TimeSpan maxAge)
+    {
+        Utils.ValidatePositive("x-max-age", (long)maxAge.TotalMilliseconds,
+            (long)_specification._tenYears.TotalMilliseconds);
+        _specification._arguments["x-max-age"] = $"{maxAge.Seconds}s";
+        return this;
+    }
+
+    public IStreamSpecification MaxSegmentSizeBytes(ByteCapacity maxSegmentSize)
+    {
+        Utils.ValidatePositive("x-stream-max-segment-size-bytes", maxSegmentSize.ToBytes());
+        _specification._arguments["x-stream-max-segment-size-bytes"] = maxSegmentSize.ToBytes();
+        return this;
+    }
+
+    public IStreamSpecification InitialClusterSize(int initialClusterSize)
+    {
+        Utils.ValidatePositive("x-initial-cluster-size", initialClusterSize);
+        _specification._arguments["x-initial-cluster-size"] = initialClusterSize;
+        return this;
+    }
+
+    public IQueueSpecification Specification()
+    {
+        return _specification;
     }
 }
 
