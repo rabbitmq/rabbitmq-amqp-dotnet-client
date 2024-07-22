@@ -317,7 +317,7 @@ public class AmqpStreamSpecification(AmqpQueueSpecification parent) : IStreamSpe
         return this;
     }
 
-    public IQueueSpecification Specification()
+    public IQueueSpecification Queue()
     {
         return parent;
     }

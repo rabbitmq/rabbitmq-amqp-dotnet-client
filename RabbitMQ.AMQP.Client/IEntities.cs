@@ -84,7 +84,7 @@ public interface IStreamSpecification
 
     public IStreamSpecification InitialClusterSize(int initialClusterSize);
 
-    public IQueueSpecification Specification();
+    public IQueueSpecification Queue();
 }
 
 public enum QuorumQueueDeadLetterStrategy

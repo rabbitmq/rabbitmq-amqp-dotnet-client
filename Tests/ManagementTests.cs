@@ -234,27 +234,22 @@ public class ManagementTests()
         var management = connection.Management();
 
         IQueueInfo info = await management.Queue().Name("DeclareStreamQueueWithDifferentArguments")
-            .Stream().MaxAge(TimeSpan.FromSeconds(10)).
-            MaxSegmentSizeBytes(ByteCapacity.Kb(1024)).
-            InitialClusterSize(1).
-            Specification()
+            .Stream().MaxAge(TimeSpan.FromSeconds(10)).MaxSegmentSizeBytes(ByteCapacity.Kb(1024)).InitialClusterSize(1)
+            .Queue()
             .Declare();
-        
+
         Assert.Equal("DeclareStreamQueueWithDifferentArguments", info.Name());
         Assert.Equal("10s", info.Arguments()["x-max-age"]);
         Assert.Equal(1024000L, info.Arguments()["x-stream-max-segment-size-bytes"]);
         Assert.Equal(1, info.Arguments()["x-initial-cluster-size"]);
         await management.QueueDeletion().Delete("DeclareStreamQueueWithDifferentArguments");
         await connection.CloseAsync();
-        
-        
     }
 
 
     [Fact]
     public async Task DeclareQuorumQueueWithDifferentArguments()
     {
-        
         var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         var management = connection.Management();
         IQueueInfo info = await management.Queue().Name("DeclareQuorumQueueWithDifferentArguments")
@@ -264,7 +259,7 @@ public class ManagementTests()
             .QuorumInitialGroupSize(3)
             .Queue()
             .Declare();
-        
+
         Assert.Equal("DeclareQuorumQueueWithDifferentArguments", info.Name());
         Assert.Equal(12, info.Arguments()["x-max-delivery-limit"]);
         Assert.Equal("at-least-once", info.Arguments()["x-dead-letter-strategy"]);
@@ -284,14 +279,13 @@ public class ManagementTests()
             .Version(ClassicQueueVersion.V2)
             .Queue()
             .Declare();
-        
+
         Assert.Equal("DeclareClassicQueueWithDifferentArguments", info.Name());
         Assert.Equal("lazy", info.Arguments()["x-queue-mode"]);
         Assert.Equal(2, info.Arguments()["x-queue-version"]);
         await management.QueueDeletion().Delete("DeclareClassicQueueWithDifferentArguments");
         await connection.CloseAsync();
     }
-
 
 
     [Fact]
@@ -316,6 +310,28 @@ public class ManagementTests()
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
             management.Queue().Name("ValidateDeclareQueueWithDifferentArguments").MaxLength(-1).Declare());
+
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            management.Queue().Name("ValidateDeclareQueueWithDifferentArguments").Stream().InitialClusterSize(-1)
+                .Queue().Declare());
+
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            management.Queue().Name("ValidateDeclareQueueWithDifferentArguments").Stream()
+                .MaxSegmentSizeBytes(ByteCapacity.Gb(-1))
+                .Queue().Declare());
+
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            management.Queue().Name("ValidateDeclareQueueWithDifferentArguments").Stream()
+                .MaxAge(TimeSpan.FromSeconds(-1))
+                .Queue().Declare());
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            management.Queue().Name("ValidateDeclareQueueWithDifferentArguments").Quorum()
+                .DeliveryLimit(-1)
+                .Queue().Declare());
 
         await connection.CloseAsync();
     }
