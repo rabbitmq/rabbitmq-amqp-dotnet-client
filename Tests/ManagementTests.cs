@@ -252,6 +252,49 @@ public class ManagementTests()
 
 
     [Fact]
+    public async Task DeclareQuorumQueueWithDifferentArguments()
+    {
+        
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        var management = connection.Management();
+        IQueueInfo info = await management.Queue().Name("DeclareQuorumQueueWithDifferentArguments")
+            .Quorum()
+            .DeliveryLimit(12)
+            .DeadLetterStrategy(QuorumQueueDeadLetterStrategy.AtLeastOnce)
+            .QuorumInitialGroupSize(3)
+            .Queue()
+            .Declare();
+        
+        Assert.Equal("DeclareQuorumQueueWithDifferentArguments", info.Name());
+        Assert.Equal(12, info.Arguments()["x-max-delivery-limit"]);
+        Assert.Equal("at-least-once", info.Arguments()["x-dead-letter-strategy"]);
+        Assert.Equal(3, info.Arguments()["x-quorum-initial-group-size"]);
+        await management.QueueDeletion().Delete("DeclareQuorumQueueWithDifferentArguments");
+        await connection.CloseAsync();
+    }
+
+    [Fact]
+    public async Task DeclareClassicQueueWithDifferentArguments()
+    {
+        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        var management = connection.Management();
+        IQueueInfo info = await management.Queue().Name("DeclareClassicQueueWithDifferentArguments")
+            .Classic()
+            .Mode(ClassicQueueMode.Lazy)
+            .Version(ClassicQueueVersion.V2)
+            .Queue()
+            .Declare();
+        
+        Assert.Equal("DeclareClassicQueueWithDifferentArguments", info.Name());
+        Assert.Equal("lazy", info.Arguments()["x-queue-mode"]);
+        Assert.Equal(2, info.Arguments()["x-queue-version"]);
+        await management.QueueDeletion().Delete("DeclareClassicQueueWithDifferentArguments");
+        await connection.CloseAsync();
+    }
+
+
+
+    [Fact]
     public async Task ValidateDeclareQueueArguments()
     {
         IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());

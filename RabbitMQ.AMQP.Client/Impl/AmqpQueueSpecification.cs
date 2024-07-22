@@ -227,6 +227,18 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         return new AmqpStreamSpecification(this);
     }
 
+    public IQuorumQueueSpecification Quorum()
+    {
+        Type(QueueType.QUORUM);
+        return new AmqpQuorumSpecification(this);
+    }
+
+    public IClassicQueueSpecification Classic()
+    {
+        Type(QueueType.CLASSIC);
+        return new AmqpClassicSpecification(this);
+    }
+
     public IQueueSpecification MaxLength(long maxLength)
     {
         Utils.ValidatePositive("Max length", maxLength);
@@ -281,35 +293,103 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
     }
 }
 
-public class AmqpStreamSpecification(AmqpQueueSpecification specification) : IStreamSpecification
+public class AmqpStreamSpecification(AmqpQueueSpecification parent) : IStreamSpecification
 {
-    private readonly AmqpQueueSpecification _specification = specification;
-
     public IStreamSpecification MaxAge(TimeSpan maxAge)
     {
         Utils.ValidatePositive("x-max-age", (long)maxAge.TotalMilliseconds,
-            (long)_specification._tenYears.TotalMilliseconds);
-        _specification._arguments["x-max-age"] = $"{maxAge.Seconds}s";
+            (long)parent._tenYears.TotalMilliseconds);
+        parent._arguments["x-max-age"] = $"{maxAge.Seconds}s";
         return this;
     }
 
     public IStreamSpecification MaxSegmentSizeBytes(ByteCapacity maxSegmentSize)
     {
         Utils.ValidatePositive("x-stream-max-segment-size-bytes", maxSegmentSize.ToBytes());
-        _specification._arguments["x-stream-max-segment-size-bytes"] = maxSegmentSize.ToBytes();
+        parent._arguments["x-stream-max-segment-size-bytes"] = maxSegmentSize.ToBytes();
         return this;
     }
 
     public IStreamSpecification InitialClusterSize(int initialClusterSize)
     {
         Utils.ValidatePositive("x-initial-cluster-size", initialClusterSize);
-        _specification._arguments["x-initial-cluster-size"] = initialClusterSize;
+        parent._arguments["x-initial-cluster-size"] = initialClusterSize;
         return this;
     }
 
     public IQueueSpecification Specification()
     {
-        return _specification;
+        return parent;
+    }
+}
+
+public class AmqpQuorumSpecification(AmqpQueueSpecification parent) : IQuorumQueueSpecification
+{
+    public IQuorumQueueSpecification DeadLetterStrategy(QuorumQueueDeadLetterStrategy strategy)
+    {
+        parent._arguments["x-dead-letter-strategy"] = strategy switch
+        {
+            QuorumQueueDeadLetterStrategy.AtMostOnce => "at-most-once",
+            QuorumQueueDeadLetterStrategy.AtLeastOnce => "at-least-once",
+            _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, null)
+        };
+        return this;
+    }
+
+    public IQuorumQueueSpecification DeliveryLimit(int limit)
+    {
+        Utils.ValidatePositive("x-max-delivery-limit", limit);
+        parent._arguments["x-max-delivery-limit"] = limit;
+        return this;
+    }
+
+    public IQuorumQueueSpecification QuorumInitialGroupSize(int size)
+    {
+        Utils.ValidatePositive("x-quorum-initial-group-size", size);
+        parent._arguments["x-quorum-initial-group-size"] = size;
+        return this;
+    }
+
+    public IQueueSpecification Queue()
+    {
+        return parent;
+    }
+}
+
+public class AmqpClassicSpecification(AmqpQueueSpecification parent) : IClassicQueueSpecification
+{
+    public IClassicQueueSpecification MaxPriority(int maxPriority)
+    {
+        Utils.ValidatePositive("x-max-priority", maxPriority, 255);
+        parent._arguments["x-max-priority"] = maxPriority;
+        return this;
+    }
+
+    public IClassicQueueSpecification Mode(ClassicQueueMode mode)
+    {
+        parent._arguments["x-queue-mode"] = mode switch
+        {
+            ClassicQueueMode.Default => "default",
+            ClassicQueueMode.Lazy => "lazy",
+            _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
+        };
+        return this;
+    }
+
+    public IClassicQueueSpecification Version(ClassicQueueVersion version)
+    {
+        parent._arguments["x-queue-version"] = version switch
+        {
+            ClassicQueueVersion.V1 => 1,
+            ClassicQueueVersion.V2 => 2,
+            _ => throw new ArgumentOutOfRangeException(nameof(version), version, null)
+        };
+        return this;
+    }
+
+    public IQueueSpecification Queue()
+    {
+        return parent;
     }
 }
 

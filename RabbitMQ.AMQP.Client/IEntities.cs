@@ -65,6 +65,10 @@ public interface IQueueSpecification : IEntityInfoDeclaration<IQueueInfo>
 
     IStreamSpecification Stream();
 
+    IQuorumQueueSpecification Quorum();
+
+    IClassicQueueSpecification Classic();
+
 
     IQueueSpecification MaxLength(long maxLength);
 
@@ -74,13 +78,58 @@ public interface IQueueSpecification : IEntityInfoDeclaration<IQueueInfo>
 
 public interface IStreamSpecification
 {
-  public  IStreamSpecification MaxAge(TimeSpan maxAge);
+    public IStreamSpecification MaxAge(TimeSpan maxAge);
 
-  public     IStreamSpecification MaxSegmentSizeBytes(ByteCapacity maxSegmentSize);
+    public IStreamSpecification MaxSegmentSizeBytes(ByteCapacity maxSegmentSize);
 
-  public   IStreamSpecification InitialClusterSize(int initialClusterSize);
+    public IStreamSpecification InitialClusterSize(int initialClusterSize);
 
-  public   IQueueSpecification Specification();
+    public IQueueSpecification Specification();
+}
+
+public enum QuorumQueueDeadLetterStrategy
+{
+    // AT_MOST_ONCE("at-most-once"),
+    // AT_LEAST_ONCE("at-least-once");
+    AtMostOnce,
+    AtLeastOnce
+}
+
+public interface IQuorumQueueSpecification
+{
+    IQuorumQueueSpecification DeadLetterStrategy(QuorumQueueDeadLetterStrategy strategy);
+
+    IQuorumQueueSpecification DeliveryLimit(int limit);
+
+    IQuorumQueueSpecification QuorumInitialGroupSize(int size);
+
+    IQueueSpecification Queue();
+}
+
+public enum ClassicQueueMode
+{
+    Default,
+    Lazy
+}
+
+public enum ClassicQueueVersion
+{
+    // V1(1),
+    // V2(2);
+    V1,
+    V2
+}
+
+public interface IClassicQueueSpecification
+{
+    // 1 <= maxPriority <= 255
+    IClassicQueueSpecification MaxPriority(int maxPriority);
+
+    IClassicQueueSpecification Mode(ClassicQueueMode mode);
+
+    IClassicQueueSpecification Version(ClassicQueueVersion version);
+
+    IQueueSpecification Queue();
 }
 
 public interface IQueueDeletion
