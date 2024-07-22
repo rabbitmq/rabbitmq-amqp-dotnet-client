@@ -95,11 +95,13 @@ public class DefaultQueueInfo : IQueueInfo
 /// <param name="management"></param>
 public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecification
 {
+    internal readonly TimeSpan _tenYears = TimeSpan.FromDays(365 * 10);
+
     private string? _name;
     private bool _exclusive = false;
     private bool _autoDelete = false;
     private const bool Durable = true;
-    private readonly Map _arguments = new();
+    internal readonly Map _arguments = new();
 
     public IQueueSpecification Name(string name)
     {
@@ -175,6 +177,82 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         return (QueueType)Enum.Parse(typeof(QueueType), type.ToUpperInvariant());
     }
 
+    public IQueueSpecification DeadLetterExchange(string dlx)
+    {
+        _arguments["x-dead-letter-exchange"] = dlx;
+        return this;
+    }
+
+    public IQueueSpecification DeadLetterRoutingKey(string dlrk)
+    {
+        _arguments["x-dead-letter-routing-key"] = dlrk;
+        return this;
+    }
+
+    public IQueueSpecification OverflowStrategy(OverFlowStrategy overflow)
+    {
+        _arguments["x-overflow"] = overflow switch
+        {
+            OverFlowStrategy.DropHead => "drop-head",
+            OverFlowStrategy.RejectPublish => "reject-publish",
+            OverFlowStrategy.RejectPublishDlx => "reject-publish-dlx",
+            _ => throw new ArgumentOutOfRangeException(nameof(overflow), overflow, null)
+        };
+        return this;
+    }
+
+    public IQueueSpecification MaxLengthBytes(ByteCapacity maxLengthBytes)
+    {
+        Utils.ValidatePositive("Max length", maxLengthBytes.ToBytes());
+        _arguments["x-max-length-bytes"] = maxLengthBytes.ToBytes();
+        return this;
+    }
+
+    public IQueueSpecification SingleActiveConsumer(bool singleActiveConsumer)
+    {
+        _arguments["x-single-active-consumer"] = singleActiveConsumer;
+        return this;
+    }
+
+    public IQueueSpecification Expires(TimeSpan expiration)
+    {
+        Utils.ValidatePositive("Expiration", (long)expiration.TotalMilliseconds, (long)_tenYears.TotalMilliseconds);
+        _arguments["x-expires"] = (long)expiration.TotalMilliseconds;
+        return this;
+    }
+
+    public IStreamSpecification Stream()
+    {
+        Type(QueueType.STREAM);
+        return new AmqpStreamSpecification(this);
+    }
+
+    public IQuorumQueueSpecification Quorum()
+    {
+        Type(QueueType.QUORUM);
+        return new AmqpQuorumSpecification(this);
+    }
+
+    public IClassicQueueSpecification Classic()
+    {
+        Type(QueueType.CLASSIC);
+        return new AmqpClassicSpecification(this);
+    }
+
+    public IQueueSpecification MaxLength(long maxLength)
+    {
+        Utils.ValidatePositive("Max length", maxLength);
+        _arguments["x-max-length"] = maxLength;
+        return this;
+    }
+
+    public IQueueSpecification MessageTtl(TimeSpan ttl)
+    {
+        Utils.ValidateNonNegative("TTL", (long)ttl.TotalMilliseconds, (long)_tenYears.TotalMilliseconds);
+        _arguments["x-message-ttl"] = (long)ttl.TotalMilliseconds;
+        return this;
+    }
+
     public async Task<IQueueInfo> Declare()
     {
         if (Type() is QueueType.QUORUM or QueueType.STREAM)
@@ -212,6 +290,106 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         var result = new DefaultQueueInfo((Map)request.Body);
         management.TopologyListener().QueueDeclared(this);
         return result;
+    }
+}
+
+public class AmqpStreamSpecification(AmqpQueueSpecification parent) : IStreamSpecification
+{
+    public IStreamSpecification MaxAge(TimeSpan maxAge)
+    {
+        Utils.ValidatePositive("x-max-age", (long)maxAge.TotalMilliseconds,
+            (long)parent._tenYears.TotalMilliseconds);
+        parent._arguments["x-max-age"] = $"{maxAge.Seconds}s";
+        return this;
+    }
+
+    public IStreamSpecification MaxSegmentSizeBytes(ByteCapacity maxSegmentSize)
+    {
+        Utils.ValidatePositive("x-stream-max-segment-size-bytes", maxSegmentSize.ToBytes());
+        parent._arguments["x-stream-max-segment-size-bytes"] = maxSegmentSize.ToBytes();
+        return this;
+    }
+
+    public IStreamSpecification InitialClusterSize(int initialClusterSize)
+    {
+        Utils.ValidatePositive("x-initial-cluster-size", initialClusterSize);
+        parent._arguments["x-initial-cluster-size"] = initialClusterSize;
+        return this;
+    }
+
+    public IQueueSpecification Queue()
+    {
+        return parent;
+    }
+}
+
+public class AmqpQuorumSpecification(AmqpQueueSpecification parent) : IQuorumQueueSpecification
+{
+    public IQuorumQueueSpecification DeadLetterStrategy(QuorumQueueDeadLetterStrategy strategy)
+    {
+        parent._arguments["x-dead-letter-strategy"] = strategy switch
+        {
+            QuorumQueueDeadLetterStrategy.AtMostOnce => "at-most-once",
+            QuorumQueueDeadLetterStrategy.AtLeastOnce => "at-least-once",
+            _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, null)
+        };
+        return this;
+    }
+
+    public IQuorumQueueSpecification DeliveryLimit(int limit)
+    {
+        Utils.ValidatePositive("x-max-delivery-limit", limit);
+        parent._arguments["x-max-delivery-limit"] = limit;
+        return this;
+    }
+
+    public IQuorumQueueSpecification QuorumInitialGroupSize(int size)
+    {
+        Utils.ValidatePositive("x-quorum-initial-group-size", size);
+        parent._arguments["x-quorum-initial-group-size"] = size;
+        return this;
+    }
+
+    public IQueueSpecification Queue()
+    {
+        return parent;
+    }
+}
+
+public class AmqpClassicSpecification(AmqpQueueSpecification parent) : IClassicQueueSpecification
+{
+    public IClassicQueueSpecification MaxPriority(int maxPriority)
+    {
+        Utils.ValidatePositive("x-max-priority", maxPriority, 255);
+        parent._arguments["x-max-priority"] = maxPriority;
+        return this;
+    }
+
+    public IClassicQueueSpecification Mode(ClassicQueueMode mode)
+    {
+        parent._arguments["x-queue-mode"] = mode switch
+        {
+            ClassicQueueMode.Default => "default",
+            ClassicQueueMode.Lazy => "lazy",
+            _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
+        };
+        return this;
+    }
+
+    public IClassicQueueSpecification Version(ClassicQueueVersion version)
+    {
+        parent._arguments["x-queue-version"] = version switch
+        {
+            ClassicQueueVersion.V1 => 1,
+            ClassicQueueVersion.V2 => 2,
+            _ => throw new ArgumentOutOfRangeException(nameof(version), version, null)
+        };
+        return this;
+    }
+
+    public IQueueSpecification Queue()
+    {
+        return parent;
     }
 }
 

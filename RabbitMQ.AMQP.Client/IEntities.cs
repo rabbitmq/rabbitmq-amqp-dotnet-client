@@ -21,6 +21,17 @@ public interface IEntityDeclaration
     Task Declare();
 }
 
+public enum OverFlowStrategy
+{
+    DropHead,
+    RejectPublish,
+
+    RejectPublishDlx
+    // DROP_HEAD("drop-head"),
+    // REJECT_PUBLISH("reject-publish"),
+    // REJECT_PUBLISH_DLX("reject-publish-dlx");
+}
+
 public interface IQueueSpecification : IEntityInfoDeclaration<IQueueInfo>
 {
     IQueueSpecification Name(string name);
@@ -38,13 +49,88 @@ public interface IQueueSpecification : IEntityInfoDeclaration<IQueueInfo>
     IQueueSpecification Type(QueueType type);
     public QueueType Type();
 
-    // IQuorumQueueSpecification Quorum();
+
+    IQueueSpecification DeadLetterExchange(string dlx);
+
+    IQueueSpecification DeadLetterRoutingKey(string dlrk);
+
+    IQueueSpecification OverflowStrategy(OverFlowStrategy overflow);
+
+    IQueueSpecification MaxLengthBytes(ByteCapacity maxLengthBytes);
+
+    IQueueSpecification SingleActiveConsumer(bool singleActiveConsumer);
+
+
+    IQueueSpecification Expires(TimeSpan expiration);
+
+    IStreamSpecification Stream();
+
+    IQuorumQueueSpecification Quorum();
+
+    IClassicQueueSpecification Classic();
+
+
+    IQueueSpecification MaxLength(long maxLength);
+
+
+    IQueueSpecification MessageTtl(TimeSpan ttl);
 }
 
-// public interface IQuorumQueueSpecification 
-// {
-//     IQueueSpecification Queue();
-// }
+public interface IStreamSpecification
+{
+    public IStreamSpecification MaxAge(TimeSpan maxAge);
+
+    public IStreamSpecification MaxSegmentSizeBytes(ByteCapacity maxSegmentSize);
+
+    public IStreamSpecification InitialClusterSize(int initialClusterSize);
+
+    public IQueueSpecification Queue();
+}
+
+public enum QuorumQueueDeadLetterStrategy
+{
+    // AT_MOST_ONCE("at-most-once"),
+    // AT_LEAST_ONCE("at-least-once");
+    AtMostOnce,
+    AtLeastOnce
+}
+
+public interface IQuorumQueueSpecification
+{
+    IQuorumQueueSpecification DeadLetterStrategy(QuorumQueueDeadLetterStrategy strategy);
+
+    IQuorumQueueSpecification DeliveryLimit(int limit);
+
+    IQuorumQueueSpecification QuorumInitialGroupSize(int size);
+
+    IQueueSpecification Queue();
+}
+
+public enum ClassicQueueMode
+{
+    Default,
+    Lazy
+}
+
+public enum ClassicQueueVersion
+{
+    // V1(1),
+    // V2(2);
+    V1,
+    V2
+}
+
+public interface IClassicQueueSpecification
+{
+    // 1 <= maxPriority <= 255
+    IClassicQueueSpecification MaxPriority(int maxPriority);
+
+    IClassicQueueSpecification Mode(ClassicQueueMode mode);
+
+    IClassicQueueSpecification Version(ClassicQueueVersion version);
+
+    IQueueSpecification Queue();
+}
 
 public interface IQueueDeletion
 {

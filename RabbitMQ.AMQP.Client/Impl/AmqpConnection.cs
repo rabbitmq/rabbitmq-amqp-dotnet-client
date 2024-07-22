@@ -345,14 +345,16 @@ public class AmqpConnection : AbstractResourceStatus, IConnection
 
             OnNewStatus(State.Closing, null);
 
+            await _management.CloseAsync()
+                .ConfigureAwait(false);
+            
             if (_nativeConnection is { IsClosed: false })
             {
                 await _nativeConnection.CloseAsync()
                     .ConfigureAwait(false);
             }
 
-            await _management.CloseAsync()
-                .ConfigureAwait(false);
+          
         }
         finally
         {

@@ -37,5 +37,5 @@ public interface IConsumerBuilder
         IConsumerBuilder Builder();
     }
 
-    
+
 }
