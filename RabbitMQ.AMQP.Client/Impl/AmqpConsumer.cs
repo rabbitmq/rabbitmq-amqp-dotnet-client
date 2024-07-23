@@ -3,7 +3,7 @@ using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public class AmqpConsumer : AbstractResourceStatus, IConsumer
+public class AmqpConsumer : AbstractLifeCycle, IConsumer
 {
     private readonly AmqpConnection _connection;
     private readonly string _address;
@@ -20,17 +20,17 @@ public class AmqpConsumer : AbstractResourceStatus, IConsumer
         _messageHandler = messageHandler;
         _initialCredits = initialCredits;
         _filters = filters;
-        Connect();
-        _connection.Consumers.TryAdd(Id, this); // TODO: Close all consumers on connection close
+        OpenAsync();
+        _connection.Consumers.TryAdd(Id, this);
     }
 
 
-    private void Connect()
+    protected sealed override Task OpenAsync()
     {
         try
         {
             var attachCompleted = new ManualResetEvent(false);
-            _receiverLink = new ReceiverLink(_connection.NativePubSubSessions.GetOrCreateSession(), Id,
+            _receiverLink = new ReceiverLink(_connection._nativePubSubSessions.GetOrCreateSession(), Id,
                 Utils.CreateAttach(_address, DeliveryMode.AtLeastOnce, Id, _filters),
                 (link, attach) => { attachCompleted.Set(); });
 
@@ -48,6 +48,8 @@ public class AmqpConsumer : AbstractResourceStatus, IConsumer
         {
             throw new ConsumerException($"Failed to create receiver link, {e}");
         }
+
+        return Task.CompletedTask;
     }
 
     private void ProcessMessages()
@@ -61,7 +63,7 @@ public class AmqpConsumer : AbstractResourceStatus, IConsumer
             });
     }
 
-    public string Id { get; } = Guid.NewGuid().ToString();
+    private string Id { get; } = Guid.NewGuid().ToString();
 
     public void Pause()
     {
@@ -79,7 +81,7 @@ public class AmqpConsumer : AbstractResourceStatus, IConsumer
     }
 
 
-    public async Task CloseAsync()
+    public override async Task CloseAsync()
     {
         if (_receiverLink == null)
         {

@@ -6,9 +6,9 @@ using TraceLevel = Amqp.TraceLevel;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public class AmqpPublisher : AbstractResourceStatus, IPublisher
+public class AmqpPublisher : AbstractLifeCycle, IPublisher
 {
-    private SenderLink _senderLink = null!;
+    private SenderLink? _senderLink = null;
 
     private readonly ManualResetEvent _pausePublishing = new(true);
     private readonly AmqpConnection _connection;
@@ -22,16 +22,17 @@ public class AmqpPublisher : AbstractResourceStatus, IPublisher
         _connection = connection;
         _timeout = timeout;
         _maxInFlight = maxInFlight;
-        Connect();
+        OpenAsync();
         connection.Publishers.TryAdd(Id, this);
     }
 
-    private void Connect()
+
+    protected sealed override Task OpenAsync()
     {
         try
         {
             var attachCompleted = new ManualResetEvent(false);
-            _senderLink = new SenderLink(_connection.NativePubSubSessions.GetOrCreateSession(), Id,
+            _senderLink = new SenderLink(_connection._nativePubSubSessions.GetOrCreateSession(), Id,
                 Utils.CreateAttach(_address, DeliveryMode.AtLeastOnce, Id),
                 (link, attach) => { attachCompleted.Set(); });
             attachCompleted.WaitOne(TimeSpan.FromSeconds(5));
@@ -40,8 +41,7 @@ public class AmqpPublisher : AbstractResourceStatus, IPublisher
                 throw new PublisherException("Failed to create sender link. Link state is not attached, error: " +
                     _senderLink.Error?.ToString() ?? "Unknown error");
             }
-
-            OnNewStatus(State.Open, null);
+            return base.OpenAsync();
         }
         catch (Exception e)
         {
@@ -49,7 +49,7 @@ public class AmqpPublisher : AbstractResourceStatus, IPublisher
         }
     }
 
-    public string Id { get; } = Guid.NewGuid().ToString();
+    private string Id { get; } = Guid.NewGuid().ToString();
 
 
     public void PausePublishing()
@@ -59,14 +59,12 @@ public class AmqpPublisher : AbstractResourceStatus, IPublisher
 
     private void MaybeResumePublishing()
     {
-        if (State is State.Closing or State.Closed or State.Reconnecting)
+        if (State is State.Open)
         {
-            return;
+            // Can be resumed only if the publisher is open and the in-flight messages are less than the max allowed
+            // In case the publisher is closed, closing or reconnecting, the publishing will be paused
+            _pausePublishing.Set();
         }
-
-        // Can be resumed only if the publisher is open and the in-flight messages are less than the max allowed
-        // In case the publisher is closed, closing or reconnecting, the publishing will be paused
-        _pausePublishing.Set();
     }
 
     private void MaybeBackPressure()
@@ -80,7 +78,6 @@ public class AmqpPublisher : AbstractResourceStatus, IPublisher
             MaybeResumePublishing();
         }
     }
-
 
     // TODO: Consider implementing this method with the send method
     // a way to send a batch of messages
@@ -105,7 +102,7 @@ public class AmqpPublisher : AbstractResourceStatus, IPublisher
             Interlocked.Increment(ref _currentInFlight);
 
             var nMessage = ((AmqpMessage)message).NativeMessage;
-            _senderLink.Send(nMessage,
+            _senderLink?.Send(nMessage,
                 (sender, outMessage, outcome, state) =>
                 {
                     Interlocked.Decrement(ref _currentInFlight);
@@ -147,7 +144,7 @@ public class AmqpPublisher : AbstractResourceStatus, IPublisher
     }
 
 
-    public async Task CloseAsync()
+    public override async Task CloseAsync()
     {
         if (State == State.Closed)
         {
@@ -160,8 +157,14 @@ public class AmqpPublisher : AbstractResourceStatus, IPublisher
 
         try
         {
-            await _senderLink.CloseAsync()
-                .ConfigureAwait(false);
+            if (_senderLink != null)
+            {
+                await _senderLink.DetachAsync().ConfigureAwait(false);
+                await _senderLink.CloseAsync()
+                    .ConfigureAwait(false);
+            }
+
+            _pausePublishing.Dispose();
         }
         catch (Exception e)
         {

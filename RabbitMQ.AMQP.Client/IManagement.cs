@@ -4,7 +4,7 @@ public class ModelException(string message) : Exception(message);
 
 public class PreconditionFailedException(string message) : Exception(message);
 
-public interface IManagement : IResourceStatus, IClosable
+public interface IManagement : ILifeCycle
 {
     IQueueSpecification Queue();
     IQueueSpecification Queue(string name);

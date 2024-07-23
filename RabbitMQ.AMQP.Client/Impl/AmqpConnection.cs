@@ -33,7 +33,7 @@ internal class Visitor(AmqpManagement management) : IVisitor
 /// AmqpConnection is the concrete implementation of <see cref="IConnection"/>
 /// It is a wrapper around the AMQP.Net Lite <see cref="Connection"/> class
 /// </summary>
-public class AmqpConnection : AbstractResourceStatus, IConnection
+public class AmqpConnection : AbstractLifeCycle, IConnection
 {
     private const string ConnectionNotRecoveredCode = "CONNECTION_NOT_RECOVERED";
     private const string ConnectionNotRecoveredMessage = "Connection not recovered";
@@ -43,14 +43,12 @@ public class AmqpConnection : AbstractResourceStatus, IConnection
     // The native AMQP.Net Lite connection
     private Connection? _nativeConnection;
 
-    private readonly AmqpManagement _management = new();
+    private readonly AmqpManagement _management;
     private readonly RecordingTopologyListener _recordingTopologyListener = new();
 
-    private readonly TaskCompletionSource<bool> _connectionCloseTaskCompletionSource =
-        new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private readonly ConnectionSettings _connectionSettings;
-    internal readonly AmqpSessionManagement NativePubSubSessions;
+    internal readonly AmqpSessionManagement _nativePubSubSessions;
 
     // TODO: Implement the semaphore to avoid multiple connections
     // private readonly SemaphoreSlim _semaphore = new(1, 1);
@@ -76,32 +74,16 @@ public class AmqpConnection : AbstractResourceStatus, IConnection
     /// Creates a new instance of <see cref="AmqpConnection"/>
     /// Through the Connection is possible to create:
     ///  - Management. See <see cref="AmqpManagement"/>
-    ///  - Publishers and Consumers: TODO: Implement 
+    ///  - Publishers and Consumers: See <see cref="AmqpPublisherBuilder"/> and <see cref="AmqpConsumerBuilder"/> 
     /// </summary>
     /// <param name="connectionSettings"></param>
     /// <returns></returns>
     public static async Task<IConnection> CreateAsync(ConnectionSettings connectionSettings)
     {
         var connection = new AmqpConnection(connectionSettings);
-        await connection.ConnectAsync()
+        await connection.OpenAsync()
             .ConfigureAwait(false);
         return connection;
-    }
-
-    private void PauseAllPublishers()
-    {
-        foreach (AmqpPublisher publisher in Publishers.Values)
-        {
-            publisher.PausePublishing();
-        }
-    }
-
-    private void ResumeAllPublishers()
-    {
-        foreach (AmqpPublisher publisher in Publishers.Values)
-        {
-            publisher.ResumePublishing();
-        }
     }
 
 
@@ -133,7 +115,9 @@ public class AmqpConnection : AbstractResourceStatus, IConnection
     private AmqpConnection(ConnectionSettings connectionSettings)
     {
         _connectionSettings = connectionSettings;
-        NativePubSubSessions = new AmqpSessionManagement(this, 1);
+        _nativePubSubSessions = new AmqpSessionManagement(this, 1);
+        _management =
+            new AmqpManagement(new AmqpManagementParameters(this).TopologyListener(_recordingTopologyListener));
     }
 
     public IManagement Management()
@@ -146,11 +130,10 @@ public class AmqpConnection : AbstractResourceStatus, IConnection
         return new AmqpConsumerBuilder(this);
     }
 
-    private Task ConnectAsync()
+    protected override Task OpenAsync()
     {
         EnsureConnection();
-        OnNewStatus(State.Open, null);
-        return Task.CompletedTask;
+        return base.OpenAsync();
     }
 
     private void EnsureConnection()
@@ -158,38 +141,38 @@ public class AmqpConnection : AbstractResourceStatus, IConnection
         // await _semaphore.WaitAsync();
         try
         {
-            if (_nativeConnection == null || _nativeConnection.IsClosed)
+            if (_nativeConnection is { IsClosed: false })
             {
-                var open = new Open
-                {
-                    HostName = $"vhost:{_connectionSettings.VirtualHost()}",
-                    Properties = new Fields()
-                    {
-                        [new Symbol("connection_name")] = _connectionSettings.ConnectionName(),
-                    }
-                };
-
-                var manualReset = new ManualResetEvent(false);
-                // TODO ConnectionFactory.CreateAsync
-                _nativeConnection = new Connection(_connectionSettings.Address, null, open, (connection, open1) =>
-                {
-                    manualReset.Set();
-                    Trace.WriteLine(TraceLevel.Information, $"Connection opened. Info: {ToString()}");
-                    OnNewStatus(State.Open, null);
-                });
-
-                manualReset.WaitOne(TimeSpan.FromSeconds(5));
-                if (_nativeConnection.IsClosed)
-                {
-                    throw new ConnectionException(
-                        $"Connection failed. Info: {ToString()}, error: {_nativeConnection.Error}");
-                }
-
-                _management.Init(
-                    new AmqpManagementParameters(this).TopologyListener(_recordingTopologyListener));
-
-                _nativeConnection.Closed += MaybeRecoverConnection();
+                return;
             }
+
+            var open = new Open
+            {
+                HostName = $"vhost:{_connectionSettings.VirtualHost()}",
+                Properties = new Fields()
+                {
+                    [new Symbol("connection_name")] = _connectionSettings.ConnectionName(),
+                }
+            };
+
+            var manualReset = new ManualResetEvent(false);
+            _nativeConnection = new Connection(_connectionSettings.Address, null, open, (connection, open1) =>
+            {
+                manualReset.Set();
+                Trace.WriteLine(TraceLevel.Verbose, $"Connection opened. Info: {ToString()}");
+                OnNewStatus(State.Open, null);
+            });
+
+            manualReset.WaitOne(TimeSpan.FromSeconds(5));
+            if (_nativeConnection.IsClosed)
+            {
+                throw new ConnectionException(
+                    $"Connection failed. Info: {ToString()}, error: {_nativeConnection.Error}");
+            }
+
+            _management.Init();
+
+            _nativeConnection.Closed += MaybeRecoverConnection();
         }
 
         catch (AmqpException e)
@@ -310,7 +293,7 @@ public class AmqpConnection : AbstractResourceStatus, IConnection
                 _semaphoreClose.Release();
             }
 
-            _connectionCloseTaskCompletionSource.SetResult(true);
+            ConnectionCloseTaskCompletionSource.SetResult(true);
         };
     }
 
@@ -327,7 +310,7 @@ public class AmqpConnection : AbstractResourceStatus, IConnection
     }
 
 
-    public async Task CloseAsync()
+    public override async Task CloseAsync()
     {
         await _semaphoreClose.WaitAsync()
             .ConfigureAwait(false);
@@ -347,21 +330,19 @@ public class AmqpConnection : AbstractResourceStatus, IConnection
 
             await _management.CloseAsync()
                 .ConfigureAwait(false);
-            
+
             if (_nativeConnection is { IsClosed: false })
             {
                 await _nativeConnection.CloseAsync()
                     .ConfigureAwait(false);
             }
-
-          
         }
         finally
         {
             _semaphoreClose.Release();
         }
 
-        await _connectionCloseTaskCompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(10))
+        await ConnectionCloseTaskCompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(10))
             .ConfigureAwait(false);
 
         OnNewStatus(State.Closed, null);
@@ -370,7 +351,7 @@ public class AmqpConnection : AbstractResourceStatus, IConnection
 
     public override string ToString()
     {
-        var info = $"AmqpConnection{{ConnectionSettings='{_connectionSettings}', Status='{State.ToString()}'}}";
+        string info = $"AmqpConnection{{ConnectionSettings='{_connectionSettings}', Status='{State.ToString()}'}}";
         return info;
     }
 }

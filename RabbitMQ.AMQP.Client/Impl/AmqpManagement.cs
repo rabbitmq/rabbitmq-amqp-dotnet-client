@@ -13,7 +13,7 @@ namespace RabbitMQ.AMQP.Client.Impl;
 /// RabbitMQ uses AMQP end  point: "/management" to manage the resources like queues, exchanges, and bindings.
 /// The management endpoint works like an HTTP RPC endpoint where the client sends a request to the server
 /// </summary>
-public class AmqpManagement : AbstractResourceStatus, IManagement // TODO: Implement ToString()
+public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeCycle, IManagement
 {
     // The requests are stored in a dictionary with the correlationId as the key
     // The correlationId is used to match the request with the response
@@ -21,13 +21,17 @@ public class AmqpManagement : AbstractResourceStatus, IManagement // TODO: Imple
 
     // private static readonly long IdSequence = 0;
     //
-    private RecordingTopologyListener? _recordingTopologyListener;
     private const string ManagementNodeAddress = "/management";
     private const string LinkPairName = "management-link-pair";
 
+    private Session? _managementSession;
+    private SenderLink? _senderLink;
+    private ReceiverLink? _receiverLink;
+
+
     internal const int Code200 = 200;
     internal const int Code201 = 201;
-    internal const int Code204 = 204; // TODO: handle 204
+    internal const int Code204 = 204;
     internal const int Code409 = 409;
     internal const string Put = "PUT";
     internal const string Get = "GET";
@@ -85,30 +89,25 @@ public class AmqpManagement : AbstractResourceStatus, IManagement // TODO: Imple
 
     public ITopologyListener TopologyListener()
     {
-        return _recordingTopologyListener!;
+        return parameters.TopologyListener();
     }
 
-    private Session? _managementSession;
-    private SenderLink? _senderLink;
-    private ReceiverLink? _receiverLink;
-    private AmqpConnection? _amqpConnection;
+    internal void Init()
+    {
+        OpenAsync();
+    }
 
-
-    internal void Init(AmqpManagementParameters parameters)
+    protected override Task OpenAsync()
     {
         if (State == State.Open)
         {
-            return;
+            return Task.CompletedTask;
         }
-
-        _amqpConnection = parameters.Connection();
 
         if (_managementSession == null || _managementSession.IsClosed)
         {
-            _managementSession = new Session(_amqpConnection.NativeConnection());
+            _managementSession = new Session(parameters.Connection().NativeConnection());
         }
-
-        _recordingTopologyListener = parameters.TopologyListener();
 
         EnsureSenderLink();
 
@@ -123,15 +122,18 @@ public class AmqpManagement : AbstractResourceStatus, IManagement // TODO: Imple
 
         _managementSession.Closed += (sender, error) =>
         {
-            Trace.WriteLine(TraceLevel.Warning, $"Management session closed " +
-                                                $"sender: {sender} error: {error} " +
-                                                $"Amqp Status:{State} senderLink closed:  {_senderLink?.IsClosed}" +
-                                                $"_receiverLink closed: {_receiverLink?.IsClosed} " +
-                                                $"_managementSession is closed: {_managementSession.IsClosed}" +
-                                                $"native connection is closed: {_amqpConnection.NativeConnection()!.IsClosed}");
+            if (State != State.Closed)
+            {
+                Trace.WriteLine(TraceLevel.Warning, $"Management session closed " +
+                                                    $"with error: {Utils.ConvertError(error)} " +
+                                                    $" AmqpManagement: {ToString()}");
+            }
+
             OnNewStatus(State.Closed, Utils.ConvertError(error));
+            ConnectionCloseTaskCompletionSource.TrySetResult(true);
         };
-        OnNewStatus(State.Open, null);
+
+        return base.OpenAsync();
     }
 
     private async Task ProcessResponses()
@@ -139,7 +141,7 @@ public class AmqpManagement : AbstractResourceStatus, IManagement // TODO: Imple
         try
         {
             while (_managementSession?.IsClosed == false &&
-                   _amqpConnection?.NativeConnection()!.IsClosed == false)
+                   parameters.Connection().NativeConnection()!.IsClosed == false)
             {
                 if (_receiverLink == null)
                 {
@@ -159,11 +161,14 @@ public class AmqpManagement : AbstractResourceStatus, IManagement // TODO: Imple
         }
         catch (Exception e)
         {
-            Trace.WriteLine(TraceLevel.Error,
-                $"Receiver link error in management session {e}. Receiver link closed: {_receiverLink?.IsClosed}");
+            if (_receiverLink?.IsClosed == false)
+            {
+                Trace.WriteLine(TraceLevel.Error,
+                    $"Receiver link error in management session {e}. Receiver link closed: {_receiverLink?.IsClosed}");
+            }
         }
 
-        Trace.WriteLine(TraceLevel.Information, "AMQP Management session closed");
+        Trace.WriteLine(TraceLevel.Verbose, "ProcessResponses Task closed");
     }
 
 
@@ -352,14 +357,36 @@ public class AmqpManagement : AbstractResourceStatus, IManagement // TODO: Imple
             .ConfigureAwait(false);
     }
 
-    public async Task CloseAsync()
+    public override async Task CloseAsync()
     {
-        State = State.Closed;
         if (_managementSession is { IsClosed: false })
         {
+            OnNewStatus(State.Closing, null);
+
             await _managementSession.CloseAsync()
                 .ConfigureAwait(false);
+
+            await ConnectionCloseTaskCompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
+
+            _managementSession = null;
+            _senderLink = null;
+            _receiverLink = null;
+            // this is actually a double set of the status, but it is needed to ensure that the status is set to closed
+            // but the `OnNewStatus` is idempotent
+            OnNewStatus(State.Closed, null);
         }
+    }
+
+    public override string ToString()
+    {
+        string info = $"AmqpManagement{{" +
+                      $"AmqpConnection='{parameters.Connection()}', " +
+                      $"Status='{State.ToString()}'" +
+                      $"ReceiverLink closed: {_receiverLink?.IsClosed} " +
+                      $"}}";
+
+
+        return info;
     }
 }
 
