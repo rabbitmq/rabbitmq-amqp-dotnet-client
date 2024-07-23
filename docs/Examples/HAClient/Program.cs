@@ -39,7 +39,7 @@ IConnection connection = await AmqpConnection.CreateAsync(
 
 connection.ChangeState += (sender, fromState, toState, e) =>
 {
-    Trace.WriteLine(TraceLevel.Information, $"Connection State Changed");
+    Trace.WriteLine(TraceLevel.Information, $"Connection State Changed from {fromState} to {toState}");
 };
 
 Trace.WriteLine(TraceLevel.Information, "Connected");
@@ -54,7 +54,7 @@ IPublisher publisher = connection.PublisherBuilder().Queue(queueName).MaxInfligh
 ManualResetEvent pausePublishing = new(true);
 publisher.ChangeState += (sender, fromState, toState, e) =>
 {
-    Trace.WriteLine(TraceLevel.Information, $"Publisher State Changed");
+    Trace.WriteLine(TraceLevel.Information, $"Publisher State Changed, from {fromState} to {toState}");
 
     if (toState == State.Open)
     {
@@ -74,6 +74,13 @@ IConsumer consumer = connection.ConsumerBuilder().Queue(queueName).InitialCredit
         context.Accept();
     }
 ).Build();
+
+
+consumer.ChangeState += (sender, fromState, toState, e) =>
+{
+    Trace.WriteLine(TraceLevel.Information, $"Consumer State Changed, from {fromState} to {toState}");
+};
+
 
 for (int i = 0; i < totalMessagesToSend; i++)
 {
@@ -96,7 +103,7 @@ for (int i = 0; i < totalMessagesToSend; i++)
     }
     catch (Exception e)
     {
-        Trace.WriteLine(TraceLevel.Error, $"Failed to publish message, {e}");
+        Trace.WriteLine(TraceLevel.Error, $"Failed to publish message, {e.Message}");
         Interlocked.Increment(ref messagesFailed);
         await Task.Delay(500).ConfigureAwait(false);
     }

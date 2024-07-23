@@ -151,11 +151,7 @@ public class AmqpPublisher : AbstractLifeCycle, IPublisher
         {
             return;
         }
-
         OnNewStatus(State.Closing, null);
-
-        _connection.Publishers.TryRemove(Id, out _);
-
         try
         {
             if (_senderLink != null)
@@ -173,6 +169,7 @@ public class AmqpPublisher : AbstractLifeCycle, IPublisher
         }
 
         OnNewStatus(State.Closed, null);
+        _connection.Publishers.TryRemove(Id, out _);
     }
 
 

@@ -88,7 +88,12 @@ public class AmqpConsumer : AbstractLifeCycle, IConsumer
             return;
         }
 
+        OnNewStatus(State.Closing, null);
         await (_receiverLink.CloseAsync()).ConfigureAwait(false);
+        _receiverLink = null;
+        OnNewStatus(State.Closed, null);
+        _connection.Consumers.TryRemove(Id, out _);
+
     }
 
 
