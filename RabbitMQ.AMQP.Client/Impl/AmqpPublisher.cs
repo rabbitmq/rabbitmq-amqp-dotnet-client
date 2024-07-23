@@ -79,43 +79,6 @@ public class AmqpPublisher : AbstractLifeCycle, IPublisher
         }
     }
 
-    private ClosedCallback Reconnect()
-    {
-        return (sender, error) =>
-        {
-            if (error != null)
-            {
-                Trace.WriteLine(TraceLevel.Warning, $"[Publisher] connection for the is closed unexpectedly. " +
-                                                    $"Info: {ToString()}");
-
-
-                Task.Delay(TimeSpan.FromMilliseconds(1500));
-                OnNewStatus(_connection.State, Utils.ConvertError(error));
-
-
-                while (_connection.State == State.Reconnecting )
-                { 
-                    Trace.WriteLine(TraceLevel.Verbose, $"[Publisher] Waiting for the connection restoring " +
-                                                        $"Info: {ToString()}");
-
-                    Task.Delay(TimeSpan.FromMilliseconds(500));
-                    if (_connection.State != State.Closed)
-                    {
-                        continue;
-                    }
-
-                    OnNewStatus(State.Closed, null);
-                    return;
-                }
-                OpenAsync();
-            }
-            
-            OnNewStatus(State.Closed, Utils.ConvertError(error));
-
-        };
-    }
-
-
     // TODO: Consider implementing this method with the send method
     // a way to send a batch of messages
 
