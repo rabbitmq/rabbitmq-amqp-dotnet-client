@@ -90,4 +90,24 @@ public class AmqpConsumer : AbstractLifeCycle, IConsumer
 
         await (_receiverLink.CloseAsync()).ConfigureAwait(false);
     }
+
+
+    internal void ChangeStatus(State newState, Error? error)
+    {
+        OnNewStatus(newState, error);
+    }
+
+    internal async Task Reconnect()
+    {
+        int randomWait = Random.Shared.Next(200, 800);
+        Trace.WriteLine(TraceLevel.Verbose, $"Reconnecting in {randomWait} ms");
+        await Task.Delay(randomWait).ConfigureAwait(false);
+
+        if (_receiverLink != null)
+        {
+            await _receiverLink.DetachAsync().ConfigureAwait(false)!;
+        }
+
+        await OpenAsync().ConfigureAwait(false);
+    }
 }

@@ -41,6 +41,7 @@ public class AmqpPublisher : AbstractLifeCycle, IPublisher
                 throw new PublisherException("Failed to create sender link. Link state is not attached, error: " +
                     _senderLink.Error?.ToString() ?? "Unknown error");
             }
+
             return base.OpenAsync();
         }
         catch (Exception e)
@@ -52,7 +53,7 @@ public class AmqpPublisher : AbstractLifeCycle, IPublisher
     private string Id { get; } = Guid.NewGuid().ToString();
 
 
-    public void PausePublishing()
+    private void PausePublishing()
     {
         _pausePublishing.Reset();
     }
@@ -174,8 +175,23 @@ public class AmqpPublisher : AbstractLifeCycle, IPublisher
         OnNewStatus(State.Closed, null);
     }
 
-    public void ResumePublishing()
+
+    internal void ChangeStatus(State newState, Error? error)
     {
-        MaybeResumePublishing();
+        OnNewStatus(newState, error);
+    }
+
+    internal async Task Reconnect()
+    {
+        int randomWait = Random.Shared.Next(200, 800);
+        Trace.WriteLine(TraceLevel.Verbose, $"Reconnecting in {randomWait} ms");
+        await Task.Delay(randomWait).ConfigureAwait(false);
+
+        if (_senderLink != null)
+        {
+            await _senderLink.DetachAsync().ConfigureAwait(false)!;
+        }
+
+        await OpenAsync().ConfigureAwait(false);
     }
 }

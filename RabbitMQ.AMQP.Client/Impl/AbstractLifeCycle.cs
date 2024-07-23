@@ -40,3 +40,5 @@ public abstract class AbstractLifeCycle : ILifeCycle
 
     public event LifeCycleCallBack? ChangeState;
 }
+
+
