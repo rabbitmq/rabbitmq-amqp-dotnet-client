@@ -6,7 +6,7 @@ public class ConnectionSettingBuilder
 {
     // TODO: maybe add the event "LifeCycle" to the builder
     private string _host = "localhost";
-    private int _port = 5672;
+    private int _port = -1; // Note: -1 means use the defalt for the scheme
     private string _user = "guest";
     private string _password = "guest";
     private string _scheme = "AMQP";
@@ -92,102 +92,101 @@ public class ConnectionSettingBuilder
 // </summary>
 public class ConnectionSettings : IConnectionSettings
 {
-    internal Address Address { get; }
-
+    private readonly Address _address;
     private readonly string _connectionName = "";
     private readonly string _virtualHost = "/";
 
-
     public ConnectionSettings(string address)
     {
-        Address = new Address(address);
+        _address = new Address(address);
     }
 
     public ConnectionSettings(string host, int port,
-        string user,
-        string password,
+        string user, string password,
         string virtualHost, string scheme, string connectionName)
     {
-        Address = new Address(host, port, user, password, "/", scheme);
+        _address = new Address(host: host, port: port,
+            user: user, password: password,
+            path: "/", scheme: scheme);
         _connectionName = connectionName;
         _virtualHost = virtualHost;
     }
 
-    public string Host()
-    {
-        return Address.Host;
-    }
-
-
-    public int Port()
-    {
-        return Address.Port;
-    }
-
-
-    public string VirtualHost()
-    {
-        return _virtualHost;
-    }
-
-    public string User()
-    {
-        return Address.User;
-    }
-
-
-    public string Password()
-    {
-        return Address.Password;
-    }
-
-
-    public string Scheme()
-    {
-        return Address.Scheme;
-    }
-
-    public string ConnectionName()
-    {
-        return _connectionName;
-    }
+    public string Host => _address.Host;
+    public int Port => _address.Port;
+    public string VirtualHost => _virtualHost;
+    public string User => _address.User;
+    public string Password => _address.Password;
+    public string Scheme => _address.Scheme;
+    public string ConnectionName => _connectionName;
+    public string Path => _address.Path;
+    public bool UseSsl => _address.UseSsl;
 
     public override string ToString()
     {
-        var i =
+        return
             $"Address" +
-            $"host='{Address.Host}', " +
-            $"port={Address.Port}, VirtualHost='{_virtualHost}', path='{Address.Path}', " +
-            $"username='{Address.User}', ConnectionName='{_connectionName}'";
-        return i;
+            $"host='{_address.Host}', " +
+            $"port={_address.Port}, VirtualHost='{_virtualHost}', path='{_address.Path}', " +
+            $"username='{_address.User}', ConnectionName='{_connectionName}'";
     }
-
 
     public override bool Equals(object? obj)
     {
-        if (obj == null || GetType() != obj.GetType())
+        if (obj is null)
         {
             return false;
         }
 
-        var address = (ConnectionSettings)obj;
-        return Address.Host == address.Address.Host &&
-               Address.Port == address.Address.Port &&
-               Address.Path == address.Address.Path &&
-               Address.User == address.Address.User &&
-               Address.Password == address.Address.Password &&
-               Address.Scheme == address.Address.Scheme;
+        if (obj is ConnectionSettings address)
+        {
+            return _address.Host == address._address.Host &&
+                   _address.Port == address._address.Port &&
+                   _address.Path == address._address.Path &&
+                   _address.User == address._address.User &&
+                   _address.Password == address._address.Password &&
+                   _address.Scheme == address._address.Scheme;
+        }
+
+        return false;
     }
 
     protected bool Equals(ConnectionSettings other)
     {
-        return Address.Equals(other.Address);
+        if (other is null)
+        {
+            return false;
+        }
+
+        return _address.Equals(other._address);
     }
 
     public override int GetHashCode()
     {
-        return Address.GetHashCode();
+        return _address.GetHashCode();
     }
+
+    public bool Equals(IConnectionSettings? other)
+    {
+        if (other is null)
+        {
+            return false;
+        }
+
+        if (other is IConnectionSettings connectionSettings)
+        {
+            return _address.Host == connectionSettings.Host &&
+                   _address.Port == connectionSettings.Port &&
+                   _address.Path == connectionSettings.Path &&
+                   _address.User == connectionSettings.User &&
+                   _address.Password == connectionSettings.Password &&
+                   _address.Scheme == connectionSettings.Scheme;
+        }
+
+        return false;
+    }
+
+    internal Address Address => _address;
 
     public RecoveryConfiguration RecoveryConfiguration { get; set; } = RecoveryConfiguration.Create();
 }
@@ -239,7 +238,6 @@ public class RecoveryConfiguration : IRecoveryConfiguration
     {
         return _backOffDelayPolicy;
     }
-
 
     public IRecoveryConfiguration Topology(bool activated)
     {

@@ -196,10 +196,10 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
 
             var open = new Open
             {
-                HostName = $"vhost:{_connectionSettings.VirtualHost()}",
+                HostName = $"vhost:{_connectionSettings.VirtualHost}",
                 Properties = new Fields()
                 {
-                    [new Symbol("connection_name")] = _connectionSettings.ConnectionName(),
+                    [new Symbol("connection_name")] = _connectionSettings.ConnectionName,
                 }
             };
 
