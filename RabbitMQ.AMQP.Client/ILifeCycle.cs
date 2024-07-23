@@ -9,6 +9,7 @@ public enum State
     Closed,
 }
 
+
 public class Error(string? errorCode, string? description)
 {
     public string? Description { get; } = description;
@@ -20,19 +21,15 @@ public class Error(string? errorCode, string? description)
     }
 }
 
-public interface IClosable // TODO: Create an abstract class with the event and the State property
-{
-    Task CloseAsync();
 
-}
 
 public delegate void LifeCycleCallBack(object sender, State previousState, State currentState, Error? failureCause);
 
-public interface IResourceStatus
+public interface ILifeCycle
 {
+    Task CloseAsync();
+    
     public State State { get; }
-
-
+    
     event LifeCycleCallBack ChangeState;
-
 }

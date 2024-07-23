@@ -6,7 +6,7 @@ namespace RabbitMQ.AMQP.Client;
 public class ConsumerException(string message) : Exception(message);
 public delegate void MessageHandler(IContext context, IMessage message);
 
-public interface IConsumer : IResourceStatus, IClosable
+public interface IConsumer : ILifeCycle
 {
     void Pause();
 

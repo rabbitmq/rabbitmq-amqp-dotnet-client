@@ -4,7 +4,7 @@ namespace RabbitMQ.AMQP.Client;
 
 public class ConnectionException(string? message) : Exception(message);
 
-public interface IConnection : IResourceStatus, IClosable
+public interface IConnection : ILifeCycle
 {
     IManagement Management();
 

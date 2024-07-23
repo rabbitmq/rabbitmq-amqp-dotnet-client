@@ -19,7 +19,7 @@ public class OutcomeDescriptor(ulong code, string description, OutcomeState stat
 
 public delegate void OutcomeDescriptorCallback(IMessage message, OutcomeDescriptor outcomeDescriptor);
 
-public interface IPublisher : IResourceStatus, IClosable
+public interface IPublisher : ILifeCycle
 {
     Task Publish(IMessage message,
         OutcomeDescriptorCallback outcomeCallback); // TODO: Add CancellationToken and callBack

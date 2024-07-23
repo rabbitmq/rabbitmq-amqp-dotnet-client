@@ -8,7 +8,7 @@ using Message = Amqp.Message;
 
 namespace Tests;
 
-internal class TestAmqpManagement : AmqpManagement
+internal class TestAmqpManagement(AmqpManagementParameters parameters) : AmqpManagement(parameters)
 {
     protected override async Task InternalSendAsync(Message message)
     {
@@ -18,7 +18,7 @@ internal class TestAmqpManagement : AmqpManagement
 
 internal class TestAmqpManagementOpen : AmqpManagement
 {
-    public TestAmqpManagementOpen()
+    public TestAmqpManagementOpen() : base(new AmqpManagementParameters(null!))
     {
         State = State.Open;
     }
@@ -59,7 +59,7 @@ public class ManagementTests()
     [Fact]
     public void RaiseModelException()
     {
-        var management = new TestAmqpManagement();
+        var management = new TestAmqpManagement(null);
         const string messageId = "my_id";
         var sent = new Message() { Properties = new Properties() { MessageId = messageId, } };
 
@@ -113,7 +113,7 @@ public class ManagementTests()
     [Fact]
     public async Task RaiseManagementClosedException()
     {
-        var management = new TestAmqpManagement();
+        var management = new TestAmqpManagement(null);
         await Assert.ThrowsAsync<AmqpClosedException>(async () =>
             await management.Request(new Message(), [200]));
         Assert.Equal(State.Closed, management.State);
