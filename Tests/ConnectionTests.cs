@@ -1,5 +1,4 @@
-﻿using System.Net.Sockets;
-using RabbitMQ.AMQP.Client;
+﻿using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 
 namespace Tests;
@@ -35,27 +34,26 @@ public class ConnectionTests
     [Fact]
     public void ValidateAddressBuilder()
     {
-        var address = ConnectionSettingBuilder.Create()
+        ConnectionSettings connectionSettings = ConnectionSettingBuilder.Create()
             .Host("localhost")
-            .Port(5672)
             .VirtualHost("v1")
             .User("guest-t")
             .Password("guest-w")
-            .Scheme("amqp1")
+            .Scheme("AMQP")
             .Build();
 
-        Assert.Equal("localhost", address.Host);
-        Assert.Equal(5672, address.Port);
-        Assert.Equal("guest-t", address.User);
-        Assert.Equal("guest-w", address.Password);
-        Assert.Equal("v1", address.VirtualHost);
-        Assert.Equal("amqp1", address.Scheme);
+        Assert.Equal("localhost", connectionSettings.Host);
+        Assert.Equal(5672, connectionSettings.Port);
+        Assert.Equal("guest-t", connectionSettings.User);
+        Assert.Equal("guest-w", connectionSettings.Password);
+        Assert.Equal("v1", connectionSettings.VirtualHost);
+        Assert.Equal("AMQP", connectionSettings.Scheme);
     }
 
     [Fact]
     public void ValidateBuilderWithSslOptions()
     {
-        ConnectionSettings address = ConnectionSettingBuilder.Create()
+        ConnectionSettings connectionSettings = ConnectionSettingBuilder.Create()
             .Host("localhost")
             .VirtualHost("v1")
             .User("guest-t")
@@ -63,13 +61,35 @@ public class ConnectionTests
             .Scheme("amqps")
             .Build();
 
-        Assert.True(address.UseSsl);
-        Assert.Equal("localhost", address.Host);
-        Assert.Equal(5671, address.Port);
-        Assert.Equal("guest-t", address.User);
-        Assert.Equal("guest-w", address.Password);
-        Assert.Equal("v1", address.VirtualHost);
-        Assert.Equal("amqps", address.Scheme);
+        Assert.True(connectionSettings.UseSsl);
+        Assert.Equal("localhost", connectionSettings.Host);
+        Assert.Equal(5671, connectionSettings.Port);
+        Assert.Equal("guest-t", connectionSettings.User);
+        Assert.Equal("guest-w", connectionSettings.Password);
+        Assert.Equal("v1", connectionSettings.VirtualHost);
+        Assert.Equal("amqps", connectionSettings.Scheme);
+    }
+
+    [Fact]
+    public async Task ConnectUsingTlsAndUserPassword()
+    {
+        ConnectionSettings connectionSettings = ConnectionSettingBuilder.Create()
+            .Host("localhost")
+            .Scheme("amqps")
+            .Build();
+
+        Assert.True(connectionSettings.UseSsl);
+        Assert.Equal("localhost", connectionSettings.Host);
+        Assert.Equal(5671, connectionSettings.Port);
+        Assert.Equal("guest", connectionSettings.User);
+        Assert.Equal("guest", connectionSettings.Password);
+        Assert.Equal("/", connectionSettings.VirtualHost);
+        Assert.Equal("amqps", connectionSettings.Scheme);
+
+        IConnection connection = await AmqpConnection.CreateAsync(connectionSettings);
+        Assert.Equal(State.Open, connection.State);
+        await connection.CloseAsync();
+        Assert.Equal(State.Closed, connection.State);
     }
 
     [Fact]
@@ -78,7 +98,8 @@ public class ConnectionTests
         await Assert.ThrowsAsync<ConnectionException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().VirtualHost("wrong_vhost").Build()));
 
-        await Assert.ThrowsAnyAsync<SocketException>(async () =>
+        // TODO check inner exception is a SocketException
+        await Assert.ThrowsAnyAsync<ConnectionException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Host("wrong_host").Build()));
 
         await Assert.ThrowsAsync<ConnectionException>(async () =>
@@ -87,17 +108,18 @@ public class ConnectionTests
         await Assert.ThrowsAsync<ConnectionException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().User("wrong_user").Build()));
 
-        await Assert.ThrowsAnyAsync<SocketException>(async () =>
+        // TODO check inner exception is a SocketException
+        await Assert.ThrowsAnyAsync<ConnectionException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Port(1234).Build()));
     }
 
     [Fact]
     public async Task ThrowAmqpClosedExceptionWhenItemIsClosed()
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        var management = connection.Management();
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IManagement management = connection.Management();
         await management.Queue().Name("ThrowAmqpClosedExceptionWhenItemIsClosed").Declare();
-        var publisher = connection.PublisherBuilder().Queue("ThrowAmqpClosedExceptionWhenItemIsClosed").Build();
+        IPublisher publisher = connection.PublisherBuilder().Queue("ThrowAmqpClosedExceptionWhenItemIsClosed").Build();
         await publisher.CloseAsync();
         await Assert.ThrowsAsync<AmqpClosedException>(async () =>
             await publisher.Publish(new AmqpMessage("Hello wold!"), (message, descriptor) =>

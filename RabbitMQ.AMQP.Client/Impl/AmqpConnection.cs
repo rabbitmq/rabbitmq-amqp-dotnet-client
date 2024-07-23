@@ -39,7 +39,6 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     private const string ConnectionNotRecoveredMessage = "Connection not recovered";
     private readonly SemaphoreSlim _semaphoreClose = new(1, 1);
 
-
     // The native AMQP.Net Lite connection
     private Connection? _nativeConnection;
 
@@ -71,7 +70,6 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
         }
     }
 
-
     private async Task ReconnectEntities()
     {
         await ReconnectPublishers().ConfigureAwait(false);
@@ -102,7 +100,6 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     // TODO: Implement the semaphore to avoid multiple connections
     // private readonly SemaphoreSlim _semaphore = new(1, 1);
 
-
     /// <summary>
     /// Publishers contains all the publishers created by the connection.
     /// Each connection can have multiple publishers.
@@ -112,7 +109,6 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     internal ConcurrentDictionary<string, IPublisher> Publishers { get; } = new();
 
     internal ConcurrentDictionary<string, IConsumer> Consumers { get; } = new();
-
 
     public ReadOnlyCollection<IPublisher> GetPublishers()
     {
@@ -179,14 +175,18 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
         return new AmqpConsumerBuilder(this);
     }
 
-    protected override Task OpenAsync()
+    protected override async Task OpenAsync()
     {
-        EnsureConnection();
-        return base.OpenAsync();
+        await EnsureConnection()
+            .ConfigureAwait(false);
+        await base.OpenAsync()
+            .ConfigureAwait(false);
     }
 
-    private void EnsureConnection()
+    private async Task EnsureConnection()
     {
+        // TODO: do this!
+        // await _semaphore.WaitAsync();
         try
         {
             if (_nativeConnection is { IsClosed: false })
@@ -203,15 +203,25 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                 }
             };
 
-            var manualReset = new ManualResetEvent(false);
-            _nativeConnection = new Connection(_connectionSettings.Address, null, open, (connection, open1) =>
+            void onOpened(Amqp.IConnection connection, Open open1)
             {
-                manualReset.Set();
                 Trace.WriteLine(TraceLevel.Verbose, $"Connection opened. Info: {ToString()}");
                 OnNewStatus(State.Open, null);
-            });
+            }
 
-            manualReset.WaitOne(TimeSpan.FromSeconds(5));
+            var cf = new ConnectionFactory();
+
+            try
+            {
+                _nativeConnection = await cf.CreateAsync(_connectionSettings.Address, open: open, onOpened: onOpened)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                throw new ConnectionException(
+                    $"Connection failed. Info: {ToString()}", ex);
+            }
+
             if (_nativeConnection.IsClosed)
             {
                 throw new ConnectionException(
@@ -294,7 +304,8 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                                 await Task.Delay(TimeSpan.FromMilliseconds(next))
                                     .ConfigureAwait(false);
 
-                                EnsureConnection();
+                                await EnsureConnection()
+                                    .ConfigureAwait(false);
                                 connected = true;
                             }
                             catch (Exception e)
