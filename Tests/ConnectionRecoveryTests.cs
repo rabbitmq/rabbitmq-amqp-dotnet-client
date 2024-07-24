@@ -58,7 +58,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
             ConnectionSettingBuilder.Create().ConnectionName(connectionName).RecoveryConfiguration(
                 RecoveryConfiguration.Create().Activated(activeRecovery).Topology(false)).Build());
 
-        var completion = new TaskCompletionSource();
+        TaskCompletionSource completion = new TaskCompletionSource();
         var listFromStatus = new List<State>();
         var listToStatus = new List<State>();
         var listError = new List<Error>();
@@ -66,7 +66,10 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         {
             listFromStatus.Add(from);
             listToStatus.Add(to);
-            listError.Add(error);
+            if (error is not null)
+            {
+                listError.Add(error);
+            }
             if (to == State.Closed)
             {
                 completion.SetResult();
@@ -101,7 +104,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     public async Task UnexpectedCloseTheStatusShouldBeCorrectAndErrorNotNull()
     {
         const string connectionName = "unexpected-close-connection-name";
-        var connection = await AmqpConnection.CreateAsync(
+        IConnection connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create().ConnectionName(connectionName).RecoveryConfiguration(
                 RecoveryConfiguration.Create().Activated(true).Topology(false)
                     .BackOffDelayPolicy(new FakeFastBackOffDelay())).Build());
@@ -113,7 +116,10 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         {
             listFromStatus.Add(previousState);
             listToStatus.Add(currentState);
-            listError.Add(error);
+            if (error is not null)
+            {
+                listError.Add(error);
+            }
             if (listError.Count >= 4)
             {
                 resetEvent.Set();
@@ -168,7 +174,10 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         {
             listFromStatus.Add(previousState);
             listToStatus.Add(currentState);
-            listError.Add(error);
+            if (error is not null)
+            {
+                listError.Add(error);
+            }
             if (listError.Count >= 4)
             {
                 resetEvent.Set();

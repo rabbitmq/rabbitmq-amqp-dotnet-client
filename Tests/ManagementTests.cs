@@ -8,7 +8,7 @@ using Message = Amqp.Message;
 
 namespace Tests;
 
-internal class TestAmqpManagement(AmqpManagementParameters parameters) : AmqpManagement(parameters)
+internal class TestAmqpManagement() : AmqpManagement(new AmqpManagementParameters(null!))
 {
     protected override async Task InternalSendAsync(Message message)
     {
@@ -59,10 +59,9 @@ public class ManagementTests()
     [Fact]
     public void RaiseModelException()
     {
-        var management = new TestAmqpManagement(null);
+        var management = new TestAmqpManagement();
         const string messageId = "my_id";
         var sent = new Message() { Properties = new Properties() { MessageId = messageId, } };
-
 
         var receive = new Message()
         {
@@ -72,17 +71,14 @@ public class ManagementTests()
         Assert.Throws<ModelException>(() =>
             management.CheckResponse(sent, [], receive));
 
-
         receive.Properties.Subject = "200";
         Assert.Throws<InvalidCodeException>(() =>
             management.CheckResponse(sent, [201], receive));
-
 
         receive.Properties.CorrelationId = "not_my_id";
         Assert.Throws<ModelException>(() =>
             management.CheckResponse(sent, [], receive));
     }
-
 
     [Fact]
     public async Task RaiseInvalidCodeException()
@@ -114,7 +110,7 @@ public class ManagementTests()
     [Fact]
     public async Task RaiseManagementClosedException()
     {
-        var management = new TestAmqpManagement(null);
+        var management = new TestAmqpManagement();
         await Assert.ThrowsAsync<AmqpClosedException>(async () =>
             await management.Request(new Message(), [200]));
         Assert.Equal(State.Closed, management.State);

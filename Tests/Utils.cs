@@ -3,7 +3,6 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -93,74 +92,97 @@ namespace Tests
 
         private class Connection
         {
-            public string name { get; set; }
-            public Dictionary<string, string> client_properties { get; set; }
+            public string? name { get; set; }
+            public Dictionary<string, string>? client_properties { get; set; }
         }
 
         public static async Task<int> ConnectionsCountByName(string connectionName)
         {
-            using var handler = new HttpClientHandler();
+            using HttpClientHandler handler = new HttpClientHandler();
             handler.Credentials = new NetworkCredential("guest", "guest");
-            using var client = new HttpClient(handler);
+            using HttpClient client = new HttpClient(handler);
 
-            var result = await client.GetAsync("http://localhost:15672/api/connections");
+            HttpResponseMessage result = await client.GetAsync("http://localhost:15672/api/connections");
             if (!result.IsSuccessStatusCode)
             {
                 throw new XunitException(string.Format("HTTP GET failed: {0} {1}", result.StatusCode,
                     result.ReasonPhrase));
             }
 
-            var obj = await JsonSerializer.DeserializeAsync(await result.Content.ReadAsStreamAsync(),
+            object? obj = await JsonSerializer.DeserializeAsync(await result.Content.ReadAsStreamAsync(),
                 typeof(IEnumerable<Connection>));
             return obj switch
             {
                 null => 0,
                 IEnumerable<Connection> connections => connections.Sum(connection =>
-                    connection.client_properties["connection_name"] == connectionName ? 1 : 0),
+                {
+                    if (connection is null)
+                    {
+                        return 0;
+                    }
+                    else
+                    {
+                        if (connection.client_properties is not null &&
+                            (connection.client_properties["connection_name"] == connectionName))
+                        {
+                            return 1;
+                        }
+                        else
+                        {
+                            return 0;
+                        }
+                    }
+                }),
                 _ => 0
             };
         }
 
         public static async Task<bool> IsConnectionOpen(string connectionName)
         {
-            using var handler = new HttpClientHandler { Credentials = new NetworkCredential("guest", "guest"), };
-            using var client = new HttpClient(handler);
-            bool isOpen = false;
+            using HttpClientHandler handler = new HttpClientHandler { Credentials = new NetworkCredential("guest", "guest"), };
+            using HttpClient client = new HttpClient(handler);
 
-            var result = await client.GetAsync("http://localhost:15672/api/connections");
+            HttpResponseMessage result = await client.GetAsync("http://localhost:15672/api/connections");
             if (!result.IsSuccessStatusCode)
             {
                 throw new XunitException($"HTTP GET failed: {result.StatusCode} {result.ReasonPhrase}");
             }
 
-            object obj = await JsonSerializer.DeserializeAsync(await result.Content.ReadAsStreamAsync(),
-                typeof(IEnumerable<Connection>));
-            switch (obj)
+            Stream resultContentStream = await result.Content.ReadAsStreamAsync();
+            object? obj = await JsonSerializer.DeserializeAsync(resultContentStream, typeof(IEnumerable<Connection>));
+            return obj switch
             {
-                case null:
-                    return false;
-                case IEnumerable<Connection> connections:
-                    isOpen = connections.Any(x => x.client_properties["connection_name"].Contains(connectionName));
-                    break;
-            }
-
-            return isOpen;
+                null => false,
+                IEnumerable<Connection> connections =>
+                    connections.Any(x =>
+                    {
+                        if (x.client_properties is null)
+                        {
+                            return false;
+                        }
+                        else
+                        {
+                            return x.client_properties["connection_name"].Contains(connectionName);
+                        }
+                    }),
+                _ => false
+            };
         }
 
         public static async Task<int> HttpKillConnections(string connectionName)
         {
-            using var handler = new HttpClientHandler();
+            using HttpClientHandler handler = new HttpClientHandler();
             handler.Credentials = new NetworkCredential("guest", "guest");
-            using var client = new HttpClient(handler);
+            using HttpClient client = new HttpClient(handler);
 
-            var result = await client.GetAsync("http://localhost:15672/api/connections");
+            HttpResponseMessage result = await client.GetAsync("http://localhost:15672/api/connections");
             if (!result.IsSuccessStatusCode && result.StatusCode != HttpStatusCode.NotFound)
             {
                 throw new XunitException($"HTTP GET failed: {result.StatusCode} {result.ReasonPhrase}");
             }
 
-            var json = await result.Content.ReadAsStringAsync();
-            var connections = JsonSerializer.Deserialize<IEnumerable<Connection>>(json);
+            string json = await result.Content.ReadAsStringAsync();
+            IEnumerable<Connection>? connections = JsonSerializer.Deserialize<IEnumerable<Connection>>(json);
             if (connections == null)
             {
                 return 0;
@@ -168,10 +190,20 @@ namespace Tests
 
             // we kill _only_ producer and consumer connections
             // leave the locator up and running to delete the stream
-            var iEnumerable = connections.Where(x => x.client_properties["connection_name"].Contains(connectionName));
-            var enumerable = iEnumerable as Connection[] ?? iEnumerable.ToArray();
+            IEnumerable<Connection> iEnumerable = connections.Where(x =>
+            {
+                if (x.client_properties is null)
+                {
+                    return false;
+                }
+                else
+                {
+                    return x.client_properties["connection_name"].Contains(connectionName);
+                }
+            });
+            Connection[] enumerable = iEnumerable as Connection[] ?? iEnumerable.ToArray();
             int killed = 0;
-            foreach (var conn in enumerable)
+            foreach (Connection conn in enumerable)
             {
                 /*
                  * NOTE:
@@ -184,12 +216,15 @@ namespace Tests
                  *
                  * https://stackoverflow.com/a/4550600
                  */
-                var s = Uri.EscapeDataString(conn.name);
-                var deleteResult = await client.DeleteAsync($"http://localhost:15672/api/connections/{s}");
-                if (!deleteResult.IsSuccessStatusCode && result.StatusCode != HttpStatusCode.NotFound)
+                if (conn.name is not null)
                 {
-                    throw new XunitException(
-                        $"HTTP DELETE failed: {deleteResult.StatusCode} {deleteResult.ReasonPhrase}");
+                    string s = Uri.EscapeDataString(conn.name);
+                    HttpResponseMessage deleteResult = await client.DeleteAsync($"http://localhost:15672/api/connections/{s}");
+                    if (!deleteResult.IsSuccessStatusCode && result.StatusCode != HttpStatusCode.NotFound)
+                    {
+                        throw new XunitException(
+                            $"HTTP DELETE failed: {deleteResult.StatusCode} {deleteResult.ReasonPhrase}");
+                    }
                 }
 
                 killed += 1;
@@ -204,7 +239,7 @@ namespace Tests
             Wait();
             await WaitUntilAsync(async () => await HttpKillConnections(connectionName) == 1);
         }
-        
+
         public static async Task WaitUntilConnectionIsKilledAndOpen(string connectionName)
         {
             await WaitUntilAsync(async () => await IsConnectionOpen(connectionName));
@@ -221,27 +256,26 @@ namespace Tests
             return new HttpClient(handler);
         }
 
-
         public static bool QueueExists(string queue)
         {
-            var task = CreateHttpClient().GetAsync($"http://localhost:15672/api/queues/%2F/{queue}");
+            Task<HttpResponseMessage> task = CreateHttpClient().GetAsync($"http://localhost:15672/api/queues/%2F/{queue}");
             task.Wait(TimeSpan.FromSeconds(10));
-            var result = task.Result;
+            HttpResponseMessage result = task.Result;
             return result.IsSuccessStatusCode;
         }
 
         public static bool ExchangeExists(string exchange)
         {
-            var task = CreateHttpClient()
+            Task<HttpResponseMessage> task = CreateHttpClient()
                 .GetAsync($"http://localhost:15672/api/exchanges/%2F/{Uri.EscapeDataString(exchange)}");
             task.Wait(TimeSpan.FromSeconds(10));
-            var result = task.Result;
+            HttpResponseMessage result = task.Result;
             return result.IsSuccessStatusCode;
         }
 
         public static bool BindsBetweenExchangeAndQueueExists(string exchange, string queue)
         {
-            var resp = CreateHttpClient()
+            Task<HttpResponseMessage> resp = CreateHttpClient()
                 .GetAsync(
                     $"http://localhost:15672/api/bindings/%2F/e/{Uri.EscapeDataString(exchange)}/q/{Uri.EscapeDataString(queue)}");
             resp.Wait(TimeSpan.FromSeconds(10));
@@ -252,7 +286,7 @@ namespace Tests
         public static bool ArgsBindsBetweenExchangeAndQueueExists(string exchange, string queue,
             Dictionary<string, object> argumentsIn)
         {
-            var resp = CreateHttpClient()
+            Task<HttpResponseMessage> resp = CreateHttpClient()
                 .GetAsync(
                     $"http://localhost:15672/api/bindings/%2F/e/{Uri.EscapeDataString(exchange)}/q/{Uri.EscapeDataString(queue)}");
             resp.Wait(TimeSpan.FromSeconds(10));
@@ -262,22 +296,27 @@ namespace Tests
                 return false;
             }
 
-            var bindingsResults = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(body);
-            foreach (var argumentResult in bindingsResults)
+            List<Dictionary<string, object>>? bindingsResults = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(body);
+            if (bindingsResults is not null)
             {
-                var argumentsResult = JsonSerializer.Deserialize<Dictionary<string, object>>(
-                    argumentResult["arguments"].ToString() ??
-                    throw new InvalidOperationException());
-                // Check only the key to avoid conversion value problems 
-                // on the test is enough to avoid to put the same key
-                // at some point we could add keyValuePair.Value == keyValuePairResult.Value
-                // keyValuePairResult.Value is a json object
-                var results = argumentsResult.Keys.ToArray()
-                    .Intersect(argumentsIn.Keys.ToArray(), StringComparer.OrdinalIgnoreCase);
-
-                if (results.Count() == argumentsIn.Count)
+                foreach (Dictionary<string, object> argumentResult in bindingsResults)
                 {
-                    return true;
+                    Dictionary<string, object>? argumentsResult = JsonSerializer.Deserialize<Dictionary<string, object>>(
+                        argumentResult["arguments"].ToString() ??
+                        throw new InvalidOperationException());
+                    // Check only the key to avoid conversion value problems 
+                    // on the test is enough to avoid to put the same key
+                    // at some point we could add keyValuePair.Value == keyValuePairResult.Value
+                    // keyValuePairResult.Value is a json object
+                    if (argumentsResult is not null)
+                    {
+                        IEnumerable<string> results = argumentsResult.Keys.ToArray()
+                            .Intersect(argumentsIn.Keys.ToArray(), StringComparer.OrdinalIgnoreCase);
+                        if (results.Count() == argumentsIn.Count)
+                        {
+                            return true;
+                        }
+                    }
                 }
             }
 
@@ -286,7 +325,7 @@ namespace Tests
 
         public static bool BindsBetweenExchangeAndExchangeExists(string sourceExchange, string destinationExchange)
         {
-            var resp = CreateHttpClient()
+            Task<HttpResponseMessage> resp = CreateHttpClient()
                 .GetAsync(
                     $"http://localhost:15672/api/bindings/%2F/e/{Uri.EscapeDataString(sourceExchange)}/e/{Uri.EscapeDataString(destinationExchange)}");
             resp.Wait(TimeSpan.FromSeconds(10));
@@ -333,9 +372,9 @@ namespace Tests
 
         public static void HttpDeleteQueue(string queue)
         {
-            var task = CreateHttpClient().DeleteAsync($"http://localhost:15672/api/queues/%2F/{queue}");
+            Task<HttpResponseMessage> task = CreateHttpClient().DeleteAsync($"http://localhost:15672/api/queues/%2F/{queue}");
             task.Wait();
-            var result = task.Result;
+            HttpResponseMessage result = task.Result;
             if (!result.IsSuccessStatusCode && result.StatusCode != HttpStatusCode.NotFound)
             {
                 throw new XunitException($"HTTP DELETE failed: {result.StatusCode} {result.ReasonPhrase}");
@@ -346,14 +385,14 @@ namespace Tests
         {
             var codeBaseUrl = new Uri(Assembly.GetExecutingAssembly().Location);
             string codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);
-            string dirPath = Path.GetDirectoryName(codeBasePath);
-            if (dirPath == null)
+            string? dirPath = Path.GetDirectoryName(codeBasePath);
+            if (dirPath is null)
             {
-                return null;
+                return [];
             }
 
             string filename = Path.Combine(dirPath, "Resources", fileName);
-            var fileTask = File.ReadAllBytesAsync(filename);
+            Task<byte[]> fileTask = File.ReadAllBytesAsync(filename);
             fileTask.Wait(TimeSpan.FromSeconds(1));
             return fileTask.Result;
         }

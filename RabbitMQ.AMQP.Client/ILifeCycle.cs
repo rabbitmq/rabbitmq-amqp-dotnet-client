@@ -26,7 +26,7 @@ public interface ILifeCycle
 {
     Task CloseAsync();
 
-    public State State { get; }
+    State State { get; }
 
-    public event LifeCycleCallBack ChangeState;
+    event LifeCycleCallBack ChangeState;
 }

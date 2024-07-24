@@ -3,6 +3,7 @@ using RabbitMQ.AMQP.Client.Impl;
 
 namespace Tests;
 
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -77,6 +78,32 @@ public class ConnectionTests
             .Host("localhost")
             .Scheme("amqps")
             .Build();
+
+        Assert.True(connectionSettings.UseSsl);
+        Assert.Equal("localhost", connectionSettings.Host);
+        Assert.Equal(5671, connectionSettings.Port);
+        Assert.Equal("guest", connectionSettings.User);
+        Assert.Equal("guest", connectionSettings.Password);
+        Assert.Equal("/", connectionSettings.VirtualHost);
+        Assert.Equal("amqps", connectionSettings.Scheme);
+
+        IConnection connection = await AmqpConnection.CreateAsync(connectionSettings);
+        Assert.Equal(State.Open, connection.State);
+        await connection.CloseAsync();
+        Assert.Equal(State.Closed, connection.State);
+    }
+
+    [Fact]
+    public async Task ConnectUsingTlsAndClientCertificate()
+    {
+        ConnectionSettings connectionSettings = ConnectionSettingBuilder.Create()
+            .Host("localhost")
+            .Scheme("amqps")
+            .Build();
+
+        X509Certificate cert = new X509Certificate2("./.ci/certs/client_localhost.p12");
+        Assert.NotNull(connectionSettings.TlsSettings);
+        connectionSettings.TlsSettings.ClientCertificates.Add(cert);
 
         Assert.True(connectionSettings.UseSsl);
         Assert.Equal("localhost", connectionSettings.Host);
