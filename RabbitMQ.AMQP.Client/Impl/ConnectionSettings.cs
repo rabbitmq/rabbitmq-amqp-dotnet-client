@@ -1,4 +1,7 @@
-﻿using Amqp;
+﻿using System.Net.Security;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
+using Amqp;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
@@ -6,7 +9,7 @@ public class ConnectionSettingBuilder
 {
     // TODO: maybe add the event "LifeCycle" to the builder
     private string _host = "localhost";
-    private int _port = 5672;
+    private int _port = -1; // Note: -1 means use the defalt for the scheme
     private string _user = "guest";
     private string _password = "guest";
     private string _scheme = "AMQP";
@@ -92,102 +95,117 @@ public class ConnectionSettingBuilder
 // </summary>
 public class ConnectionSettings : IConnectionSettings
 {
-    internal Address Address { get; }
-
+    private readonly Address _address;
     private readonly string _connectionName = "";
     private readonly string _virtualHost = "/";
+    private readonly ITlsSettings? _tlsSettings;
 
-
-    public ConnectionSettings(string address)
+    public ConnectionSettings(string address, ITlsSettings? tlsSettings = null)
     {
-        Address = new Address(address);
+        _address = new Address(address);
+        _tlsSettings = tlsSettings;
+
+        if (_address.UseSsl && _tlsSettings == null)
+        {
+            _tlsSettings = new TlsSettings();
+        }
     }
 
     public ConnectionSettings(string host, int port,
-        string user,
-        string password,
-        string virtualHost, string scheme, string connectionName)
+        string user, string password,
+        string virtualHost, string scheme, string connectionName,
+        ITlsSettings? tlsSettings = null)
     {
-        Address = new Address(host, port, user, password, "/", scheme);
+        _address = new Address(host: host, port: port,
+            user: user, password: password,
+            path: "/", scheme: scheme);
         _connectionName = connectionName;
         _virtualHost = virtualHost;
+        _tlsSettings = tlsSettings;
+
+        if (_address.UseSsl && _tlsSettings == null)
+        {
+            _tlsSettings = new TlsSettings();
+        }
     }
 
-    public string Host()
-    {
-        return Address.Host;
-    }
+    public string Host => _address.Host;
+    public int Port => _address.Port;
+    public string VirtualHost => _virtualHost;
+    public string User => _address.User;
+    public string Password => _address.Password;
+    public string Scheme => _address.Scheme;
+    public string ConnectionName => _connectionName;
+    public string Path => _address.Path;
+    public bool UseSsl => _address.UseSsl;
 
-
-    public int Port()
-    {
-        return Address.Port;
-    }
-
-
-    public string VirtualHost()
-    {
-        return _virtualHost;
-    }
-
-    public string User()
-    {
-        return Address.User;
-    }
-
-
-    public string Password()
-    {
-        return Address.Password;
-    }
-
-
-    public string Scheme()
-    {
-        return Address.Scheme;
-    }
-
-    public string ConnectionName()
-    {
-        return _connectionName;
-    }
+    public ITlsSettings? TlsSettings => _tlsSettings;
 
     public override string ToString()
     {
-        var i =
+        return
             $"Address" +
-            $"host='{Address.Host}', " +
-            $"port={Address.Port}, VirtualHost='{_virtualHost}', path='{Address.Path}', " +
-            $"username='{Address.User}', ConnectionName='{_connectionName}'";
-        return i;
+            $"host='{_address.Host}', " +
+            $"port={_address.Port}, VirtualHost='{_virtualHost}', path='{_address.Path}', " +
+            $"username='{_address.User}', ConnectionName='{_connectionName}'";
     }
-
 
     public override bool Equals(object? obj)
     {
-        if (obj == null || GetType() != obj.GetType())
+        if (obj is null)
         {
             return false;
         }
 
-        var address = (ConnectionSettings)obj;
-        return Address.Host == address.Address.Host &&
-               Address.Port == address.Address.Port &&
-               Address.Path == address.Address.Path &&
-               Address.User == address.Address.User &&
-               Address.Password == address.Address.Password &&
-               Address.Scheme == address.Address.Scheme;
+        if (obj is ConnectionSettings address)
+        {
+            return _address.Host == address._address.Host &&
+                   _address.Port == address._address.Port &&
+                   _address.Path == address._address.Path &&
+                   _address.User == address._address.User &&
+                   _address.Password == address._address.Password &&
+                   _address.Scheme == address._address.Scheme;
+        }
+
+        return false;
     }
 
     protected bool Equals(ConnectionSettings other)
     {
-        return Address.Equals(other.Address);
+        if (other is null)
+        {
+            return false;
+        }
+
+        return _address.Equals(other._address);
     }
 
     public override int GetHashCode()
     {
-        return Address.GetHashCode();
+        return _address.GetHashCode();
     }
+
+    public bool Equals(IConnectionSettings? other)
+    {
+        if (other is null)
+        {
+            return false;
+        }
+
+        if (other is IConnectionSettings connectionSettings)
+        {
+            return _address.Host == connectionSettings.Host &&
+                   _address.Port == connectionSettings.Port &&
+                   _address.Path == connectionSettings.Path &&
+                   _address.User == connectionSettings.User &&
+                   _address.Password == connectionSettings.Password &&
+                   _address.Scheme == connectionSettings.Scheme;
+        }
+
+        return false;
+    }
+
+    internal Address Address => _address;
 
     public RecoveryConfiguration RecoveryConfiguration { get; set; } = RecoveryConfiguration.Create();
 }
@@ -239,7 +257,6 @@ public class RecoveryConfiguration : IRecoveryConfiguration
     {
         return _backOffDelayPolicy;
     }
-
 
     public IRecoveryConfiguration Topology(bool activated)
     {
@@ -307,5 +324,46 @@ public class BackOffDelayPolicy : IBackOffDelayPolicy
     public override string ToString()
     {
         return $"BackOffDelayPolicy{{ Attempt={_attempt}, TotalAttempt={_totalAttempt}, IsActive={IsActive} }}";
+    }
+}
+
+public class TlsSettings : ITlsSettings
+{
+    internal const SslProtocols DefaultSslProtocols = SslProtocols.None;
+
+    private readonly SslProtocols _protocols;
+    private readonly X509CertificateCollection _clientCertificates;
+    private readonly bool _checkCertificateRevocation = false;
+    private readonly RemoteCertificateValidationCallback? _remoteCertificateValidationCallback;
+    private readonly LocalCertificateSelectionCallback? _localCertificateSelectionCallback;
+
+    public TlsSettings() : this(DefaultSslProtocols)
+    {
+    }
+
+    public TlsSettings(SslProtocols protocols)
+    {
+        _protocols = protocols;
+        _clientCertificates = new X509CertificateCollection();
+        _remoteCertificateValidationCallback = trustEverythingCertValidationCallback;
+        _localCertificateSelectionCallback = null;
+    }
+
+    public SslProtocols Protocols => _protocols;
+
+    public X509CertificateCollection ClientCertificates => _clientCertificates;
+
+    public bool CheckCertificateRevocation => _checkCertificateRevocation;
+
+    public RemoteCertificateValidationCallback? RemoteCertificateValidationCallback
+        => _remoteCertificateValidationCallback;
+
+    public LocalCertificateSelectionCallback? LocalCertificateSelectionCallback
+        => _localCertificateSelectionCallback;
+
+    private static bool trustEverythingCertValidationCallback(object sender, X509Certificate? certificate,
+        X509Chain? chain, SslPolicyErrors sslPolicyErrors)
+    {
+        return true;
     }
 }

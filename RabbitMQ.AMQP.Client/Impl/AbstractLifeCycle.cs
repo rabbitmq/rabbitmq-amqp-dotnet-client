@@ -33,7 +33,7 @@ public abstract class AbstractLifeCycle : ILifeCycle
             return;
         }
 
-        var oldStatus = State;
+        State oldStatus = State;
         State = newState;
         ChangeState?.Invoke(this, oldStatus, newState, error);
     }

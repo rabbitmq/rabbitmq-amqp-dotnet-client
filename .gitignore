@@ -14,7 +14,6 @@ nunit-agent*
 test-output.log
 TestResults.xml
 TestResult.xml
-Tests/coverage.xml
 test.sh
 *.VisualState.xml
 .vscode
@@ -121,7 +120,7 @@ projects/Unit*/TestResult.xml
 .*.sw?
 
 # tests
-Tests/coverage.*
+coverage*
 
 # docs
 docs/temp/
