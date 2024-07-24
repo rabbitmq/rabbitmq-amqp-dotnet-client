@@ -22,6 +22,7 @@ internal class FakeBackOffDelayPolicyDisabled : IBackOffDelayPolicy
     }
 
     public bool IsActive() => false;
+    public int CurrentAttempt => 1;
 }
 
 internal class FakeFastBackOffDelay : IBackOffDelayPolicy
@@ -36,6 +37,7 @@ internal class FakeFastBackOffDelay : IBackOffDelayPolicy
     }
 
     public bool IsActive() => true;
+    public int CurrentAttempt => 1;
 }
 
 public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)

@@ -57,10 +57,12 @@ public abstract class AbstractReconnectLifeCycle : AbstractLifeCycle
         try
         {
             int randomWait = Random.Shared.Next(300, 900);
-            Trace.WriteLine(TraceLevel.Information, $"{ToString()} is reconnecting in {randomWait} ms");
+            Trace.WriteLine(TraceLevel.Information, $"{ToString()} is reconnecting in {randomWait} ms, " +
+                                                    $"attempt: {_backOffDelayPolicy.CurrentAttempt}");
             await Task.Delay(randomWait).ConfigureAwait(false);
             await OpenAsync().ConfigureAwait(false);
-            Trace.WriteLine(TraceLevel.Information, $"{ToString()} is reconnected");
+            Trace.WriteLine(TraceLevel.Information,
+                $"{ToString()} is reconnected, attempt: {_backOffDelayPolicy.CurrentAttempt}");
             _backOffDelayPolicy.Reset();
         }
         catch (Exception e)
