@@ -1,6 +1,9 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using EasyNetQ.Management.Client;
+using EasyNetQ.Management.Client.Model;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
@@ -105,16 +108,26 @@ public class ConnectionTests
     [Fact]
     public async Task ConnectUsingTlsAndClientCertificate()
     {
+        string cwd = Directory.GetCurrentDirectory();
+        string clientCertFile = Path.GetFullPath(Path.Join(cwd, "../../../../.ci/certs/client_localhost.p12"));
+        Assert.True(File.Exists(clientCertFile));
+        var cert = new X509Certificate2(clientCertFile, "grapefruit");
+        string userName = cert.Subject.Trim().Replace(" ", string.Empty);
+
+        var managementUri = new Uri("http://localhost:15672");
+        using var managementClient = new ManagementClient(managementUri, "guest", "guest");
+        var userInfo = new UserInfo(null, null, []);
+        await managementClient.CreateUserAsync(userName, userInfo);
+
+        var permissionInfo = new PermissionInfo();
+        await managementClient.CreatePermissionAsync("/", userName, permissionInfo);
+
         ConnectionSettings connectionSettings = ConnectionSettingBuilder.Create()
             .Host("localhost")
             .Scheme("amqps")
             .SaslMechanism(SaslMechanism.External)
             .Build();
 
-        string cwd = Directory.GetCurrentDirectory();
-        string clientCertFile = Path.GetFullPath(Path.Join(cwd, "../../../../.ci/certs/client_localhost.p12"));
-        Assert.True(File.Exists(clientCertFile));
-        X509Certificate cert = new X509Certificate2(clientCertFile, "grapefruit");
         Assert.NotNull(connectionSettings.TlsSettings);
         connectionSettings.TlsSettings.ClientCertificates.Add(cert);
 
