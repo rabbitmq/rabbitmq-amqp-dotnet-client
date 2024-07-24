@@ -31,8 +31,8 @@ The client is distributed via [NuGet](https://www.nuget.org/packages/RabbitMQ.AM
 - [x] Recovery connection on connection lost
 - [x] Recovery management on connection lost
 - [x] Recovery queues on connection lost
-- [ ] Recovery publisher on connection lost
-- [ ] Recovery consumer on connection lost
+- [x] Recovery publisher on connection lost
+- [x] Recovery consumer on connection lost
 - [ ] Docker image to test in LRE 
 - [ ] Check the TODO in the code
 
