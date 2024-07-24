@@ -2,7 +2,7 @@ using Amqp;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public class AmqpClosedException(string message) : Exception(message);
+public class AmqpNotOpenException(string message) : Exception(message);
 
 public abstract class AbstractLifeCycle : ILifeCycle
 {
@@ -18,9 +18,18 @@ public abstract class AbstractLifeCycle : ILifeCycle
 
     protected void ThrowIfClosed()
     {
-        if (State == State.Closed)
+        switch (State)
         {
-            throw new AmqpClosedException(GetType().Name);
+            case State.Closed:
+                throw new AmqpNotOpenException("Resource is closed");
+            case State.Closing:
+                throw new AmqpNotOpenException("Resource is closing");
+            case State.Reconnecting:
+                throw new AmqpNotOpenException("Resource is Reconnecting");
+            case State.Open:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
     }
 
