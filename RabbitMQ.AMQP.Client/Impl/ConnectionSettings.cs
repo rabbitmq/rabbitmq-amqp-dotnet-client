@@ -10,13 +10,13 @@ public class ConnectionSettingBuilder
     // TODO: maybe add the event "LifeCycle" to the builder
     private string _host = "localhost";
     private int _port = -1; // Note: -1 means use the defalt for the scheme
-    private string _user = "guest";
-    private string _password = "guest";
+    private string? _user = "guest";
+    private string? _password = "guest";
     private string _scheme = "AMQP";
-    private string _connection = "AMQP.NET";
+    private string _connectionName = "AMQP.NET";
     private string _virtualHost = "/";
+    private SaslMechanism _saslMechanism = Client.SaslMechanism.Plain;
     private IRecoveryConfiguration _recoveryConfiguration = Impl.RecoveryConfiguration.Create();
-
 
     private ConnectionSettingBuilder()
     {
@@ -26,7 +26,6 @@ public class ConnectionSettingBuilder
     {
         return new ConnectionSettingBuilder();
     }
-
 
     public ConnectionSettingBuilder Host(string host)
     {
@@ -52,22 +51,33 @@ public class ConnectionSettingBuilder
         return this;
     }
 
-
     public ConnectionSettingBuilder Scheme(string scheme)
     {
         _scheme = scheme;
         return this;
     }
 
-    public ConnectionSettingBuilder ConnectionName(string connection)
+    public ConnectionSettingBuilder ConnectionName(string connectionName)
     {
-        _connection = connection;
+        _connectionName = connectionName;
         return this;
     }
 
     public ConnectionSettingBuilder VirtualHost(string virtualHost)
     {
         _virtualHost = virtualHost;
+        return this;
+    }
+
+    public ConnectionSettingBuilder SaslMechanism(SaslMechanism saslMechanism)
+    {
+        _saslMechanism = saslMechanism;
+        if (_saslMechanism == Client.SaslMechanism.External)
+        {
+            _user = null;
+            _password = null;
+        }
+
         return this;
     }
 
@@ -81,7 +91,7 @@ public class ConnectionSettingBuilder
     {
         var c = new ConnectionSettings(_host, _port, _user,
             _password, _virtualHost,
-            _scheme, _connection)
+            _scheme, _connectionName, _saslMechanism)
         {
             RecoveryConfiguration = (RecoveryConfiguration)_recoveryConfiguration
         };
@@ -99,6 +109,7 @@ public class ConnectionSettings : IConnectionSettings
     private readonly string _connectionName = "";
     private readonly string _virtualHost = "/";
     private readonly ITlsSettings? _tlsSettings;
+    private readonly SaslMechanism _saslMechanism = SaslMechanism.Plain;
 
     public ConnectionSettings(string address, ITlsSettings? tlsSettings = null)
     {
@@ -112,15 +123,16 @@ public class ConnectionSettings : IConnectionSettings
     }
 
     public ConnectionSettings(string host, int port,
-        string user, string password,
+        string? user, string? password,
         string virtualHost, string scheme, string connectionName,
-        ITlsSettings? tlsSettings = null)
+        SaslMechanism saslMechanism, ITlsSettings? tlsSettings = null)
     {
         _address = new Address(host: host, port: port,
             user: user, password: password,
             path: "/", scheme: scheme);
         _connectionName = connectionName;
         _virtualHost = virtualHost;
+        _saslMechanism = saslMechanism;
         _tlsSettings = tlsSettings;
 
         if (_address.UseSsl && _tlsSettings == null)
@@ -132,12 +144,13 @@ public class ConnectionSettings : IConnectionSettings
     public string Host => _address.Host;
     public int Port => _address.Port;
     public string VirtualHost => _virtualHost;
-    public string User => _address.User;
-    public string Password => _address.Password;
+    public string? User => _address.User;
+    public string? Password => _address.Password;
     public string Scheme => _address.Scheme;
     public string ConnectionName => _connectionName;
     public string Path => _address.Path;
     public bool UseSsl => _address.UseSsl;
+    public SaslMechanism SaslMechanism => _saslMechanism;
 
     public ITlsSettings? TlsSettings => _tlsSettings;
 

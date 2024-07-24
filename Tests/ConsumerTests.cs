@@ -282,7 +282,6 @@ public class ConsumerTests(ITestOutputHelper testOutputHelper)
         await connection.CloseAsync();
     }
 
-
     private static async Task Publish(IConnection connection, string queue, int numberOfMessages,
         string? filter = null)
     {

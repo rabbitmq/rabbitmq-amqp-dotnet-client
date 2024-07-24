@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using Amqp;
 using Amqp.Framing;
+using Amqp.Sasl;
 using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
@@ -232,6 +233,11 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                 }
             }
 
+            if (_connectionSettings.SaslMechanism == SaslMechanism.External)
+            {
+                cf.SASL.Profile = SaslProfile.External;
+            }
+
             try
             {
                 _nativeConnection = await cf.CreateAsync(_connectionSettings.Address, open: open, onOpened: onOpened)
@@ -278,7 +284,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             {
                 // close all the sessions, if the connection is closed the sessions are not valid anymore
                 _nativePubSubSessions.ClearSessions();
-                
+
                 if (error != null)
                 {
                     //  we assume here that the connection is closed unexpectedly, since the error is not null
@@ -299,8 +305,8 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                     // to reconnecting and all the events are fired
                     OnNewStatus(State.Reconnecting, Utils.ConvertError(error));
                     ChangeEntitiesStatus(State.Reconnecting, Utils.ConvertError(error));
-                   
-                    
+
+
                     await Task.Run(async () =>
                     {
                         bool connected = false;

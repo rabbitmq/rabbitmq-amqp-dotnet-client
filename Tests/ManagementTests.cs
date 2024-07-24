@@ -131,7 +131,7 @@ public class ManagementTests()
     {
         IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         IManagement management = connection.Management();
-        var queueInfo = await management.Queue().Type(type).Declare();
+        IQueueInfo queueInfo = await management.Queue().Type(type).Declare();
         Assert.Contains("client.gen-", queueInfo.Name());
         await management.QueueDeletion().Delete(queueInfo.Name());
         await connection.CloseAsync();
