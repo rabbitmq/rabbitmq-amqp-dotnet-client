@@ -181,7 +181,7 @@ public class AmqpPublisher : AbstractLifeCycle, IPublisher
     internal async Task Reconnect()
     {
         int randomWait = Random.Shared.Next(200, 800);
-        Trace.WriteLine(TraceLevel.Verbose, $"Reconnecting in {randomWait} ms");
+        Trace.WriteLine(TraceLevel.Information, $"Publisher: {ToString()} is reconnecting in {randomWait} ms");
         await Task.Delay(randomWait).ConfigureAwait(false);
 
         if (_senderLink != null)

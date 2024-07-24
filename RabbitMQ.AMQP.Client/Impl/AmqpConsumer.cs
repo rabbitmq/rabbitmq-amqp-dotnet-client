@@ -54,6 +54,8 @@ public class AmqpConsumer : AbstractLifeCycle, IConsumer
 
     private void ProcessMessages()
     {
+        // TODO: Check the performance during the download messages
+        // The publisher is faster than the consumer
         _receiverLink?.Start(_initialCredits,
             (link, message) =>
             {
@@ -93,7 +95,6 @@ public class AmqpConsumer : AbstractLifeCycle, IConsumer
         _receiverLink = null;
         OnNewStatus(State.Closed, null);
         _connection.Consumers.TryRemove(Id, out _);
-
     }
 
 
@@ -105,7 +106,7 @@ public class AmqpConsumer : AbstractLifeCycle, IConsumer
     internal async Task Reconnect()
     {
         int randomWait = Random.Shared.Next(200, 800);
-        Trace.WriteLine(TraceLevel.Verbose, $"Reconnecting in {randomWait} ms");
+        Trace.WriteLine(TraceLevel.Information, $"Consumer: {ToString()} is reconnecting in {randomWait} ms");
         await Task.Delay(randomWait).ConfigureAwait(false);
 
         if (_receiverLink != null)

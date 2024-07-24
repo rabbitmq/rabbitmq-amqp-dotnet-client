@@ -11,7 +11,6 @@ namespace Tests;
 
 public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
 {
-
     /// <summary>
     /// Test the Simple case where the producer is closed and the status is changed
     /// </summary>
@@ -133,6 +132,11 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
     }
 
 
+    /// <summary>
+    /// Simulate a case where the connection is killed and producer and consumer are restarted
+    /// After the connection is killed, the producer and consumer should be restarted
+    /// The test is easy and follow the happy path. To a more complex scenario, see the examples on the repository
+    /// </summary>
     [Fact]
     public async Task PublishShouldRestartPublishConsumerShouldRestartConsumeWhenConnectionIsKilled()
     {
@@ -143,7 +147,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
             .Name("PublishShouldRestartPublishConsumerShouldRestartConsumeWhenConnectionIsKilled").Declare();
 
         IPublisher publisher = connection.PublisherBuilder()
-            .Queue("PublishShouldRestartPublishConsumerShouldRestartConsumeWhenConnectionIsKilled"). Build();
+            .Queue("PublishShouldRestartPublishConsumerShouldRestartConsumeWhenConnectionIsKilled").Build();
 
         int messagesReceived = 0;
         IConsumer consumer = connection.ConsumerBuilder().InitialCredits(100)
@@ -174,7 +178,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
 
         SystemUtils.WaitUntil(() => messagesConfirmed == 10);
         SystemUtils.WaitUntil(() => messagesReceived == 10);
-        
+
         await SystemUtils.WaitUntilConnectionIsKilledAndOpen(connectionName);
 
         SystemUtils.WaitUntil(() => publisher.State == State.Open);
@@ -203,5 +207,73 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
             .Delete("PublishShouldRestartPublishConsumerShouldRestartConsumeWhenConnectionIsKilled");
         await connection.CloseAsync();
         SystemUtils.WaitUntil(() => messagesReceived == 20);
+    }
+
+    /// <summary>
+    /// The consumer and the publisher should not restart if the recovery is disabled
+    /// </summary>
+    [Fact]
+    public async Task PublisherAndConsumerShouldNotRestartIfRecoveryIsDisabled()
+    {
+        string connectionName = Guid.NewGuid().ToString();
+        IConnection connection = await AmqpConnection.CreateAsync(
+            ConnectionSettingBuilder.Create().RecoveryConfiguration(RecoveryConfiguration.Create().Activated(false))
+                .ConnectionName(connectionName).Build());
+
+        await connection.Management().Queue().Name("PublisherAndConsumerShouldNotRestartIfRecoveryIsDisabled")
+            .Declare();
+
+        IPublisher publisher = connection.PublisherBuilder()
+            .Queue("PublisherAndConsumerShouldNotRestartIfRecoveryIsDisabled").Build();
+
+        List<(State, State)> statesProducer = [];
+        publisher.ChangeState += (sender, fromState, toState, e) => { statesProducer.Add((fromState, toState)); };
+
+
+        IConsumer consumer = connection.ConsumerBuilder().InitialCredits(100)
+            .Queue("PublisherAndConsumerShouldNotRestartIfRecoveryIsDisabled")
+            .MessageHandler((context, message) =>
+            {
+                try
+                {
+                    context.Accept();
+                }
+                catch (Exception)
+                {
+                    // ignored
+                }
+            }).Build();
+
+        List<(State, State)> statesConsumer = [];
+        consumer.ChangeState += (sender, fromState, toState, e) => { statesConsumer.Add((fromState, toState)); };
+
+        Assert.Equal(State.Open, publisher.State);
+        Assert.Equal(State.Open, consumer.State);
+
+        await SystemUtils.WaitUntilConnectionIsKilled(connectionName);
+
+        SystemUtils.WaitUntil(() => publisher.State == State.Closed);
+        SystemUtils.WaitUntil(() => consumer.State == State.Closed);
+        Assert.Equal(State.Closed, connection.State);
+        Assert.Equal(State.Closed, connection.Management().State);
+        Assert.DoesNotContain((State.Open, State.Closing), statesProducer);
+        Assert.DoesNotContain((State.Closing, State.Closed), statesProducer);
+        Assert.Contains((State.Open, State.Closed), statesProducer);
+
+        Assert.DoesNotContain((State.Open, State.Closing), statesConsumer);
+        Assert.DoesNotContain((State.Closing, State.Closed), statesConsumer);
+        Assert.Contains((State.Open, State.Closed), statesConsumer);
+
+
+        // Here we need a second connection since the RecoveryConfiguration is disabled
+        // and the connection is closed. So we can't use the same connection to delete the queue
+        IConnection connection2 = await AmqpConnection.CreateAsync(
+            ConnectionSettingBuilder.Create().RecoveryConfiguration(RecoveryConfiguration.Create().Activated(false))
+                .ConnectionName(connectionName).Build());
+
+        await connection2.Management().QueueDeletion()
+            .Delete("PublisherAndConsumerShouldNotRestartIfRecoveryIsDisabled");
+
+        await connection2.CloseAsync();
     }
 }

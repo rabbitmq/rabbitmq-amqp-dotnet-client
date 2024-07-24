@@ -14,7 +14,7 @@ long messagesConfirmed = 0;
 long notMessagesConfirmed = 0;
 long messagesFailed = 0;
 
-const int totalMessagesToSend = 2_000_000;
+const int totalMessagesToSend = 5_000_000;
 
 
 Task printStats = Task.Run(() =>
