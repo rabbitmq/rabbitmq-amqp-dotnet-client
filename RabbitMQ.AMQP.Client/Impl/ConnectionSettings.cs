@@ -1,4 +1,7 @@
-﻿using Amqp;
+﻿using System.Net.Security;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
+using Amqp;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
@@ -95,21 +98,35 @@ public class ConnectionSettings : IConnectionSettings
     private readonly Address _address;
     private readonly string _connectionName = "";
     private readonly string _virtualHost = "/";
+    private readonly ITlsSettings? _tlsSettings;
 
-    public ConnectionSettings(string address)
+    public ConnectionSettings(string address, ITlsSettings? tlsSettings = null)
     {
         _address = new Address(address);
+        _tlsSettings = tlsSettings;
+
+        if (_address.UseSsl && _tlsSettings == null)
+        {
+            _tlsSettings = new TlsSettings();
+        }
     }
 
     public ConnectionSettings(string host, int port,
         string user, string password,
-        string virtualHost, string scheme, string connectionName)
+        string virtualHost, string scheme, string connectionName,
+        ITlsSettings? tlsSettings = null)
     {
         _address = new Address(host: host, port: port,
             user: user, password: password,
             path: "/", scheme: scheme);
         _connectionName = connectionName;
         _virtualHost = virtualHost;
+        _tlsSettings = tlsSettings;
+
+        if (_address.UseSsl && _tlsSettings == null)
+        {
+            _tlsSettings = new TlsSettings();
+        }
     }
 
     public string Host => _address.Host;
@@ -121,6 +138,8 @@ public class ConnectionSettings : IConnectionSettings
     public string ConnectionName => _connectionName;
     public string Path => _address.Path;
     public bool UseSsl => _address.UseSsl;
+
+    public ITlsSettings? TlsSettings => _tlsSettings;
 
     public override string ToString()
     {
@@ -305,5 +324,46 @@ public class BackOffDelayPolicy : IBackOffDelayPolicy
     public override string ToString()
     {
         return $"BackOffDelayPolicy{{ Attempt={_attempt}, TotalAttempt={_totalAttempt}, IsActive={IsActive} }}";
+    }
+}
+
+public class TlsSettings : ITlsSettings
+{
+    internal const SslProtocols DefaultSslProtocols = SslProtocols.None;
+
+    private readonly SslProtocols _protocols;
+    private readonly X509CertificateCollection _clientCertificates;
+    private readonly bool _checkCertificateRevocation = false;
+    private readonly RemoteCertificateValidationCallback? _remoteCertificateValidationCallback;
+    private readonly LocalCertificateSelectionCallback? _localCertificateSelectionCallback;
+
+    public TlsSettings() : this(DefaultSslProtocols)
+    {
+    }
+
+    public TlsSettings(SslProtocols protocols)
+    {
+        _protocols = protocols;
+        _clientCertificates = new X509CertificateCollection();
+        _remoteCertificateValidationCallback = trustEverythingCertValidationCallback;
+        _localCertificateSelectionCallback = null;
+    }
+
+    public SslProtocols Protocols => _protocols;
+
+    public X509CertificateCollection ClientCertificates => _clientCertificates;
+
+    public bool CheckCertificateRevocation => _checkCertificateRevocation;
+
+    public RemoteCertificateValidationCallback? RemoteCertificateValidationCallback
+        => _remoteCertificateValidationCallback;
+
+    public LocalCertificateSelectionCallback? LocalCertificateSelectionCallback
+        => _localCertificateSelectionCallback;
+
+    private static bool trustEverythingCertValidationCallback(object sender, X509Certificate? certificate,
+        X509Chain? chain, SslPolicyErrors sslPolicyErrors)
+    {
+        return true;
     }
 }

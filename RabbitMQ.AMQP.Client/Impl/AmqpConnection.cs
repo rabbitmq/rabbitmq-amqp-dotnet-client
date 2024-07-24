@@ -211,6 +211,27 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
 
             var cf = new ConnectionFactory();
 
+            if (_connectionSettings.UseSsl && _connectionSettings.TlsSettings is not null)
+            {
+                cf.SSL.Protocols = _connectionSettings.TlsSettings.Protocols;
+                cf.SSL.CheckCertificateRevocation = _connectionSettings.TlsSettings.CheckCertificateRevocation;
+
+                if (_connectionSettings.TlsSettings.ClientCertificates.Count > 0)
+                {
+                    cf.SSL.ClientCertificates = _connectionSettings.TlsSettings.ClientCertificates;
+                }
+
+                if (_connectionSettings.TlsSettings.LocalCertificateSelectionCallback is not null)
+                {
+                    cf.SSL.LocalCertificateSelectionCallback = _connectionSettings.TlsSettings.LocalCertificateSelectionCallback;
+                }
+
+                if (_connectionSettings.TlsSettings.RemoteCertificateValidationCallback is not null)
+                {
+                    cf.SSL.RemoteCertificateValidationCallback = _connectionSettings.TlsSettings.RemoteCertificateValidationCallback;
+                }
+            }
+
             try
             {
                 _nativeConnection = await cf.CreateAsync(_connectionSettings.Address, open: open, onOpened: onOpened)
