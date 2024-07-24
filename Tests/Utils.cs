@@ -204,6 +204,16 @@ namespace Tests
             Wait();
             await WaitUntilAsync(async () => await HttpKillConnections(connectionName) == 1);
         }
+        
+        public static async Task WaitUntilConnectionIsKilledAndOpen(string connectionName)
+        {
+            await WaitUntilAsync(async () => await IsConnectionOpen(connectionName));
+            Wait();
+            await WaitUntilAsync(async () => await HttpKillConnections(connectionName) == 1);
+            Wait();
+            await WaitUntilAsync(async () => await IsConnectionOpen(connectionName));
+            Wait();
+        }
 
         private static HttpClient CreateHttpClient()
         {

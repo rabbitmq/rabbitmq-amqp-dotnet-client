@@ -97,7 +97,8 @@ public class ManagementTests()
             {
                 Properties = new Properties()
                 {
-                    CorrelationId = messageId, Subject = "506", // 506 is not a valid code
+                    CorrelationId = messageId,
+                    Subject = "506", // 506 is not a valid code
                 }
             });
         });

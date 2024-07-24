@@ -38,9 +38,9 @@ internal class FakeFastBackOffDelay : IBackOffDelayPolicy
     public bool IsActive() => true;
 }
 
-public class ConnectionRecoverTests(ITestOutputHelper testOutputHelper)
+public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 {
-    public ITestOutputHelper TestOutputHelper { get; } = testOutputHelper;
+    private ITestOutputHelper TestOutputHelper { get; } = testOutputHelper;
 
     /// <summary>
     /// The normal close the status should be correct and error null
@@ -53,8 +53,8 @@ public class ConnectionRecoverTests(ITestOutputHelper testOutputHelper)
     [InlineData(false)]
     public async Task NormalCloseTheStatusShouldBeCorrectAndErrorNull(bool activeRecovery)
     {
-        var connectionName = Guid.NewGuid().ToString();
-        var connection = await AmqpConnection.CreateAsync(
+        string connectionName = Guid.NewGuid().ToString();
+        IConnection connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create().ConnectionName(connectionName).RecoveryConfiguration(
                 RecoveryConfiguration.Create().Activated(activeRecovery).Topology(false)).Build());
 

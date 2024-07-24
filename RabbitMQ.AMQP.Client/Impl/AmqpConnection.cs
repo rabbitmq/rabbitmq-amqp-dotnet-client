@@ -46,6 +46,55 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     private readonly AmqpManagement _management;
     private readonly RecordingTopologyListener _recordingTopologyListener = new();
 
+    private void ChangeEntitiesStatus(State state, Error? error)
+    {
+        ChangePublishersStatus(state, error);
+        ChangeConsumersStatus(state, error);
+        _management.ChangeStatus(state, error);
+    }
+
+    private void ChangePublishersStatus(State state, Error? error)
+    {
+        foreach (var publisher1 in Publishers.Values)
+        {
+            var publisher = (AmqpPublisher)publisher1;
+            publisher.ChangeStatus(state, error);
+        }
+    }
+
+    private void ChangeConsumersStatus(State state, Error? error)
+    {
+        foreach (var consumer1 in Consumers.Values)
+        {
+            var consumer = (AmqpConsumer)consumer1;
+            consumer.ChangeStatus(state, error);
+        }
+    }
+
+
+    private async Task ReconnectEntities()
+    {
+        await ReconnectPublishers().ConfigureAwait(false);
+        await ReconnectConsumers().ConfigureAwait(false);
+    }
+
+    private async Task ReconnectPublishers()
+    {
+        foreach (var publisher1 in Publishers.Values)
+        {
+            var publisher = (AmqpPublisher)publisher1;
+            await publisher.Reconnect().ConfigureAwait(false);
+        }
+    }
+
+    private async Task ReconnectConsumers()
+    {
+        foreach (var consumer1 in Consumers.Values)
+        {
+            var consumer = (AmqpConsumer)consumer1;
+            await consumer.Reconnect().ConfigureAwait(false);
+        }
+    }
 
     private readonly ConnectionSettings _connectionSettings;
     internal readonly AmqpSessionManagement _nativePubSubSessions;
@@ -138,7 +187,6 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
 
     private void EnsureConnection()
     {
-        // await _semaphore.WaitAsync();
         try
         {
             if (_nativeConnection is { IsClosed: false })
@@ -180,14 +228,6 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             Trace.WriteLine(TraceLevel.Error, $"Error trying to connect. Info: {ToString()}, error: {e}");
             throw new ConnectionException($"Error trying to connect. Info: {ToString()}, error: {e}");
         }
-
-
-        finally
-        {
-            // _semaphore.Release();
-        }
-
-        // return Task.CompletedTask;
     }
 
     /// <summary>
@@ -205,8 +245,12 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
 
             try
             {
+                // close all the sessions, if the connection is closed the sessions are not valid anymore
+                _nativePubSubSessions.ClearSessions();
+                
                 if (error != null)
                 {
+                    //  we assume here that the connection is closed unexpectedly, since the error is not null
                     Trace.WriteLine(TraceLevel.Warning, $"connection is closed unexpectedly. " +
                                                         $"Info: {ToString()}");
 
@@ -216,11 +260,16 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                     if (!_connectionSettings.RecoveryConfiguration.IsActivate())
                     {
                         OnNewStatus(State.Closed, Utils.ConvertError(error));
+                        ChangeEntitiesStatus(State.Closed, Utils.ConvertError(error));
                         return;
                     }
 
-                    // TODO: Block the publishers and consumers
+                    // change the status for the connection and all the entities
+                    // to reconnecting and all the events are fired
                     OnNewStatus(State.Reconnecting, Utils.ConvertError(error));
+                    ChangeEntitiesStatus(State.Reconnecting, Utils.ConvertError(error));
+                   
+                    
                     await Task.Run(async () =>
                     {
                         bool connected = false;
@@ -266,6 +315,10 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                             OnNewStatus(State.Closed,
                                 new Error(ConnectionNotRecoveredCode,
                                     $"{ConnectionNotRecoveredMessage}, recover status: {_connectionSettings.RecoveryConfiguration}"));
+
+                            ChangeEntitiesStatus(State.Closed, new Error(ConnectionNotRecoveredCode,
+                                $"{ConnectionNotRecoveredMessage}, recover status: {_connectionSettings.RecoveryConfiguration}"));
+
                             return;
                         }
 
@@ -278,9 +331,10 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                         }
 
                         OnNewStatus(State.Open, null);
+                        // after the connection is recovered we have to reconnect all the publishers and consumers
+
+                        await ReconnectEntities().ConfigureAwait(false);
                     }).ConfigureAwait(false);
-
-
                     return;
                 }
 
@@ -320,6 +374,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             await CloseAllConsumers().ConfigureAwait(false);
 
             _recordingTopologyListener.Clear();
+            _nativePubSubSessions.ClearSessions();
 
             if (State == State.Closed)
             {

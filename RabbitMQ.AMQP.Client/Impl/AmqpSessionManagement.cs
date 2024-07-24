@@ -18,4 +18,9 @@ public class AmqpSessionManagement(AmqpConnection amqpConnection, int maxSession
         Sessions.Add(session);
         return session;
     }
+
+    public void ClearSessions()
+    {
+        Sessions.Clear();
+    }
 }
