@@ -50,6 +50,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     {
         ChangePublishersStatus(state, error);
         ChangeConsumersStatus(state, error);
+        _management.ChangeStatus(state, error);
     }
 
     private void ChangePublishersStatus(State state, Error? error)
