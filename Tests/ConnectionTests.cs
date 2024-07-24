@@ -109,9 +109,14 @@ public class ConnectionTests
     public async Task ConnectUsingTlsAndClientCertificate()
     {
         string cwd = Directory.GetCurrentDirectory();
-        _output.WriteLine("@@@@ CURRENT DIRECTORY: {0}", cwd);
+
         string clientCertFile = Path.GetFullPath(Path.Join(cwd, "../../../../.ci/certs/client_localhost.p12"));
+        if (false == File.Exists(clientCertFile))
+        {
+            clientCertFile = Path.GetFullPath(Path.Join(cwd, "../../../../../.ci/certs/client_localhost.p12"));
+        }
         Assert.True(File.Exists(clientCertFile));
+
         var cert = new X509Certificate2(clientCertFile, "grapefruit");
         string userName = cert.Subject.Trim().Replace(" ", string.Empty);
 
