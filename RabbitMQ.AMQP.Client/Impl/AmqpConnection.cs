@@ -278,7 +278,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             {
                 // close all the sessions, if the connection is closed the sessions are not valid anymore
                 _nativePubSubSessions.ClearSessions();
-                
+
                 if (error != null)
                 {
                     //  we assume here that the connection is closed unexpectedly, since the error is not null
@@ -299,8 +299,8 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                     // to reconnecting and all the events are fired
                     OnNewStatus(State.Reconnecting, Utils.ConvertError(error));
                     ChangeEntitiesStatus(State.Reconnecting, Utils.ConvertError(error));
-                   
-                    
+
+
                     await Task.Run(async () =>
                     {
                         bool connected = false;
@@ -365,8 +365,16 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                         OnNewStatus(State.Open, null);
                         // after the connection is recovered we have to reconnect all the publishers and consumers
 
-                        await ReconnectEntities().ConfigureAwait(false);
+                        try
+                        {
+                            await ReconnectEntities().ConfigureAwait(false);
+                        }
+                        catch (Exception e)
+                        {
+                            Trace.WriteLine(TraceLevel.Error, $"Error trying to reconnect entities {e}. Info: {this}");
+                        }
                     }).ConfigureAwait(false);
+                    
                     return;
                 }
 

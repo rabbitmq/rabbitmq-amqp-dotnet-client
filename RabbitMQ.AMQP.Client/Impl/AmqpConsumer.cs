@@ -3,12 +3,12 @@ using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public class AmqpConsumer : AbstractLifeCycle, IConsumer
+public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
 {
     private readonly AmqpConnection _connection;
     private readonly string _address;
     private readonly MessageHandler _messageHandler;
-    private readonly int _initialCredits = 0;
+    private readonly int _initialCredits;
     private readonly Map _filters;
     private ReceiverLink? _receiverLink;
 
@@ -37,7 +37,8 @@ public class AmqpConsumer : AbstractLifeCycle, IConsumer
             attachCompleted.WaitOne(TimeSpan.FromSeconds(5));
             if (_receiverLink.LinkState != LinkState.Attached)
             {
-                throw new ConsumerException("Failed to create receiver link. Link state is not attached, error: " +
+                throw new ConsumerException(
+                    $"{ToString()} Failed to create receiver link. Link state is not attached, error: " +
                     _receiverLink.Error?.ToString() ?? "Unknown error");
             }
 
@@ -46,7 +47,7 @@ public class AmqpConsumer : AbstractLifeCycle, IConsumer
         }
         catch (Exception e)
         {
-            throw new ConsumerException($"Failed to create receiver link, {e}");
+            throw new ConsumerException($"{ToString()} Failed to create receiver link, {e}");
         }
 
         return Task.CompletedTask;
@@ -97,23 +98,8 @@ public class AmqpConsumer : AbstractLifeCycle, IConsumer
         _connection.Consumers.TryRemove(Id, out _);
     }
 
-
-    internal void ChangeStatus(State newState, Error? error)
+    public override string ToString()
     {
-        OnNewStatus(newState, error);
-    }
-
-    internal async Task Reconnect()
-    {
-        int randomWait = Random.Shared.Next(200, 800);
-        Trace.WriteLine(TraceLevel.Information, $"Consumer: {ToString()} is reconnecting in {randomWait} ms");
-        await Task.Delay(randomWait).ConfigureAwait(false);
-
-        if (_receiverLink != null)
-        {
-            await _receiverLink.DetachAsync().ConfigureAwait(false)!;
-        }
-
-        await OpenAsync().ConfigureAwait(false);
+        return $"Consumer{{Address='{_address}', id={Id} ConnectionName='{_connection}', State='{State}'}}";
     }
 }

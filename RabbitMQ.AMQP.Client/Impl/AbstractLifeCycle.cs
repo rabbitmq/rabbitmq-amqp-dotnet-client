@@ -1,3 +1,5 @@
+using Amqp;
+
 namespace RabbitMQ.AMQP.Client.Impl;
 
 public class AmqpClosedException(string message) : Exception(message);
@@ -41,4 +43,38 @@ public abstract class AbstractLifeCycle : ILifeCycle
     public event LifeCycleCallBack? ChangeState;
 }
 
+public abstract class AbstractReconnectLifeCycle : AbstractLifeCycle
+{
+    private readonly BackOffDelayPolicy _backOffDelayPolicy = BackOffDelayPolicy.Create(2);
 
+    internal void ChangeStatus(State newState, Error? error)
+    {
+        OnNewStatus(newState, error);
+    }
+
+    internal async Task Reconnect()
+    {
+        try
+        {
+            int randomWait = Random.Shared.Next(300, 900);
+            Trace.WriteLine(TraceLevel.Information, $"{ToString()} is reconnecting in {randomWait} ms");
+            await Task.Delay(randomWait).ConfigureAwait(false);
+            await OpenAsync().ConfigureAwait(false);
+            Trace.WriteLine(TraceLevel.Information, $"{ToString()} is reconnected");
+            _backOffDelayPolicy.Reset();
+        }
+        catch (Exception e)
+        {
+            // Here we give another chance to reconnect
+            // that's an edge case, where the link is not ready for some reason
+            // the backoff policy will be used to delay the reconnection and give just a few attempts
+            Trace.WriteLine(TraceLevel.Error, $"{ToString()} Failed to reconnect, {e.Message}");
+            int delay = _backOffDelayPolicy.Delay();
+            await Task.Delay(delay).ConfigureAwait(false);
+            if (_backOffDelayPolicy.IsActive())
+            {
+                await Reconnect().ConfigureAwait(false);
+            }
+        }
+    }
+}

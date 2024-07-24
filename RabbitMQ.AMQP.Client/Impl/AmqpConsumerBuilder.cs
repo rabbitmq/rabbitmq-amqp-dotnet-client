@@ -5,8 +5,8 @@ namespace RabbitMQ.AMQP.Client.Impl;
 public class AmqpConsumerBuilder(AmqpConnection connection) : IConsumerBuilder
 {
     private string _queue = "";
-    private int _initialCredits = 1;
-    private Map _filters = new Map();
+    private int _initialCredits = 10;
+    private readonly Map _filters = new Map();
 
 
     public IConsumerBuilder Queue(string queue)

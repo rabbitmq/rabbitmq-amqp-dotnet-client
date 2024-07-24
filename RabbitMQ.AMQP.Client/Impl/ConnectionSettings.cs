@@ -81,10 +81,7 @@ public class ConnectionSettingBuilder
     {
         var c = new ConnectionSettings(_host, _port, _user,
             _password, _virtualHost,
-            _scheme, _connection)
-        {
-            RecoveryConfiguration = (RecoveryConfiguration)_recoveryConfiguration
-        };
+            _scheme, _connection) { RecoveryConfiguration = (RecoveryConfiguration)_recoveryConfiguration };
 
         return c;
     }
@@ -282,9 +279,19 @@ public class BackOffDelayPolicy : IBackOffDelayPolicy
     {
         return new BackOffDelayPolicy();
     }
+    
+    public static BackOffDelayPolicy Create(int maxAttempt)
+    {
+        return new BackOffDelayPolicy(maxAttempt);
+    }
 
     private BackOffDelayPolicy()
     {
+    }
+
+    private BackOffDelayPolicy(int maxAttempt)
+    {
+        _maxAttempt = maxAttempt;
     }
 
     private const int StartRandomMilliseconds = 500;
@@ -292,6 +299,8 @@ public class BackOffDelayPolicy : IBackOffDelayPolicy
 
     private int _attempt = 1;
     private int _totalAttempt = 0;
+    private readonly int _maxAttempt = 12;
+
 
     private void ResetAfterMaxAttempt()
     {
@@ -317,7 +326,7 @@ public class BackOffDelayPolicy : IBackOffDelayPolicy
 
     public bool IsActive()
     {
-        return _totalAttempt < 12;
+        return _totalAttempt < _maxAttempt;
     }
 
 
