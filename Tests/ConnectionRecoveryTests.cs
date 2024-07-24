@@ -61,15 +61,12 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         TaskCompletionSource completion = new TaskCompletionSource();
         var listFromStatus = new List<State>();
         var listToStatus = new List<State>();
-        var listError = new List<Error>();
+        var listError = new List<Error?>();
         connection.ChangeState += (sender, from, to, error) =>
         {
             listFromStatus.Add(from);
             listToStatus.Add(to);
-            if (error is not null)
-            {
-                listError.Add(error);
-            }
+            listError.Add(error);
             if (to == State.Closed)
             {
                 completion.SetResult();
@@ -111,15 +108,12 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         var resetEvent = new ManualResetEvent(false);
         var listFromStatus = new List<State>();
         var listToStatus = new List<State>();
-        var listError = new List<Error>();
+        var listError = new List<Error?>();
         connection.ChangeState += (sender, previousState, currentState, error) =>
         {
             listFromStatus.Add(previousState);
             listToStatus.Add(currentState);
-            if (error is not null)
-            {
-                listError.Add(error);
-            }
+            listError.Add(error);
             if (listError.Count >= 4)
             {
                 resetEvent.Set();
