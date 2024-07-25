@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using Amqp;
 using Amqp.Framing;
+using Amqp.Sasl;
 using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
@@ -230,6 +231,11 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                 {
                     cf.SSL.RemoteCertificateValidationCallback = _connectionSettings.TlsSettings.RemoteCertificateValidationCallback;
                 }
+            }
+
+            if (_connectionSettings.SaslMechanism == SaslMechanism.External)
+            {
+                cf.SASL.Profile = SaslProfile.External;
             }
 
             try

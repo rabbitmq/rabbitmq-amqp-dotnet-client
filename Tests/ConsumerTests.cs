@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
@@ -283,11 +282,10 @@ public class ConsumerTests(ITestOutputHelper testOutputHelper)
         await connection.CloseAsync();
     }
 
-
     private static async Task Publish(IConnection connection, string queue, int numberOfMessages,
-        string filter = null)
+        string? filter = null)
     {
-        var publisher = connection.PublisherBuilder().Queue(queue).Build();
+        IPublisher publisher = connection.PublisherBuilder().Queue(queue).Build();
         for (int i = 0; i < numberOfMessages; i++)
         {
             IMessage message = new AmqpMessage($"message_{i}");

@@ -24,7 +24,6 @@
     <None Include="$(MSBuildThisFileDirectory)..\LICENSE" Pack="true" Visible="false" PackagePath="" />
     <None Include="$(MSBuildThisFileDirectory)..\LICENSE-APACHE2" Pack="true" Visible="false" PackagePath="" />
     <None Include="$(MSBuildThisFileDirectory)..\LICENSE-MPL-RabbitMQ" Pack="true" Visible="false" PackagePath="" />
-    <Folder Include="Metrics/" />
     <InternalsVisibleTo Include="Tests" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
