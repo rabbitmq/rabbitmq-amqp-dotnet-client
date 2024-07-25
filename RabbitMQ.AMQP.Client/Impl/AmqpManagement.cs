@@ -388,8 +388,8 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
 
         return info;
     }
-    
-    
+
+
     internal void ChangeStatus(State newState, Error? error)
     {
         OnNewStatus(newState, error);

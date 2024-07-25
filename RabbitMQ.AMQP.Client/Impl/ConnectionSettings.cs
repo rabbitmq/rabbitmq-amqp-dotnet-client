@@ -295,7 +295,7 @@ public class BackOffDelayPolicy : IBackOffDelayPolicy
     {
         return new BackOffDelayPolicy();
     }
-    
+
     public static BackOffDelayPolicy Create(int maxAttempt)
     {
         return new BackOffDelayPolicy(maxAttempt);
