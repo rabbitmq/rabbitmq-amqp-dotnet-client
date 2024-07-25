@@ -358,12 +358,7 @@ public class BackOffDelayPolicy : IBackOffDelayPolicy
 public class TlsSettings : ITlsSettings
 {
     internal const SslProtocols DefaultSslProtocols = SslProtocols.None;
-
-    private readonly SslProtocols _protocols;
-    private readonly X509CertificateCollection _clientCertificates;
-    private readonly bool _checkCertificateRevocation = false;
-    private readonly RemoteCertificateValidationCallback? _remoteCertificateValidationCallback;
-    private readonly LocalCertificateSelectionCallback? _localCertificateSelectionCallback;
+    private readonly X509CertificateCollection _clientCertificates = new X509CertificateCollection();
 
     public TlsSettings() : this(DefaultSslProtocols)
     {
@@ -371,27 +366,26 @@ public class TlsSettings : ITlsSettings
 
     public TlsSettings(SslProtocols protocols)
     {
-        _protocols = protocols;
-        _clientCertificates = new X509CertificateCollection();
-        _remoteCertificateValidationCallback = trustEverythingCertValidationCallback;
-        _localCertificateSelectionCallback = null;
+        Protocols = protocols;
+        RemoteCertificateValidationCallback = trustEverythingCertValidationCallback;
+        LocalCertificateSelectionCallback = null;
     }
 
-    public SslProtocols Protocols => _protocols;
+    public SslProtocols Protocols { get; set; }
+
+    public SslPolicyErrors AcceptablePolicyErrors { get; set; } = SslPolicyErrors.None;
 
     public X509CertificateCollection ClientCertificates => _clientCertificates;
 
-    public bool CheckCertificateRevocation => _checkCertificateRevocation;
+    public bool CheckCertificateRevocation { get; set; } = false;
 
-    public RemoteCertificateValidationCallback? RemoteCertificateValidationCallback
-        => _remoteCertificateValidationCallback;
+    public RemoteCertificateValidationCallback? RemoteCertificateValidationCallback { get; set; }
 
-    public LocalCertificateSelectionCallback? LocalCertificateSelectionCallback
-        => _localCertificateSelectionCallback;
+    public LocalCertificateSelectionCallback? LocalCertificateSelectionCallback { get; set; }
 
-    private static bool trustEverythingCertValidationCallback(object sender, X509Certificate? certificate,
+    private bool trustEverythingCertValidationCallback(object sender, X509Certificate? certificate,
         X509Chain? chain, SslPolicyErrors sslPolicyErrors)
     {
-        return true;
+        return (sslPolicyErrors & ~AcceptablePolicyErrors) == SslPolicyErrors.None;
     }
 }
