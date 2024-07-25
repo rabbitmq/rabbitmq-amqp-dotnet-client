@@ -60,4 +60,6 @@ public interface IBackOffDelayPolicy
     /// or when the user wants to disable the backoff delay policy.
     /// </summary>
     bool IsActive();
+    
+    int CurrentAttempt { get; }
 }

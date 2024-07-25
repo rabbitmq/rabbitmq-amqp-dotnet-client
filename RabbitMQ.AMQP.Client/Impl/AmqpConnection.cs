@@ -326,8 +326,12 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                             try
                             {
                                 int next = _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().Delay();
+
                                 Trace.WriteLine(TraceLevel.Information,
-                                    $"Trying Recovering connection in {next} milliseconds. Info: {ToString()})");
+                                    $"Trying Recovering connection in {next} milliseconds, " +
+                                    $"attempt: {_connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().CurrentAttempt}. " +
+                                    $"Info: {ToString()})");
+
                                 await Task.Delay(TimeSpan.FromMilliseconds(next))
                                     .ConfigureAwait(false);
 
@@ -371,8 +375,16 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                         OnNewStatus(State.Open, null);
                         // after the connection is recovered we have to reconnect all the publishers and consumers
 
-                        await ReconnectEntities().ConfigureAwait(false);
+                        try
+                        {
+                            await ReconnectEntities().ConfigureAwait(false);
+                        }
+                        catch (Exception e)
+                        {
+                            Trace.WriteLine(TraceLevel.Error, $"Error trying to reconnect entities {e}. Info: {this}");
+                        }
                     }).ConfigureAwait(false);
+
                     return;
                 }
 

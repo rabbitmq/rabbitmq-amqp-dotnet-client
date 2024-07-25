@@ -112,7 +112,7 @@ public class ManagementTests()
     {
         var management = new TestAmqpManagement();
         await Assert.ThrowsAsync<AmqpClosedException>(async () =>
-            await management.Request(new Message(), [200]));
+           await management.Request(new Message(), [200]));
         Assert.Equal(State.Closed, management.State);
     }
 

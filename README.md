@@ -24,15 +24,17 @@ The client is distributed via [NuGet](https://www.nuget.org/packages/RabbitMQ.AM
 - [x] Simple Publish messages
 - [x] Implement backpressure (it is implemented with MaxInflightMessages `MaxInFlight(2000).`)
 - [x] Simple Consume messages
+- [x] Recovery connection on connection lost
+- [x] Recovery management on connection lost
+- [x] Recovery queues on connection lost
+- [x] Recovery publishers on connection lost
+- [x] Recovery consumers on connection lost
 - [ ] Complete the consumer part with `pause` and `unpause`
 - [ ] Complete the binding/unbinding with the special characters
 - [ ] Complete the queues/exchanges name with the special characters
 - [ ] Implement metrics ( See `System.Diagnostics.DiagnosticSource` [Link](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/metrics-instrumentation) )
-- [x] Recovery connection on connection lost
-- [x] Recovery management on connection lost
-- [x] Recovery queues on connection lost
-- [x] Recovery publisher on connection lost
-- [x] Recovery consumer on connection lost
-- [ ] Docker image to test in LRE 
+- [ ] Recovery exchanges on connection lost
+- [ ] Recovery bindings on connection lost
+- [ ] Docker image to test in LRE [not mandatory]
 - [ ] Check the TODO in the code
 

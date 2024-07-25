@@ -295,16 +295,27 @@ public class BackOffDelayPolicy : IBackOffDelayPolicy
     {
         return new BackOffDelayPolicy();
     }
+    
+    public static BackOffDelayPolicy Create(int maxAttempt)
+    {
+        return new BackOffDelayPolicy(maxAttempt);
+    }
 
     private BackOffDelayPolicy()
     {
+    }
+
+    private BackOffDelayPolicy(int maxAttempt)
+    {
+        _maxAttempt = maxAttempt;
     }
 
     private const int StartRandomMilliseconds = 500;
     private const int EndRandomMilliseconds = 1500;
 
     private int _attempt = 1;
-    private int _totalAttempt = 0;
+    private readonly int _maxAttempt = 12;
+
 
     private void ResetAfterMaxAttempt()
     {
@@ -317,7 +328,7 @@ public class BackOffDelayPolicy : IBackOffDelayPolicy
     public int Delay()
     {
         _attempt++;
-        _totalAttempt++;
+        CurrentAttempt++;
         ResetAfterMaxAttempt();
         return Random.Shared.Next(StartRandomMilliseconds, EndRandomMilliseconds) * _attempt;
     }
@@ -325,18 +336,20 @@ public class BackOffDelayPolicy : IBackOffDelayPolicy
     public void Reset()
     {
         _attempt = 1;
-        _totalAttempt = 0;
+        CurrentAttempt = 0;
     }
 
     public bool IsActive()
     {
-        return _totalAttempt < 12;
+        return CurrentAttempt < _maxAttempt;
     }
+
+    public int CurrentAttempt { get; private set; } = 0;
 
 
     public override string ToString()
     {
-        return $"BackOffDelayPolicy{{ Attempt={_attempt}, TotalAttempt={_totalAttempt}, IsActive={IsActive} }}";
+        return $"BackOffDelayPolicy{{ Attempt={_attempt}, TotalAttempt={CurrentAttempt}, IsActive={IsActive} }}";
     }
 }
 

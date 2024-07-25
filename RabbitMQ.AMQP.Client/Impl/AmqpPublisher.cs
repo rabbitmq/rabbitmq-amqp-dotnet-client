@@ -6,7 +6,7 @@ using TraceLevel = Amqp.TraceLevel;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public class AmqpPublisher : AbstractLifeCycle, IPublisher
+public class AmqpPublisher : AbstractReconnectLifeCycle, IPublisher
 {
     private SenderLink? _senderLink = null;
 
@@ -38,7 +38,7 @@ public class AmqpPublisher : AbstractLifeCycle, IPublisher
             attachCompleted.WaitOne(TimeSpan.FromSeconds(5));
             if (_senderLink.LinkState != LinkState.Attached)
             {
-                throw new PublisherException("Failed to create sender link. Link state is not attached, error: " +
+                throw new PublisherException($"{ToString()} Failed to create sender link. Link state is not attached, error: " +
                     _senderLink.Error?.ToString() ?? "Unknown error");
             }
 
@@ -46,7 +46,7 @@ public class AmqpPublisher : AbstractLifeCycle, IPublisher
         }
         catch (Exception e)
         {
-            throw new PublisherException($"Failed to create sender link, {e}");
+            throw new PublisherException($"{ToString()} Failed to create sender link, {e}");
         }
     }
 
@@ -127,7 +127,7 @@ public class AmqpPublisher : AbstractLifeCycle, IPublisher
                     }
                     else
                     {
-                        Trace.WriteLine(TraceLevel.Error, "Message not sent. Killing the process.");
+                        Trace.WriteLine(TraceLevel.Error, $"{ToString()} Message not sent. Killing the process.");
                         Process.GetCurrentProcess().Kill();
                     }
 
@@ -138,7 +138,7 @@ public class AmqpPublisher : AbstractLifeCycle, IPublisher
         }
         catch (Exception e)
         {
-            throw new PublisherException($"Failed to publish message, {e}");
+            throw new PublisherException($"{ToString()} Failed to publish message, {e}");
         }
 
         return Task.CompletedTask;
@@ -151,6 +151,7 @@ public class AmqpPublisher : AbstractLifeCycle, IPublisher
         {
             return;
         }
+
         OnNewStatus(State.Closing, null);
         try
         {
@@ -173,22 +174,8 @@ public class AmqpPublisher : AbstractLifeCycle, IPublisher
     }
 
 
-    internal void ChangeStatus(State newState, Error? error)
+    public override string ToString()
     {
-        OnNewStatus(newState, error);
-    }
-
-    internal async Task Reconnect()
-    {
-        int randomWait = Random.Shared.Next(200, 800);
-        Trace.WriteLine(TraceLevel.Information, $"Publisher: {ToString()} is reconnecting in {randomWait} ms");
-        await Task.Delay(randomWait).ConfigureAwait(false);
-
-        if (_senderLink != null)
-        {
-            await _senderLink.DetachAsync().ConfigureAwait(false)!;
-        }
-
-        await OpenAsync().ConfigureAwait(false);
+        return $"Publisher{{Address='{_address}', id={Id} ConnectionName='{_connection}', State='{State}'}}";
     }
 }
