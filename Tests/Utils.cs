@@ -237,51 +237,20 @@ namespace Tests
             });
         }
 
-        public static async Task<bool> CheckQueueAsync(string queueNameStr, bool checkExisting = true)
+        public static Task WaitUntilExchangeExistsAsync(string exchangeNameStr)
         {
-            var managementUri = new Uri("http://localhost:15672");
-            using var managementClient = new ManagementClient(managementUri, "guest", "guest");
-
-            var queueName = new EasyNetQ.Management.Client.Model.QueueName(queueNameStr, "/");
-            try
+            return WaitUntilAsync(() =>
             {
-                EasyNetQ.Management.Client.Model.Queue? queue = await managementClient.GetQueueAsync(queueName);
-                if (checkExisting)
-                {
-                    return queue is not null;
-                }
-                else
-                {
-                    return queue is null;
-                }
-            }
-            catch (UnexpectedHttpStatusCodeException ex)
-            {
-                if (ex.StatusCode == HttpStatusCode.NotFound)
-                {
-                    if (checkExisting)
-                    {
-                        return false;
-                    }
-                    else
-                    {
-                        return true;
-                    }
-                }
-                else
-                {
-                    throw;
-                }
-            }
+                return CheckExchangeAsync(exchangeNameStr, checkExisting: true);
+            });
         }
 
-        public static bool ExchangeExists(string exchange)
+        public static Task WaitUntilExchangeDeletedAsync(string exchangeNameStr)
         {
-            Task<HttpResponseMessage> task = CreateHttpClient()
-                .GetAsync($"http://localhost:15672/api/exchanges/%2F/{Uri.EscapeDataString(exchange)}");
-            task.Wait(TimeSpan.FromSeconds(10));
-            HttpResponseMessage result = task.Result;
-            return result.IsSuccessStatusCode;
+            return WaitUntilAsync(() =>
+            {
+                return CheckExchangeAsync(exchangeNameStr, checkExisting: false);
+            });
         }
 
         public static bool BindsBetweenExchangeAndQueueExists(string exchange, string queue)
@@ -406,6 +375,82 @@ namespace Tests
             Task<byte[]> fileTask = File.ReadAllBytesAsync(filename);
             fileTask.Wait(TimeSpan.FromSeconds(1));
             return fileTask.Result;
+        }
+
+        private static async Task<bool> CheckExchangeAsync(string exchangeNameStr, bool checkExisting = true)
+        {
+            var managementUri = new Uri("http://localhost:15672");
+            using var managementClient = new ManagementClient(managementUri, "guest", "guest");
+
+            var exchangeName = new EasyNetQ.Management.Client.Model.ExchangeName(exchangeNameStr, "/");
+            try
+            {
+                EasyNetQ.Management.Client.Model.Exchange? exchange = await managementClient.GetExchangeAsync(exchangeName);
+                if (checkExisting)
+                {
+                    return exchange is not null;
+                }
+                else
+                {
+                    return exchange is null;
+                }
+            }
+            catch (UnexpectedHttpStatusCodeException ex)
+            {
+                if (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    if (checkExisting)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    throw;
+                }
+            }
+        }
+
+        private static async Task<bool> CheckQueueAsync(string queueNameStr, bool checkExisting = true)
+        {
+            var managementUri = new Uri("http://localhost:15672");
+            using var managementClient = new ManagementClient(managementUri, "guest", "guest");
+
+            var queueName = new EasyNetQ.Management.Client.Model.QueueName(queueNameStr, "/");
+            try
+            {
+                EasyNetQ.Management.Client.Model.Queue? queue = await managementClient.GetQueueAsync(queueName);
+                if (checkExisting)
+                {
+                    return queue is not null;
+                }
+                else
+                {
+                    return queue is null;
+                }
+            }
+            catch (UnexpectedHttpStatusCodeException ex)
+            {
+                if (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    if (checkExisting)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    throw;
+                }
+            }
         }
     }
 }
