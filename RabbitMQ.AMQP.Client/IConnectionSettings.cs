@@ -15,6 +15,7 @@ public interface IConnectionSettings : IEquatable<IConnectionSettings>
     string ConnectionName { get; }
     string Path { get; }
     bool UseSsl { get; }
+    uint MaxFrameSize { get; }
     SaslMechanism SaslMechanism { get; }
     ITlsSettings? TlsSettings { get; }
 

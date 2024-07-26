@@ -15,6 +15,7 @@ public class ConnectionSettingBuilder
     private string _scheme = "AMQP";
     private string _connectionName = "AMQP.NET";
     private string _virtualHost = "/";
+    private uint _maxFrameSize = Consts.DefaultMaxFrameSize;
     private SaslMechanism _saslMechanism = Client.SaslMechanism.Plain;
     private IRecoveryConfiguration _recoveryConfiguration = Impl.RecoveryConfiguration.Create();
 
@@ -69,6 +70,17 @@ public class ConnectionSettingBuilder
         return this;
     }
 
+    public ConnectionSettingBuilder MaxFrameSize(uint maxFrameSize)
+    {
+        _maxFrameSize = maxFrameSize;
+        if (_maxFrameSize != uint.MinValue && _maxFrameSize < 512)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maxFrameSize),
+                "maxFrameSize must be greater or equal to 512");
+        }
+        return this;
+    }
+
     public ConnectionSettingBuilder SaslMechanism(SaslMechanism saslMechanism)
     {
         _saslMechanism = saslMechanism;
@@ -89,9 +101,9 @@ public class ConnectionSettingBuilder
 
     public ConnectionSettings Build()
     {
-        var c = new ConnectionSettings(_host, _port, _user,
+        var c = new ConnectionSettings(_scheme, _host, _port, _user,
             _password, _virtualHost,
-            _scheme, _connectionName, _saslMechanism)
+            _connectionName, _saslMechanism, _maxFrameSize)
         {
             Recovery = (RecoveryConfiguration)_recoveryConfiguration
         };
@@ -106,8 +118,9 @@ public class ConnectionSettingBuilder
 public class ConnectionSettings : IConnectionSettings
 {
     private readonly Address _address;
-    private readonly string _connectionName = "";
     private readonly string _virtualHost = "/";
+    private readonly string _connectionName = "";
+    private readonly uint _maxFrameSize = Consts.DefaultMaxFrameSize;
     private readonly ITlsSettings? _tlsSettings;
     private readonly SaslMechanism _saslMechanism = SaslMechanism.Plain;
 
@@ -122,10 +135,12 @@ public class ConnectionSettings : IConnectionSettings
         }
     }
 
-    public ConnectionSettings(string host, int port,
+    public ConnectionSettings(string scheme, string host, int port,
         string? user, string? password,
-        string virtualHost, string scheme, string connectionName,
-        SaslMechanism saslMechanism, ITlsSettings? tlsSettings = null)
+        string virtualHost, string connectionName,
+        SaslMechanism saslMechanism,
+        uint maxFrameSize = Consts.DefaultMaxFrameSize,
+        ITlsSettings? tlsSettings = null)
     {
         _address = new Address(host: host, port: port,
             user: user, password: password,
@@ -133,6 +148,14 @@ public class ConnectionSettings : IConnectionSettings
         _connectionName = connectionName;
         _virtualHost = virtualHost;
         _saslMechanism = saslMechanism;
+
+        _maxFrameSize = maxFrameSize;
+        if (_maxFrameSize != uint.MinValue && _maxFrameSize < 512)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maxFrameSize),
+                "maxFrameSize must be greater or equal to 512");
+        }
+
         _tlsSettings = tlsSettings;
 
         if (_address.UseSsl && _tlsSettings == null)
@@ -150,8 +173,8 @@ public class ConnectionSettings : IConnectionSettings
     public string ConnectionName => _connectionName;
     public string Path => _address.Path;
     public bool UseSsl => _address.UseSsl;
+    public uint MaxFrameSize => _maxFrameSize;
     public SaslMechanism SaslMechanism => _saslMechanism;
-
     public ITlsSettings? TlsSettings => _tlsSettings;
     public IRecoveryConfiguration Recovery { get; init; } = RecoveryConfiguration.Create();
 

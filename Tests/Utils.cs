@@ -13,42 +13,11 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Xunit;
-using Xunit.Abstractions;
+using EasyNetQ.Management.Client;
 using Xunit.Sdk;
 
 namespace Tests
 {
-    public class Utils<TResult>(ITestOutputHelper testOutputHelper)
-    {
-        public void WaitUntilTaskCompletes(TaskCompletionSource<TResult> tasks)
-        {
-            WaitUntilTaskCompletes(tasks, true, TimeSpan.FromSeconds(10));
-        }
-
-        public void WaitUntilTaskCompletes(TaskCompletionSource<TResult> tasks,
-            bool expectToComplete = true)
-        {
-            WaitUntilTaskCompletes(tasks, expectToComplete, TimeSpan.FromSeconds(10));
-        }
-
-        public void WaitUntilTaskCompletes(TaskCompletionSource<TResult> tasks,
-            bool expectToComplete,
-            TimeSpan timeOut)
-        {
-            try
-            {
-                var resultTestWait = tasks.Task.Wait(timeOut);
-                Assert.Equal(resultTestWait, expectToComplete);
-            }
-            catch (Exception e)
-            {
-                testOutputHelper.WriteLine($"wait until task completes error #{e}");
-                throw;
-            }
-        }
-    }
-
     public static class SystemUtils
     {
         // Waits for 10 seconds total by default
@@ -67,10 +36,14 @@ namespace Tests
 
         public static async Task WaitUntilAsync(Func<Task<bool>> func, ushort retries = 10)
         {
-            Wait();
+            var delaySpan = TimeSpan.FromMilliseconds(500);
+
+            await Task.Delay(delaySpan);
+
             while (!await func())
             {
-                Wait();
+                await Task.Delay(delaySpan);
+
                 --retries;
                 if (retries == 0)
                 {
@@ -88,7 +61,6 @@ namespace Tests
         {
             Thread.Sleep(wait);
         }
-
 
         private class Connection
         {
@@ -139,34 +111,27 @@ namespace Tests
 
         public static async Task<bool> IsConnectionOpen(string connectionName)
         {
-            using HttpClientHandler handler = new HttpClientHandler { Credentials = new NetworkCredential("guest", "guest"), };
-            using HttpClient client = new HttpClient(handler);
+            var managementUri = new Uri("http://localhost:15672");
+            using var managementClient = new ManagementClient(managementUri, "guest", "guest");
 
-            HttpResponseMessage result = await client.GetAsync("http://localhost:15672/api/connections");
-            if (!result.IsSuccessStatusCode)
-            {
-                throw new XunitException($"HTTP GET failed: {result.StatusCode} {result.ReasonPhrase}");
-            }
+            IReadOnlyList<EasyNetQ.Management.Client.Model.Connection> connections = await managementClient.GetConnectionsAsync();
 
-            Stream resultContentStream = await result.Content.ReadAsStreamAsync();
-            object? obj = await JsonSerializer.DeserializeAsync(resultContentStream, typeof(IEnumerable<Connection>));
-            return obj switch
-            {
-                null => false,
-                IEnumerable<Connection> connections =>
-                    connections.Any(x =>
+            return connections.Any(conn =>
                     {
-                        if (x.client_properties is null)
+                        if (conn.ClientProperties is not null)
                         {
-                            return false;
+                            if (conn.ClientProperties.TryGetValue("connection_name", out object? connectionNameObj))
+                            {
+                                if (connectionNameObj is not null)
+                                {
+                                    string connName = (string)connectionNameObj;
+                                    return connName.Contains(connectionName);
+                                }
+                            }
                         }
-                        else
-                        {
-                            return x.client_properties["connection_name"].Contains(connectionName);
-                        }
-                    }),
-                _ => false
-            };
+
+                        return false;
+                    });
         }
 
         public static async Task<int> HttpKillConnections(string connectionName)
@@ -256,12 +221,58 @@ namespace Tests
             return new HttpClient(handler);
         }
 
-        public static bool QueueExists(string queue)
+        public static Task WaitUntilQueueExistsAsync(string queueNameStr)
         {
-            Task<HttpResponseMessage> task = CreateHttpClient().GetAsync($"http://localhost:15672/api/queues/%2F/{queue}");
-            task.Wait(TimeSpan.FromSeconds(10));
-            HttpResponseMessage result = task.Result;
-            return result.IsSuccessStatusCode;
+            return WaitUntilAsync(() =>
+            {
+                return CheckQueueAsync(queueNameStr, checkExisting: true);
+            });
+        }
+
+        public static Task WaitUntilQueueDeletedAsync(string queueNameStr)
+        {
+            return WaitUntilAsync(() =>
+            {
+                return CheckQueueAsync(queueNameStr, checkExisting: false);
+            });
+        }
+
+        public static async Task<bool> CheckQueueAsync(string queueNameStr, bool checkExisting = true)
+        {
+            var managementUri = new Uri("http://localhost:15672");
+            using var managementClient = new ManagementClient(managementUri, "guest", "guest");
+
+            var queueName = new EasyNetQ.Management.Client.Model.QueueName(queueNameStr, "/");
+            try
+            {
+                EasyNetQ.Management.Client.Model.Queue? queue = await managementClient.GetQueueAsync(queueName);
+                if (checkExisting)
+                {
+                    return queue is not null;
+                }
+                else
+                {
+                    return queue is null;
+                }
+            }
+            catch (UnexpectedHttpStatusCodeException ex)
+            {
+                if (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    if (checkExisting)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    throw;
+                }
+            }
         }
 
         public static bool ExchangeExists(string exchange)

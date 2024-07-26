@@ -1,6 +1,7 @@
 #nullable enable
 abstract RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.CloseAsync() -> System.Threading.Tasks.Task!
 const RabbitMQ.AMQP.Client.Impl.Consts.Bindings = "bindings" -> string!
+const RabbitMQ.AMQP.Client.Impl.Consts.DefaultMaxFrameSize = 0 -> uint
 const RabbitMQ.AMQP.Client.Impl.Consts.Exchanges = "exchanges" -> string!
 const RabbitMQ.AMQP.Client.Impl.Consts.Key = "key" -> string!
 const RabbitMQ.AMQP.Client.Impl.Consts.Queues = "queues" -> string!
@@ -80,6 +81,7 @@ RabbitMQ.AMQP.Client.IConnection.PublisherBuilder() -> RabbitMQ.AMQP.Client.IPub
 RabbitMQ.AMQP.Client.IConnectionSettings
 RabbitMQ.AMQP.Client.IConnectionSettings.ConnectionName.get -> string!
 RabbitMQ.AMQP.Client.IConnectionSettings.Host.get -> string!
+RabbitMQ.AMQP.Client.IConnectionSettings.MaxFrameSize.get -> uint
 RabbitMQ.AMQP.Client.IConnectionSettings.Password.get -> string?
 RabbitMQ.AMQP.Client.IConnectionSettings.Path.get -> string!
 RabbitMQ.AMQP.Client.IConnectionSettings.Port.get -> int
@@ -328,6 +330,7 @@ RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.Build() -> RabbitMQ.AMQP.Client.Impl.ConnectionSettings!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.ConnectionName(string! connectionName) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.Host(string! host) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
+RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.MaxFrameSize(uint maxFrameSize) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.Password(string! password) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.Port(int port) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.RecoveryConfiguration(RabbitMQ.AMQP.Client.IRecoveryConfiguration! recoveryConfiguration) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
@@ -338,10 +341,11 @@ RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.VirtualHost(string! virtualHo
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.ConnectionName.get -> string!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.ConnectionSettings(string! address, RabbitMQ.AMQP.Client.ITlsSettings? tlsSettings = null) -> void
-RabbitMQ.AMQP.Client.Impl.ConnectionSettings.ConnectionSettings(string! host, int port, string? user, string? password, string! virtualHost, string! scheme, string! connectionName, RabbitMQ.AMQP.Client.SaslMechanism! saslMechanism, RabbitMQ.AMQP.Client.ITlsSettings? tlsSettings = null) -> void
+RabbitMQ.AMQP.Client.Impl.ConnectionSettings.ConnectionSettings(string! scheme, string! host, int port, string? user, string? password, string! virtualHost, string! connectionName, RabbitMQ.AMQP.Client.SaslMechanism! saslMechanism, uint maxFrameSize = 0, RabbitMQ.AMQP.Client.ITlsSettings? tlsSettings = null) -> void
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Equals(RabbitMQ.AMQP.Client.IConnectionSettings? other) -> bool
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Equals(RabbitMQ.AMQP.Client.Impl.ConnectionSettings! other) -> bool
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Host.get -> string!
+RabbitMQ.AMQP.Client.Impl.ConnectionSettings.MaxFrameSize.get -> uint
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Password.get -> string?
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Path.get -> string!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Port.get -> int

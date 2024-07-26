@@ -232,10 +232,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         await SystemUtils.WaitUntilConnectionIsKilled(connectionName);
         await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
         SystemUtils.WaitUntil(() => recoveryEvents == 2);
-        SystemUtils.WaitUntil(() => SystemUtils.QueueExists(queueName));
+
+        await SystemUtils.WaitUntilQueueExistsAsync(queueName);
 
         await connection.CloseAsync();
-        SystemUtils.WaitUntil(() => !SystemUtils.QueueExists(queueName));
+
+        await SystemUtils.WaitUntilQueueDeletedAsync(queueName);
+
         TestOutputHelper.WriteLine(
             $"Recover: Queue count: {management.TopologyListener().QueueCount()} , events: {recoveryEvents}");
         Assert.Equal(0, management.TopologyListener().QueueCount());
@@ -277,7 +280,9 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         await SystemUtils.WaitUntilConnectionIsKilled(connectionName);
         await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
-        SystemUtils.WaitUntil(() => SystemUtils.QueueExists(queueName) == false);
+
+        await SystemUtils.WaitUntilQueueDeletedAsync(queueName);
+
         await connection.CloseAsync();
         Assert.Equal(0, management.TopologyListener().QueueCount());
         TestOutputHelper.WriteLine(

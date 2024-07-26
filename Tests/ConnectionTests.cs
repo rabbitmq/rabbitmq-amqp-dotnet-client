@@ -13,8 +13,8 @@ public class ConnectionTests(ITestOutputHelper output)
     [Fact]
     public void ValidateAddress()
     {
-        ConnectionSettings connectionSettings = new("localhost", 5672, "guest-user",
-            "guest-password", "vhost_1", "amqp1", "connection_name", SaslMechanism.External);
+        ConnectionSettings connectionSettings = new("amqp1", "localhost", 5672, "guest-user",
+            "guest-password", "vhost_1", "connection_name", SaslMechanism.External);
         Assert.Equal("localhost", connectionSettings.Host);
         Assert.Equal(5672, connectionSettings.Port);
         Assert.Equal("guest-user", connectionSettings.User);
@@ -23,13 +23,13 @@ public class ConnectionTests(ITestOutputHelper output)
         Assert.Equal("amqp1", connectionSettings.Scheme);
         Assert.Equal(SaslMechanism.External, connectionSettings.SaslMechanism);
 
-        ConnectionSettings second = new("localhost", 5672, "guest-user",
-            "guest-password", "path/", "amqp1", "connection_name", SaslMechanism.External);
+        ConnectionSettings second = new("amqp1", "localhost", 5672, "guest-user",
+            "guest-password", "path/", "connection_name", SaslMechanism.External);
 
         Assert.Equal(connectionSettings, second);
 
-        ConnectionSettings third = new("localhost", 5672, "guest-user",
-            "guest-password", "path/", "amqp2", "connection_name", SaslMechanism.Plain);
+        ConnectionSettings third = new("amqp2", "localhost", 5672, "guest-user",
+            "guest-password", "path/", "connection_name", SaslMechanism.Plain);
 
         Assert.NotEqual(connectionSettings, third);
     }

@@ -38,7 +38,8 @@ public class BindingsTests
         await management.QueueDeletion().Delete(queueDestination);
         await connection.CloseAsync();
         SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists(sourceExchange));
-        SystemUtils.WaitUntil(() => !SystemUtils.QueueExists(queueDestination));
+
+        await SystemUtils.WaitUntilQueueDeletedAsync(queueDestination);
     }
 
     [Fact]
@@ -75,8 +76,9 @@ public class BindingsTests
 
         await management.QueueDeletion().Delete("queue_bind_two_times");
         await connection.CloseAsync();
+
         SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists("exchange_bind_two_times"));
-        SystemUtils.WaitUntil(() => !SystemUtils.QueueExists("queue_bind_two_times"));
+        await SystemUtils.WaitUntilQueueDeletedAsync("queue_bind_two_times");
     }
 
 
@@ -154,8 +156,9 @@ public class BindingsTests
         await management.ExchangeDeletion().Delete("exchange_bindings_with_arguments");
         await management.QueueDeletion().Delete("queue_bindings_with_arguments");
         await connection.CloseAsync();
+
         SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists("exchange_bindings_with_arguments"));
-        SystemUtils.WaitUntil(() => !SystemUtils.QueueExists("queue_bindings_with_arguments"));
+        await SystemUtils.WaitUntilQueueDeletedAsync("queue_bindings_with_arguments");
     }
 
     // TODO: test with multi-bindings with parameters with list as value
