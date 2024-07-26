@@ -13,10 +13,10 @@ Trace.TraceListener = (l, f, a) =>
 Trace.WriteLine(TraceLevel.Information, "Starting");
 const string connectionName = "GettingStarted-Connection";
 
-IConnection connection = await AmqpConnection.CreateAsync(
-    ConnectionSettingBuilder.Create().ConnectionName(connectionName).RecoveryConfiguration(
-        RecoveryConfiguration.Create().Activated(true).Topology(true)
-    ).Build());
+IEnvironment environment = await AmqpEnvironment.CreateAsync(
+    ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build());
+
+IConnection connection = await environment.CreateConnectionAsync();
 
 Trace.WriteLine(TraceLevel.Information, "Connected");
 
@@ -62,5 +62,5 @@ Console.ReadKey();
 await publisher.CloseAsync();
 await consumer.CloseAsync();
 await management.QueueDeletion().Delete(queueName);
-await connection.CloseAsync();
+await environment.CloseAsync();
 Trace.WriteLine(TraceLevel.Information, "Closed");

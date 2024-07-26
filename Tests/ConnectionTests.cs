@@ -11,14 +11,9 @@ using Xunit.Abstractions;
 
 namespace Tests;
 
-public class ConnectionTests
+public class ConnectionTests(ITestOutputHelper output)
 {
-    private readonly ITestOutputHelper _output;
-
-    public ConnectionTests(ITestOutputHelper output)
-    {
-        _output = output;
-    }
+    private readonly ITestOutputHelper _output = output;
 
     [Fact]
     public void ValidateAddress()

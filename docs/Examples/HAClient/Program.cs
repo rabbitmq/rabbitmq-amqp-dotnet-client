@@ -34,8 +34,9 @@ Task printStats = Task.Run(() =>
 Trace.WriteLine(TraceLevel.Information, "Starting");
 const string connectionName = "HA-Client-Connection";
 
-IConnection connection = await AmqpConnection.CreateAsync(
-    ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build()).ConfigureAwait(false);
+IEnvironment environment = await AmqpEnvironment.CreateAsync(ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build()).ConfigureAwait(false);
+
+IConnection connection = await environment.CreateConnectionAsync().ConfigureAwait(false);
 
 connection.ChangeState += (sender, fromState, toState, e) =>
 {

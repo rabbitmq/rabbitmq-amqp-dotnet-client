@@ -93,7 +93,7 @@ public class ConnectionSettingBuilder
             _password, _virtualHost,
             _scheme, _connectionName, _saslMechanism)
         {
-            RecoveryConfiguration = (RecoveryConfiguration)_recoveryConfiguration
+            Recovery = (RecoveryConfiguration)_recoveryConfiguration
         };
 
         return c;
@@ -153,6 +153,8 @@ public class ConnectionSettings : IConnectionSettings
     public SaslMechanism SaslMechanism => _saslMechanism;
 
     public ITlsSettings? TlsSettings => _tlsSettings;
+    public IRecoveryConfiguration Recovery { get; init; } = RecoveryConfiguration.Create();
+
 
     public override string ToString()
     {
@@ -220,7 +222,7 @@ public class ConnectionSettings : IConnectionSettings
 
     internal Address Address => _address;
 
-    public RecoveryConfiguration RecoveryConfiguration { get; set; } = RecoveryConfiguration.Create();
+    // public RecoveryConfiguration RecoveryConfiguration { get; set; } = RecoveryConfiguration.Create();
 }
 
 /// <summary>
