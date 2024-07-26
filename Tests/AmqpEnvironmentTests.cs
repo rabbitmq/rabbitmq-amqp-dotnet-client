@@ -23,7 +23,7 @@ public class AmqpEnvironmentTests
     [Fact]
     public async Task CreateMoreConnectionsWithDifferentParametersEnvironment()
     {
-        string envConnectionName = "EnvironmentConnection_" + Guid.NewGuid().ToString();
+        string envConnectionName = "EnvironmentConnection_" + Guid.NewGuid();
         IEnvironment env = await AmqpEnvironment.CreateAsync(
             ConnectionSettingBuilder.Create().ConnectionName(envConnectionName).Build());
 
@@ -33,7 +33,7 @@ public class AmqpEnvironmentTests
         Assert.NotEmpty(env.GetConnections());
         Assert.Single(env.GetConnections());
 
-        string envConnectionName2 = "EnvironmentConnection2_" + Guid.NewGuid().ToString();
+        string envConnectionName2 = "EnvironmentConnection2_" + Guid.NewGuid();
 
         IConnection connection2 = await env.CreateConnectionAsync(
             ConnectionSettingBuilder.Create().ConnectionName(envConnectionName2).Build());
@@ -48,19 +48,22 @@ public class AmqpEnvironmentTests
     }
 
     [Fact]
-    public async Task CloseConnectionsIndividuals()
+    public async Task CloseConnectionsIndividually()
     {
-        string envConnectionName = "EnvironmentConnection_" + Guid.NewGuid().ToString();
+        string envConnectionName = "EnvironmentConnection_" + Guid.NewGuid();
         IEnvironment env = await AmqpEnvironment.CreateAsync(
             ConnectionSettingBuilder.Create().ConnectionName(envConnectionName).Build());
         IConnection connection = await env.CreateConnectionAsync();
         await SystemUtils.WaitUntilAsync(async () => await SystemUtils.IsConnectionOpen(envConnectionName));
+        Assert.Single(env.GetConnections());
+        Assert.Equal(1, env.GetConnections()[0].Id);
 
 
         string envConnectionName2 = "EnvironmentConnection2_" + Guid.NewGuid().ToString();
         IConnection connection2 = await env.CreateConnectionAsync(
             ConnectionSettingBuilder.Create().ConnectionName(envConnectionName2).Build());
         Assert.Equal(2, env.GetConnections().Count);
+        Assert.Equal(2, env.GetConnections()[1].Id);
         await SystemUtils.WaitUntilAsync(async () => await SystemUtils.IsConnectionOpen(envConnectionName2));
 
 
@@ -68,6 +71,7 @@ public class AmqpEnvironmentTests
         IConnection connection3 = await env.CreateConnectionAsync(
             ConnectionSettingBuilder.Create().ConnectionName(envConnectionName3).Build());
         Assert.Equal(3, env.GetConnections().Count);
+        Assert.Equal(3, env.GetConnections()[2].Id);
         await SystemUtils.WaitUntilAsync(async () => await SystemUtils.IsConnectionOpen(envConnectionName3));
 
 
