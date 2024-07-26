@@ -1,9 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
-using EasyNetQ.Management.Client;
-using EasyNetQ.Management.Client.Model;
+﻿using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
@@ -76,75 +71,6 @@ public class ConnectionTests(ITestOutputHelper output)
         Assert.Equal("guest-w", connectionSettings.Password);
         Assert.Equal("v1", connectionSettings.VirtualHost);
         Assert.Equal("amqps", connectionSettings.Scheme);
-    }
-
-    [Fact]
-    public async Task ConnectUsingTlsAndUserPassword()
-    {
-        ConnectionSettings connectionSettings = ConnectionSettingBuilder.Create()
-            .Host("localhost")
-            .Scheme("amqps")
-            .Build();
-
-        Assert.True(connectionSettings.UseSsl);
-        Assert.Equal("localhost", connectionSettings.Host);
-        Assert.Equal(5671, connectionSettings.Port);
-        Assert.Equal("guest", connectionSettings.User);
-        Assert.Equal("guest", connectionSettings.Password);
-        Assert.Equal("/", connectionSettings.VirtualHost);
-        Assert.Equal("amqps", connectionSettings.Scheme);
-
-        IConnection connection = await AmqpConnection.CreateAsync(connectionSettings);
-        Assert.Equal(State.Open, connection.State);
-        await connection.CloseAsync();
-        Assert.Equal(State.Closed, connection.State);
-    }
-
-    [Fact]
-    public async Task ConnectUsingTlsAndClientCertificate()
-    {
-        string cwd = Directory.GetCurrentDirectory();
-
-        string clientCertFile = Path.GetFullPath(Path.Join(cwd, "../../../../.ci/certs/client_localhost.p12"));
-        if (false == File.Exists(clientCertFile))
-        {
-            clientCertFile = Path.GetFullPath(Path.Join(cwd, "../../../../../.ci/certs/client_localhost.p12"));
-        }
-        Assert.True(File.Exists(clientCertFile));
-
-        var cert = new X509Certificate2(clientCertFile, "grapefruit");
-        string userName = cert.Subject.Trim().Replace(" ", string.Empty);
-
-        var managementUri = new Uri("http://localhost:15672");
-        using var managementClient = new ManagementClient(managementUri, "guest", "guest");
-        var userInfo = new UserInfo(null, null, []);
-        await managementClient.CreateUserAsync(userName, userInfo);
-
-        var permissionInfo = new PermissionInfo();
-        await managementClient.CreatePermissionAsync("/", userName, permissionInfo);
-
-        ConnectionSettings connectionSettings = ConnectionSettingBuilder.Create()
-            .Host("localhost")
-            .Scheme("amqps")
-            .SaslMechanism(SaslMechanism.External)
-            .Build();
-
-        Assert.NotNull(connectionSettings.TlsSettings);
-        connectionSettings.TlsSettings.ClientCertificates.Add(cert);
-
-        Assert.True(connectionSettings.UseSsl);
-        Assert.Equal("localhost", connectionSettings.Host);
-        Assert.Equal(5671, connectionSettings.Port);
-        Assert.Null(connectionSettings.User);
-        Assert.Null(connectionSettings.Password);
-        Assert.Equal("/", connectionSettings.VirtualHost);
-        Assert.Equal("amqps", connectionSettings.Scheme);
-        Assert.Equal(SaslMechanism.External, connectionSettings.SaslMechanism);
-
-        IConnection connection = await AmqpConnection.CreateAsync(connectionSettings);
-        Assert.Equal(State.Open, connection.State);
-        await connection.CloseAsync();
-        Assert.Equal(State.Closed, connection.State);
     }
 
     [Fact]

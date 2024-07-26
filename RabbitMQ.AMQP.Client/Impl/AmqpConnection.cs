@@ -7,29 +7,6 @@ using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-internal class Visitor(AmqpManagement management) : IVisitor
-{
-    private AmqpManagement Management { get; } = management;
-
-    public async Task VisitQueues(IEnumerable<QueueSpec> queueSpec)
-    {
-        foreach (QueueSpec spec in queueSpec)
-        {
-            Trace.WriteLine(TraceLevel.Information, $"Recovering queue {spec.Name}");
-            try
-            {
-                await Management.Queue(spec).Declare()
-                    .ConfigureAwait(false);
-            }
-            catch (Exception e)
-            {
-                Trace.WriteLine(TraceLevel.Error,
-                    $"Error recovering queue {spec.Name}. Error: {e}. Management Status: {Management}");
-            }
-        }
-    }
-}
-
 /// <summary>
 /// AmqpConnection is the concrete implementation of <see cref="IConnection"/>
 /// It is a wrapper around the AMQP.Net Lite <see cref="Connection"/> class
@@ -38,7 +15,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
 {
     private const string ConnectionNotRecoveredCode = "CONNECTION_NOT_RECOVERED";
     private const string ConnectionNotRecoveredMessage = "Connection not recovered";
-    private readonly SemaphoreSlim _semaphoreClose = new(1, 1);
+    private readonly SemaphoreSlim _semaphoreClose = new(1, 1); // TODO this needs to be Disposed
 
     // The native AMQP.Net Lite connection
     private Connection? _nativeConnection;
@@ -55,7 +32,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
 
     private void ChangePublishersStatus(State state, Error? error)
     {
-        foreach (var publisher1 in Publishers.Values)
+        foreach (IPublisher publisher1 in Publishers.Values)
         {
             var publisher = (AmqpPublisher)publisher1;
             publisher.ChangeStatus(state, error);
@@ -64,7 +41,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
 
     private void ChangeConsumersStatus(State state, Error? error)
     {
-        foreach (var consumer1 in Consumers.Values)
+        foreach (IConsumer consumer1 in Consumers.Values)
         {
             var consumer = (AmqpConsumer)consumer1;
             consumer.ChangeStatus(state, error);
@@ -79,7 +56,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
 
     private async Task ReconnectPublishers()
     {
-        foreach (var publisher1 in Publishers.Values)
+        foreach (IPublisher publisher1 in Publishers.Values)
         {
             var publisher = (AmqpPublisher)publisher1;
             await publisher.Reconnect().ConfigureAwait(false);
@@ -88,7 +65,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
 
     private async Task ReconnectConsumers()
     {
-        foreach (var consumer1 in Consumers.Values)
+        foreach (IConsumer consumer1 in Consumers.Values)
         {
             var consumer = (AmqpConsumer)consumer1;
             await consumer.Reconnect().ConfigureAwait(false);
@@ -419,7 +396,6 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
         return publisherBuilder;
     }
 
-
     public override async Task CloseAsync()
     {
         await _semaphoreClose.WaitAsync()
@@ -459,10 +435,32 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
         OnNewStatus(State.Closed, null);
     }
 
-
     public override string ToString()
     {
         string info = $"AmqpConnection{{ConnectionSettings='{_connectionSettings}', Status='{State.ToString()}'}}";
         return info;
+    }
+}
+
+internal class Visitor(AmqpManagement management) : IVisitor
+{
+    private AmqpManagement Management { get; } = management;
+
+    public async Task VisitQueues(IEnumerable<QueueSpec> queueSpec)
+    {
+        foreach (QueueSpec spec in queueSpec)
+        {
+            Trace.WriteLine(TraceLevel.Information, $"Recovering queue {spec.Name}");
+            try
+            {
+                await Management.Queue(spec).Declare()
+                    .ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                Trace.WriteLine(TraceLevel.Error,
+                    $"Error recovering queue {spec.Name}. Error: {e}. Management Status: {Management}");
+            }
+        }
     }
 }

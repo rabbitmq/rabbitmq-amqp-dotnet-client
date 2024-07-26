@@ -416,11 +416,17 @@ RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.IsActivate() -> bool
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.IsTopologyActive() -> bool
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.Topology(bool activated) -> RabbitMQ.AMQP.Client.IRecoveryConfiguration!
 RabbitMQ.AMQP.Client.Impl.TlsSettings
+RabbitMQ.AMQP.Client.Impl.TlsSettings.AcceptablePolicyErrors.get -> System.Net.Security.SslPolicyErrors
+RabbitMQ.AMQP.Client.Impl.TlsSettings.AcceptablePolicyErrors.set -> void
 RabbitMQ.AMQP.Client.Impl.TlsSettings.CheckCertificateRevocation.get -> bool
+RabbitMQ.AMQP.Client.Impl.TlsSettings.CheckCertificateRevocation.set -> void
 RabbitMQ.AMQP.Client.Impl.TlsSettings.ClientCertificates.get -> System.Security.Cryptography.X509Certificates.X509CertificateCollection!
 RabbitMQ.AMQP.Client.Impl.TlsSettings.LocalCertificateSelectionCallback.get -> System.Net.Security.LocalCertificateSelectionCallback?
+RabbitMQ.AMQP.Client.Impl.TlsSettings.LocalCertificateSelectionCallback.set -> void
 RabbitMQ.AMQP.Client.Impl.TlsSettings.Protocols.get -> System.Security.Authentication.SslProtocols
+RabbitMQ.AMQP.Client.Impl.TlsSettings.Protocols.set -> void
 RabbitMQ.AMQP.Client.Impl.TlsSettings.RemoteCertificateValidationCallback.get -> System.Net.Security.RemoteCertificateValidationCallback?
+RabbitMQ.AMQP.Client.Impl.TlsSettings.RemoteCertificateValidationCallback.set -> void
 RabbitMQ.AMQP.Client.Impl.TlsSettings.TlsSettings() -> void
 RabbitMQ.AMQP.Client.Impl.TlsSettings.TlsSettings(System.Security.Authentication.SslProtocols protocols) -> void
 RabbitMQ.AMQP.Client.Impl.Utils
@@ -485,11 +491,17 @@ RabbitMQ.AMQP.Client.IStreamSpecification.MaxAge(System.TimeSpan maxAge) -> Rabb
 RabbitMQ.AMQP.Client.IStreamSpecification.MaxSegmentSizeBytes(RabbitMQ.AMQP.Client.ByteCapacity! maxSegmentSize) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.IStreamSpecification.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.ITlsSettings
+RabbitMQ.AMQP.Client.ITlsSettings.AcceptablePolicyErrors.get -> System.Net.Security.SslPolicyErrors
+RabbitMQ.AMQP.Client.ITlsSettings.AcceptablePolicyErrors.set -> void
 RabbitMQ.AMQP.Client.ITlsSettings.CheckCertificateRevocation.get -> bool
+RabbitMQ.AMQP.Client.ITlsSettings.CheckCertificateRevocation.set -> void
 RabbitMQ.AMQP.Client.ITlsSettings.ClientCertificates.get -> System.Security.Cryptography.X509Certificates.X509CertificateCollection!
 RabbitMQ.AMQP.Client.ITlsSettings.LocalCertificateSelectionCallback.get -> System.Net.Security.LocalCertificateSelectionCallback?
+RabbitMQ.AMQP.Client.ITlsSettings.LocalCertificateSelectionCallback.set -> void
 RabbitMQ.AMQP.Client.ITlsSettings.Protocols.get -> System.Security.Authentication.SslProtocols
+RabbitMQ.AMQP.Client.ITlsSettings.Protocols.set -> void
 RabbitMQ.AMQP.Client.ITlsSettings.RemoteCertificateValidationCallback.get -> System.Net.Security.RemoteCertificateValidationCallback?
+RabbitMQ.AMQP.Client.ITlsSettings.RemoteCertificateValidationCallback.set -> void
 RabbitMQ.AMQP.Client.ITopologyListener
 RabbitMQ.AMQP.Client.ITopologyListener.Clear() -> void
 RabbitMQ.AMQP.Client.ITopologyListener.QueueCount() -> int
