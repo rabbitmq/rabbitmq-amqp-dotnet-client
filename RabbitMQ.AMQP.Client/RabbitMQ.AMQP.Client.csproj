@@ -30,7 +30,6 @@
 
   <ItemGroup>
     <PackageReference Include="AMQPNetLite.Core" />
-    <PackageReference Include="MinVer" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

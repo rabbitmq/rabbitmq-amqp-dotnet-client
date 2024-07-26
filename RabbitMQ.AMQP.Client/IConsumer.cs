@@ -2,7 +2,6 @@ using Amqp.Listener;
 
 namespace RabbitMQ.AMQP.Client;
 
-
 public class ConsumerException(string message) : Exception(message);
 public delegate void MessageHandler(IContext context, IMessage message);
 
