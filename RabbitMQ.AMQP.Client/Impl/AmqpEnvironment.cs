@@ -3,33 +3,27 @@ using System.Collections.ObjectModel;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public class Environment() : IEnvironment
+public class AmqpEnvironment : IEnvironment
 {
     private IConnectionSettings? ConnectionSettings { get; }
     private long _sequentialId = 0;
     private readonly ConcurrentDictionary<long, IConnection> _connections = [];
 
-    private Environment(IConnectionSettings connectionSettings) : this()
+    private AmqpEnvironment(IConnectionSettings connectionSettings)
     {
         ConnectionSettings = connectionSettings;
     }
 
-    public static async Task<IEnvironment> CreateAsync(IConnectionSettings connectionSettings)
+    public static Task<IEnvironment> CreateAsync(IConnectionSettings connectionSettings)
     {
-        var env = new Environment(connectionSettings);
-        await env.CreateConnectionAsync().ConfigureAwait(false);
-        return env;
+        return Task.FromResult<IEnvironment>(new AmqpEnvironment(connectionSettings));
     }
 
-    public async Task<IConnection> CreateConnectionAsync()
+    public async Task<IConnection> CreateConnectionAsync(IConnectionSettings connectionSettings)
     {
-        if (ConnectionSettings == null)
-        {
-            throw new ConnectionException("Connection settings are not set");
-        }
-
-        IConnection c = await AmqpConnection.CreateAsync(ConnectionSettings).ConfigureAwait(false);
+        IConnection c = await AmqpConnection.CreateAsync(connectionSettings).ConfigureAwait(false);
         c.Id = Interlocked.Increment(ref _sequentialId);
+        _connections.TryAdd(c.Id, c);
         c.ChangeState += (sender, previousState, currentState, failureCause) =>
         {
             if (currentState != State.Closed)
@@ -43,11 +37,20 @@ public class Environment() : IEnvironment
             }
         };
         return c;
+    }
 
+    public async Task<IConnection> CreateConnectionAsync()
+    {
+        if (ConnectionSettings != null)
+        {
+            return await CreateConnectionAsync(ConnectionSettings).ConfigureAwait(false);
+        }
+
+        throw new ConnectionException("Connection settings are not set");
     }
 
     public ReadOnlyCollection<IConnection> GetConnections() =>
-        new ReadOnlyCollection<IConnection>(_connections.Values.ToList());
+        new(_connections.Values.ToList());
 
     public Task CloseAsync() => Task.WhenAll(_connections.Values.Select(c => c.CloseAsync()));
 }
