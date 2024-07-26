@@ -22,4 +22,8 @@ public interface IConnection : ILifeCycle
     IConsumerBuilder ConsumerBuilder();
 
     public ReadOnlyCollection<IPublisher> GetPublishers();
+
+    public ReadOnlyCollection<IConsumer> GetConsumers();
+
+    public long Id { get; set; }
 }

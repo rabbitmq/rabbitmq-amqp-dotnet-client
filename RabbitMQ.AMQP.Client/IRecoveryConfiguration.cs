@@ -24,6 +24,8 @@ public interface IRecoveryConfiguration
     /// <returns></returns>
     IRecoveryConfiguration BackOffDelayPolicy(IBackOffDelayPolicy backOffDelayPolicy);
 
+    IBackOffDelayPolicy GetBackOffDelayPolicy();
+
     /// <summary>
     /// Define if the recovery of the topology is activated.
     /// When Activated the connection will try to recover the topology after a reconnection.

@@ -17,6 +17,9 @@ public interface IConnectionSettings : IEquatable<IConnectionSettings>
     bool UseSsl { get; }
     SaslMechanism SaslMechanism { get; }
     ITlsSettings? TlsSettings { get; }
+
+    IRecoveryConfiguration Recovery { get; }
+
 }
 
 /// <summary>

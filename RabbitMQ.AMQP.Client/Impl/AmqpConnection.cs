@@ -95,7 +95,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
         }
     }
 
-    private readonly ConnectionSettings _connectionSettings;
+    private readonly IConnectionSettings _connectionSettings;
     internal readonly AmqpSessionManagement _nativePubSubSessions;
 
     // TODO: Implement the semaphore to avoid multiple connections
@@ -116,6 +116,13 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
         return Publishers.Values.ToList().AsReadOnly();
     }
 
+    public ReadOnlyCollection<IConsumer> GetConsumers()
+    {
+        return Consumers.Values.ToList().AsReadOnly();
+    }
+
+    public long Id { get; set; }
+
     /// <summary>
     /// Creates a new instance of <see cref="AmqpConnection"/>
     /// Through the Connection is possible to create:
@@ -124,7 +131,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     /// </summary>
     /// <param name="connectionSettings"></param>
     /// <returns></returns>
-    public static async Task<IConnection> CreateAsync(ConnectionSettings connectionSettings)
+    public static async Task<IConnection> CreateAsync(IConnectionSettings connectionSettings)
     {
         var connection = new AmqpConnection(connectionSettings);
         await connection.OpenAsync()
@@ -158,7 +165,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
         }
     }
 
-    private AmqpConnection(ConnectionSettings connectionSettings)
+    private AmqpConnection(IConnectionSettings connectionSettings)
     {
         _connectionSettings = connectionSettings;
         _nativePubSubSessions = new AmqpSessionManagement(this, 1);
@@ -198,10 +205,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             var open = new Open
             {
                 HostName = $"vhost:{_connectionSettings.VirtualHost}",
-                Properties = new Fields()
-                {
-                    [new Symbol("connection_name")] = _connectionSettings.ConnectionName,
-                }
+                Properties = new Fields() { [new Symbol("connection_name")] = _connectionSettings.ConnectionName, }
             };
 
             void onOpened(Amqp.IConnection connection, Open open1)
@@ -224,12 +228,14 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
 
                 if (_connectionSettings.TlsSettings.LocalCertificateSelectionCallback is not null)
                 {
-                    cf.SSL.LocalCertificateSelectionCallback = _connectionSettings.TlsSettings.LocalCertificateSelectionCallback;
+                    cf.SSL.LocalCertificateSelectionCallback =
+                        _connectionSettings.TlsSettings.LocalCertificateSelectionCallback;
                 }
 
                 if (_connectionSettings.TlsSettings.RemoteCertificateValidationCallback is not null)
                 {
-                    cf.SSL.RemoteCertificateValidationCallback = _connectionSettings.TlsSettings.RemoteCertificateValidationCallback;
+                    cf.SSL.RemoteCertificateValidationCallback =
+                        _connectionSettings.TlsSettings.RemoteCertificateValidationCallback;
                 }
             }
 
@@ -240,7 +246,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
 
             try
             {
-                _nativeConnection = await cf.CreateAsync(_connectionSettings.Address, open: open, onOpened: onOpened)
+                _nativeConnection = await cf.CreateAsync((_connectionSettings as ConnectionSettings)?.Address, open: open, onOpened: onOpened)
                     .ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -294,7 +300,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                     // we have to check if the recovery is active.
                     // The user may want to disable the recovery mechanism
                     // the user can use the lifecycle callback to handle the error
-                    if (!_connectionSettings.RecoveryConfiguration.IsActivate())
+                    if (!_connectionSettings.Recovery.IsActivate())
                     {
                         OnNewStatus(State.Closed, Utils.ConvertError(error));
                         ChangeEntitiesStatus(State.Closed, Utils.ConvertError(error));
@@ -317,7 +323,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                                // the user may want to disable the backoff policy or 
                                // the backoff policy is not active due of some condition
                                // for example: Reaching the maximum number of retries and avoid the forever loop
-                               _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().IsActive() &&
+                               _connectionSettings.Recovery.GetBackOffDelayPolicy().IsActive() &&
 
                                // even we set the status to reconnecting up, we need to check if the connection is still in the
                                // reconnecting status. The user may close the connection in the meanwhile
@@ -325,11 +331,11 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                         {
                             try
                             {
-                                int next = _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().Delay();
+                                int next = _connectionSettings.Recovery.GetBackOffDelayPolicy().Delay();
 
                                 Trace.WriteLine(TraceLevel.Information,
                                     $"Trying Recovering connection in {next} milliseconds, " +
-                                    $"attempt: {_connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().CurrentAttempt}. " +
+                                    $"attempt: {_connectionSettings.Recovery.GetBackOffDelayPolicy().CurrentAttempt}. " +
                                     $"Info: {ToString()})");
 
                                 await Task.Delay(TimeSpan.FromMilliseconds(next))
@@ -346,7 +352,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                             }
                         }
 
-                        _connectionSettings.RecoveryConfiguration.GetBackOffDelayPolicy().Reset();
+                        _connectionSettings.Recovery.GetBackOffDelayPolicy().Reset();
                         string connectionDescription = connected ? "recovered" : "not recovered";
                         Trace.WriteLine(TraceLevel.Information,
                             $"Connection {connectionDescription}. Info: {ToString()}");
@@ -356,15 +362,15 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                             Trace.WriteLine(TraceLevel.Verbose, $"connection is closed. Info: {ToString()}");
                             OnNewStatus(State.Closed,
                                 new Error(ConnectionNotRecoveredCode,
-                                    $"{ConnectionNotRecoveredMessage}, recover status: {_connectionSettings.RecoveryConfiguration}"));
+                                    $"{ConnectionNotRecoveredMessage}, recover status: {_connectionSettings.Recovery}"));
 
                             ChangeEntitiesStatus(State.Closed, new Error(ConnectionNotRecoveredCode,
-                                $"{ConnectionNotRecoveredMessage}, recover status: {_connectionSettings.RecoveryConfiguration}"));
+                                $"{ConnectionNotRecoveredMessage}, recover status: {_connectionSettings.Recovery}"));
 
                             return;
                         }
 
-                        if (_connectionSettings.RecoveryConfiguration.IsTopologyActive())
+                        if (_connectionSettings.Recovery.IsTopologyActive())
                         {
                             Trace.WriteLine(TraceLevel.Information, $"Recovering topology. Info: {ToString()}");
                             var visitor = new Visitor(_management);
