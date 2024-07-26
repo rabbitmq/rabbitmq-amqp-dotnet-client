@@ -14,6 +14,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using EasyNetQ.Management.Client;
+using EasyNetQ.Management.Client.Model;
 using Xunit.Sdk;
 
 namespace Tests
@@ -253,14 +254,20 @@ namespace Tests
             });
         }
 
-        public static bool BindsBetweenExchangeAndQueueExists(string exchange, string queue)
+        public static Task WaitUntilBindingsBetweenExchangeAndQueueExistAsync(string exchangeNameStr, string queueNameStr)
         {
-            Task<HttpResponseMessage> resp = CreateHttpClient()
-                .GetAsync(
-                    $"http://localhost:15672/api/bindings/%2F/e/{Uri.EscapeDataString(exchange)}/q/{Uri.EscapeDataString(queue)}");
-            resp.Wait(TimeSpan.FromSeconds(10));
-            string body = resp.Result.Content.ReadAsStringAsync().Result;
-            return body != "[]" && resp.Result.IsSuccessStatusCode;
+            return WaitUntilAsync(() =>
+            {
+                return CheckBindingsBetweenExchangeAndQueueAsync(exchangeNameStr, queueNameStr, checkExisting: true);
+            });
+        }
+
+        public static Task WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(string exchangeNameStr, string queueNameStr)
+        {
+            return WaitUntilAsync(() =>
+            {
+                return CheckBindingsBetweenExchangeAndQueueAsync(exchangeNameStr, queueNameStr, checkExisting: false);
+            });
         }
 
         public static bool ArgsBindsBetweenExchangeAndQueueExists(string exchange, string queue,
@@ -379,20 +386,23 @@ namespace Tests
 
         private static async Task<bool> CheckExchangeAsync(string exchangeNameStr, bool checkExisting = true)
         {
+            // Assume success
+            bool rv = true;
+
             var managementUri = new Uri("http://localhost:15672");
             using var managementClient = new ManagementClient(managementUri, "guest", "guest");
 
-            var exchangeName = new EasyNetQ.Management.Client.Model.ExchangeName(exchangeNameStr, "/");
+            var exchangeName = new ExchangeName(exchangeNameStr, "/");
             try
             {
-                EasyNetQ.Management.Client.Model.Exchange? exchange = await managementClient.GetExchangeAsync(exchangeName);
+                Exchange? exchange = await managementClient.GetExchangeAsync(exchangeName);
                 if (checkExisting)
                 {
-                    return exchange is not null;
+                    rv = exchange is not null;
                 }
                 else
                 {
-                    return exchange is null;
+                    rv = exchange is null;
                 }
             }
             catch (UnexpectedHttpStatusCodeException ex)
@@ -401,11 +411,11 @@ namespace Tests
                 {
                     if (checkExisting)
                     {
-                        return false;
+                        rv = false;
                     }
                     else
                     {
-                        return true;
+                        rv = true;
                     }
                 }
                 else
@@ -413,24 +423,29 @@ namespace Tests
                     throw;
                 }
             }
+
+            return rv;
         }
 
         private static async Task<bool> CheckQueueAsync(string queueNameStr, bool checkExisting = true)
         {
+            // Assume success
+            bool rv = true;
+
             var managementUri = new Uri("http://localhost:15672");
             using var managementClient = new ManagementClient(managementUri, "guest", "guest");
 
-            var queueName = new EasyNetQ.Management.Client.Model.QueueName(queueNameStr, "/");
+            var queueName = new QueueName(queueNameStr, "/");
             try
             {
-                EasyNetQ.Management.Client.Model.Queue? queue = await managementClient.GetQueueAsync(queueName);
+                Queue? queue = await managementClient.GetQueueAsync(queueName);
                 if (checkExisting)
                 {
-                    return queue is not null;
+                    rv = queue is not null;
                 }
                 else
                 {
-                    return queue is null;
+                    rv = queue is null;
                 }
             }
             catch (UnexpectedHttpStatusCodeException ex)
@@ -439,11 +454,11 @@ namespace Tests
                 {
                     if (checkExisting)
                     {
-                        return false;
+                        rv = false;
                     }
                     else
                     {
-                        return true;
+                        rv = true;
                     }
                 }
                 else
@@ -451,6 +466,54 @@ namespace Tests
                     throw;
                 }
             }
+
+            return rv;
+        }
+
+        private static async Task<bool> CheckBindingsBetweenExchangeAndQueueAsync(string exchangeNameStr, string queueNameStr, bool checkExisting = true)
+        {
+            // Assume success
+            bool rv = true;
+
+            var managementUri = new Uri("http://localhost:15672");
+            using var managementClient = new ManagementClient(managementUri, "guest", "guest");
+
+            var exchangeName = new ExchangeName(exchangeNameStr, "/");
+            var queueName = new QueueName(queueNameStr, "/");
+            try
+            {
+                IReadOnlyList<Binding> bindings = await managementClient.GetQueueBindingsAsync(exchangeName, queueName);
+                if (checkExisting)
+                {
+                    if (bindings.Count == 0)
+                    {
+                        rv = false;
+                    }
+                }
+                else
+                {
+                    if (bindings.Count > 0)
+                    {
+                        rv = false;
+                    }
+                }
+            }
+            catch (UnexpectedHttpStatusCodeException ex)
+            {
+                if (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    if (checkExisting)
+                    {
+                        rv = false;
+                    }
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return rv;
         }
     }
 }

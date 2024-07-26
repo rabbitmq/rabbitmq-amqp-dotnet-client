@@ -25,16 +25,12 @@ public class BindingsTests
 
         await SystemUtils.WaitUntilExchangeExistsAsync(sourceExchange);
 
-        SystemUtils.WaitUntil(() =>
-            SystemUtils.BindsBetweenExchangeAndQueueExists(sourceExchange,
-                queueDestination));
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync(sourceExchange, queueDestination);
 
         await management.Binding().SourceExchange(sourceExchange).DestinationQueue(queueDestination)
             .Key("key").Unbind();
 
-        SystemUtils.WaitUntil(() =>
-            !SystemUtils.BindsBetweenExchangeAndQueueExists(sourceExchange,
-                queueDestination));
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(sourceExchange, queueDestination);
 
         await management.ExchangeDeletion().Delete(sourceExchange);
         await management.QueueDeletion().Delete(queueDestination);
@@ -49,30 +45,28 @@ public class BindingsTests
     {
         IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         IManagement management = connection.Management();
+
         await management.Exchange("exchange_bind_two_times").Declare();
         await management.Queue().Name("queue_bind_two_times").Declare();
+
         await management.Binding().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
             .Key("first_key").Bind();
         await management.Binding().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
             .Key("second_key").Bind();
-        SystemUtils.WaitUntil(() =>
-            SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_bind_two_times",
-                "queue_bind_two_times"));
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync("exchange_bind_two_times", "queue_bind_two_times");
 
         await management.Binding().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
             .Key("first_key")
             .Unbind();
 
-        SystemUtils.WaitUntil(() =>
-            SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_bind_two_times",
-                "queue_bind_two_times"));
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync("exchange_bind_two_times", "queue_bind_two_times");
 
         await management.Binding().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
             .Key("second_key")
             .Unbind();
 
-        SystemUtils.WaitUntil(() => !SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_bind_two_times",
-            "queue_bind_two_times"));
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync("exchange_bind_two_times", "queue_bind_two_times");
 
         await management.ExchangeDeletion().Delete("exchange_bind_two_times");
 
@@ -148,16 +142,16 @@ public class BindingsTests
         SystemUtils.WaitUntil(() =>
             SystemUtils.ArgsBindsBetweenExchangeAndQueueExists("exchange_bindings_with_arguments",
                 "queue_bindings_with_arguments", arguments));
+
         await management.Binding().SourceExchange("exchange_bindings_with_arguments")
             .DestinationQueue("queue_bindings_with_arguments")
             .Key("key").Arguments(arguments).Unbind();
+
         SystemUtils.WaitUntil(() =>
             !SystemUtils.ArgsBindsBetweenExchangeAndQueueExists("exchange_bindings_with_arguments",
                 "queue_bindings_with_arguments", arguments));
 
-        SystemUtils.WaitUntil(() =>
-            !SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_bindings_with_arguments",
-                "queue_bindings_with_arguments"));
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync("exchange_bindings_with_arguments", "queue_bindings_with_arguments");
 
         await management.ExchangeDeletion().Delete("exchange_bindings_with_arguments");
         await management.QueueDeletion().Delete("queue_bindings_with_arguments");
