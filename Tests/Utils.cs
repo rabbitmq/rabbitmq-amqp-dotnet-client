@@ -135,61 +135,44 @@ namespace Tests
                     });
         }
 
-        public static async Task<int> HttpKillConnections(string connectionName)
+        public static async Task<int> KillConnectionAsync(string connectionName)
         {
-            using HttpClientHandler handler = new HttpClientHandler();
-            handler.Credentials = new NetworkCredential("guest", "guest");
-            using HttpClient client = new HttpClient(handler);
+            var managementUri = new Uri("http://localhost:15672");
+            using var managementClient = new ManagementClient(managementUri, "guest", "guest");
 
-            HttpResponseMessage result = await client.GetAsync("http://localhost:15672/api/connections");
-            if (!result.IsSuccessStatusCode && result.StatusCode != HttpStatusCode.NotFound)
-            {
-                throw new XunitException($"HTTP GET failed: {result.StatusCode} {result.ReasonPhrase}");
-            }
-
-            string json = await result.Content.ReadAsStringAsync();
-            IEnumerable<Connection>? connections = JsonSerializer.Deserialize<IEnumerable<Connection>>(json);
-            if (connections == null)
-            {
-                return 0;
-            }
+            IReadOnlyList<EasyNetQ.Management.Client.Model.Connection> connections = await managementClient.GetConnectionsAsync();
 
             // we kill _only_ producer and consumer connections
             // leave the locator up and running to delete the stream
-            IEnumerable<Connection> iEnumerable = connections.Where(x =>
+            IEnumerable<EasyNetQ.Management.Client.Model.Connection> filteredConnections = connections.Where(conn =>
             {
-                if (x.client_properties is null)
+                if (conn.ClientProperties is not null)
                 {
-                    return false;
-                }
-                else
-                {
-                    return x.client_properties["connection_name"].Contains(connectionName);
-                }
-            });
-            Connection[] enumerable = iEnumerable as Connection[] ?? iEnumerable.ToArray();
-            int killed = 0;
-            foreach (Connection conn in enumerable)
-            {
-                /*
-                 * NOTE:
-                 * this is the equivalent to this JS code:
-                 * https://github.com/rabbitmq/rabbitmq-server/blob/master/deps/rabbitmq_management/priv/www/js/formatters.js#L710-L712
-                 *
-                 * function esc(str) {
-                 *   return encodeURIComponent(str);
-                 * }
-                 *
-                 * https://stackoverflow.com/a/4550600
-                 */
-                if (conn.name is not null)
-                {
-                    string s = Uri.EscapeDataString(conn.name);
-                    HttpResponseMessage deleteResult = await client.DeleteAsync($"http://localhost:15672/api/connections/{s}");
-                    if (!deleteResult.IsSuccessStatusCode && result.StatusCode != HttpStatusCode.NotFound)
+                    if (conn.ClientProperties.TryGetValue("connection_name", out object? connectionNameObj))
                     {
-                        throw new XunitException(
-                            $"HTTP DELETE failed: {deleteResult.StatusCode} {deleteResult.ReasonPhrase}");
+                        if (connectionNameObj is not null)
+                        {
+                            string connName = (string)connectionNameObj;
+                            return connName.Contains(connectionName);
+                        }
+                    }
+                }
+
+                return false;
+            });
+
+            int killed = 0;
+            foreach (EasyNetQ.Management.Client.Model.Connection conn in filteredConnections)
+            {
+                try
+                {
+                    await managementClient.CloseConnectionAsync(conn);
+                }
+                catch (UnexpectedHttpStatusCodeException ex)
+                {
+                    if (ex.StatusCode != HttpStatusCode.NotFound)
+                    {
+                        throw;
                     }
                 }
 
@@ -203,14 +186,14 @@ namespace Tests
         {
             await WaitUntilAsync(async () => await IsConnectionOpen(connectionName));
             Wait();
-            await WaitUntilAsync(async () => await HttpKillConnections(connectionName) == 1);
+            await WaitUntilAsync(async () => await KillConnectionAsync(connectionName) == 1);
         }
 
         public static async Task WaitUntilConnectionIsKilledAndOpen(string connectionName)
         {
             await WaitUntilAsync(async () => await IsConnectionOpen(connectionName));
             Wait();
-            await WaitUntilAsync(async () => await HttpKillConnections(connectionName) == 1);
+            await WaitUntilAsync(async () => await KillConnectionAsync(connectionName) == 1);
             Wait();
             await WaitUntilAsync(async () => await IsConnectionOpen(connectionName));
             Wait();
