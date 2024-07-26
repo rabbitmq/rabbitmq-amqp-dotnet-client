@@ -29,6 +29,7 @@ The client is distributed via [NuGet](https://www.nuget.org/packages/RabbitMQ.AM
 - [x] Recovery queues on connection lost
 - [x] Recovery publishers on connection lost
 - [x] Recovery consumers on connection lost
+- [x] Implement Environment to manage the connections
 - [ ] Complete the consumer part with `pause` and `unpause`
 - [ ] Complete the binding/unbinding with the special characters
 - [ ] Complete the queues/exchanges name with the special characters

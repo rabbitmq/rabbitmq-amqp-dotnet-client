@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Tests;
 
-public class AmqpEnvironmentTests
+public class EnvironmentTests
 {
     [Fact]
     public async Task CreateAConnectionWithEnvironment()
