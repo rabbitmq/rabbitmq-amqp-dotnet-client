@@ -17,7 +17,7 @@ public class TlsConnectionTests : IAsyncLifetime
     private readonly ITestOutputHelper _output;
     private readonly Uri _managementUri = new("http://localhost:15672");
     private readonly ManagementClient _managementClient;
-    private readonly bool _isRunningInCI = InitIsRunningInCI();
+    private readonly bool _isRunningInCI = SystemUtils.IsRunningInCI;
 
     public TlsConnectionTests(ITestOutputHelper output)
     {
@@ -139,25 +139,5 @@ public class TlsConnectionTests : IAsyncLifetime
         }
         Assert.True(File.Exists(clientCertFile));
         return clientCertFile;
-    }
-
-    private static bool InitIsRunningInCI()
-    {
-        if (bool.TryParse(Environment.GetEnvironmentVariable("CI"), out bool ci))
-        {
-            if (ci == true)
-            {
-                return true;
-            }
-        }
-        else if (bool.TryParse(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), out ci))
-        {
-            if (ci == true)
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

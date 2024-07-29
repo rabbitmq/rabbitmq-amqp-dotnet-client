@@ -29,7 +29,7 @@ public class EnvironmentTests
 
         IConnection connection = await env.CreateConnectionAsync();
         Assert.NotNull(connection);
-        await SystemUtils.WaitUntilAsync(async () => await SystemUtils.IsConnectionOpen(envConnectionName));
+        await SystemUtils.WaitUntilConnectionIsOpen(envConnectionName);
         Assert.NotEmpty(env.GetConnections());
         Assert.Single(env.GetConnections());
 
@@ -39,7 +39,7 @@ public class EnvironmentTests
             ConnectionSettingBuilder.Create().ConnectionName(envConnectionName2).Build());
         Assert.NotNull(connection2);
         Assert.Equal(2, env.GetConnections().Count);
-        await SystemUtils.WaitUntilAsync(async () => await SystemUtils.IsConnectionOpen(envConnectionName2));
+        await SystemUtils.WaitUntilConnectionIsOpen(envConnectionName2);
 
         await env.CloseAsync();
         Assert.Equal(State.Closed, connection.State);
@@ -54,7 +54,7 @@ public class EnvironmentTests
         IEnvironment env = await AmqpEnvironment.CreateAsync(
             ConnectionSettingBuilder.Create().ConnectionName(envConnectionName).Build());
         IConnection connection = await env.CreateConnectionAsync();
-        await SystemUtils.WaitUntilAsync(async () => await SystemUtils.IsConnectionOpen(envConnectionName));
+        await SystemUtils.WaitUntilConnectionIsOpen(envConnectionName);
         Assert.Single(env.GetConnections());
         Assert.Equal(1, env.GetConnections()[0].Id);
 
@@ -64,32 +64,30 @@ public class EnvironmentTests
             ConnectionSettingBuilder.Create().ConnectionName(envConnectionName2).Build());
         Assert.Equal(2, env.GetConnections().Count);
         Assert.Equal(2, env.GetConnections()[1].Id);
-        await SystemUtils.WaitUntilAsync(async () => await SystemUtils.IsConnectionOpen(envConnectionName2));
-
+        await SystemUtils.WaitUntilConnectionIsOpen(envConnectionName2);
 
         string envConnectionName3 = "EnvironmentConnection3_" + Guid.NewGuid().ToString();
         IConnection connection3 = await env.CreateConnectionAsync(
             ConnectionSettingBuilder.Create().ConnectionName(envConnectionName3).Build());
         Assert.Equal(3, env.GetConnections().Count);
         Assert.Equal(3, env.GetConnections()[2].Id);
-        await SystemUtils.WaitUntilAsync(async () => await SystemUtils.IsConnectionOpen(envConnectionName3));
-
+        await SystemUtils.WaitUntilConnectionIsOpen(envConnectionName3);
 
         // closing 
         await connection.CloseAsync();
         Assert.Equal(State.Closed, connection.State);
         Assert.Equal(2, env.GetConnections().Count);
 
-        await SystemUtils.WaitUntilAsync(async () => await SystemUtils.IsConnectionOpen(envConnectionName) == false);
+        await SystemUtils.WaitUntilConnectionIsClosed(envConnectionName);
         await connection2.CloseAsync();
         Assert.Equal(State.Closed, connection2.State);
         Assert.Single(env.GetConnections());
-        await SystemUtils.WaitUntilAsync(async () => await SystemUtils.IsConnectionOpen(envConnectionName2) == false);
+        await SystemUtils.WaitUntilConnectionIsClosed(envConnectionName2);
 
 
         await connection3.CloseAsync();
         Assert.Equal(State.Closed, connection3.State);
-        await SystemUtils.WaitUntilAsync(async () => await SystemUtils.IsConnectionOpen(envConnectionName3) == false);
+        await SystemUtils.WaitUntilConnectionIsClosed(envConnectionName3);
 
 
         Assert.Empty(env.GetConnections());

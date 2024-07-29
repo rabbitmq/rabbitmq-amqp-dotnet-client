@@ -182,8 +182,17 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             var open = new Open
             {
                 HostName = $"vhost:{_connectionSettings.VirtualHost}",
-                Properties = new Fields() { [new Symbol("connection_name")] = _connectionSettings.ConnectionName, }
+                Properties = new Fields()
+                {
+                    [new Symbol("connection_name")] = _connectionSettings.ConnectionName,
+                }
             };
+
+            if (_connectionSettings.MaxFrameSize > uint.MinValue)
+            {
+                // Note: when set here, there is no need to set cf.AMQP.MaxFrameSize
+                open.MaxFrameSize = _connectionSettings.MaxFrameSize;
+            }
 
             void onOpened(Amqp.IConnection connection, Open open1)
             {

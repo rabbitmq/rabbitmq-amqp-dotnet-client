@@ -125,7 +125,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(State.Open, connection.State);
         await SystemUtils.WaitUntilConnectionIsKilled(connectionName);
         resetEvent.WaitOne(TimeSpan.FromSeconds(5));
-        SystemUtils.WaitUntil(() => (listFromStatus.Count >= 2));
+        await SystemUtils.WaitUntilFuncAsync(() => (listFromStatus.Count >= 2));
         Assert.Equal(State.Open, listFromStatus[0]);
         Assert.Equal(State.Reconnecting, listToStatus[0]);
         Assert.NotNull(listError[0]);
@@ -136,7 +136,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         resetEvent.Set();
         await connection.CloseAsync();
         resetEvent.WaitOne(TimeSpan.FromSeconds(5));
-        SystemUtils.WaitUntil(() => (listFromStatus.Count >= 4));
+        await SystemUtils.WaitUntilFuncAsync(() => (listFromStatus.Count >= 4));
 
         Assert.Equal(State.Open, listFromStatus[2]);
         Assert.Equal(State.Closing, listToStatus[2]);
@@ -183,7 +183,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(State.Open, connection.State);
         await SystemUtils.WaitUntilConnectionIsKilled(connectionName);
         resetEvent.WaitOne(TimeSpan.FromSeconds(5));
-        SystemUtils.WaitUntil(() => (listFromStatus.Count >= 2));
+        await SystemUtils.WaitUntilFuncAsync(() => (listFromStatus.Count >= 2));
         Assert.Equal(State.Open, listFromStatus[0]);
         Assert.Equal(State.Reconnecting, listToStatus[0]);
         Assert.NotNull(listError[0]);
@@ -231,11 +231,14 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         await SystemUtils.WaitUntilConnectionIsKilled(connectionName);
         await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
-        SystemUtils.WaitUntil(() => recoveryEvents == 2);
-        SystemUtils.WaitUntil(() => SystemUtils.QueueExists(queueName));
+        await SystemUtils.WaitUntilFuncAsync(() => recoveryEvents == 2);
+
+        await SystemUtils.WaitUntilQueueExistsAsync(queueName);
 
         await connection.CloseAsync();
-        SystemUtils.WaitUntil(() => !SystemUtils.QueueExists(queueName));
+
+        await SystemUtils.WaitUntilQueueDeletedAsync(queueName);
+
         TestOutputHelper.WriteLine(
             $"Recover: Queue count: {management.TopologyListener().QueueCount()} , events: {recoveryEvents}");
         Assert.Equal(0, management.TopologyListener().QueueCount());
@@ -277,7 +280,9 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         await SystemUtils.WaitUntilConnectionIsKilled(connectionName);
         await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
-        SystemUtils.WaitUntil(() => SystemUtils.QueueExists(queueName) == false);
+
+        await SystemUtils.WaitUntilQueueDeletedAsync(queueName);
+
         await connection.CloseAsync();
         Assert.Equal(0, management.TopologyListener().QueueCount());
         TestOutputHelper.WriteLine(
