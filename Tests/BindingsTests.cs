@@ -98,17 +98,13 @@ public class BindingsTests
 
         await SystemUtils.WaitUntilExchangeExistsAsync(sourceExchange);
 
-        SystemUtils.WaitUntil(() =>
-            SystemUtils.BindsBetweenExchangeAndExchangeExists(sourceExchange,
-                destinationExchange));
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(sourceExchange, destinationExchange);
 
         await management.Binding().SourceExchange(sourceExchange)
             .DestinationExchange(destinationExchange)
             .Key(key).Unbind();
 
-        SystemUtils.WaitUntil(() =>
-            !SystemUtils.BindsBetweenExchangeAndExchangeExists(sourceExchange,
-                destinationExchange));
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(sourceExchange, destinationExchange);
 
         await management.ExchangeDeletion().Delete(sourceExchange);
         await management.ExchangeDeletion().Delete(destinationExchange);

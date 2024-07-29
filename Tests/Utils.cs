@@ -4,12 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Reflection;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -267,16 +264,21 @@ namespace Tests
             });
         }
 
-        public static bool BindsBetweenExchangeAndExchangeExists(string sourceExchange, string destinationExchange)
+        public static Task WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(string sourceExchangeNameStr, string destinationExchangeNameStr)
         {
-            Task<HttpResponseMessage> resp = CreateHttpClient()
-                .GetAsync(
-                    $"http://localhost:15672/api/bindings/%2F/e/{Uri.EscapeDataString(sourceExchange)}/e/{Uri.EscapeDataString(destinationExchange)}");
-            resp.Wait(TimeSpan.FromSeconds(10));
-            string body = resp.Result.Content.ReadAsStringAsync().Result;
-            return body != "[]" && resp.Result.IsSuccessStatusCode;
+            return WaitUntilAsync(() =>
+            {
+                return CheckBindingsBetweenExchangeAndExchangeAsync(sourceExchangeNameStr, destinationExchangeNameStr, checkExisting: true);
+            });
         }
 
+        public static Task WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(string sourceExchangeNameStr, string destinationExchangeNameStr)
+        {
+            return WaitUntilAsync(() =>
+            {
+                return CheckBindingsBetweenExchangeAndExchangeAsync(sourceExchangeNameStr, destinationExchangeNameStr, checkExisting: false);
+            });
+        }
 
         public static int HttpGetQMsgCount(string queue)
         {
@@ -299,46 +301,6 @@ namespace Tests
             }
 
             return obj.TryGetValue("messages_ready", out var value) ? Convert.ToInt32(value.ToString()) : 0;
-        }
-
-        public static void HttpPost(string jsonBody, string api)
-        {
-            HttpContent content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-            var task = CreateHttpClient().PostAsync($"http://localhost:15672/api/{api}", content);
-            task.Wait();
-            var result = task.Result;
-            if (!result.IsSuccessStatusCode)
-            {
-                throw new XunitException(string.Format("HTTP POST failed: {0} {1}", result.StatusCode,
-                    result.ReasonPhrase));
-            }
-        }
-
-        public static void HttpDeleteQueue(string queue)
-        {
-            Task<HttpResponseMessage> task = CreateHttpClient().DeleteAsync($"http://localhost:15672/api/queues/%2F/{queue}");
-            task.Wait();
-            HttpResponseMessage result = task.Result;
-            if (!result.IsSuccessStatusCode && result.StatusCode != HttpStatusCode.NotFound)
-            {
-                throw new XunitException($"HTTP DELETE failed: {result.StatusCode} {result.ReasonPhrase}");
-            }
-        }
-
-        public static byte[] GetFileContent(string fileName)
-        {
-            var codeBaseUrl = new Uri(Assembly.GetExecutingAssembly().Location);
-            string codeBasePath = Uri.UnescapeDataString(codeBaseUrl.AbsolutePath);
-            string? dirPath = Path.GetDirectoryName(codeBasePath);
-            if (dirPath is null)
-            {
-                return [];
-            }
-
-            string filename = Path.Combine(dirPath, "Resources", fileName);
-            Task<byte[]> fileTask = File.ReadAllBytesAsync(filename);
-            fileTask.Wait(TimeSpan.FromSeconds(1));
-            return fileTask.Result;
         }
 
         private static async Task<bool> CheckExchangeAsync(string exchangeNameStr, bool checkExisting = true)
@@ -510,6 +472,53 @@ namespace Tests
                         {
                             rv = false;
                         }
+                    }
+                }
+            }
+            catch (UnexpectedHttpStatusCodeException ex)
+            {
+                if (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    if (checkExisting)
+                    {
+                        rv = false;
+                    }
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return rv;
+        }
+
+        private static async Task<bool> CheckBindingsBetweenExchangeAndExchangeAsync(string sourceExchangeNameStr, string destinationExchangeNameStr,
+            bool checkExisting = true)
+        {
+            // Assume success
+            bool rv = true;
+
+            var managementUri = new Uri("http://localhost:15672");
+            using var managementClient = new ManagementClient(managementUri, "guest", "guest");
+
+            var sourceExchangeName = new ExchangeName(sourceExchangeNameStr, "/");
+            var destinationExchangeName = new ExchangeName(destinationExchangeNameStr, "/");
+            try
+            {
+                IReadOnlyList<Binding> bindings = await managementClient.GetExchangeBindingsAsync(sourceExchangeName, destinationExchangeName);
+                if (checkExisting)
+                {
+                    if (bindings.Count == 0)
+                    {
+                        rv = false;
+                    }
+                }
+                else
+                {
+                    if (bindings.Count > 0)
+                    {
+                        rv = false;
                     }
                 }
             }
