@@ -6,8 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
 using EasyNetQ.Management.Client;
 using EasyNetQ.Management.Client.Model;
@@ -18,14 +16,17 @@ namespace Tests
     public static class SystemUtils
     {
         private static readonly TimeSpan s_initialDelaySpan = TimeSpan.FromMilliseconds(100);
+        private static readonly TimeSpan s_shortDelaySpan = TimeSpan.FromMilliseconds(250);
         private static readonly TimeSpan s_delaySpan = TimeSpan.FromMilliseconds(500);
 
-        // Waits for 10 seconds total by default
-        public static void WaitUntil(Func<bool> func, ushort retries = 40)
+        public static async Task WaitUntilFuncAsync(Func<bool> func, ushort retries = 40)
         {
-            while (!func())
+            await Task.Delay(s_initialDelaySpan);
+
+            while (false == func())
             {
-                Wait(TimeSpan.FromMilliseconds(250));
+                await Task.Delay(s_shortDelaySpan);
+
                 --retries;
                 if (retries == 0)
                 {
@@ -38,7 +39,7 @@ namespace Tests
         {
             await Task.Delay(s_initialDelaySpan);
 
-            while (!await func())
+            while (false == await func())
             {
                 await Task.Delay(s_delaySpan);
 
@@ -50,150 +51,27 @@ namespace Tests
             }
         }
 
-        public static void Wait()
+        public static Task WaitUntilConnectionIsOpen(string connectionName)
         {
-            Thread.Sleep(TimeSpan.FromMilliseconds(500));
+            return WaitUntilAsync(() => CheckConnectionAsync(connectionName, checkOpened: true));
         }
 
-        public static void Wait(TimeSpan wait)
+        public static Task WaitUntilConnectionIsClosed(string connectionName)
         {
-            Thread.Sleep(wait);
-        }
-
-        public static async Task<int> ConnectionsCountByName(string connectionName)
-        {
-            int rv = 0;
-
-            var managementUri = new Uri("http://localhost:15672");
-            using var managementClient = new ManagementClient(managementUri, "guest", "guest");
-
-            IReadOnlyList<Connection> connections = await managementClient.GetConnectionsAsync();
-            if (connections.Count > 0)
-            {
-                rv = connections.Sum(conn =>
-                {
-                    if (conn is null)
-                    {
-                        return 0;
-                    }
-                    else
-                    {
-                        if (conn.ClientProperties is not null)
-                        {
-                            if (conn.ClientProperties.TryGetValue("connection_name", out object? connectionNameObj))
-                            {
-                                if (connectionNameObj is not null)
-                                {
-                                    string connName = (string)connectionNameObj;
-                                    if (connName.Equals(connectionName, StringComparison.InvariantCultureIgnoreCase))
-                                    {
-                                        return 1;
-                                    }
-                                }
-                            }
-                        }
-
-                        return 0;
-                    }
-                });
-            }
-
-            return rv;
-        }
-
-        public static async Task<bool> IsConnectionOpen(string connectionName)
-        {
-            var managementUri = new Uri("http://localhost:15672");
-            using var managementClient = new ManagementClient(managementUri, "guest", "guest");
-
-            IReadOnlyList<EasyNetQ.Management.Client.Model.Connection> connections = await managementClient.GetConnectionsAsync();
-
-            return connections.Any(conn =>
-                    {
-                        if (conn.ClientProperties is not null)
-                        {
-                            if (conn.ClientProperties.TryGetValue("connection_name", out object? connectionNameObj))
-                            {
-                                if (connectionNameObj is not null)
-                                {
-                                    string connName = (string)connectionNameObj;
-                                    return connName.Contains(connectionName);
-                                }
-                            }
-                        }
-
-                        return false;
-                    });
-        }
-
-        public static async Task<int> KillConnectionAsync(string connectionName)
-        {
-            var managementUri = new Uri("http://localhost:15672");
-            using var managementClient = new ManagementClient(managementUri, "guest", "guest");
-
-            IReadOnlyList<EasyNetQ.Management.Client.Model.Connection> connections = await managementClient.GetConnectionsAsync();
-
-            // we kill _only_ producer and consumer connections
-            // leave the locator up and running to delete the stream
-            IEnumerable<EasyNetQ.Management.Client.Model.Connection> filteredConnections = connections.Where(conn =>
-            {
-                if (conn.ClientProperties is not null)
-                {
-                    if (conn.ClientProperties.TryGetValue("connection_name", out object? connectionNameObj))
-                    {
-                        if (connectionNameObj is not null)
-                        {
-                            string connName = (string)connectionNameObj;
-                            return connName.Contains(connectionName);
-                        }
-                    }
-                }
-
-                return false;
-            });
-
-            int killed = 0;
-            foreach (EasyNetQ.Management.Client.Model.Connection conn in filteredConnections)
-            {
-                try
-                {
-                    await managementClient.CloseConnectionAsync(conn);
-                }
-                catch (UnexpectedHttpStatusCodeException ex)
-                {
-                    if (ex.StatusCode != HttpStatusCode.NotFound)
-                    {
-                        throw;
-                    }
-                }
-
-                killed += 1;
-            }
-
-            return killed;
+            return WaitUntilAsync(() => CheckConnectionAsync(connectionName, checkOpened: false));
         }
 
         public static async Task WaitUntilConnectionIsKilled(string connectionName)
         {
-            await WaitUntilAsync(async () => await IsConnectionOpen(connectionName));
-            Wait();
+            await WaitUntilConnectionIsOpen(connectionName);
             await WaitUntilAsync(async () => await KillConnectionAsync(connectionName) == 1);
         }
 
         public static async Task WaitUntilConnectionIsKilledAndOpen(string connectionName)
         {
-            await WaitUntilAsync(async () => await IsConnectionOpen(connectionName));
-            Wait();
+            await WaitUntilConnectionIsOpen(connectionName);
             await WaitUntilAsync(async () => await KillConnectionAsync(connectionName) == 1);
-            Wait();
-            await WaitUntilAsync(async () => await IsConnectionOpen(connectionName));
-            Wait();
-        }
-
-        private static HttpClient CreateHttpClient()
-        {
-            var handler = new HttpClientHandler { Credentials = new NetworkCredential("guest", "guest"), };
-            return new HttpClient(handler);
+            await WaitUntilConnectionIsOpen(connectionName);
         }
 
         public static Task WaitUntilQueueExistsAsync(string queueNameStr)
@@ -287,6 +165,88 @@ namespace Tests
                 long queueMessageCount = await GetQueueMessageCountAsync(queueNameStr);
                 return messageCount == queueMessageCount;
             });
+        }
+
+        private static async Task<bool> CheckConnectionAsync(string connectionName, bool checkOpened = true)
+        {
+            bool rv = true;
+
+            var managementUri = new Uri("http://localhost:15672");
+            using var managementClient = new ManagementClient(managementUri, "guest", "guest");
+
+            IReadOnlyList<Connection> connections = await managementClient.GetConnectionsAsync();
+            rv = connections.Any(conn =>
+                    {
+                        if (conn.ClientProperties is not null)
+                        {
+                            if (conn.ClientProperties.TryGetValue("connection_name", out object? connectionNameObj))
+                            {
+                                if (connectionNameObj is not null)
+                                {
+                                    string connName = (string)connectionNameObj;
+                                    return connName.Contains(connectionName);
+                                }
+                            }
+                        }
+
+                        return false;
+                    });
+
+            if (false == checkOpened)
+            {
+                return !rv;
+            }
+            else
+            {
+                return rv;
+            }
+        }
+
+        private static async Task<int> KillConnectionAsync(string connectionName)
+        {
+            var managementUri = new Uri("http://localhost:15672");
+            using var managementClient = new ManagementClient(managementUri, "guest", "guest");
+
+            IReadOnlyList<Connection> connections = await managementClient.GetConnectionsAsync();
+
+            // we kill _only_ producer and consumer connections
+            // leave the locator up and running to delete the stream
+            IEnumerable<Connection> filteredConnections = connections.Where(conn =>
+            {
+                if (conn.ClientProperties is not null)
+                {
+                    if (conn.ClientProperties.TryGetValue("connection_name", out object? connectionNameObj))
+                    {
+                        if (connectionNameObj is not null)
+                        {
+                            string connName = (string)connectionNameObj;
+                            return connName.Contains(connectionName);
+                        }
+                    }
+                }
+
+                return false;
+            });
+
+            int killed = 0;
+            foreach (Connection conn in filteredConnections)
+            {
+                try
+                {
+                    await managementClient.CloseConnectionAsync(conn);
+                }
+                catch (UnexpectedHttpStatusCodeException ex)
+                {
+                    if (ex.StatusCode != HttpStatusCode.NotFound)
+                    {
+                        throw;
+                    }
+                }
+
+                killed += 1;
+            }
+
+            return killed;
         }
 
         private static async Task<long> GetQueueMessageCountAsync(string queueNameStr)
