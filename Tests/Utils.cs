@@ -63,51 +63,45 @@ namespace Tests
             Thread.Sleep(wait);
         }
 
-        private class Connection
-        {
-            public string? name { get; set; }
-            public Dictionary<string, string>? client_properties { get; set; }
-        }
-
         public static async Task<int> ConnectionsCountByName(string connectionName)
         {
-            using HttpClientHandler handler = new HttpClientHandler();
-            handler.Credentials = new NetworkCredential("guest", "guest");
-            using HttpClient client = new HttpClient(handler);
+            int rv = 0;
 
-            HttpResponseMessage result = await client.GetAsync("http://localhost:15672/api/connections");
-            if (!result.IsSuccessStatusCode)
-            {
-                throw new XunitException(string.Format("HTTP GET failed: {0} {1}", result.StatusCode,
-                    result.ReasonPhrase));
-            }
+            var managementUri = new Uri("http://localhost:15672");
+            using var managementClient = new ManagementClient(managementUri, "guest", "guest");
 
-            object? obj = await JsonSerializer.DeserializeAsync(await result.Content.ReadAsStreamAsync(),
-                typeof(IEnumerable<Connection>));
-            return obj switch
+            IReadOnlyList<Connection> connections = await managementClient.GetConnectionsAsync();
+            if (connections.Count > 0)
             {
-                null => 0,
-                IEnumerable<Connection> connections => connections.Sum(connection =>
+                rv = connections.Sum(conn =>
                 {
-                    if (connection is null)
+                    if (conn is null)
                     {
                         return 0;
                     }
                     else
                     {
-                        if (connection.client_properties is not null &&
-                            (connection.client_properties["connection_name"] == connectionName))
+                        if (conn.ClientProperties is not null)
                         {
-                            return 1;
+                            if (conn.ClientProperties.TryGetValue("connection_name", out object? connectionNameObj))
+                            {
+                                if (connectionNameObj is not null)
+                                {
+                                    string connName = (string)connectionNameObj;
+                                    if (connName.Equals(connectionName, StringComparison.InvariantCultureIgnoreCase))
+                                    {
+                                        return 1;
+                                    }
+                                }
+                            }
                         }
-                        else
-                        {
-                            return 0;
-                        }
+
+                        return 0;
                     }
-                }),
-                _ => 0
-            };
+                });
+            }
+
+            return rv;
         }
 
         public static async Task<bool> IsConnectionOpen(string connectionName)
@@ -253,44 +247,24 @@ namespace Tests
             });
         }
 
-        public static bool ArgsBindsBetweenExchangeAndQueueExists(string exchange, string queue,
-            Dictionary<string, object> argumentsIn)
+        public static Task WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(string exchangeNameStr, string queueNameStr,
+            Dictionary<string, object> args)
         {
-            Task<HttpResponseMessage> resp = CreateHttpClient()
-                .GetAsync(
-                    $"http://localhost:15672/api/bindings/%2F/e/{Uri.EscapeDataString(exchange)}/q/{Uri.EscapeDataString(queue)}");
-            resp.Wait(TimeSpan.FromSeconds(10));
-            string body = resp.Result.Content.ReadAsStringAsync().Result;
-            if (body == "[]")
+            return WaitUntilAsync(() =>
             {
-                return false;
-            }
+                return CheckBindingsBetweenExchangeAndQueueAsync(exchangeNameStr, queueNameStr,
+                    args: args, checkExisting: true);
+            });
+        }
 
-            List<Dictionary<string, object>>? bindingsResults = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(body);
-            if (bindingsResults is not null)
+        public static Task WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(string exchangeNameStr, string queueNameStr,
+            Dictionary<string, object> args)
+        {
+            return WaitUntilAsync(() =>
             {
-                foreach (Dictionary<string, object> argumentResult in bindingsResults)
-                {
-                    Dictionary<string, object>? argumentsResult = JsonSerializer.Deserialize<Dictionary<string, object>>(
-                        argumentResult["arguments"].ToString() ??
-                        throw new InvalidOperationException());
-                    // Check only the key to avoid conversion value problems 
-                    // on the test is enough to avoid to put the same key
-                    // at some point we could add keyValuePair.Value == keyValuePairResult.Value
-                    // keyValuePairResult.Value is a json object
-                    if (argumentsResult is not null)
-                    {
-                        IEnumerable<string> results = argumentsResult.Keys.ToArray()
-                            .Intersect(argumentsIn.Keys.ToArray(), StringComparer.OrdinalIgnoreCase);
-                        if (results.Count() == argumentsIn.Count)
-                        {
-                            return true;
-                        }
-                    }
-                }
-            }
-
-            return false;
+                return CheckBindingsBetweenExchangeAndQueueAsync(exchangeNameStr, queueNameStr,
+                    args: args, checkExisting: false);
+            });
         }
 
         public static bool BindsBetweenExchangeAndExchangeExists(string sourceExchange, string destinationExchange)
@@ -453,7 +427,8 @@ namespace Tests
             return rv;
         }
 
-        private static async Task<bool> CheckBindingsBetweenExchangeAndQueueAsync(string exchangeNameStr, string queueNameStr, bool checkExisting = true)
+        private static async Task<bool> CheckBindingsBetweenExchangeAndQueueAsync(string exchangeNameStr, string queueNameStr,
+            Dictionary<string, object>? args = null, bool checkExisting = true)
         {
             // Assume success
             bool rv = true;
@@ -468,16 +443,73 @@ namespace Tests
                 IReadOnlyList<Binding> bindings = await managementClient.GetQueueBindingsAsync(exchangeName, queueName);
                 if (checkExisting)
                 {
-                    if (bindings.Count == 0)
+                    if (args is not null)
                     {
-                        rv = false;
+                        // We're checking that arguments are equivalent, too
+                        foreach (Binding b in bindings)
+                        {
+                            if (b.Arguments is null)
+                            {
+                                rv = false;
+                                break;
+                            }
+
+                            // Check only the key to avoid conversion value problems 
+                            // on the test is enough to avoid to put the same key
+                            // at some point we could add keyValuePair.Value == keyValuePairResult.Value
+                            // keyValuePairResult.Value is a json object
+                            IEnumerable<string> results = b.Arguments.Keys.Intersect(args.Keys, StringComparer.OrdinalIgnoreCase);
+                            if (results.Count() == args.Count)
+                            {
+                                rv = true;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (bindings.Count == 0)
+                        {
+                            rv = false;
+                        }
                     }
                 }
                 else
                 {
-                    if (bindings.Count > 0)
+                    if (args is not null)
                     {
-                        rv = false;
+                        bool foundMatchingBinding = false;
+                        // We're checking that no bindings have the passed-in args
+                        // So, if we go through all bindings and all args are different,
+                        // we can assume the binding we're checking for is gone
+                        foreach (Binding b in bindings)
+                        {
+                            if (b.Arguments is not null)
+                            {
+                                // Check only the key to avoid conversion value problems 
+                                // on the test is enough to avoid to put the same key
+                                // at some point we could add keyValuePair.Value == keyValuePairResult.Value
+                                // keyValuePairResult.Value is a json object
+                                IEnumerable<string> results = b.Arguments.Keys.Intersect(args.Keys, StringComparer.OrdinalIgnoreCase);
+                                if (results.Count() == args.Count)
+                                {
+                                    foundMatchingBinding = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (foundMatchingBinding)
+                        {
+                            rv = false;
+                        }
+                    }
+                    else
+                    {
+                        if (bindings.Count > 0)
+                        {
+                            rv = false;
+                        }
                     }
                 }
             }

@@ -139,17 +139,17 @@ public class BindingsTests
 
         await SystemUtils.WaitUntilExchangeExistsAsync("exchange_bindings_with_arguments");
 
-        SystemUtils.WaitUntil(() =>
-            SystemUtils.ArgsBindsBetweenExchangeAndQueueExists("exchange_bindings_with_arguments",
-                "queue_bindings_with_arguments", arguments));
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(
+            "exchange_bindings_with_arguments",
+            "queue_bindings_with_arguments", arguments);
 
         await management.Binding().SourceExchange("exchange_bindings_with_arguments")
             .DestinationQueue("queue_bindings_with_arguments")
             .Key("key").Arguments(arguments).Unbind();
 
-        SystemUtils.WaitUntil(() =>
-            !SystemUtils.ArgsBindsBetweenExchangeAndQueueExists("exchange_bindings_with_arguments",
-                "queue_bindings_with_arguments", arguments));
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(
+            "exchange_bindings_with_arguments",
+            "queue_bindings_with_arguments", arguments);
 
         await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync("exchange_bindings_with_arguments", "queue_bindings_with_arguments");
 
@@ -193,32 +193,27 @@ public class BindingsTests
             .Key(key) // single key to use different args
             .Arguments(specialBind)
             .Bind();
-        SystemUtils.WaitUntil(() =>
-            SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
-                destination, specialBind));
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(source, destination, specialBind);
 
         await management.Binding().SourceExchange(source).DestinationQueue(destination).Key(key).Arguments(specialBind)
             .Unbind();
 
-        SystemUtils.WaitUntil(() =>
-            !SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
-                destination, specialBind));
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(source, destination, specialBind);
 
         for (int i = 0; i < 10; i++)
         {
             var b = new Dictionary<string, object>() { { $"是英国v_{i}", $"p_{i}" } };
-            SystemUtils.WaitUntil(() =>
-                SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
-                    destination, b));
+
+            await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(source, destination, b);
+
             await management.Binding().SourceExchange(source)
                 .DestinationQueue(destination)
                 .Key(key) // single key to use different args
                 .Arguments(b)
                 .Unbind();
 
-            SystemUtils.WaitUntil(() =>
-                !SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
-                    destination, b));
+            await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(source, destination, b);
         }
 
         await management.ExchangeDeletion().Delete(source);
