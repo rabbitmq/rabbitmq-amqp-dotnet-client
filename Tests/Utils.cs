@@ -164,7 +164,7 @@ namespace Tests
             {
                 long queueMessageCount = await GetQueueMessageCountAsync(queueNameStr);
                 return messageCount == queueMessageCount;
-            });
+            }, retries: 20);
         }
 
         private static async Task<bool> CheckConnectionAsync(string connectionName, bool checkOpened = true)
