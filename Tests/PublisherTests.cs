@@ -28,7 +28,8 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task RaiseErrorIfQueueDoesNotExist()
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+
         Assert.Throws<PublisherException>(() =>
             connection.PublisherBuilder().Queue("queue_does_not_exist").Build());
 
@@ -38,13 +39,15 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task SendAMessageToAQueue()
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        var management = connection.Management();
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IManagement management = connection.Management();
         await management.Queue().Name("queue_to_send").Declare();
-        var publisher = connection.PublisherBuilder().Queue("queue_to_send").Build();
+        IPublisher publisher = connection.PublisherBuilder().Queue("queue_to_send").Build();
         await publisher.Publish(new AmqpMessage("Hello wold!"),
             (message, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
-        SystemUtils.WaitUntil(() => SystemUtils.HttpGetQMsgCount("queue_to_send") == 1);
+
+        await SystemUtils.WaitUntilQueueMessageCount("queue_to_send", 1);
+
         Assert.Single(connection.GetPublishers());
         await publisher.CloseAsync();
         Assert.Empty(connection.GetPublishers());
@@ -56,15 +59,15 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task ValidatePublishersCount()
     {
-        var connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        var management = connection.Management();
+        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IManagement management = connection.Management();
         await management.Queue().Name("queue_publishers_count").Declare();
 
         TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
         int received = 0;
         for (int i = 1; i <= 10; i++)
         {
-            var publisher = connection.PublisherBuilder().Queue("queue_publishers_count").Build();
+            IPublisher publisher = connection.PublisherBuilder().Queue("queue_publishers_count").Build();
             await publisher.Publish(new AmqpMessage("Hello wold!"),
                 (message, descriptor) =>
                 {
@@ -78,7 +81,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
         }
 
         await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        foreach (var publisher in connection.GetPublishers())
+        foreach (IPublisher publisher in connection.GetPublishers())
         {
             await publisher.CloseAsync();
         }
@@ -100,7 +103,9 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
         IPublisher publisher = connection.PublisherBuilder().Exchange("exchange_to_send").Key("key").Build();
         await publisher.Publish(new AmqpMessage("Hello wold!"),
             (message, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
-        SystemUtils.WaitUntil(() => SystemUtils.HttpGetQMsgCount("queue_to_send_1") == 1);
+
+        await SystemUtils.WaitUntilQueueMessageCount("queue_to_send_1", 1);
+
         Assert.Single(connection.GetPublishers());
         await publisher.CloseAsync();
         Assert.Empty(connection.GetPublishers());

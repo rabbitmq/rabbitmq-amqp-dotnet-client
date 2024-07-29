@@ -82,7 +82,7 @@ public class ConsumerTests(ITestOutputHelper testOutputHelper)
         Assert.True(tcs.Task.IsCompleted);
         await consumer.CloseAsync();
 
-        SystemUtils.WaitUntil(() => SystemUtils.HttpGetQMsgCount("ConsumerReQueueMessage") == 0, 500);
+        await SystemUtils.WaitUntilQueueMessageCount("ConsumerReQueueMessage", 0);
         await management.QueueDeletion().Delete("ConsumerReQueueMessage");
         await connection.CloseAsync();
     }

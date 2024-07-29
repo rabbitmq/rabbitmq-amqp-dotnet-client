@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using EasyNetQ.Management.Client;
@@ -18,6 +17,9 @@ namespace Tests
 {
     public static class SystemUtils
     {
+        private static readonly TimeSpan s_initialDelaySpan = TimeSpan.FromMilliseconds(100);
+        private static readonly TimeSpan s_delaySpan = TimeSpan.FromMilliseconds(500);
+
         // Waits for 10 seconds total by default
         public static void WaitUntil(Func<bool> func, ushort retries = 40)
         {
@@ -34,13 +36,11 @@ namespace Tests
 
         public static async Task WaitUntilAsync(Func<Task<bool>> func, ushort retries = 10)
         {
-            var delaySpan = TimeSpan.FromMilliseconds(500);
-
-            await Task.Delay(delaySpan);
+            await Task.Delay(s_initialDelaySpan);
 
             while (!await func())
             {
-                await Task.Delay(delaySpan);
+                await Task.Delay(s_delaySpan);
 
                 --retries;
                 if (retries == 0)
@@ -280,27 +280,23 @@ namespace Tests
             });
         }
 
-        public static int HttpGetQMsgCount(string queue)
+        public static Task WaitUntilQueueMessageCount(string queueNameStr, long messageCount)
         {
-            var task = CreateHttpClient()
-                .GetAsync($"http://localhost:15672/api/queues/%2F/{Uri.EscapeDataString(queue)}");
-            task.Wait(TimeSpan.FromSeconds(10));
-            var result = task.Result;
-            if (!result.IsSuccessStatusCode)
+            return WaitUntilAsync(async () =>
             {
-                throw new XunitException($"HTTP GET failed: {result.StatusCode} {result.ReasonPhrase}");
-            }
+                long queueMessageCount = await GetQueueMessageCountAsync(queueNameStr);
+                return messageCount == queueMessageCount;
+            });
+        }
 
-            var responseBody = result.Content.ReadAsStringAsync();
-            responseBody.Wait(TimeSpan.FromSeconds(10));
-            string json = responseBody.Result;
-            var obj = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
-            if (obj == null)
-            {
-                return 0;
-            }
+        private static async Task<long> GetQueueMessageCountAsync(string queueNameStr)
+        {
+            var managementUri = new Uri("http://localhost:15672");
+            using var managementClient = new ManagementClient(managementUri, "guest", "guest");
 
-            return obj.TryGetValue("messages_ready", out var value) ? Convert.ToInt32(value.ToString()) : 0;
+            var queueName = new QueueName(queueNameStr, "/");
+            Queue queue = await managementClient.GetQueueAsync(queueName);
+            return queue.MessagesReady;
         }
 
         private static async Task<bool> CheckExchangeAsync(string exchangeNameStr, bool checkExisting = true)
