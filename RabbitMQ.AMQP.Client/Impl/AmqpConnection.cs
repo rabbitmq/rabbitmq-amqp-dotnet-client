@@ -194,7 +194,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                 open.MaxFrameSize = _connectionSettings.MaxFrameSize;
             }
 
-            void onOpened(Amqp.IConnection connection, Open open1)
+            void OnOpened(Amqp.IConnection connection, Open open1)
             {
                 Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is open");
                 OnNewStatus(State.Open, null);
