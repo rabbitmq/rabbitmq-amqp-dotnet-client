@@ -37,7 +37,7 @@ public class AmqpBindingSpecification(AmqpManagement management) : BindingSpecif
             { ToQueue ? "destination_queue" : "destination_exchange", Destination }
         };
 
-        await Management.Request(kv, $"/{Consts.Bindings}",
+        await Management.RequestAsync(kv, $"/{Consts.Bindings}",
             AmqpManagement.Post,
             [
                 AmqpManagement.Code204,
@@ -54,7 +54,7 @@ public class AmqpBindingSpecification(AmqpManagement management) : BindingSpecif
                 $"{($"{destinationCharacter}={Utils.EncodePathSegment(Destination)};" +
                     $"key={Utils.EncodePathSegment(RoutingKey)};args=")}";
 
-            await Management.Request(
+            await Management.RequestAsync(
                 null, target,
                 AmqpManagement.Delete, new[] { AmqpManagement.Code204 }).ConfigureAwait(false);
         }
@@ -65,7 +65,7 @@ public class AmqpBindingSpecification(AmqpManagement management) : BindingSpecif
             string? uri = MatchBinding(bindings, RoutingKey, ArgsToMap());
             if (uri != null)
             {
-                await Management.Request(
+                await Management.RequestAsync(
                     null, uri,
                     AmqpManagement.Delete, new[] { AmqpManagement.Code204 }).ConfigureAwait(false);
             }
@@ -125,7 +125,7 @@ public class AmqpBindingSpecification(AmqpManagement management) : BindingSpecif
 
     private async Task<List<Map>> GetBindings(string path)
     {
-        var result = await Management.Request(
+        Amqp.Message result = await Management.RequestAsync(
             null, path,
             AmqpManagement.Get, new[] { AmqpManagement.Code200 }).ConfigureAwait(false);
 
@@ -133,7 +133,6 @@ public class AmqpBindingSpecification(AmqpManagement management) : BindingSpecif
         {
             return [];
         }
-
 
         var l = new List<Map>() { };
         foreach (object o in list)

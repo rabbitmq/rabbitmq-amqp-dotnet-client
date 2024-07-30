@@ -106,11 +106,16 @@ public class AmqpPublisherBuilder(AmqpConnection connection) : IPublisherBuilder
         return this;
     }
 
-    public IPublisher Build()
+    public async Task<IPublisher> BuildAsync(CancellationToken cancellationToken = default)
     {
-        return new AmqpPublisher(
-            connection,
-            new AddressBuilder().Exchange(_exchange).Queue(_queue).Key(_key).Address(),
-            _timeout, _maxInFlight);
+        string address = new AddressBuilder().Exchange(_exchange).Queue(_queue).Key(_key).Address();
+
+        AmqpPublisher publisher = new(connection, address, _timeout, _maxInFlight);
+
+        // TODO pass cancellationToken
+        await publisher.OpenAsync()
+            .ConfigureAwait(false);
+
+        return publisher;
     }
 }

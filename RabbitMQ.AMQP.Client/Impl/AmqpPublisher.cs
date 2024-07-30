@@ -22,27 +22,50 @@ public class AmqpPublisher : AbstractReconnectLifeCycle, IPublisher
         _connection = connection;
         _timeout = timeout;
         _maxInFlight = maxInFlight;
-        OpenAsync();
         connection.Publishers.TryAdd(Id, this);
     }
 
-
-    protected sealed override Task OpenAsync()
+    public override async Task OpenAsync()
     {
         try
         {
-            var attachCompleted = new ManualResetEvent(false);
-            _senderLink = new SenderLink(_connection._nativePubSubSessions.GetOrCreateSession(), Id,
-                Utils.CreateAttach(_address, DeliveryMode.AtLeastOnce, Id),
-                (link, attach) => { attachCompleted.Set(); });
-            attachCompleted.WaitOne(TimeSpan.FromSeconds(5));
-            if (_senderLink.LinkState != LinkState.Attached)
+            TaskCompletionSource attachCompletedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            Attach attach = Utils.CreateAttach(_address, DeliveryMode.AtLeastOnce, Id);
+
+            void onAttached(ILink argLink, Attach argAttach)
+            {
+                attachCompletedTcs.SetResult();
+            }
+
+            Task senderLinkTask = Task.Run(() =>
+            {
+                _senderLink = new SenderLink(_connection._nativePubSubSessions.GetOrCreateSession(), Id, attach, onAttached);
+            });
+
+            // TODO configurable timeout
+            TimeSpan waitSpan = TimeSpan.FromSeconds(5);
+
+            await attachCompletedTcs.Task.WaitAsync(waitSpan)
+                .ConfigureAwait(false);
+
+            await senderLinkTask.WaitAsync(waitSpan)
+                .ConfigureAwait(false);
+
+            if (_senderLink is null)
+            {
+                throw new PublisherException($"{ToString()} Failed to create sender link (null was returned)");
+            }
+            else if (_senderLink.LinkState != LinkState.Attached)
             {
                 throw new PublisherException($"{ToString()} Failed to create sender link. Link state is not attached, error: " +
                     _senderLink.Error?.ToString() ?? "Unknown error");
             }
-
-            return base.OpenAsync();
+            else
+            {
+                await base.OpenAsync()
+                    .ConfigureAwait(false);
+            }
         }
         catch (Exception e)
         {
@@ -51,7 +74,6 @@ public class AmqpPublisher : AbstractReconnectLifeCycle, IPublisher
     }
 
     private string Id { get; } = Guid.NewGuid().ToString();
-
 
     private void PausePublishing()
     {

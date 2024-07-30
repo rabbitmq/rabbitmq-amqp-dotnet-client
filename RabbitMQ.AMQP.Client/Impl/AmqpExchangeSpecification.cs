@@ -30,7 +30,7 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
         // TODO: encodePathSegment(queues)
         // Message request = await management.Request(kv, $"/{Consts.Exchanges}/{_name}",
         // for the moment we won't use the message response
-        await management.Request(kv, $"/{Consts.Exchanges}/{Utils.EncodePathSegment(_name)}",
+        await management.RequestAsync(kv, $"/{Consts.Exchanges}/{Utils.EncodePathSegment(_name)}",
             AmqpManagement.Put,
             [
                 AmqpManagement.Code204,
@@ -75,7 +75,7 @@ public class AmqpExchangeDeletion(AmqpManagement management) : IExchangeDeletion
     public async Task Delete(string name)
     {
         await management
-            .Request(null, $"/{Consts.Exchanges}/{Utils.EncodePathSegment(name)}", AmqpManagement.Delete,
+            .RequestAsync(null, $"/{Consts.Exchanges}/{Utils.EncodePathSegment(name)}", AmqpManagement.Delete,
                 new[] { AmqpManagement.Code204, })
             .ConfigureAwait(false);
     }

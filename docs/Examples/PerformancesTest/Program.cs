@@ -25,11 +25,13 @@ IManagement management = connection.Management();
 await management.QueueDeletion().Delete("my-first-queue-n").ConfigureAwait(false);
 
 await management.Queue($"my-first-queue-n").Type(QueueType.QUORUM).Declare().ConfigureAwait(false);
-IPublisher publisher = connection.PublisherBuilder().Queue("my-first-queue-n").MaxInflightMessages(2000).Build();
+
+IPublisher publisher = await connection.PublisherBuilder().Queue("my-first-queue-n").MaxInflightMessages(2000).BuildAsync();
+
 int received = 0;
 DateTime start = DateTime.Now;
 
-IConsumer consumer = connection.ConsumerBuilder().Queue("my-first-queue-n").InitialCredits(1000).MessageHandler(
+IConsumer consumer = await connection.ConsumerBuilder().Queue("my-first-queue-n").InitialCredits(1000).MessageHandler(
     (context, message) =>
     {
         received++;
@@ -41,7 +43,7 @@ IConsumer consumer = connection.ConsumerBuilder().Queue("my-first-queue-n").Init
 
         context.Accept();
     }
-).Stream().Offset(1).Builder().Build();
+).Stream().Offset(1).Builder().BuildAsync();
 
 try
 {

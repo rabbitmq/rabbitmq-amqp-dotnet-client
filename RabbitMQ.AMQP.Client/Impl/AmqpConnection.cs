@@ -15,7 +15,9 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
 {
     private const string ConnectionNotRecoveredCode = "CONNECTION_NOT_RECOVERED";
     private const string ConnectionNotRecoveredMessage = "Connection not recovered";
-    private readonly SemaphoreSlim _semaphoreClose = new(1, 1); // TODO this needs to be Disposed
+
+    private readonly SemaphoreSlim _semaphoreClose = new(1, 1);
+    private readonly SemaphoreSlim _semaphoreOpen = new(1, 1);
 
     // The native AMQP.Net Lite connection
     private Connection? _nativeConnection;
@@ -23,60 +25,8 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     private readonly AmqpManagement _management;
     private readonly RecordingTopologyListener _recordingTopologyListener = new();
 
-    private void ChangeEntitiesStatus(State state, Error? error)
-    {
-        ChangePublishersStatus(state, error);
-        ChangeConsumersStatus(state, error);
-        _management.ChangeStatus(state, error);
-    }
-
-    private void ChangePublishersStatus(State state, Error? error)
-    {
-        foreach (IPublisher publisher1 in Publishers.Values)
-        {
-            var publisher = (AmqpPublisher)publisher1;
-            publisher.ChangeStatus(state, error);
-        }
-    }
-
-    private void ChangeConsumersStatus(State state, Error? error)
-    {
-        foreach (IConsumer consumer1 in Consumers.Values)
-        {
-            var consumer = (AmqpConsumer)consumer1;
-            consumer.ChangeStatus(state, error);
-        }
-    }
-
-    private async Task ReconnectEntities()
-    {
-        await ReconnectPublishers().ConfigureAwait(false);
-        await ReconnectConsumers().ConfigureAwait(false);
-    }
-
-    private async Task ReconnectPublishers()
-    {
-        foreach (IPublisher publisher1 in Publishers.Values)
-        {
-            var publisher = (AmqpPublisher)publisher1;
-            await publisher.Reconnect().ConfigureAwait(false);
-        }
-    }
-
-    private async Task ReconnectConsumers()
-    {
-        foreach (IConsumer consumer1 in Consumers.Values)
-        {
-            var consumer = (AmqpConsumer)consumer1;
-            await consumer.Reconnect().ConfigureAwait(false);
-        }
-    }
-
     private readonly IConnectionSettings _connectionSettings;
     internal readonly AmqpSessionManagement _nativePubSubSessions;
-
-    // TODO: Implement the semaphore to avoid multiple connections
-    // private readonly SemaphoreSlim _semaphore = new(1, 1);
 
     /// <summary>
     /// Publishers contains all the publishers created by the connection.
@@ -85,7 +35,6 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     /// See <see cref="AmqpPublisher"/>
     /// </summary>
     internal ConcurrentDictionary<string, IPublisher> Publishers { get; } = new();
-
     internal ConcurrentDictionary<string, IConsumer> Consumers { get; } = new();
 
     public ReadOnlyCollection<IPublisher> GetPublishers()
@@ -116,6 +65,92 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
         return connection;
     }
 
+    public IManagement Management()
+    {
+        return _management;
+    }
+
+    public IConsumerBuilder ConsumerBuilder()
+    {
+        return new AmqpConsumerBuilder(this);
+    }
+
+    public override async Task OpenAsync()
+    {
+        await OpenConnectionAsync()
+            .ConfigureAwait(false);
+        await base.OpenAsync()
+            .ConfigureAwait(false);
+    }
+
+    public IPublisherBuilder PublisherBuilder()
+    {
+        ThrowIfClosed();
+        var publisherBuilder = new AmqpPublisherBuilder(this);
+        return publisherBuilder;
+    }
+
+    public override async Task CloseAsync()
+    {
+        await _semaphoreClose.WaitAsync()
+            .ConfigureAwait(false);
+        try
+        {
+            await CloseAllPublishers().ConfigureAwait(false);
+            await CloseAllConsumers().ConfigureAwait(false);
+
+            _recordingTopologyListener.Clear();
+            _nativePubSubSessions.ClearSessions();
+
+            if (State == State.Closed)
+            {
+                return;
+            }
+
+            OnNewStatus(State.Closing, null);
+
+            await _management.CloseAsync()
+                .ConfigureAwait(false);
+
+            if (_nativeConnection is { IsClosed: false })
+            {
+                await _nativeConnection.CloseAsync()
+                    .ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            _semaphoreClose.Release();
+        }
+
+        await ConnectionCloseTaskCompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(10))
+            .ConfigureAwait(false);
+
+        OnNewStatus(State.Closed, null);
+    }
+
+    public override string ToString()
+    {
+        string info = $"AmqpConnection{{ConnectionSettings='{_connectionSettings}', Status='{State.ToString()}'}}";
+        return info;
+    }
+
+    internal Connection? NativeConnection()
+    {
+        return _nativeConnection;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            // TODO probably more should/could happen in this method
+            _semaphoreOpen.Dispose();
+            _semaphoreClose.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
 
     /// <summary>
     /// Closes all the publishers. It is called when the connection is closed.
@@ -150,28 +185,11 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             new AmqpManagement(new AmqpManagementParameters(this).TopologyListener(_recordingTopologyListener));
     }
 
-    public IManagement Management()
+    // TODO cancellation token
+    private async Task OpenConnectionAsync()
     {
-        return _management;
-    }
-
-    public IConsumerBuilder ConsumerBuilder()
-    {
-        return new AmqpConsumerBuilder(this);
-    }
-
-    protected override async Task OpenAsync()
-    {
-        await EnsureConnection()
+        await _semaphoreOpen.WaitAsync()
             .ConfigureAwait(false);
-        await base.OpenAsync()
-            .ConfigureAwait(false);
-    }
-
-    private async Task EnsureConnection()
-    {
-        // TODO: do this!
-        // await _semaphore.WaitAsync();
         try
         {
             if (_nativeConnection is { IsClosed: false })
@@ -247,15 +265,19 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                     $"Connection failed. Info: {ToString()}, error: {_nativeConnection.Error}");
             }
 
-            _management.Init();
+            await _management.OpenAsync()
+                .ConfigureAwait(false);
 
             _nativeConnection.Closed += MaybeRecoverConnection();
         }
-
         catch (AmqpException e)
         {
             Trace.WriteLine(TraceLevel.Error, $"Error trying to connect. Info: {ToString()}, error: {e}");
             throw new ConnectionException($"Error trying to connect. Info: {ToString()}, error: {e}");
+        }
+        finally
+        {
+            _semaphoreOpen.Release();
         }
     }
 
@@ -264,14 +286,18 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     /// In case the error is null means that the connection is closed by the user.
     /// The recover mechanism is activated only if the error is not null.
     /// The connection maybe recovered if the recovery configuration is active.
+    ///
+    /// TODO this method could be improved.
+    /// MaybeRecoverConnection should set a connection state to RECOVERING
+    /// and then kick off a task dedicated to recovery
     /// </summary>
     /// <returns></returns>
     private ClosedCallback MaybeRecoverConnection()
     {
         return async (sender, error) =>
         {
-            await _semaphoreClose.WaitAsync().ConfigureAwait(false);
-
+            await _semaphoreClose.WaitAsync()
+                .ConfigureAwait(false);
             try
             {
                 // close all the sessions, if the connection is closed the sessions are not valid anymore
@@ -297,7 +323,6 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                     // to reconnecting and all the events are fired
                     OnNewStatus(State.Reconnecting, Utils.ConvertError(error));
                     ChangeEntitiesStatus(State.Reconnecting, Utils.ConvertError(error));
-
 
                     await Task.Run(async () =>
                     {
@@ -327,7 +352,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                                 await Task.Delay(TimeSpan.FromMilliseconds(next))
                                     .ConfigureAwait(false);
 
-                                await EnsureConnection()
+                                await OpenConnectionAsync()
                                     .ConfigureAwait(false);
                                 connected = true;
                             }
@@ -369,7 +394,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
 
                         try
                         {
-                            await ReconnectEntities().ConfigureAwait(false);
+                            await ReconnectEntitiesAsync().ConfigureAwait(false);
                         }
                         catch (Exception e)
                         {
@@ -393,61 +418,58 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
         };
     }
 
-    internal Connection? NativeConnection()
+    private void ChangeEntitiesStatus(State state, Error? error)
     {
-        return _nativeConnection;
+        ChangePublishersStatus(state, error);
+        ChangeConsumersStatus(state, error);
+        _management.ChangeStatus(state, error);
     }
 
-    public IPublisherBuilder PublisherBuilder()
+    private void ChangePublishersStatus(State state, Error? error)
     {
-        ThrowIfClosed();
-        var publisherBuilder = new AmqpPublisherBuilder(this);
-        return publisherBuilder;
-    }
-
-    public override async Task CloseAsync()
-    {
-        await _semaphoreClose.WaitAsync()
-            .ConfigureAwait(false);
-        try
+        foreach (IPublisher publisher1 in Publishers.Values)
         {
-            await CloseAllPublishers().ConfigureAwait(false);
-            await CloseAllConsumers().ConfigureAwait(false);
+            var publisher = (AmqpPublisher)publisher1;
+            publisher.ChangeStatus(state, error);
+        }
+    }
 
-            _recordingTopologyListener.Clear();
-            _nativePubSubSessions.ClearSessions();
+    private void ChangeConsumersStatus(State state, Error? error)
+    {
+        foreach (IConsumer consumer1 in Consumers.Values)
+        {
+            var consumer = (AmqpConsumer)consumer1;
+            consumer.ChangeStatus(state, error);
+        }
+    }
 
-            if (State == State.Closed)
-            {
-                return;
-            }
+    private async Task ReconnectEntitiesAsync()
+    {
+        await ReconnectPublishersAsync()
+            .ConfigureAwait(false);
+        await ReconnectConsumersAsync()
+            .ConfigureAwait(false);
+    }
 
-            OnNewStatus(State.Closing, null);
-
-            await _management.CloseAsync()
+    private async Task ReconnectPublishersAsync()
+    {
+        // TODO this could be done in parallel
+        foreach (IPublisher publisher1 in Publishers.Values)
+        {
+            var publisher = (AmqpPublisher)publisher1;
+            await publisher.ReconnectAsync()
                 .ConfigureAwait(false);
-
-            if (_nativeConnection is { IsClosed: false })
-            {
-                await _nativeConnection.CloseAsync()
-                    .ConfigureAwait(false);
-            }
         }
-        finally
-        {
-            _semaphoreClose.Release();
-        }
-
-        await ConnectionCloseTaskCompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(10))
-            .ConfigureAwait(false);
-
-        OnNewStatus(State.Closed, null);
     }
 
-    public override string ToString()
+    private async Task ReconnectConsumersAsync()
     {
-        string info = $"AmqpConnection{{ConnectionSettings='{_connectionSettings}', Status='{State.ToString()}'}}";
-        return info;
+        // TODO this could be done in parallel
+        foreach (IConsumer consumer1 in Consumers.Values)
+        {
+            var consumer = (AmqpConsumer)consumer1;
+            await consumer.ReconnectAsync().ConfigureAwait(false);
+        }
     }
 }
 
@@ -455,8 +477,9 @@ internal class Visitor(AmqpManagement management) : IVisitor
 {
     private AmqpManagement Management { get; } = management;
 
-    public async Task VisitQueues(IEnumerable<QueueSpec> queueSpec)
+    public async Task VisitQueuesAsync(IEnumerable<QueueSpec> queueSpec)
     {
+        // TODO this could be done in parallel
         foreach (QueueSpec spec in queueSpec)
         {
             Trace.WriteLine(TraceLevel.Information, $"Recovering queue {spec.Name}");

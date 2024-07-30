@@ -7,13 +7,16 @@ const RabbitMQ.AMQP.Client.Impl.Consts.Key = "key" -> string!
 const RabbitMQ.AMQP.Client.Impl.Consts.Queues = "queues" -> string!
 override RabbitMQ.AMQP.Client.Error.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.AmqpConnection.CloseAsync() -> System.Threading.Tasks.Task!
+override RabbitMQ.AMQP.Client.Impl.AmqpConnection.OpenAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpConnection.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.AmqpConsumer.CloseAsync() -> System.Threading.Tasks.Task!
+override RabbitMQ.AMQP.Client.Impl.AmqpConsumer.OpenAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpConsumer.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.AmqpManagement.CloseAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpManagement.OpenAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpManagement.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.AmqpPublisher.CloseAsync() -> System.Threading.Tasks.Task!
+override RabbitMQ.AMQP.Client.Impl.AmqpPublisher.OpenAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpPublisher.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Equals(object? obj) -> bool
@@ -22,8 +25,6 @@ override RabbitMQ.AMQP.Client.Impl.ConnectionSettings.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.ToString() -> string!
 override RabbitMQ.AMQP.Client.SaslMechanism.Equals(object? obj) -> bool
 override RabbitMQ.AMQP.Client.SaslMechanism.GetHashCode() -> int
-override sealed RabbitMQ.AMQP.Client.Impl.AmqpConsumer.OpenAsync() -> System.Threading.Tasks.Task!
-override sealed RabbitMQ.AMQP.Client.Impl.AmqpPublisher.OpenAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.ByteCapacity
 RabbitMQ.AMQP.Client.ByteCapacity.Equals(RabbitMQ.AMQP.Client.ByteCapacity? other) -> bool
 RabbitMQ.AMQP.Client.ByteCapacity.ToBytes() -> long
@@ -97,7 +98,7 @@ RabbitMQ.AMQP.Client.IConsumer.Pause() -> void
 RabbitMQ.AMQP.Client.IConsumer.Unpause() -> void
 RabbitMQ.AMQP.Client.IConsumer.UnsettledMessageCount() -> long
 RabbitMQ.AMQP.Client.IConsumerBuilder
-RabbitMQ.AMQP.Client.IConsumerBuilder.Build() -> RabbitMQ.AMQP.Client.IConsumer!
+RabbitMQ.AMQP.Client.IConsumerBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConsumer!>!
 RabbitMQ.AMQP.Client.IConsumerBuilder.InitialCredits(int initialCredits) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
@@ -140,6 +141,7 @@ RabbitMQ.AMQP.Client.IManagement.Binding() -> RabbitMQ.AMQP.Client.IBindingSpeci
 RabbitMQ.AMQP.Client.IManagement.Exchange() -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.IManagement.Exchange(string! name) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.IManagement.ExchangeDeletion() -> RabbitMQ.AMQP.Client.IExchangeDeletion!
+RabbitMQ.AMQP.Client.IManagement.GetQueueInfoAsync(string! queueName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IQueueInfo!>!
 RabbitMQ.AMQP.Client.IManagement.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IManagement.Queue(string! name) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IManagement.QueueDeletion() -> RabbitMQ.AMQP.Client.IQueueDeletion!
@@ -161,6 +163,7 @@ RabbitMQ.AMQP.Client.IMessageHandler.Handle(Amqp.Listener.Context! context, Rabb
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.AbstractLifeCycle() -> void
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.ChangeState -> RabbitMQ.AMQP.Client.LifeCycleCallBack?
+RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.Dispose() -> void
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.OnNewStatus(RabbitMQ.AMQP.Client.State newState, RabbitMQ.AMQP.Client.Error? error) -> void
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.State.get -> RabbitMQ.AMQP.Client.State
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.ThrowIfClosed() -> void
@@ -203,7 +206,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpConsumer.Unpause() -> void
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer.UnsettledMessageCount() -> long
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.AmqpConsumerBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection) -> void
-RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.Build() -> RabbitMQ.AMQP.Client.IConsumer!
+RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConsumer!>!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.InitialCredits(int initialCredits) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.MessageHandler(RabbitMQ.AMQP.Client.MessageHandler! handler) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.Queue(string! queue) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
@@ -230,6 +233,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpManagement.Binding() -> RabbitMQ.AMQP.Client.IBind
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Exchange() -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Exchange(string! name) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.ExchangeDeletion() -> RabbitMQ.AMQP.Client.IExchangeDeletion!
+RabbitMQ.AMQP.Client.Impl.AmqpManagement.GetQueueInfoAsync(string! queueName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IQueueInfo!>!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.HandleResponseMessage(Amqp.Message! msg) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Queue(RabbitMQ.AMQP.Client.Impl.QueueSpec! spec) -> RabbitMQ.AMQP.Client.IQueueSpecification!
@@ -264,7 +268,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpPublisher.AmqpPublisher(RabbitMQ.AMQP.Client.Impl.
 RabbitMQ.AMQP.Client.Impl.AmqpPublisher.Publish(RabbitMQ.AMQP.Client.IMessage! message, RabbitMQ.AMQP.Client.OutcomeDescriptorCallback! outcomeCallback) -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.AmqpPublisherBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection) -> void
-RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.Build() -> RabbitMQ.AMQP.Client.IPublisher!
+RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IPublisher!>!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.Exchange(string! exchange) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.Key(string! key) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.MaxInflightMessages(int maxInFlight) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
@@ -393,7 +397,7 @@ RabbitMQ.AMQP.Client.Impl.FieldNotSetException.FieldNotSetException() -> void
 RabbitMQ.AMQP.Client.Impl.InvalidCodeException
 RabbitMQ.AMQP.Client.Impl.InvalidCodeException.InvalidCodeException(string! message) -> void
 RabbitMQ.AMQP.Client.Impl.IVisitor
-RabbitMQ.AMQP.Client.Impl.IVisitor.VisitQueues(System.Collections.Generic.IEnumerable<RabbitMQ.AMQP.Client.Impl.QueueSpec!>! queueSpec) -> System.Threading.Tasks.Task!
+RabbitMQ.AMQP.Client.Impl.IVisitor.VisitQueuesAsync(System.Collections.Generic.IEnumerable<RabbitMQ.AMQP.Client.Impl.QueueSpec!>! queueSpec) -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.PercentCodec
 RabbitMQ.AMQP.Client.Impl.QueueSpec
 RabbitMQ.AMQP.Client.Impl.QueueSpec.Arguments.get -> System.Collections.Generic.Dictionary<object!, object!>!
@@ -439,7 +443,7 @@ RabbitMQ.AMQP.Client.InvalidAddressException.InvalidAddressException(string! mes
 RabbitMQ.AMQP.Client.IPublisher
 RabbitMQ.AMQP.Client.IPublisher.Publish(RabbitMQ.AMQP.Client.IMessage! message, RabbitMQ.AMQP.Client.OutcomeDescriptorCallback! outcomeCallback) -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.IPublisherBuilder
-RabbitMQ.AMQP.Client.IPublisherBuilder.Build() -> RabbitMQ.AMQP.Client.IPublisher!
+RabbitMQ.AMQP.Client.IPublisherBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IPublisher!>!
 RabbitMQ.AMQP.Client.IPublisherBuilder.MaxInflightMessages(int maxInFlight) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.IPublisherBuilder.PublishTimeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.IQueueDeletion
@@ -577,5 +581,6 @@ static RabbitMQ.AMQP.Client.Impl.Utils.ValidatePositive(string! label, long valu
 static RabbitMQ.AMQP.Client.Impl.Utils.ValidatePositive(string! label, long value, long max) -> void
 static readonly RabbitMQ.AMQP.Client.SaslMechanism.External -> RabbitMQ.AMQP.Client.SaslMechanism!
 static readonly RabbitMQ.AMQP.Client.SaslMechanism.Plain -> RabbitMQ.AMQP.Client.SaslMechanism!
+virtual RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.Dispose(bool disposing) -> void
 virtual RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.OpenAsync() -> System.Threading.Tasks.Task!
-virtual RabbitMQ.AMQP.Client.Impl.AmqpManagement.InternalSendAsync(Amqp.Message! message) -> System.Threading.Tasks.Task!
+virtual RabbitMQ.AMQP.Client.Impl.AmqpManagement.InternalSendAsync(Amqp.Message! message, System.TimeSpan timeout) -> System.Threading.Tasks.Task!

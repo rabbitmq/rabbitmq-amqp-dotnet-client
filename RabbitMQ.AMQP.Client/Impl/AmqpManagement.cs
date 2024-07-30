@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using Amqp;
 using Amqp.Framing;
 using Amqp.Types;
@@ -20,14 +20,12 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
     private readonly ConcurrentDictionary<string, TaskCompletionSource<Message>> _requests = new();
 
     // private static readonly long IdSequence = 0;
-    //
     private const string ManagementNodeAddress = "/management";
     private const string LinkPairName = "management-link-pair";
 
     private Session? _managementSession;
     private SenderLink? _senderLink;
     private ReceiverLink? _receiverLink;
-
 
     internal const int Code200 = 200;
     internal const int Code201 = 201;
@@ -36,11 +34,8 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
     internal const string Put = "PUT";
     internal const string Get = "GET";
     internal const string Post = "POST";
-
     internal const string Delete = "DELETE";
-
     private const string ReplyTo = "$me";
-
 
     public IQueueSpecification Queue()
     {
@@ -51,6 +46,20 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
     public IQueueSpecification Queue(string name)
     {
         return Queue().Name(name);
+    }
+
+    public async Task<IQueueInfo> GetQueueInfoAsync(string queueName,
+        CancellationToken cancellationToken = default)
+    {
+        // TODO: validate queueName?
+        // TODO: encodePathSegment(queues)
+        Message response = await RequestAsync($"/{Consts.Queues}/{Utils.EncodePathSegment(queueName)}",
+            AmqpManagement.Get,
+            [
+                AmqpManagement.Code200
+            ], null, cancellationToken).ConfigureAwait(false);
+
+        return new DefaultQueueInfo((Map)response.Body);
     }
 
     public IQueueSpecification Queue(QueueSpec spec)
@@ -92,16 +101,11 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
         return parameters.TopologyListener();
     }
 
-    internal void Init()
-    {
-        OpenAsync();
-    }
-
-    protected override Task OpenAsync()
+    public override async Task OpenAsync()
     {
         if (State == State.Open)
         {
-            return Task.CompletedTask;
+            return;
         }
 
         if (_managementSession == null || _managementSession.IsClosed)
@@ -109,16 +113,14 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
             _managementSession = new Session(parameters.Connection().NativeConnection());
         }
 
-        EnsureSenderLink();
+        await EnsureSenderLinkAsync()
+            .ConfigureAwait(false);
 
-        // by the Management implementation the sender link _must_ be open before the receiver link
-        // this sleep is to ensure that the sender link is open before the receiver link
-        // TODO: find a better way to ensure that the sender link is open before the receiver link
-        Thread.Sleep(500);
+        await EnsureReceiverLinkAsync()
+            .ConfigureAwait(false);
 
-        EnsureReceiverLink();
-
-        _ = Task.Run(async () => { await ProcessResponses().ConfigureAwait(false); });
+        // TODO do something with this task?
+        _ = Task.Run(ProcessResponses);
 
         _managementSession.Closed += (sender, error) =>
         {
@@ -133,7 +135,8 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
             ConnectionCloseTaskCompletionSource.TrySetResult(true);
         };
 
-        return base.OpenAsync();
+        await base.OpenAsync()
+            .ConfigureAwait(false);
     }
 
     private async Task ProcessResponses()
@@ -148,15 +151,17 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
                     continue;
                 }
 
-                using Message msg = await _receiverLink.ReceiveAsync().ConfigureAwait(false);
-                if (msg == null)
+                using (Message msg = await _receiverLink.ReceiveAsync().ConfigureAwait(false))
                 {
-                    Trace.WriteLine(TraceLevel.Warning, "Received null message");
-                    continue;
-                }
+                    if (msg == null)
+                    {
+                        Trace.WriteLine(TraceLevel.Warning, "Received null message");
+                        continue;
+                    }
 
-                _receiverLink.Accept(msg);
-                HandleResponseMessage(msg);
+                    _receiverLink.Accept(msg);
+                    HandleResponseMessage(msg);
+                }
             }
         }
         catch (Exception e)
@@ -172,7 +177,7 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
     }
 
 
-    private void EnsureReceiverLink()
+    private async Task EnsureReceiverLinkAsync()
     {
         if (_receiverLink == null || _receiverLink.IsClosed)
         {
@@ -186,15 +191,24 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
                 Handle = 1,
                 Target = new Target() { Address = ManagementNodeAddress, ExpiryPolicy = new Symbol("SESSION_END"), },
             };
+
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             _receiverLink = new ReceiverLink(
-                _managementSession, LinkPairName, receiveAttach, null);
+                _managementSession, LinkPairName, receiveAttach, (ILink link, Attach attach) =>
+                {
+                    Debug.Assert(Object.ReferenceEquals(_receiverLink, link));
+                    tcs.SetResult();
+                });
+
+            await tcs.Task
+                .ConfigureAwait(false);
 
             _receiverLink.SetCredit(1);
         }
     }
 
 
-    private void EnsureSenderLink()
+    private Task EnsureSenderLinkAsync()
     {
         if (_senderLink == null || _senderLink.IsClosed)
         {
@@ -221,8 +235,19 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
                     Dynamic = false,
                 },
             };
+
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             _senderLink = new SenderLink(
-                _managementSession, LinkPairName, senderAttach, null);
+                _managementSession, LinkPairName, senderAttach, (ILink link, Attach attach) =>
+                {
+                    Debug.Assert(Object.ReferenceEquals(_senderLink, link));
+                    tcs.SetResult();
+                });
+            return tcs.Task;
+        }
+        else
+        {
+            return Task.CompletedTask;
         }
     }
 
@@ -242,22 +267,40 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
         }
     }
 
-    internal ValueTask<Message> Request(object? body, string path, string method,
-        int[] expectedResponseCodes, TimeSpan? timeout = null)
+    internal ValueTask<Message> RequestAsync(string path, string method,
+        int[] expectedResponseCodes,
+        TimeSpan? timeout = null,
+        CancellationToken cancellationToken = default)
     {
-        string id = Guid.NewGuid().ToString();
-        return Request(id, body, path, method, expectedResponseCodes, timeout);
+        return RequestAsync(null, path, method, expectedResponseCodes,
+            timeout, cancellationToken);
     }
 
-    internal ValueTask<Message> Request(string id, object? body, string path, string method,
-        int[] expectedResponseCodes, TimeSpan? timeout = null)
+    internal ValueTask<Message> RequestAsync(object? body, string path, string method,
+        int[] expectedResponseCodes,
+        TimeSpan? timeout = null,
+        CancellationToken cancellationToken = default)
+    {
+        string id = Guid.NewGuid().ToString();
+        return RequestAsync(id, body, path, method, expectedResponseCodes, timeout);
+    }
+
+    internal ValueTask<Message> RequestAsync(string id, object? body, string path, string method,
+        int[] expectedResponseCodes,
+        TimeSpan? timeout = null,
+        CancellationToken cancellationToken = default)
     {
         var message = new Message(body)
         {
-            Properties = new Properties { MessageId = id, To = path, Subject = method, ReplyTo = ReplyTo }
+            Properties = new Properties
+            {
+                MessageId = id,
+                To = path,
+                Subject = method,
+                ReplyTo = ReplyTo
+            }
         };
-
-        return Request(message, expectedResponseCodes, timeout);
+        return RequestAsync(message, expectedResponseCodes, timeout, cancellationToken);
     }
 
     /// <summary>
@@ -270,44 +313,59 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
     /// - Body: The body of the request. For example the QueueSpec to create a queue
     /// </summary>
     /// <param name="message">Request Message. Contains all the info to create/delete a resource</param>
-    /// <param name="expectedResponseCodes"> The response codes expected for a specific call. See Code* Constants </param>
-    /// <param name="timeout"> Default timeout for a request </param>
+    /// <param name="expectedResponseCodes">The response codes expected for a specific call. See Code* Constants </param>
+    /// <param name="argTimeout">Default timeout for a request </param>
+    /// <param name="cancellationToken">Cancellation token for this request</param>
     /// <returns> A message with the Info response. For example in case of Queue creation is DefaultQueueInfo </returns>
     /// <exception cref="ModelException"> Application errors, see <see cref="ModelException"/> </exception>
-    internal async ValueTask<Message> Request(Message message, int[] expectedResponseCodes, TimeSpan? timeout = null)
+    internal async ValueTask<Message> RequestAsync(Message message, int[] expectedResponseCodes,
+        TimeSpan? argTimeout = null, CancellationToken cancellationToken = default)
     {
         ThrowIfClosed();
+
+        // TODO: make the timeout configurable
+        TimeSpan timeout = argTimeout ?? TimeSpan.FromSeconds(30);
 
         TaskCompletionSource<Message> mre = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // Add TaskCompletionSource to the dictionary it will be used to set the result of the request
         _requests.TryAdd(message.Properties.MessageId, mre);
 
-        using var cts =
-            new CancellationTokenSource(timeout ?? TimeSpan.FromSeconds(1000)); // TODO: make the timeout configurable
+        // TODO: re-use with TryReset?
+        using var timeoutCts = new CancellationTokenSource(timeout);
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
-        await using ConfiguredAsyncDisposable ctsr = cts.Token.Register(RequestTimeoutAction).ConfigureAwait(false);
+        void RequestTimeoutAction()
+        {
+            Trace.WriteLine(TraceLevel.Warning, $"Request timeout for {message.Properties.MessageId}");
 
-        await InternalSendAsync(message)
+            if (_requests.TryRemove(message.Properties.MessageId, out TaskCompletionSource<Message>? timedOutMre))
+            {
+                if (false == timedOutMre.TrySetCanceled(linkedCts.Token))
+                {
+                    // TODO debug log rare condition?
+                }
+            }
+            else
+            {
+                // TODO log missing request?
+            }
+        }
+
+        using CancellationTokenRegistration ctsr = timeoutCts.Token.Register(RequestTimeoutAction);
+
+        // NOTE: no cancellation token support
+        await InternalSendAsync(message, timeout)
             .ConfigureAwait(false);
 
         // The response is handled in a separate thread, see ProcessResponses method in the Init method
-        Message result = await mre.Task.WaitAsync(cts.Token)
+        Message result = await mre.Task.WaitAsync(linkedCts.Token)
             .ConfigureAwait(false);
 
         // Check the responses and throw exceptions if needed.
         CheckResponse(message, expectedResponseCodes, result);
 
         return result;
-
-        void RequestTimeoutAction()
-        {
-            Trace.WriteLine(TraceLevel.Warning, $"Request timeout for {message.Properties.MessageId}");
-            if (_requests.TryRemove(message.Properties.MessageId, out TaskCompletionSource<Message>? timedOutMre))
-            {
-                timedOutMre.TrySetCanceled();
-            }
-        }
     }
 
     /// <summary>
@@ -341,7 +399,6 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
                 $"CorrelationId does not match, expected {sentMessage.Properties.MessageId} but got {receivedMessage.Properties.CorrelationId}");
         }
 
-
         bool any = expectedResponseCodes.Any(c => c == responseCode);
         if (!any)
         {
@@ -351,9 +408,15 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
         }
     }
 
-    protected virtual async Task InternalSendAsync(Message message)
+    protected virtual async Task InternalSendAsync(Message message, TimeSpan timeout)
     {
-        await _senderLink!.SendAsync(message)
+        if (_senderLink is null)
+        {
+            // TODO create "internal bug" exception type?
+            throw new InvalidOperationException("_senderLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+        }
+
+        await _senderLink.SendAsync(message, timeout)
             .ConfigureAwait(false);
     }
 
@@ -384,7 +447,6 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
                       $"Status='{State.ToString()}'" +
                       $"ReceiverLink closed: {_receiverLink?.IsClosed} " +
                       $"}}";
-
 
         return info;
     }

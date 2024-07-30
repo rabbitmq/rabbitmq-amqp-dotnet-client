@@ -36,10 +36,17 @@ public class AmqpConsumerBuilder(AmqpConnection connection) : IConsumerBuilder
     }
 
 
-    public IConsumer Build()
+    public async Task<IConsumer> BuildAsync(CancellationToken cancellationToken = default)
     {
-        return new AmqpConsumer(connection, new AddressBuilder().Queue(_queue).Address(),
-            _handler, _initialCredits, _filters);
+        string address = new AddressBuilder().Queue(_queue).Address();
+
+        AmqpConsumer consumer = new(connection, address, _handler, _initialCredits, _filters);
+
+        // TODO pass cancellationToken
+        await consumer.OpenAsync()
+            .ConfigureAwait(false);
+
+        return consumer;
     }
 }
 

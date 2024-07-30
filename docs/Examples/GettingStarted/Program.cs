@@ -25,15 +25,16 @@ const string queueName = "amqp10-client-test";
 await management.QueueDeletion().Delete(queueName).ConfigureAwait(false);
 
 await management.Queue(queueName).Type(QueueType.QUORUM).Declare();
-IPublisher publisher = connection.PublisherBuilder().Queue(queueName).MaxInflightMessages(2000).Build();
 
-IConsumer consumer = connection.ConsumerBuilder().Queue(queueName).InitialCredits(100).MessageHandler(
+IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).MaxInflightMessages(2000).BuildAsync();
+
+IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).InitialCredits(100).MessageHandler(
     (context, message) =>
     {
         Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.Body()} received");
         context.Accept();
     }
-).Build();
+).BuildAsync();
 
 const int total = 10;
 for (int i = 0; i < total; i++)

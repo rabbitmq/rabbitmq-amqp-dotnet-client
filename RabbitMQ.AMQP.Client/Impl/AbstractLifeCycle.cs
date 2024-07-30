@@ -6,7 +6,9 @@ public class AmqpNotOpenException(string message) : Exception(message);
 
 public abstract class AbstractLifeCycle : ILifeCycle
 {
-    protected virtual Task OpenAsync()
+    private bool _disposedValue;
+
+    public virtual Task OpenAsync()
     {
         OnNewStatus(State.Open, null);
         return Task.CompletedTask;
@@ -15,6 +17,15 @@ public abstract class AbstractLifeCycle : ILifeCycle
     public abstract Task CloseAsync();
 
     public State State { get; internal set; } = State.Closed;
+
+    public event LifeCycleCallBack? ChangeState;
+
+    public void Dispose()
+    {
+        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
 
     protected void ThrowIfClosed()
     {
@@ -49,7 +60,27 @@ public abstract class AbstractLifeCycle : ILifeCycle
         ChangeState?.Invoke(this, oldStatus, newState, error);
     }
 
-    public event LifeCycleCallBack? ChangeState;
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposedValue)
+        {
+            if (disposing)
+            {
+                // TODO: dispose managed state (managed objects)
+            }
+
+            // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+            // TODO: set large fields to null
+            _disposedValue = true;
+        }
+    }
+
+    // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+    // ~AbstractLifeCycle()
+    // {
+    //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+    //     Dispose(disposing: false);
+    // }
 }
 
 public abstract class AbstractReconnectLifeCycle : AbstractLifeCycle
@@ -61,7 +92,7 @@ public abstract class AbstractReconnectLifeCycle : AbstractLifeCycle
         OnNewStatus(newState, error);
     }
 
-    internal async Task Reconnect()
+    internal async Task ReconnectAsync()
     {
         try
         {
@@ -84,7 +115,7 @@ public abstract class AbstractReconnectLifeCycle : AbstractLifeCycle
             await Task.Delay(delay).ConfigureAwait(false);
             if (_backOffDelayPolicy.IsActive())
             {
-                await Reconnect().ConfigureAwait(false);
+                await ReconnectAsync().ConfigureAwait(false);
             }
         }
     }

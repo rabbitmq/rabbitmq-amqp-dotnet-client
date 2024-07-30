@@ -9,6 +9,7 @@ public enum QueueType
 
 public interface IQueueInfo : IEntityInfo
 {
+    // TODO these should be properties, not methods
     string Name();
 
     bool Durable();
@@ -19,10 +20,12 @@ public interface IQueueInfo : IEntityInfo
 
     QueueType Type();
 
+    // TODO IDictionary
     Dictionary<string, object> Arguments();
 
     string Leader();
 
+    // TODO IEnumerable? ICollection?
     List<string> Replicas();
 
     ulong MessageCount();
@@ -38,4 +41,3 @@ public enum ExchangeType
     TOPIC,
     HEADERS
 }
-
