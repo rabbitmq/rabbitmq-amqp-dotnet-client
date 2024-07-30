@@ -27,11 +27,10 @@ await management.QueueDeletion().Delete(queueName).ConfigureAwait(false);
 await management.Queue(queueName).Type(QueueType.QUORUM).Declare();
 IPublisher publisher = connection.PublisherBuilder().Queue(queueName).MaxInflightMessages(2000).Build();
 
-IConsumer consumer = connection.ConsumerBuilder().Queue(queueName).InitialCredits(100).MessageHandler(
-    (context, message) =>
+IConsumer consumer = connection.ConsumerBuilder().Queue(queueName).InitialCredits(100).MessageHandler(async (context, message) =>
     {
         Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.Body()} received");
-        context.Accept();
+        await context.Discard().ConfigureAwait(false);
     }
 ).Build();
 

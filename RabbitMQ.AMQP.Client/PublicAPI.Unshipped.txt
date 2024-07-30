@@ -108,9 +108,9 @@ RabbitMQ.AMQP.Client.IConsumerBuilder.MessageHandler(RabbitMQ.AMQP.Client.Messag
 RabbitMQ.AMQP.Client.IConsumerBuilder.Queue(string! queue) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.Stream() -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.IContext
-RabbitMQ.AMQP.Client.IContext.Accept() -> void
-RabbitMQ.AMQP.Client.IContext.Discard() -> void
-RabbitMQ.AMQP.Client.IContext.Requeue() -> void
+RabbitMQ.AMQP.Client.IContext.Accept() -> System.Threading.Tasks.Task!
+RabbitMQ.AMQP.Client.IContext.Discard() -> System.Threading.Tasks.Task!
+RabbitMQ.AMQP.Client.IContext.Requeue() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.IEntityDeclaration
 RabbitMQ.AMQP.Client.IEntityDeclaration.Declare() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.IEntityInfo
@@ -377,10 +377,10 @@ RabbitMQ.AMQP.Client.Impl.DefaultStreamOptions.Offset(long offset) -> RabbitMQ.A
 RabbitMQ.AMQP.Client.Impl.DefaultStreamOptions.Offset(RabbitMQ.AMQP.Client.StreamOffsetSpecification specification) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.Impl.DefaultStreamOptions.Offset(string! interval) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.Impl.DeliveryContext
-RabbitMQ.AMQP.Client.Impl.DeliveryContext.Accept() -> void
+RabbitMQ.AMQP.Client.Impl.DeliveryContext.Accept() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.DeliveryContext.DeliveryContext(Amqp.IReceiverLink! link, Amqp.Message! message) -> void
-RabbitMQ.AMQP.Client.Impl.DeliveryContext.Discard() -> void
-RabbitMQ.AMQP.Client.Impl.DeliveryContext.Requeue() -> void
+RabbitMQ.AMQP.Client.Impl.DeliveryContext.Discard() -> System.Threading.Tasks.Task!
+RabbitMQ.AMQP.Client.Impl.DeliveryContext.Requeue() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.DeliveryMode
 RabbitMQ.AMQP.Client.Impl.DeliveryMode.AtLeastOnce = 1 -> RabbitMQ.AMQP.Client.Impl.DeliveryMode
 RabbitMQ.AMQP.Client.Impl.DeliveryMode.AtMostOnce = 0 -> RabbitMQ.AMQP.Client.Impl.DeliveryMode

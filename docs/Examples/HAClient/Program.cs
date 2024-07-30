@@ -34,7 +34,8 @@ Task printStats = Task.Run(() =>
 Trace.WriteLine(TraceLevel.Information, "Starting");
 const string connectionName = "HA-Client-Connection";
 
-IEnvironment environment = await AmqpEnvironment.CreateAsync(ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build()).ConfigureAwait(false);
+IEnvironment environment = await AmqpEnvironment
+    .CreateAsync(ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build()).ConfigureAwait(false);
 
 IConnection connection = await environment.CreateConnectionAsync().ConfigureAwait(false);
 
@@ -68,11 +69,10 @@ publisher.ChangeState += (sender, fromState, toState, e) =>
 };
 
 
-IConsumer consumer = connection.ConsumerBuilder().Queue(queueName).InitialCredits(100).MessageHandler(
-    (context, message) =>
+IConsumer consumer = connection.ConsumerBuilder().Queue(queueName).InitialCredits(100).MessageHandler(async (context, message) =>
     {
         Interlocked.Increment(ref messagesReceived);
-        context.Accept();
+        await context.Accept().ConfigureAwait(false);
     }
 ).Build();
 

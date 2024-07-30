@@ -4,17 +4,18 @@ namespace RabbitMQ.AMQP.Client.Impl;
 
 public class DeliveryContext(IReceiverLink link, Message message) : IContext
 {
-    public void Accept()
+    public Task Accept()
     {
         if (link.IsClosed)
         {
             throw new ConsumerException("Link is closed");
         }
-
         link.Accept(message);
+        message.Dispose();
+        return Task.CompletedTask;
     }
 
-    public void Discard()
+    public Task Discard()
     {
         if (link.IsClosed)
         {
@@ -22,15 +23,19 @@ public class DeliveryContext(IReceiverLink link, Message message) : IContext
         }
 
         link.Reject(message);
+        message.Dispose();
+        return Task.CompletedTask;
     }
 
-    public void Requeue()
+    public Task Requeue()
     {
-        if (!link.IsClosed)
+        if (link.IsClosed)
         {
             throw new ConsumerException("Link is closed");
         }
 
         link.Release(message);
+        message.Dispose();
+        return Task.CompletedTask;
     }
 }
