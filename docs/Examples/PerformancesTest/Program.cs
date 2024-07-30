@@ -11,39 +11,44 @@ Trace.TraceListener = (l, f, a) =>
     consoleListener.WriteLine($"[{DateTime.Now}] [{l}] - {f}");
 
 Trace.WriteLine(TraceLevel.Information, "Starting");
-const string connectionName = "performance-test-connection";
+const string containerId = "performance-test-connection";
 
-IConnection connection = await AmqpConnection.CreateAsync(
-    ConnectionSettingBuilder.Create().ConnectionName(connectionName).RecoveryConfiguration(
-        RecoveryConfiguration.Create().Activated(true).Topology(true)
-    ).Build()).ConfigureAwait(false);
+IEnvironment environment = await AmqpEnvironment
+    .CreateAsync(ConnectionSettingBuilder.Create().ContainerId(containerId).Build()).ConfigureAwait(false);
+
+IConnection connection = await environment.CreateConnectionAsync().ConfigureAwait(false);
 
 Trace.WriteLine(TraceLevel.Information, "Connected");
 
 IManagement management = connection.Management();
 
-await management.QueueDeletion().Delete("my-first-queue-n").ConfigureAwait(false);
+const string queueName = "amqp10-net-perf-test";
+await management.QueueDeletion().Delete(queueName).ConfigureAwait(false);
 
-await management.Queue($"my-first-queue-n").Type(QueueType.QUORUM).Declare().ConfigureAwait(false);
+await management.Queue(queueName).Type(QueueType.QUORUM).Declare().ConfigureAwait(false);
+Trace.WriteLine(TraceLevel.Information, "Queue Created");
 
-IPublisher publisher = await connection.PublisherBuilder().Queue("my-first-queue-n").MaxInflightMessages(2000).BuildAsync();
+IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).MaxInflightMessages(5000).BuildAsync();
 
 int received = 0;
 DateTime start = DateTime.Now;
 
-IConsumer consumer = await connection.ConsumerBuilder().Queue("my-first-queue-n").InitialCredits(1000).MessageHandler(
-    (context, message) =>
-    {
-        received++;
-        if (received % 200_000 == 0)
-        {
-            DateTime end = DateTime.Now;
-            Console.WriteLine($"Received Time: {end - start} {received}");
-        }
+async Task MessageHandler(IContext context, IMessage message)
+{
+    await context.AcceptAsync();
 
-        context.Accept();
+    if (Interlocked.Increment(ref received) % 200_000 == 0)
+    {
+        DateTime end = DateTime.Now;
+        Console.WriteLine($"Received Time: {end - start} {received}");
     }
-).Stream().Offset(1).Builder().BuildAsync();
+};
+
+IConsumer consumer = await connection.ConsumerBuilder()
+    .Queue(queueName)
+    .InitialCredits(1000)
+    .MessageHandler(MessageHandler)
+    .Stream().Offset(1).Builder().BuildAsync();
 
 try
 {
@@ -93,14 +98,9 @@ catch (Exception e)
     Trace.WriteLine(TraceLevel.Error, $"{e.Message}");
 }
 
-Trace.WriteLine(TraceLevel.Information, "Queue Created");
 Console.WriteLine("Press any key to delete the queue and close the connection.");
 Console.ReadKey();
 await publisher.CloseAsync().ConfigureAwait(false);
-Trace.WriteLine(TraceLevel.Information, "Publisher Closed");
 await consumer.CloseAsync().ConfigureAwait(false);
-Trace.WriteLine(TraceLevel.Information, "Consumer Closed");
-await management.QueueDeletion().Delete("my-first-queue-n").ConfigureAwait(false);
-Trace.WriteLine(TraceLevel.Information, "Queue Deleted");
-await connection.CloseAsync().ConfigureAwait(false);
-Trace.WriteLine(TraceLevel.Information, "Closed");
+await management.QueueDeletion().Delete(queueName).ConfigureAwait(false);
+await environment.CloseAsync().ConfigureAwait(false);

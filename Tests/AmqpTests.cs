@@ -133,10 +133,10 @@ public class AmqpTests : IntegrationTest
         long receivedMessageCount = 0;
         var allMessagesReceivedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         string? receivedSubject = null;
-        void MessageHandler(IContext ctx, IMessage msg)
+        async Task MessageHandler(IContext ctx, IMessage msg)
         {
             receivedSubject = msg.Subject();
-            ctx.Accept();
+            await ctx.AcceptAsync();
             if (Interlocked.Increment(ref receivedMessageCount) == messageCount)
             {
                 allMessagesReceivedTcs.SetResult();
@@ -215,9 +215,9 @@ public class AmqpTests : IntegrationTest
         const int expectedMessageCount = 2;
         long receivedMessageCount = 0;
         var allMessagesReceivedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        void MessageHandler(IContext ctx, IMessage msg)
+        async Task MessageHandler(IContext ctx, IMessage msg)
         {
-            ctx.Accept();
+            await ctx.AcceptAsync();
             if (Interlocked.Increment(ref receivedMessageCount) == expectedMessageCount)
             {
                 allMessagesReceivedTcs.SetResult();

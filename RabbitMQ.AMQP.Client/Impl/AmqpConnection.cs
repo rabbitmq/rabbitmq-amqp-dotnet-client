@@ -204,9 +204,10 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             var open = new Open
             {
                 HostName = $"vhost:{_connectionSettings.VirtualHost}",
+                ContainerId = _connectionSettings.ContainerId,
                 Properties = new Fields()
                 {
-                    [new Symbol("connection_name")] = _connectionSettings.ConnectionName,
+                    [new Symbol("connection_name")] = _connectionSettings.ContainerId,
                 }
             };
 
@@ -216,15 +217,15 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                 open.MaxFrameSize = _connectionSettings.MaxFrameSize;
             }
 
-            void onOpened(Amqp.IConnection connection, Open open1)
+            void OnOpened(Amqp.IConnection connection, Open open1)
             {
-                Trace.WriteLine(TraceLevel.Verbose, $"Connection opened. Info: {ToString()}");
+                Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is open");
                 OnNewStatus(State.Open, null);
             }
 
             var cf = new ConnectionFactory();
 
-            if (_connectionSettings.UseSsl && _connectionSettings.TlsSettings is not null)
+            if (_connectionSettings is { UseSsl: true, TlsSettings: not null })
             {
                 cf.SSL.Protocols = _connectionSettings.TlsSettings.Protocols;
                 cf.SSL.CheckCertificateRevocation = _connectionSettings.TlsSettings.CheckCertificateRevocation;
@@ -254,19 +255,19 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
 
             try
             {
-                _nativeConnection = await cf.CreateAsync((_connectionSettings as ConnectionSettings)?.Address, open: open, onOpened: onOpened)
+                _nativeConnection = await cf.CreateAsync((_connectionSettings as ConnectionSettings)?.Address, open: open, onOpened: OnOpened)
                     .ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 throw new ConnectionException(
-                    $"Connection failed. Info: {ToString()}", ex);
+                    $"{ToString()}  connection failed.", ex);
             }
 
             if (_nativeConnection.IsClosed)
             {
                 throw new ConnectionException(
-                    $"Connection failed. Info: {ToString()}, error: {_nativeConnection.Error}");
+                    $"{ToString()} connection failed., error: {_nativeConnection.Error}");
             }
 
             await _management.OpenAsync()
@@ -276,8 +277,8 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
         }
         catch (AmqpException e)
         {
-            Trace.WriteLine(TraceLevel.Error, $"Error trying to connect. Info: {ToString()}, error: {e}");
-            throw new ConnectionException($"Error trying to connect. Info: {ToString()}, error: {e}");
+            Trace.WriteLine(TraceLevel.Error, $"{ToString()} - Error trying to connect, error: {e}");
+            throw new ConnectionException($"{ToString()} - Error trying to connect., error: {e}");
         }
         finally
         {
@@ -310,8 +311,8 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                 if (error != null)
                 {
                     //  we assume here that the connection is closed unexpectedly, since the error is not null
-                    Trace.WriteLine(TraceLevel.Warning, $"connection is closed unexpectedly. " +
-                                                        $"Info: {ToString()}");
+                    Trace.WriteLine(TraceLevel.Warning, $"{ToString()}  is closed unexpectedly. "
+                                                        );
 
                     // we have to check if the recovery is active.
                     // The user may want to disable the recovery mechanism
@@ -349,9 +350,8 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                                 int nextDelayMs = _connectionSettings.Recovery.GetBackOffDelayPolicy().Delay();
 
                                 Trace.WriteLine(TraceLevel.Information,
-                                    $"Trying Recovering connection in {nextDelayMs} milliseconds, " +
-                                    $"attempt: {_connectionSettings.Recovery.GetBackOffDelayPolicy().CurrentAttempt}. " +
-                                    $"Info: {ToString()})");
+                                    $"{ToString()} is trying Recovering connection in {nextDelayMs} milliseconds, " +
+                                    $"attempt: {_connectionSettings.Recovery.GetBackOffDelayPolicy().CurrentAttempt}. ");
 
                                 await Task.Delay(TimeSpan.FromMilliseconds(nextDelayMs))
                                     .ConfigureAwait(false);
@@ -364,18 +364,18 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                             catch (Exception e)
                             {
                                 Trace.WriteLine(TraceLevel.Warning,
-                                    $"Error trying to recover connection {e}. Info: {this}");
+                                    $"{ToString()} Error trying to recover connection {e}");
                             }
                         }
 
                         _connectionSettings.Recovery.GetBackOffDelayPolicy().Reset();
                         string connectionDescription = connected ? "recovered" : "not recovered";
                         Trace.WriteLine(TraceLevel.Information,
-                            $"Connection {connectionDescription}. Info: {ToString()}");
+                            $"{ToString()} is {connectionDescription}");
 
                         if (!connected)
                         {
-                            Trace.WriteLine(TraceLevel.Verbose, $"connection is closed. Info: {ToString()}");
+                            Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} connection is closed");
                             OnNewStatus(State.Closed,
                                 new Error(ConnectionNotRecoveredCode,
                                     $"{ConnectionNotRecoveredMessage}, recover status: {_connectionSettings.Recovery}"));
@@ -388,7 +388,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
 
                         if (_connectionSettings.Recovery.IsTopologyActive())
                         {
-                            Trace.WriteLine(TraceLevel.Information, $"Recovering topology. Info: {ToString()}");
+                            Trace.WriteLine(TraceLevel.Information, $"{ToString()} Recovering topology");
                             var visitor = new Visitor(_management);
                             await _recordingTopologyListener.Accept(visitor)
                                 .ConfigureAwait(false);
@@ -403,15 +403,14 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                         }
                         catch (Exception e)
                         {
-                            Trace.WriteLine(TraceLevel.Error, $"Error trying to reconnect entities {e}. Info: {this}");
+                            Trace.WriteLine(TraceLevel.Error, $"{ToString()} error trying to reconnect entities {e}");
                         }
                     }).ConfigureAwait(false);
 
                     return;
                 }
 
-
-                Trace.WriteLine(TraceLevel.Verbose, $"connection is closed. Info: {ToString()}");
+                Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is closed");
                 OnNewStatus(State.Closed, Utils.ConvertError(error));
             }
             finally

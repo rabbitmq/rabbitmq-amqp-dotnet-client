@@ -22,7 +22,7 @@ public class HttpApiClient : IDisposable
         _managementClient = new ManagementClient(_managementUri, "guest", "guest");
     }
 
-    public async Task<bool> CheckConnectionAsync(string connectionName, bool checkOpened = true)
+    public async Task<bool> CheckConnectionAsync(string containerId, bool checkOpened = true)
     {
         bool rv = true;
 
@@ -36,7 +36,7 @@ public class HttpApiClient : IDisposable
                             if (connectionNameObj is not null)
                             {
                                 string connName = (string)connectionNameObj;
-                                return connName.Contains(connectionName);
+                                return connName.Contains(containerId);
                             }
                         }
                     }
@@ -54,7 +54,7 @@ public class HttpApiClient : IDisposable
         }
     }
 
-    public async Task<int> KillConnectionAsync(string connectionName)
+    public async Task<int> KillConnectionAsync(string containerId)
     {
         IReadOnlyList<Connection> connections = await _managementClient.GetConnectionsAsync();
 
@@ -69,7 +69,7 @@ public class HttpApiClient : IDisposable
                     if (connectionNameObj is not null)
                     {
                         string connName = (string)connectionNameObj;
-                        return connName.Contains(connectionName);
+                        return connName.Contains(containerId);
                     }
                 }
             }

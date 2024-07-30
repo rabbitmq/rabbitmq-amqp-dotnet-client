@@ -12,15 +12,13 @@ public interface IConnectionSettings : IEquatable<IConnectionSettings>
     string? User { get; }
     string? Password { get; }
     string Scheme { get; }
-    string ConnectionName { get; }
+    string ContainerId { get; }
     string Path { get; }
     bool UseSsl { get; }
     uint MaxFrameSize { get; }
     SaslMechanism SaslMechanism { get; }
     ITlsSettings? TlsSettings { get; }
-
     IRecoveryConfiguration Recovery { get; }
-
 }
 
 /// <summary>

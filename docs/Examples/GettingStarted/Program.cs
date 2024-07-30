@@ -11,10 +11,10 @@ Trace.TraceListener = (l, f, a) =>
     consoleListener.WriteLine($"[{DateTime.Now}] [{l}] - {f}");
 
 Trace.WriteLine(TraceLevel.Information, "Starting");
-const string connectionName = "GettingStarted-Connection";
+const string containerId = "GettingStarted-Connection";
 
 IEnvironment environment = await AmqpEnvironment.CreateAsync(
-    ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build());
+    ConnectionSettingBuilder.Create().ContainerId(containerId).Build());
 
 IConnection connection = await environment.CreateConnectionAsync();
 
@@ -28,11 +28,10 @@ await management.Queue(queueName).Type(QueueType.QUORUM).Declare();
 
 IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).MaxInflightMessages(2000).BuildAsync();
 
-IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).InitialCredits(100).MessageHandler(
-    (context, message) =>
+IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).InitialCredits(100).MessageHandler((context, message) =>
     {
         Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.Body()} received");
-        context.Accept();
+        return context.DiscardAsync();
     }
 ).BuildAsync();
 

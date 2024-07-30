@@ -44,7 +44,7 @@ public abstract class IntegrationTest : IAsyncLifetime
         ConnectionSettingBuilder connectionSettingBuilder = ConnectionSettingBuilder.Create();
 
         _connectionName = $"{_testDisplayName}:{Now}";
-        connectionSettingBuilder.ConnectionName(_connectionName);
+        connectionSettingBuilder.ContainerId(_connectionName);
 
         ConnectionSettings connectionSettings = connectionSettingBuilder.Build();
         _connection = await AmqpConnection.CreateAsync(connectionSettings);

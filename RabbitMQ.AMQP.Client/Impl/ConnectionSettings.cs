@@ -13,7 +13,7 @@ public class ConnectionSettingBuilder
     private string? _user = "guest";
     private string? _password = "guest";
     private string _scheme = "AMQP";
-    private string _connectionName = "AMQP.NET";
+    private string _containerId = "AMQP.NET";
     private string _virtualHost = "/";
     private uint _maxFrameSize = Consts.DefaultMaxFrameSize;
     private SaslMechanism _saslMechanism = Client.SaslMechanism.Plain;
@@ -58,9 +58,9 @@ public class ConnectionSettingBuilder
         return this;
     }
 
-    public ConnectionSettingBuilder ConnectionName(string connectionName)
+    public ConnectionSettingBuilder ContainerId(string containerId)
     {
-        _connectionName = connectionName;
+        _containerId = containerId;
         return this;
     }
 
@@ -103,7 +103,7 @@ public class ConnectionSettingBuilder
     {
         var c = new ConnectionSettings(_scheme, _host, _port, _user,
             _password, _virtualHost,
-            _connectionName, _saslMechanism, _maxFrameSize)
+            _containerId, _saslMechanism, _maxFrameSize)
         {
             Recovery = (RecoveryConfiguration)_recoveryConfiguration
         };
@@ -119,7 +119,7 @@ public class ConnectionSettings : IConnectionSettings
 {
     private readonly Address _address;
     private readonly string _virtualHost = "/";
-    private readonly string _connectionName = "";
+    private readonly string _containerId = "";
     private readonly uint _maxFrameSize = Consts.DefaultMaxFrameSize;
     private readonly ITlsSettings? _tlsSettings;
     private readonly SaslMechanism _saslMechanism = SaslMechanism.Plain;
@@ -137,7 +137,7 @@ public class ConnectionSettings : IConnectionSettings
 
     public ConnectionSettings(string scheme, string host, int port,
         string? user, string? password,
-        string virtualHost, string connectionName,
+        string virtualHost, string containerId,
         SaslMechanism saslMechanism,
         uint maxFrameSize = Consts.DefaultMaxFrameSize,
         ITlsSettings? tlsSettings = null)
@@ -145,7 +145,7 @@ public class ConnectionSettings : IConnectionSettings
         _address = new Address(host: host, port: port,
             user: user, password: password,
             path: "/", scheme: scheme);
-        _connectionName = connectionName;
+        _containerId = containerId;
         _virtualHost = virtualHost;
         _saslMechanism = saslMechanism;
 
@@ -170,7 +170,7 @@ public class ConnectionSettings : IConnectionSettings
     public string? User => _address.User;
     public string? Password => _address.Password;
     public string Scheme => _address.Scheme;
-    public string ConnectionName => _connectionName;
+    public string ContainerId => _containerId;
     public string Path => _address.Path;
     public bool UseSsl => _address.UseSsl;
     public uint MaxFrameSize => _maxFrameSize;
@@ -185,7 +185,7 @@ public class ConnectionSettings : IConnectionSettings
             $"Address" +
             $"host='{_address.Host}', " +
             $"port={_address.Port}, VirtualHost='{_virtualHost}', path='{_address.Path}', " +
-            $"username='{_address.User}', ConnectionName='{_connectionName}'";
+            $"username='{_address.User}', ContainerId='{_containerId}'";
     }
 
     public override bool Equals(object? obj)

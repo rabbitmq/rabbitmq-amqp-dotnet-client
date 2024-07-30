@@ -5,11 +5,10 @@ using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Tests;
 
-public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
+public class PublisherConsumerRecoveryTests()
 {
     /// <summary>
     /// Test the Simple case where the producer is closed and the status is changed
@@ -17,9 +16,9 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task ProducerShouldChangeStatusWhenClosed()
     {
-        string connectionName = Guid.NewGuid().ToString();
+        string containerId = Guid.NewGuid().ToString();
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build());
+            ConnectionSettingBuilder.Create().ContainerId(containerId).Build());
         await connection.Management().Queue().Name("ProducerShouldChangeStatusWhenClosed").Declare();
 
         IPublisher publisher = await connection.PublisherBuilder().Queue("ProducerShouldChangeStatusWhenClosed").BuildAsync();
@@ -43,13 +42,12 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task ConsumerShouldChangeStatusWhenClosed()
     {
-        string connectionName = Guid.NewGuid().ToString();
+        string containerId = Guid.NewGuid().ToString();
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build());
+            ConnectionSettingBuilder.Create().ContainerId(containerId).Build());
         await connection.Management().Queue().Name("ConsumerShouldChangeStatusWhenClosed").Declare();
-
-        IConsumer consumer = await connection.ConsumerBuilder().Queue("ConsumerShouldChangeStatusWhenClosed").BuildAsync();
-
+        IConsumer consumer = await connection.ConsumerBuilder().Queue("ConsumerShouldChangeStatusWhenClosed")
+            .MessageHandler((context, message) => { return Task.CompletedTask; }).BuildAsync();
         List<(State, State)> states = [];
         consumer.ChangeState += (sender, fromState, toState, e) => { states.Add((fromState, toState)); };
 
@@ -74,9 +72,9 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task ProducerShouldChangeStatusWhenConnectionIsKilled()
     {
-        string connectionName = Guid.NewGuid().ToString();
+        string containerId = Guid.NewGuid().ToString();
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build());
+            ConnectionSettingBuilder.Create().ContainerId(containerId).Build());
         await connection.Management().Queue().Name("ProducerShouldChangeStatusWhenConnectionIsKilled").Declare();
 
         IPublisher publisher = await connection.PublisherBuilder().Queue("ProducerShouldChangeStatusWhenConnectionIsKilled")
@@ -85,7 +83,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
         List<(State, State)> states = [];
         publisher.ChangeState += (sender, fromState, toState, e) => { states.Add((fromState, toState)); };
 
-        await SystemUtils.WaitUntilConnectionIsKilledAndOpen(connectionName);
+        await SystemUtils.WaitUntilConnectionIsKilledAndOpen(containerId);
 
         await SystemUtils.WaitUntilFuncAsync(() => publisher.State == State.Open);
 
@@ -112,18 +110,19 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task ConsumerShouldChangeStatusWhenConnectionIsKilled()
     {
-        string connectionName = Guid.NewGuid().ToString();
+        string containerId = Guid.NewGuid().ToString();
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build());
+            ConnectionSettingBuilder.Create().ContainerId(containerId).Build());
         await connection.Management().Queue().Name("ConsumerShouldChangeStatusWhenConnectionIsKilled").Declare();
 
         IConsumer consumer = await connection.ConsumerBuilder().Queue("ConsumerShouldChangeStatusWhenConnectionIsKilled")
+            .MessageHandler((context, message) => { return Task.CompletedTask; })
             .BuildAsync();
 
         List<(State, State)> states = [];
         consumer.ChangeState += (sender, fromState, toState, e) => { states.Add((fromState, toState)); };
 
-        await SystemUtils.WaitUntilConnectionIsKilledAndOpen(connectionName);
+        await SystemUtils.WaitUntilConnectionIsKilledAndOpen(containerId);
 
         await SystemUtils.WaitUntilFuncAsync(() => consumer.State == State.Open);
 
@@ -148,26 +147,26 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task PublishShouldRestartPublishConsumerShouldRestartConsumeWhenConnectionIsKilled()
     {
-        string connectionName = Guid.NewGuid().ToString();
+        const string queueName = nameof(PublishShouldRestartPublishConsumerShouldRestartConsumeWhenConnectionIsKilled);
+
+        string containerId = Guid.NewGuid().ToString();
+
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build());
-        await connection.Management().Queue()
-            .Name("PublishShouldRestartPublishConsumerShouldRestartConsumeWhenConnectionIsKilled").Declare();
+            ConnectionSettingBuilder.Create().ContainerId(containerId).Build());
 
-        IPublisher publisher = await connection.PublisherBuilder()
-            .Queue("PublishShouldRestartPublishConsumerShouldRestartConsumeWhenConnectionIsKilled").BuildAsync();
+        await connection.Management().Queue().Name(queueName).Declare();
 
-        int messagesReceived = 0;
+        IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).BuildAsync();
 
-        IConsumer consumer = await connection.ConsumerBuilder().InitialCredits(100)
-            .Queue("PublishShouldRestartPublishConsumerShouldRestartConsumeWhenConnectionIsKilled")
-            .MessageHandler((context, message) =>
+        long messagesReceived = 0;
+
+        IConsumer consumer = await connection.ConsumerBuilder().InitialCredits(100).Queue(queueName)
+            .MessageHandler(async (context, message) =>
             {
                 Interlocked.Increment(ref messagesReceived);
-                testOutputHelper.WriteLine($"Received message {messagesReceived}");
                 try
                 {
-                    context.Accept();
+                    await context.AcceptAsync();
                 }
                 catch (Exception)
                 {
@@ -175,11 +174,11 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
                 }
             }).BuildAsync();
 
-        const int publishCount = 10;
+        const int publishBatchCount = 10;
         int messagesConfirmed = 0;
         var message = new AmqpMessage("Hello World");
         var publishTasks = new List<Task<PublishResult>>();
-        for (int i = 0; i < publishCount; i++)
+        for (int i = 0; i < publishBatchCount; i++)
         {
             publishTasks.Add(publisher.PublishAsync(message));
         }
@@ -193,16 +192,16 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
             ++messagesConfirmed;
         }
         publishTasks.Clear();
-        Assert.Equal(publishCount, messagesConfirmed);
+        Assert.Equal(publishBatchCount, messagesConfirmed);
 
         await SystemUtils.WaitUntilFuncAsync(() => messagesReceived == 10);
 
-        await SystemUtils.WaitUntilConnectionIsKilledAndOpen(connectionName);
+        await SystemUtils.WaitUntilConnectionIsKilledAndOpen(containerId);
 
         await SystemUtils.WaitUntilFuncAsync(() => publisher.State == State.Open);
         await SystemUtils.WaitUntilFuncAsync(() => consumer.State == State.Open);
 
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < publishBatchCount; i++)
         {
             publishTasks.Add(publisher.PublishAsync(message));
         }
@@ -216,20 +215,20 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
             ++messagesConfirmed;
         }
         publishTasks.Clear();
-        Assert.Equal(publishCount * 2, messagesConfirmed);
+        Assert.Equal(publishBatchCount * 2, messagesConfirmed);
 
         Assert.Equal(State.Open, publisher.State);
 
         await publisher.CloseAsync();
+
+        await SystemUtils.WaitUntilFuncAsync(() => Interlocked.Read(ref messagesReceived) == 20);
         await consumer.CloseAsync();
 
         Assert.Equal(State.Closed, publisher.State);
         Assert.Equal(State.Closed, consumer.State);
 
-        await connection.Management().QueueDeletion()
-            .Delete("PublishShouldRestartPublishConsumerShouldRestartConsumeWhenConnectionIsKilled");
+        await connection.Management().QueueDeletion().Delete(queueName);
         await connection.CloseAsync();
-        await SystemUtils.WaitUntilFuncAsync(() => messagesReceived == 20);
     }
 
     /// <summary>
@@ -238,28 +237,26 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task PublisherAndConsumerShouldNotRestartIfRecoveryIsDisabled()
     {
-        string connectionName = Guid.NewGuid().ToString();
+        const string queueName = nameof(PublisherAndConsumerShouldNotRestartIfRecoveryIsDisabled);
+
+        string containerId = Guid.NewGuid().ToString();
         IConnection connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create().RecoveryConfiguration(RecoveryConfiguration.Create().Activated(false))
-                .ConnectionName(connectionName).Build());
+                .ContainerId(containerId).Build());
 
-        await connection.Management().Queue().Name("PublisherAndConsumerShouldNotRestartIfRecoveryIsDisabled")
-            .Declare();
+        await connection.Management().Queue().Name(queueName).Declare();
 
-        IPublisher publisher = await connection.PublisherBuilder()
-            .Queue("PublisherAndConsumerShouldNotRestartIfRecoveryIsDisabled").BuildAsync();
+        IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).BuildAsync();
 
         List<(State, State)> statesProducer = [];
         publisher.ChangeState += (sender, fromState, toState, e) => { statesProducer.Add((fromState, toState)); };
 
-
-        IConsumer consumer = await connection.ConsumerBuilder().InitialCredits(100)
-            .Queue("PublisherAndConsumerShouldNotRestartIfRecoveryIsDisabled")
-            .MessageHandler((context, message) =>
+        IConsumer consumer = await connection.ConsumerBuilder().InitialCredits(100).Queue(queueName)
+            .MessageHandler(async (context, message) =>
             {
                 try
                 {
-                    context.Accept();
+                    await context.AcceptAsync();
                 }
                 catch (Exception)
                 {
@@ -273,7 +270,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(State.Open, publisher.State);
         Assert.Equal(State.Open, consumer.State);
 
-        await SystemUtils.WaitUntilConnectionIsKilled(connectionName);
+        await SystemUtils.WaitUntilConnectionIsKilled(containerId);
         await SystemUtils.WaitUntilFuncAsync(() => publisher.State == State.Closed);
         await SystemUtils.WaitUntilFuncAsync(() => consumer.State == State.Closed);
 
@@ -291,11 +288,9 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
         // and the connection is closed. So we can't use the same connection to delete the queue
         IConnection connection2 = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create().RecoveryConfiguration(RecoveryConfiguration.Create().Activated(false))
-                .ConnectionName(connectionName).Build());
+                .ContainerId(containerId).Build());
 
-        await connection2.Management().QueueDeletion()
-            .Delete("PublisherAndConsumerShouldNotRestartIfRecoveryIsDisabled");
-
+        await connection2.Management().QueueDeletion().Delete(queueName);
         await connection2.CloseAsync();
     }
 }
