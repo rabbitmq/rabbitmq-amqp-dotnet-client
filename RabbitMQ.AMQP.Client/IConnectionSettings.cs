@@ -15,6 +15,7 @@ public interface IConnectionSettings : IEquatable<IConnectionSettings>
     string ConnectionName { get; }
     string Path { get; }
     bool UseSsl { get; }
+    uint MaxFrameSize { get; }
     SaslMechanism SaslMechanism { get; }
     ITlsSettings? TlsSettings { get; }
 
@@ -35,20 +36,25 @@ public interface ITlsSettings
     /// <summary>
     /// Supported protocols to use.
     /// </summary>
-    SslProtocols Protocols { get; }
+    SslProtocols Protocols { get; set; }
+
+    /// <summary>
+    /// Acceptable TLS/SSL errors when connecting.
+    /// </summary>
+    SslPolicyErrors AcceptablePolicyErrors { get; set; }
 
     /// <summary>
     /// Specifies whether certificate revocation should be performed during handshake.
     /// </summary>
-    bool CheckCertificateRevocation { get; }
+    bool CheckCertificateRevocation { get; set; }
 
     /// <summary>
     /// Gets or sets a certificate validation callback to validate remote certificate.
     /// </summary>
-    RemoteCertificateValidationCallback? RemoteCertificateValidationCallback { get; }
+    RemoteCertificateValidationCallback? RemoteCertificateValidationCallback { get; set; }
 
     /// <summary>
     /// Gets or sets a local certificate selection callback to select the certificate which should be used for authentication.
     /// </summary>
-    LocalCertificateSelectionCallback? LocalCertificateSelectionCallback { get; }
+    LocalCertificateSelectionCallback? LocalCertificateSelectionCallback { get; set; }
 }

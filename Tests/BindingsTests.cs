@@ -22,23 +22,22 @@ public class BindingsTests
         await management.Queue().Name(queueDestination).Declare();
         await management.Binding().SourceExchange(sourceExchange).DestinationQueue(queueDestination)
             .Key("key").Bind();
-        SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists(sourceExchange));
-        SystemUtils.WaitUntil(() =>
-            SystemUtils.BindsBetweenExchangeAndQueueExists(sourceExchange,
-                queueDestination));
+
+        await SystemUtils.WaitUntilExchangeExistsAsync(sourceExchange);
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync(sourceExchange, queueDestination);
 
         await management.Binding().SourceExchange(sourceExchange).DestinationQueue(queueDestination)
             .Key("key").Unbind();
 
-        SystemUtils.WaitUntil(() =>
-            !SystemUtils.BindsBetweenExchangeAndQueueExists(sourceExchange,
-                queueDestination));
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(sourceExchange, queueDestination);
 
         await management.ExchangeDeletion().Delete(sourceExchange);
         await management.QueueDeletion().Delete(queueDestination);
         await connection.CloseAsync();
-        SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists(sourceExchange));
-        SystemUtils.WaitUntil(() => !SystemUtils.QueueExists(queueDestination));
+
+        await SystemUtils.WaitUntilExchangeDeletedAsync(sourceExchange);
+        await SystemUtils.WaitUntilQueueDeletedAsync(queueDestination);
     }
 
     [Fact]
@@ -46,37 +45,36 @@ public class BindingsTests
     {
         IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         IManagement management = connection.Management();
+
         await management.Exchange("exchange_bind_two_times").Declare();
         await management.Queue().Name("queue_bind_two_times").Declare();
+
         await management.Binding().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
             .Key("first_key").Bind();
         await management.Binding().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
             .Key("second_key").Bind();
-        SystemUtils.WaitUntil(() =>
-            SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_bind_two_times",
-                "queue_bind_two_times"));
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync("exchange_bind_two_times", "queue_bind_two_times");
 
         await management.Binding().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
             .Key("first_key")
             .Unbind();
 
-        SystemUtils.WaitUntil(() =>
-            SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_bind_two_times",
-                "queue_bind_two_times"));
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync("exchange_bind_two_times", "queue_bind_two_times");
 
         await management.Binding().SourceExchange("exchange_bind_two_times").DestinationQueue("queue_bind_two_times")
             .Key("second_key")
             .Unbind();
 
-        SystemUtils.WaitUntil(() => !SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_bind_two_times",
-            "queue_bind_two_times"));
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync("exchange_bind_two_times", "queue_bind_two_times");
 
         await management.ExchangeDeletion().Delete("exchange_bind_two_times");
 
         await management.QueueDeletion().Delete("queue_bind_two_times");
         await connection.CloseAsync();
-        SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists("exchange_bind_two_times"));
-        SystemUtils.WaitUntil(() => !SystemUtils.QueueExists("queue_bind_two_times"));
+
+        await SystemUtils.WaitUntilExchangeDeletedAsync("exchange_bind_two_times");
+        await SystemUtils.WaitUntilQueueDeletedAsync("queue_bind_two_times");
     }
 
 
@@ -97,25 +95,23 @@ public class BindingsTests
         await management.Binding().SourceExchange(sourceExchange)
             .DestinationExchange(destinationExchange)
             .Key(key).Bind();
-        SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists(sourceExchange));
 
-        SystemUtils.WaitUntil(() =>
-            SystemUtils.BindsBetweenExchangeAndExchangeExists(sourceExchange,
-                destinationExchange));
+        await SystemUtils.WaitUntilExchangeExistsAsync(sourceExchange);
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(sourceExchange, destinationExchange);
 
         await management.Binding().SourceExchange(sourceExchange)
             .DestinationExchange(destinationExchange)
             .Key(key).Unbind();
 
-        SystemUtils.WaitUntil(() =>
-            !SystemUtils.BindsBetweenExchangeAndExchangeExists(sourceExchange,
-                destinationExchange));
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(sourceExchange, destinationExchange);
 
         await management.ExchangeDeletion().Delete(sourceExchange);
         await management.ExchangeDeletion().Delete(destinationExchange);
         await connection.CloseAsync();
-        SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists(sourceExchange));
-        SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists(destinationExchange));
+
+        await SystemUtils.WaitUntilExchangeDeletedAsync(sourceExchange);
+        await SystemUtils.WaitUntilExchangeDeletedAsync(destinationExchange);
     }
 
     [Theory]
@@ -136,26 +132,29 @@ public class BindingsTests
             .Key("key")
             .Arguments(arguments)
             .Bind();
-        SystemUtils.WaitUntil(() => SystemUtils.ExchangeExists("exchange_bindings_with_arguments"));
-        SystemUtils.WaitUntil(() =>
-            SystemUtils.ArgsBindsBetweenExchangeAndQueueExists("exchange_bindings_with_arguments",
-                "queue_bindings_with_arguments", arguments));
+
+        await SystemUtils.WaitUntilExchangeExistsAsync("exchange_bindings_with_arguments");
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(
+            "exchange_bindings_with_arguments",
+            "queue_bindings_with_arguments", arguments);
+
         await management.Binding().SourceExchange("exchange_bindings_with_arguments")
             .DestinationQueue("queue_bindings_with_arguments")
             .Key("key").Arguments(arguments).Unbind();
-        SystemUtils.WaitUntil(() =>
-            !SystemUtils.ArgsBindsBetweenExchangeAndQueueExists("exchange_bindings_with_arguments",
-                "queue_bindings_with_arguments", arguments));
 
-        SystemUtils.WaitUntil(() =>
-            !SystemUtils.BindsBetweenExchangeAndQueueExists("exchange_bindings_with_arguments",
-                "queue_bindings_with_arguments"));
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(
+            "exchange_bindings_with_arguments",
+            "queue_bindings_with_arguments", arguments);
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync("exchange_bindings_with_arguments", "queue_bindings_with_arguments");
 
         await management.ExchangeDeletion().Delete("exchange_bindings_with_arguments");
         await management.QueueDeletion().Delete("queue_bindings_with_arguments");
         await connection.CloseAsync();
-        SystemUtils.WaitUntil(() => !SystemUtils.ExchangeExists("exchange_bindings_with_arguments"));
-        SystemUtils.WaitUntil(() => !SystemUtils.QueueExists("queue_bindings_with_arguments"));
+
+        await SystemUtils.WaitUntilExchangeDeletedAsync("exchange_bindings_with_arguments");
+        await SystemUtils.WaitUntilQueueDeletedAsync("queue_bindings_with_arguments");
     }
 
     // TODO: test with multi-bindings with parameters with list as value
@@ -190,32 +189,27 @@ public class BindingsTests
             .Key(key) // single key to use different args
             .Arguments(specialBind)
             .Bind();
-        SystemUtils.WaitUntil(() =>
-            SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
-                destination, specialBind));
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(source, destination, specialBind);
 
         await management.Binding().SourceExchange(source).DestinationQueue(destination).Key(key).Arguments(specialBind)
             .Unbind();
 
-        SystemUtils.WaitUntil(() =>
-            !SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
-                destination, specialBind));
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(source, destination, specialBind);
 
         for (int i = 0; i < 10; i++)
         {
             var b = new Dictionary<string, object>() { { $"是英国v_{i}", $"p_{i}" } };
-            SystemUtils.WaitUntil(() =>
-                SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
-                    destination, b));
+
+            await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(source, destination, b);
+
             await management.Binding().SourceExchange(source)
                 .DestinationQueue(destination)
                 .Key(key) // single key to use different args
                 .Arguments(b)
                 .Unbind();
 
-            SystemUtils.WaitUntil(() =>
-                !SystemUtils.ArgsBindsBetweenExchangeAndQueueExists(source,
-                    destination, b));
+            await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(source, destination, b);
         }
 
         await management.ExchangeDeletion().Delete(source);
