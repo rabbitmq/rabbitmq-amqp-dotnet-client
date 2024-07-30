@@ -45,7 +45,8 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
         IConnection connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build());
         await connection.Management().Queue().Name("ConsumerShouldChangeStatusWhenClosed").Declare();
-        IConsumer consumer = connection.ConsumerBuilder().Queue("ConsumerShouldChangeStatusWhenClosed").Build();
+        IConsumer consumer = connection.ConsumerBuilder().Queue("ConsumerShouldChangeStatusWhenClosed")
+            .MessageHandler(async (context, message) => { await Task.CompletedTask; }).Build();
         List<(State, State)> states = [];
         consumer.ChangeState += (sender, fromState, toState, e) => { states.Add((fromState, toState)); };
 
@@ -111,6 +112,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
             ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build());
         await connection.Management().Queue().Name("ConsumerShouldChangeStatusWhenConnectionIsKilled").Declare();
         IConsumer consumer = connection.ConsumerBuilder().Queue("ConsumerShouldChangeStatusWhenConnectionIsKilled")
+            .MessageHandler(async (context, message) => { await Task.CompletedTask; })
             .Build();
         List<(State, State)> states = [];
         consumer.ChangeState += (sender, fromState, toState, e) => { states.Add((fromState, toState)); };
@@ -152,13 +154,13 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
         int messagesReceived = 0;
         IConsumer consumer = connection.ConsumerBuilder().InitialCredits(100)
             .Queue("PublishShouldRestartPublishConsumerShouldRestartConsumeWhenConnectionIsKilled")
-            .MessageHandler((context, message) =>
+            .MessageHandler(async (context, message) =>
             {
                 Interlocked.Increment(ref messagesReceived);
                 testOutputHelper.WriteLine($"Received message {messagesReceived}");
                 try
                 {
-                    context.Accept();
+                    await context.Accept().ConfigureAwait(false);
                 }
                 catch (Exception)
                 {
@@ -232,11 +234,11 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
 
         IConsumer consumer = connection.ConsumerBuilder().InitialCredits(100)
             .Queue("PublisherAndConsumerShouldNotRestartIfRecoveryIsDisabled")
-            .MessageHandler((context, message) =>
+            .MessageHandler(async (context, message) =>
             {
                 try
                 {
-                    context.Accept();
+                    await context.Accept().ConfigureAwait(false);
                 }
                 catch (Exception)
                 {

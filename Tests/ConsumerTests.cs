@@ -24,9 +24,9 @@ public class ConsumerTests(ITestOutputHelper testOutputHelper)
 
         TaskCompletionSource<IMessage> tcs = new();
         IConsumer consumer = connection.ConsumerBuilder().Queue("SimpleConsumeMessage").MessageHandler(
-            (context, message) =>
+            async (context, message) =>
             {
-                context.Accept();
+                await context.Accept().ConfigureAwait(false);
                 tcs.SetResult(message);
             }
         ).Build();
@@ -58,8 +58,7 @@ public class ConsumerTests(ITestOutputHelper testOutputHelper)
 
         TaskCompletionSource<int> tcs = new();
         int consumed = 0;
-        IConsumer consumer = connection.ConsumerBuilder().Queue("ConsumerReQueueMessage").MessageHandler(
-            (context, message) =>
+        IConsumer consumer = connection.ConsumerBuilder().Queue("ConsumerReQueueMessage").MessageHandler(async (context, message) =>
             {
                 Assert.Equal("Hello world!", message.Body());
                 Interlocked.Increment(ref consumed);
@@ -68,10 +67,10 @@ public class ConsumerTests(ITestOutputHelper testOutputHelper)
                     case 1:
                         // first time requeue the message
                         // it must consume again
-                        context.Requeue();
+                        await context.Requeue().ConfigureAwait(false);
                         break;
                     case 2:
-                        context.Accept();
+                        await context.Accept().ConfigureAwait(false);
                         tcs.SetResult(consumed);
                         break;
                 }
@@ -106,18 +105,18 @@ public class ConsumerTests(ITestOutputHelper testOutputHelper)
 
         List<IMessage> receivedMessages = new();
         IConsumer consumer = connection.ConsumerBuilder().Queue("ConsumerRejectOnlySomeMessage").InitialCredits(100)
-            .MessageHandler((
+            .MessageHandler(async (
                 context, message) =>
             {
                 receivedMessages.Add(message);
                 Interlocked.Increment(ref consumed);
                 if (consumed % 2 == 0)
                 {
-                    context.Discard();
+                    await context.Discard().ConfigureAwait(false);
                 }
                 else
                 {
-                    context.Accept();
+                    await context.Accept().ConfigureAwait(false);
                 }
 
                 if (consumed == 500)
@@ -169,7 +168,11 @@ public class ConsumerTests(ITestOutputHelper testOutputHelper)
         await Publish(connection, queueName, 100);
         int consumed = 0;
         IConsumer consumer = connection.ConsumerBuilder().Queue(queueName).InitialCredits(100)
-            .MessageHandler((context, message) => { Interlocked.Increment(ref consumed); }).Stream().Offset(offset)
+            .MessageHandler(async (context, message) =>
+            {
+                Interlocked.Increment(ref consumed);
+                await Task.CompletedTask;
+            }).Stream().Offset(offset)
             .Builder().Build();
 
         // wait for the consumer to consume all messages
@@ -221,20 +224,20 @@ public class ConsumerTests(ITestOutputHelper testOutputHelper)
 
         List<IMessage> receivedMessages = [];
         IConsumer consumer = connection.ConsumerBuilder().Queue(queueName).InitialCredits(100)
-            .MessageHandler((context, message) =>
+            .MessageHandler(async (context, message) =>
             {
                 receivedMessages.Add(message);
-                context.Accept();
+                await context.Accept().ConfigureAwait(false);
             }).Stream().FilterValues(filters).FilterMatchUnfiltered(false)
             .Offset(StreamOffsetSpecification.First).Builder()
             .Build();
 
         int receivedWithoutFilters = 0;
         IConsumer consumerWithoutFilters = connection.ConsumerBuilder().Queue(queueName).InitialCredits(100)
-            .MessageHandler((context, message) =>
+            .MessageHandler(async (context, message) =>
             {
                 Interlocked.Increment(ref receivedWithoutFilters);
-                context.Accept();
+                await context.Accept().ConfigureAwait(false);
             }).Stream()
             .Offset(StreamOffsetSpecification.First).Builder()
             .Build();
@@ -256,7 +259,6 @@ public class ConsumerTests(ITestOutputHelper testOutputHelper)
     /// </summary>
     /// <param name="offsetStart"></param>
     /// <param name="numberOfMessagesExpected"></param>
-
     [Theory]
     [InlineData(0, 100)]
     [InlineData(50, 50)]
@@ -270,7 +272,11 @@ public class ConsumerTests(ITestOutputHelper testOutputHelper)
         await Publish(connection, queueName, 100);
         int consumed = 0;
         IConsumer consumer = connection.ConsumerBuilder().Queue(queueName).InitialCredits(100)
-            .MessageHandler((context, message) => { Interlocked.Increment(ref consumed); }).Stream().Offset(offsetStart)
+            .MessageHandler(async (context, message) =>
+            {
+                Interlocked.Increment(ref consumed);
+                await Task.CompletedTask;
+            }).Stream().Offset(offsetStart)
             .Builder().Build();
 
         // wait for the consumer to consume all messages

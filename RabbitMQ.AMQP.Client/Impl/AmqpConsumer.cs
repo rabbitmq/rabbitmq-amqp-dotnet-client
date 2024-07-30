@@ -20,12 +20,12 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
         _messageHandler = messageHandler;
         _initialCredits = initialCredits;
         _filters = filters;
-        OpenAsync();
+        _ = OpenAsync();
         _connection.Consumers.TryAdd(Id, this);
     }
 
 
-    protected sealed override Task OpenAsync()
+    protected sealed override async Task OpenAsync()
     {
         try
         {
@@ -43,27 +43,55 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
             }
 
             OnNewStatus(State.Open, null);
-            ProcessMessages();
+            await ProcessMessages().ConfigureAwait(false);
         }
         catch (Exception e)
         {
             throw new ConsumerException($"{ToString()} Failed to create receiver link, {e}");
         }
-
-        return Task.CompletedTask;
     }
 
-    private void ProcessMessages()
+    private async Task ProcessMessages()
     {
-        // TODO: Check the performance during the download messages
-        // The publisher is faster than the consumer
-        _receiverLink?.Start(_initialCredits,
-            (link, message) =>
+        try
+        {
+            if (_receiverLink == null)
             {
-                IContext context = new DeliveryContext(link, message);
-                _messageHandler(context,
-                    new AmqpMessage(message));
-            });
+                return;
+            }
+
+            _receiverLink.SetCredit(_initialCredits);
+            while (_receiverLink is { LinkState: LinkState.Attached })
+            {
+                TimeSpan timeout = TimeSpan.FromSeconds(59);
+                Message message = await _receiverLink.ReceiveAsync(timeout).ConfigureAwait(false);
+                if (message == null)
+                {
+                    // this is not a problem, it is just a timeout. 
+                    // the timeout is set to 60 seconds. 
+                    // For the moment I'd trace it at some point we can remove it
+                    Trace.WriteLine(TraceLevel.Verbose,
+                        $"{ToString()}: Timeout {timeout.Seconds} s.. waiting for message.");
+                    continue;
+                }
+
+                IContext context = new DeliveryContext(_receiverLink, message);
+                await _messageHandler(context,
+                    new AmqpMessage(message)).ConfigureAwait(false);
+            }
+        }
+        catch (Exception e)
+        {
+            if (State == State.Closing)
+            {
+                return;
+            }
+
+            Trace.WriteLine(TraceLevel.Error, $"{ToString()} Failed to process messages, {e}");
+        }
+
+
+        Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is closed.");
     }
 
     private string Id { get; } = Guid.NewGuid().ToString();
@@ -100,6 +128,9 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
 
     public override string ToString()
     {
-        return $"Consumer{{Address='{_address}', id={Id} ConnectionName='{_connection}', State='{State}'}}";
+        return $"Consumer{{Address='{_address}', " +
+               $"id={Id}, " +
+               $"ConnectionName='{_connection}', " +
+               $"State='{State}'}}";
     }
 }

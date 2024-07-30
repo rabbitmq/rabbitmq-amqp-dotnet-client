@@ -3,7 +3,7 @@ using Amqp.Listener;
 namespace RabbitMQ.AMQP.Client;
 
 public class ConsumerException(string message) : Exception(message);
-public delegate void MessageHandler(IContext context, IMessage message);
+public delegate Task MessageHandler(IContext context, IMessage message);
 
 public interface IConsumer : ILifeCycle
 {
@@ -21,9 +21,9 @@ public interface IMessageHandler
 
 public interface IContext
 {
-    void Accept();
+    Task Accept();
 
-    void Discard();
+    Task Discard();
 
-    void Requeue();
+    Task Requeue();
 }
