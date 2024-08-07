@@ -1,6 +1,5 @@
 namespace RabbitMQ.AMQP.Client;
 
-
 public enum StreamOffsetSpecification
 {
     First,
@@ -18,7 +17,7 @@ public interface IConsumerBuilder
 
     IStreamOptions Stream();
 
-    IConsumer Build();
+    Task<IConsumer> BuildAsync(CancellationToken cancellationToken = default);
 
     public interface IStreamOptions
     {
@@ -36,6 +35,4 @@ public interface IConsumerBuilder
 
         IConsumerBuilder Builder();
     }
-
-
 }

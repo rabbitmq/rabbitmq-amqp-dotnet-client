@@ -3,6 +3,7 @@ using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
+// TODO IEquatable
 public class DefaultQueueInfo : IQueueInfo
 {
     private readonly string _name;
@@ -279,7 +280,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         };
 
         // TODO: encodePathSegment(queues)
-        Message request = await management.Request(kv, $"/{Consts.Queues}/{Utils.EncodePathSegment(_name)}",
+        Message response = await management.RequestAsync(kv, $"/{Consts.Queues}/{Utils.EncodePathSegment(_name)}",
             AmqpManagement.Put,
             [
                 AmqpManagement.Code200,
@@ -287,7 +288,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
                 AmqpManagement.Code409
             ]).ConfigureAwait(false);
 
-        var result = new DefaultQueueInfo((Map)request.Body);
+        var result = new DefaultQueueInfo((Map)response.Body);
         management.TopologyListener().QueueDeclared(this);
         return result;
     }
@@ -402,7 +403,7 @@ public class AmqpQueueDeletion(AmqpManagement management) : IQueueDeletion
     public async Task<IEntityInfo> Delete(string name)
     {
         await management
-            .Request(null, $"/{Consts.Queues}/{Utils.EncodePathSegment(name)}", AmqpManagement.Delete,
+            .RequestAsync(null, $"/{Consts.Queues}/{Utils.EncodePathSegment(name)}", AmqpManagement.Delete,
                 new[] { AmqpManagement.Code200, })
             .ConfigureAwait(false);
 

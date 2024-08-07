@@ -1,7 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Web;
-using Amqp;
 using Amqp.Framing;
 using Amqp.Types;
 
@@ -32,7 +31,6 @@ public static class Utils
             .Replace("=", "");
     }
 
-
     public static RabbitMQ.AMQP.Client.Error? ConvertError(Amqp.Framing.Error? sourceError)
     {
         Error? resultError = null;
@@ -61,7 +59,6 @@ public static class Utils
         }
     }
 
-
     public static void ValidatePositive(string label, long value, long max)
     {
         if (value <= 0)
@@ -85,7 +82,6 @@ public static class Utils
             throw new ArgumentException($"'{label}' must be greater than or equal to 0");
         }
     }
-
 
     // switch (options.deliveryMode()) {
     //     case AT_MOST_ONCE:
@@ -129,7 +125,6 @@ public static class Utils
         return attach;
     }
 
-
     public static string? EncodePathSegment(string url)
     {
         return PercentCodec.EncodePathSegment(url);
@@ -139,7 +134,6 @@ public static class Utils
     {
         return HttpUtility.UrlPathEncode(url);
     }
-
 
     public static bool CompareMap(Map map1, Map map2)
     {

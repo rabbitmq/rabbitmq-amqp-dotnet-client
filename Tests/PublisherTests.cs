@@ -16,22 +16,26 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
     public async Task ValidateBuilderRaiseExceptionIfQueueOrExchangeAreNotSetCorrectly()
     {
         IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        Assert.Throws<InvalidAddressException>(() =>
-            connection.PublisherBuilder().Queue("does_not_matter").Exchange("i_should_not_stay_here").Build());
-        Assert.Throws<InvalidAddressException>(() => connection.PublisherBuilder().Exchange("").Build());
-        Assert.Throws<InvalidAddressException>(() => connection.PublisherBuilder().Queue("").Build());
+
+        await Assert.ThrowsAsync<InvalidAddressException>(() =>
+            connection.PublisherBuilder().Queue("does_not_matter").Exchange("i_should_not_stay_here").BuildAsync());
+
+        await Assert.ThrowsAsync<InvalidAddressException>(() => connection.PublisherBuilder().Exchange("").BuildAsync());
+
+        await Assert.ThrowsAsync<InvalidAddressException>(() => connection.PublisherBuilder().Queue("").BuildAsync());
+
         Assert.Empty(connection.GetPublishers());
+
         await connection.CloseAsync();
     }
-
 
     [Fact]
     public async Task RaiseErrorIfQueueDoesNotExist()
     {
         IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
 
-        Assert.Throws<PublisherException>(() =>
-            connection.PublisherBuilder().Queue("queue_does_not_exist").Build());
+        await Assert.ThrowsAsync<PublisherException>(() =>
+            connection.PublisherBuilder().Queue("queue_does_not_exist").BuildAsync());
 
         await connection.CloseAsync();
     }
@@ -42,7 +46,9 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
         IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         IManagement management = connection.Management();
         await management.Queue().Name("queue_to_send").Declare();
-        IPublisher publisher = connection.PublisherBuilder().Queue("queue_to_send").Build();
+
+        IPublisher publisher = await connection.PublisherBuilder().Queue("queue_to_send").BuildAsync();
+
         await publisher.Publish(new AmqpMessage("Hello wold!"),
             (message, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
 
@@ -67,7 +73,8 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
         int received = 0;
         for (int i = 1; i <= 10; i++)
         {
-            IPublisher publisher = connection.PublisherBuilder().Queue("queue_publishers_count").Build();
+            IPublisher publisher = await connection.PublisherBuilder().Queue("queue_publishers_count").BuildAsync();
+
             await publisher.Publish(new AmqpMessage("Hello wold!"),
                 (message, descriptor) =>
                 {
@@ -100,7 +107,9 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
         await management.Exchange().Name("exchange_to_send").Declare();
         await management.Binding().SourceExchange("exchange_to_send").DestinationQueue("queue_to_send_1").Key("key")
             .Bind();
-        IPublisher publisher = connection.PublisherBuilder().Exchange("exchange_to_send").Key("key").Build();
+
+        IPublisher publisher = await connection.PublisherBuilder().Exchange("exchange_to_send").Key("key").BuildAsync();
+
         await publisher.Publish(new AmqpMessage("Hello wold!"),
             (message, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
 

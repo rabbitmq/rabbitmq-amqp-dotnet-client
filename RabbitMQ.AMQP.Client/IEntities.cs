@@ -10,6 +10,7 @@ public interface IEntityInfo
 /// <typeparam name="T"></typeparam>
 public interface IEntityInfoDeclaration<T> where T : IEntityInfo
 {
+    // TODO this really should be named DeclareAsync
     Task<T> Declare();
 }
 
@@ -18,6 +19,7 @@ public interface IEntityInfoDeclaration<T> where T : IEntityInfo
 /// </summary>
 public interface IEntityDeclaration
 {
+    // TODO this really should be named DeclareAsync
     Task Declare();
 }
 
@@ -49,7 +51,6 @@ public interface IQueueSpecification : IEntityInfoDeclaration<IQueueInfo>
     IQueueSpecification Type(QueueType type);
     public QueueType Type();
 
-
     IQueueSpecification DeadLetterExchange(string dlx);
 
     IQueueSpecification DeadLetterRoutingKey(string dlrk);
@@ -60,7 +61,6 @@ public interface IQueueSpecification : IEntityInfoDeclaration<IQueueInfo>
 
     IQueueSpecification SingleActiveConsumer(bool singleActiveConsumer);
 
-
     IQueueSpecification Expires(TimeSpan expiration);
 
     IStreamSpecification Stream();
@@ -69,9 +69,7 @@ public interface IQueueSpecification : IEntityInfoDeclaration<IQueueInfo>
 
     IClassicQueueSpecification Classic();
 
-
     IQueueSpecification MaxLength(long maxLength);
-
 
     IQueueSpecification MessageTtl(TimeSpan ttl);
 }
@@ -135,6 +133,7 @@ public interface IClassicQueueSpecification
 public interface IQueueDeletion
 {
     // TODO consider returning a QueueStatus object with some info after deletion
+    // TODO should be named DeleteAsync and take CancellationToken
     Task<IEntityInfo> Delete(string name);
 }
 
@@ -154,6 +153,7 @@ public interface IExchangeSpecification : IEntityDeclaration
 public interface IExchangeDeletion
 {
     // TODO consider returning a ExchangeStatus object with some info after deletion
+    // TODO should be named DeleteAsync and take CancellationToken
     Task Delete(string name);
 }
 

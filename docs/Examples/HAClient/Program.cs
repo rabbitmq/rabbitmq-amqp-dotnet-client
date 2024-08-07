@@ -50,7 +50,8 @@ const string queueName = "ha-amqp10-client-test";
 await management.QueueDeletion().Delete(queueName).ConfigureAwait(false);
 
 await management.Queue(queueName).Type(QueueType.QUORUM).Declare().ConfigureAwait(false);
-IPublisher publisher = connection.PublisherBuilder().Queue(queueName).MaxInflightMessages(2000).Build();
+
+IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).MaxInflightMessages(2000).BuildAsync();
 
 ManualResetEvent pausePublishing = new(true);
 publisher.ChangeState += (sender, fromState, toState, e) =>
@@ -67,21 +68,18 @@ publisher.ChangeState += (sender, fromState, toState, e) =>
     }
 };
 
-
-IConsumer consumer = connection.ConsumerBuilder().Queue(queueName).InitialCredits(100).MessageHandler(
+IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).InitialCredits(100).MessageHandler(
     (context, message) =>
     {
         Interlocked.Increment(ref messagesReceived);
         context.Accept();
     }
-).Build();
-
+).BuildAsync();
 
 consumer.ChangeState += (sender, fromState, toState, e) =>
 {
     Trace.WriteLine(TraceLevel.Information, $"Consumer State Changed, from {fromState} to {toState}");
 };
-
 
 for (int i = 0; i < totalMessagesToSend; i++)
 {

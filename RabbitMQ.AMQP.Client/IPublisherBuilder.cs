@@ -5,5 +5,6 @@ public interface IPublisherBuilder : IAddressBuilder<IPublisherBuilder>
     IPublisherBuilder PublishTimeout(TimeSpan timeout);
 
     IPublisherBuilder MaxInflightMessages(int maxInFlight);
-    IPublisher Build();
+
+    Task<IPublisher> BuildAsync(CancellationToken cancellationToken = default);
 }

@@ -22,7 +22,7 @@ public class Error(string? errorCode, string? description)
 
 public delegate void LifeCycleCallBack(object sender, State previousState, State currentState, Error? failureCause);
 
-public interface ILifeCycle
+public interface ILifeCycle : IDisposable
 {
     Task CloseAsync();
 

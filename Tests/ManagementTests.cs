@@ -10,7 +10,7 @@ namespace Tests;
 
 internal class TestAmqpManagement() : AmqpManagement(new AmqpManagementParameters(null!))
 {
-    protected override async Task InternalSendAsync(Message message)
+    protected override async Task InternalSendAsync(Message message, TimeSpan timeout)
     {
         await Task.Delay(1000);
     }
@@ -23,7 +23,7 @@ internal class TestAmqpManagementOpen : AmqpManagement
         State = State.Open;
     }
 
-    protected override async Task InternalSendAsync(Message message)
+    protected override async Task InternalSendAsync(Message message, TimeSpan timeout)
     {
         await Task.Delay(1000);
     }
@@ -42,7 +42,7 @@ public class ManagementTests()
         var management = new TestAmqpManagementOpen();
         var message = new Message() { Properties = new Properties() { MessageId = "a_random_id", } };
         await Assert.ThrowsAsync<TaskCanceledException>(async () =>
-            await management.Request(message, [200], TimeSpan.FromSeconds(1)));
+            await management.RequestAsync(message, [200], TimeSpan.FromSeconds(1)));
         await management.CloseAsync();
     }
 
@@ -100,7 +100,7 @@ public class ManagementTests()
         });
 
         await Assert.ThrowsAsync<InvalidCodeException>(async () =>
-            await management.Request(messageId, "", "", "",
+            await management.RequestAsync(messageId, "", "", "",
                 [200]));
 
         await t.WaitAsync(TimeSpan.FromMilliseconds(1000));
@@ -112,10 +112,9 @@ public class ManagementTests()
     {
         var management = new TestAmqpManagement();
         await Assert.ThrowsAsync<AmqpNotOpenException>(async () =>
-           await management.Request(new Message(), [200]));
+           await management.RequestAsync(new Message(), [200]));
         Assert.Equal(State.Closed, management.State);
     }
-
 
     /// <summary>
     /// Test to validate the queue declaration with the auto generated name.
@@ -131,9 +130,15 @@ public class ManagementTests()
     {
         IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         IManagement management = connection.Management();
-        IQueueInfo queueInfo = await management.Queue().Type(type).Declare();
-        Assert.Contains("client.gen-", queueInfo.Name());
-        await management.QueueDeletion().Delete(queueInfo.Name());
+
+        IQueueInfo queueInfo0 = await management.Queue().Type(type).Declare();
+        Assert.Contains("client.gen-", queueInfo0.Name());
+
+        IQueueInfo queueInfo1 = await management.GetQueueInfoAsync(queueInfo0.Name());
+        Assert.Equal(queueInfo0.Name(), queueInfo1.Name());
+        Assert.Equal((ulong)0, queueInfo1.MessageCount());
+
+        await management.QueueDeletion().Delete(queueInfo0.Name());
         await connection.CloseAsync();
         Assert.Equal(State.Closed, management.State);
     }
@@ -170,7 +175,6 @@ public class ManagementTests()
         Assert.Equal(State.Closed, management.State);
     }
 
-
     [Fact]
     public async Task DeclareQueueWithPreconditionFailedException()
     {
@@ -183,7 +187,6 @@ public class ManagementTests()
         await connection.CloseAsync();
     }
 
-
     [Fact]
     public async Task DeclareAndDeleteTwoTimesShouldNotRaiseErrors()
     {
@@ -195,7 +198,6 @@ public class ManagementTests()
         await management.QueueDeletion().Delete("DeleteTwoTimes");
         await connection.CloseAsync();
     }
-
 
     [Fact]
     public async Task DeclareQueueWithDifferentArguments()
@@ -223,7 +225,6 @@ public class ManagementTests()
         await connection.CloseAsync();
     }
 
-
     [Fact]
     public async Task DeclareStreamQueueWithDifferentArguments()
     {
@@ -242,7 +243,6 @@ public class ManagementTests()
         await management.QueueDeletion().Delete("DeclareStreamQueueWithDifferentArguments");
         await connection.CloseAsync();
     }
-
 
     [Fact]
     public async Task DeclareQuorumQueueWithDifferentArguments()

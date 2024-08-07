@@ -21,7 +21,9 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
         IConnection connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build());
         await connection.Management().Queue().Name("ProducerShouldChangeStatusWhenClosed").Declare();
-        IPublisher publisher = connection.PublisherBuilder().Queue("ProducerShouldChangeStatusWhenClosed").Build();
+
+        IPublisher publisher = await connection.PublisherBuilder().Queue("ProducerShouldChangeStatusWhenClosed").BuildAsync();
+
         List<(State, State)> states = [];
         publisher.ChangeState += (sender, fromState, toState, e) => { states.Add((fromState, toState)); };
 
@@ -45,7 +47,9 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
         IConnection connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build());
         await connection.Management().Queue().Name("ConsumerShouldChangeStatusWhenClosed").Declare();
-        IConsumer consumer = connection.ConsumerBuilder().Queue("ConsumerShouldChangeStatusWhenClosed").Build();
+
+        IConsumer consumer = await connection.ConsumerBuilder().Queue("ConsumerShouldChangeStatusWhenClosed").BuildAsync();
+
         List<(State, State)> states = [];
         consumer.ChangeState += (sender, fromState, toState, e) => { states.Add((fromState, toState)); };
 
@@ -74,8 +78,10 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
         IConnection connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build());
         await connection.Management().Queue().Name("ProducerShouldChangeStatusWhenConnectionIsKilled").Declare();
-        IPublisher publisher = connection.PublisherBuilder().Queue("ProducerShouldChangeStatusWhenConnectionIsKilled")
-            .Build();
+
+        IPublisher publisher = await connection.PublisherBuilder().Queue("ProducerShouldChangeStatusWhenConnectionIsKilled")
+            .BuildAsync();
+
         List<(State, State)> states = [];
         publisher.ChangeState += (sender, fromState, toState, e) => { states.Add((fromState, toState)); };
 
@@ -110,8 +116,10 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
         IConnection connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create().ConnectionName(connectionName).Build());
         await connection.Management().Queue().Name("ConsumerShouldChangeStatusWhenConnectionIsKilled").Declare();
-        IConsumer consumer = connection.ConsumerBuilder().Queue("ConsumerShouldChangeStatusWhenConnectionIsKilled")
-            .Build();
+
+        IConsumer consumer = await connection.ConsumerBuilder().Queue("ConsumerShouldChangeStatusWhenConnectionIsKilled")
+            .BuildAsync();
+
         List<(State, State)> states = [];
         consumer.ChangeState += (sender, fromState, toState, e) => { states.Add((fromState, toState)); };
 
@@ -146,11 +154,12 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
         await connection.Management().Queue()
             .Name("PublishShouldRestartPublishConsumerShouldRestartConsumeWhenConnectionIsKilled").Declare();
 
-        IPublisher publisher = connection.PublisherBuilder()
-            .Queue("PublishShouldRestartPublishConsumerShouldRestartConsumeWhenConnectionIsKilled").Build();
+        IPublisher publisher = await connection.PublisherBuilder()
+            .Queue("PublishShouldRestartPublishConsumerShouldRestartConsumeWhenConnectionIsKilled").BuildAsync();
 
         int messagesReceived = 0;
-        IConsumer consumer = connection.ConsumerBuilder().InitialCredits(100)
+
+        IConsumer consumer = await connection.ConsumerBuilder().InitialCredits(100)
             .Queue("PublishShouldRestartPublishConsumerShouldRestartConsumeWhenConnectionIsKilled")
             .MessageHandler((context, message) =>
             {
@@ -164,7 +173,8 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
                 {
                     // ignored
                 }
-            }).Build();
+            }).BuildAsync();
+
         int messagesConfirmed = 0;
         for (int i = 0; i < 10; i++)
         {
@@ -223,14 +233,14 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
         await connection.Management().Queue().Name("PublisherAndConsumerShouldNotRestartIfRecoveryIsDisabled")
             .Declare();
 
-        IPublisher publisher = connection.PublisherBuilder()
-            .Queue("PublisherAndConsumerShouldNotRestartIfRecoveryIsDisabled").Build();
+        IPublisher publisher = await connection.PublisherBuilder()
+            .Queue("PublisherAndConsumerShouldNotRestartIfRecoveryIsDisabled").BuildAsync();
 
         List<(State, State)> statesProducer = [];
         publisher.ChangeState += (sender, fromState, toState, e) => { statesProducer.Add((fromState, toState)); };
 
 
-        IConsumer consumer = connection.ConsumerBuilder().InitialCredits(100)
+        IConsumer consumer = await connection.ConsumerBuilder().InitialCredits(100)
             .Queue("PublisherAndConsumerShouldNotRestartIfRecoveryIsDisabled")
             .MessageHandler((context, message) =>
             {
@@ -242,7 +252,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
                 {
                     // ignored
                 }
-            }).Build();
+            }).BuildAsync();
 
         List<(State, State)> statesConsumer = [];
         consumer.ChangeState += (sender, fromState, toState, e) => { statesConsumer.Add((fromState, toState)); };
