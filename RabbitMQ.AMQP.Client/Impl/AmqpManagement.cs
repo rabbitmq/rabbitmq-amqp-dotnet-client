@@ -389,7 +389,7 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
         switch (responseCode)
         {
             case Code409:
-                throw new PreconditionFailedException($"Precondition Fail. Message: {receivedMessage.Body}");
+                throw new PreconditionFailedException($"{receivedMessage.Body}");
         }
 
         // Check if the correlationId is the same as the messageId

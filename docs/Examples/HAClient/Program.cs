@@ -86,7 +86,7 @@ for (int i = 0; i < totalMessagesToSend; i++)
     try
     {
         pausePublishing.WaitOne();
-        await publisher.Publish(
+        await publisher.PublishAsync(
             new AmqpMessage($"Hello World_{i}"),
             (message, descriptor) =>
             {

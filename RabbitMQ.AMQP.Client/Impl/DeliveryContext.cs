@@ -1,8 +1,12 @@
+// This source code is dual-licensed under the Apache License, version
+// 2.0, and the Mozilla Public License, version 2.0.
+// Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+
 using Amqp;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public class DeliveryContext(IReceiverLink link, Message message) : IContext
+public class DeliveryContext(IReceiverLink link, Message message, UnsettledMessageCounter unsettledMessageCounter) : IContext
 {
     public void Accept()
     {
@@ -12,6 +16,7 @@ public class DeliveryContext(IReceiverLink link, Message message) : IContext
         }
 
         link.Accept(message);
+        unsettledMessageCounter.Decrement();
     }
 
     public void Discard()
@@ -22,6 +27,7 @@ public class DeliveryContext(IReceiverLink link, Message message) : IContext
         }
 
         link.Reject(message);
+        unsettledMessageCounter.Decrement();
     }
 
     public void Requeue()
@@ -32,5 +38,6 @@ public class DeliveryContext(IReceiverLink link, Message message) : IContext
         }
 
         link.Release(message);
+        unsettledMessageCounter.Decrement();
     }
 }

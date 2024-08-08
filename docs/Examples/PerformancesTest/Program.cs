@@ -60,7 +60,7 @@ try
                 Console.WriteLine($"Sending Time: {endp - start} - messages {i}");
             }
 
-            await publisher.Publish(
+            await publisher.PublishAsync(
                 new AmqpMessage(new byte[10]),
                 (message, descriptor) =>
                 {

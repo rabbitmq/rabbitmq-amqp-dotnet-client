@@ -39,7 +39,7 @@ IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).Initial
 const int total = 10;
 for (int i = 0; i < total; i++)
 {
-    await publisher.Publish(
+    await publisher.PublishAsync(
         new AmqpMessage($"Hello World_{i}"),
         (message, descriptor) =>
         {

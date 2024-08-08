@@ -21,7 +21,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
 
         IPublisher publisher = await connection.PublisherBuilder().Queue("SimpleConsumeMessage").BuildAsync();
 
-        await publisher.Publish(new AmqpMessage("Hello world!"),
+        await publisher.PublishAsync(new AmqpMessage("Hello world!"),
             (_, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
 
         TaskCompletionSource<IMessage> tcs = new();
@@ -59,7 +59,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
 
         IPublisher publisher = await connection.PublisherBuilder().Queue("ConsumerReQueueMessage").BuildAsync();
 
-        await publisher.Publish(new AmqpMessage("Hello world!"),
+        await publisher.PublishAsync(new AmqpMessage("Hello world!"),
             (_, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
 
         TaskCompletionSource<int> tcs = new();
@@ -104,7 +104,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
 
         for (int i = 0; i < 500; i++)
         {
-            await publisher.Publish(new AmqpMessage($"message_{i}"),
+            await publisher.PublishAsync(new AmqpMessage($"message_{i}"),
                 (_, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
         }
 
@@ -304,7 +304,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
                 message.Annotation("x-stream-filter-value", filter);
             }
 
-            await publisher.Publish(message,
+            await publisher.PublishAsync(message,
                 (_, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
         }
     }

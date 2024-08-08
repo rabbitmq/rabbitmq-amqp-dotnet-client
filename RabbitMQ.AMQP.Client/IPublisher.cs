@@ -21,7 +21,6 @@ public delegate void OutcomeDescriptorCallback(IMessage message, OutcomeDescript
 
 public interface IPublisher : ILifeCycle
 {
-    // TODO this should be named PublishAsync
-    Task Publish(IMessage message,
-        OutcomeDescriptorCallback outcomeCallback); // TODO: Add CancellationToken and callBack
+    Task PublishAsync(IMessage message,
+        OutcomeDescriptorCallback outcomeCallback, CancellationToken cancellationToken = default);
 }

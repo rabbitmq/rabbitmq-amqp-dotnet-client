@@ -39,7 +39,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : IDisposabl
             {
                 int idx = i;
                 IMessage message = new AmqpMessage($"message_{i}");
-                publishTasks.Add(publisher.Publish(message,
+                publishTasks.Add(publisher.PublishAsync(message,
                     (message, descriptor) =>
                     {
                         Assert.Equal(OutcomeState.Accepted, descriptor.State);
@@ -87,6 +87,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : IDisposabl
 
             Assert.NotNull(apiQueue);
             Assert.Equal(initialCredits, apiQueue.MessagesUnacknowledged);
+            Assert.Equal((uint)initialCredits, consumer.UnsettledMessageCount);
 
             consumer.Pause();
 
@@ -104,6 +105,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : IDisposabl
             await SystemUtils.WaitUntilAsync(MessagesUnacknowledgedIsZero);
 
             Assert.Equal(initialCredits, messageContexts.Count);
+            Assert.Equal((uint)0, consumer.UnsettledMessageCount);
 
             consumer.Unpause();
 

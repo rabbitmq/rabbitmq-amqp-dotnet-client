@@ -1,3 +1,7 @@
+// This source code is dual-licensed under the Apache License, version
+// 2.0, and the Mozilla Public License, version 2.0.
+// Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+
 using System.Runtime.CompilerServices;
 using Amqp;
 using Amqp.Framing;
@@ -7,20 +11,21 @@ namespace RabbitMQ.AMQP.Client.Impl;
 
 public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
 {
-    private enum PauseStatus
+    private enum PauseStatus : byte
     {
-        UNPAUSED,
-        PAUSING,
-        PAUSED
+        UNPAUSED = 0,
+        PAUSING = 1,
+        PAUSED = 2
     }
 
     private readonly AmqpConnection _connection;
-    private PauseStatus _pauseStatus = PauseStatus.UNPAUSED;
     private readonly string _address;
     private readonly MessageHandler _messageHandler;
     private readonly int _initialCredits;
     private readonly Map _filters;
     private ReceiverLink? _receiverLink;
+    private PauseStatus _pauseStatus = PauseStatus.UNPAUSED;
+    private readonly UnsettledMessageCounter _unsettledMessageCounter = new();
 
     public AmqpConsumer(AmqpConnection connection, string address,
         MessageHandler messageHandler, int initialCredits, Map filters)
@@ -88,7 +93,8 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
 
     private void OnReceiverLinkMessage(IReceiverLink link, Message message)
     {
-        IContext context = new DeliveryContext(link, message);
+        _unsettledMessageCounter.Increment();
+        IContext context = new DeliveryContext(link, message, _unsettledMessageCounter);
         _messageHandler(context, new AmqpMessage(message));
     }
 
@@ -121,9 +127,12 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
         }
     }
 
-    public long UnsettledMessageCount()
+    public long UnsettledMessageCount
     {
-        throw new NotImplementedException();
+        get
+        {
+            return _unsettledMessageCounter.Get();
+        }
     }
 
     public void Unpause()

@@ -1,5 +1,4 @@
-using System.Diagnostics;
-using Amqp;
+﻿using Amqp;
 using Amqp.Framing;
 using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
@@ -10,7 +9,9 @@ public class AmqpPublisher : AbstractReconnectLifeCycle, IPublisher
 {
     private SenderLink? _senderLink = null;
 
-    private readonly ManualResetEvent _pausePublishing = new(true);
+    // TODO should be a semaphore, and disposed
+    private readonly ManualResetEventSlim _pausePublishing = new(true);
+
     private readonly AmqpConnection _connection;
     private readonly TimeSpan _timeout;
     private readonly string _address;
@@ -116,54 +117,77 @@ public class AmqpPublisher : AbstractReconnectLifeCycle, IPublisher
 
     private int _currentInFlight = 0;
 
-    public Task Publish(IMessage message, OutcomeDescriptorCallback outcomeCallback)
+    public async Task PublishAsync(IMessage message,
+        OutcomeDescriptorCallback outcomeDescriptorCallback,
+        CancellationToken cancellationToken = default)
     {
         ThrowIfClosed();
+
+        var publishedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        if (_senderLink is null)
+        {
+            // TODO create "internal bug" exception type?
+            throw new InvalidOperationException("_receiverLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+        }
+
         try
         {
-            _pausePublishing.WaitOne(_timeout);
+            // TODO use semaphore
+            _pausePublishing.Wait(_timeout);
             Interlocked.Increment(ref _currentInFlight);
+            Message nativeMessage = ((AmqpMessage)message).NativeMessage;
 
-            var nMessage = ((AmqpMessage)message).NativeMessage;
-            _senderLink?.Send(nMessage,
-                (sender, outMessage, outcome, state) =>
+            Task publishTask = Task.Run(() =>
+            {
+                // TODO timeout / cancellation
+                // TODO LRB I removed the nativeMessage == outMessage check because outMessage came in as NULL
+                // which I didn't think possible 🤔
+                void OutcomeCallback(ILink sender, Message outMessage, Outcome outcome, object state)
                 {
-                    Interlocked.Decrement(ref _currentInFlight);
-                    MaybeBackPressure();
-
-                    if (outMessage == nMessage &&
-                        outMessage.GetEstimatedMessageSize() == nMessage.GetEstimatedMessageSize())
+                    try
                     {
+                        Interlocked.Decrement(ref _currentInFlight);
+                        MaybeBackPressure();
+
                         if (outcome is Rejected rejected)
                         {
-                            outcomeCallback(message, new OutcomeDescriptor(rejected.Descriptor.Code,
+                            outcomeDescriptorCallback(message, new OutcomeDescriptor(rejected.Descriptor.Code,
                                 rejected.Descriptor.ToString(),
                                 OutcomeState.Failed, Utils.ConvertError(rejected?.Error)));
+
                         }
                         else
                         {
-                            outcomeCallback(message, new OutcomeDescriptor(outcome.Descriptor.Code,
+                            outcomeDescriptorCallback(message, new OutcomeDescriptor(outcome.Descriptor.Code,
                                 outcome.Descriptor.ToString(),
                                 OutcomeState.Accepted, null));
                         }
-                    }
-                    else
-                    {
-                        Trace.WriteLine(TraceLevel.Error, $"{ToString()} Message not sent. Killing the process.");
-                        Process.GetCurrentProcess().Kill();
-                    }
 
-                    // is it correct to dispose the message here?
-                    // maybe we should expose a method to dispose the message
-                    nMessage.Dispose();
-                }, this);
+                        publishedTcs.SetResult();
+                    }
+                    finally
+                    {
+                        // is it correct to dispose the message here?
+                        // maybe we should expose a method to dispose the message
+                        nativeMessage.Dispose();
+                    }
+                }
+
+                _senderLink.Send(nativeMessage, OutcomeCallback, this);
+            }, cancellationToken);
+
+            // TODO timeouts / cancellation for both of these
+            await publishTask
+                .ConfigureAwait(false);
+
+            await publishedTcs.Task
+                .ConfigureAwait(false);
         }
         catch (Exception e)
         {
             throw new PublisherException($"{ToString()} Failed to publish message, {e}");
         }
-
-        return Task.CompletedTask;
     }
 
 
