@@ -3,6 +3,7 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -17,6 +18,7 @@ public abstract class IntegrationTest : IAsyncLifetime
 {
     protected readonly ITestOutputHelper _testOutputHelper;
     protected readonly string _testDisplayName = nameof(AmqpTests);
+    protected readonly TimeSpan _waitSpan = TimeSpan.FromSeconds(5);
 
     protected IConnection? _connection;
     protected string _connectionName = $"integration-test-{Now}";
@@ -58,4 +60,14 @@ public abstract class IntegrationTest : IAsyncLifetime
     }
 
     protected static string Now => DateTime.UtcNow.ToString("s", CultureInfo.InvariantCulture);
+
+    protected Task WhenAllComplete(IEnumerable<Task> tasks)
+    {
+        return Task.WhenAll(tasks).WaitAsync(_waitSpan);
+    }
+
+    protected Task WhenTaskCompletes(Task task)
+    {
+        return task.WaitAsync(_waitSpan);
+    }
 }

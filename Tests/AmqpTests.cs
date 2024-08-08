@@ -20,7 +20,7 @@ public class AmqpTests : IntegrationTest
 
     public AmqpTests(ITestOutputHelper testOutputHelper) : base(testOutputHelper)
     {
-        _queueName = _testDisplayName;
+        _queueName = $"{_testDisplayName}-queue-{Now}";
     }
 
     [Fact]
@@ -104,63 +104,39 @@ public class AmqpTests : IntegrationTest
             }));
         }
 
-        // TODO standard wait TimeSpans for tests
-        await Task.WhenAll(publishTasks).WaitAsync(TimeSpan.FromSeconds(5));
-        await allMessagesPublishedTcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await WhenAllComplete(publishTasks);
+        await WhenTaskCompletes(allMessagesPublishedTcs.Task);
+
         Assert.Equal(messageCount, publishedMessageCount);
+
+        IQueueInfo retrievedQueueInfo0 = await management.GetQueueInfoAsync(_queueName);
+        Assert.Equal(_queueName, retrievedQueueInfo0.Name());
+        Assert.Equal((uint)0, retrievedQueueInfo0.ConsumerCount());
+        Assert.Equal((ulong)messageCount, retrievedQueueInfo0.MessageCount());
+
+        long receivedMessageCount = 0;
+        var allMessagesReceivedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        string? receivedSubject = null;
+        void MessageHandler(IContext ctx, IMessage msg)
+        {
+            receivedSubject = msg.Subject();
+            ctx.Accept();
+            if (Interlocked.Increment(ref receivedMessageCount) == messageCount)
+            {
+                allMessagesReceivedTcs.SetResult();
+            }
+        }
+
+        IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder();
+        IConsumer consumer = await consumerBuilder.Queue(_queueName).MessageHandler(MessageHandler).BuildAsync();
+
+        await WhenTaskCompletes(allMessagesReceivedTcs.Task);
+
+        Assert.NotNull(receivedSubject);
+        Assert.Equal(subject, receivedSubject);
+
+        IQueueInfo retrievedQueueInfo1 = await management.GetQueueInfoAsync(_queueName);
+        Assert.Equal((uint)1, retrievedQueueInfo1.ConsumerCount());
+        Assert.Equal((uint)0, retrievedQueueInfo1.MessageCount());
     }
-    /*
-  @ParameterizedTest
-  @ValueSource(strings = {"foobar", "фообар"})
-  void queueDeclareDeletePublishConsume(String subject) {
-    try {
-      connection.management().queue().name(name).quorum().queue().declare();
-      Publisher publisher = connection.publisherBuilder().queue(name).build();
-
-      int messageCount = 100;
-      Sync confirmSync = sync(messageCount);
-      range(0, messageCount)
-          .forEach(
-              ignored -> {
-                UUID messageId = UUID.randomUUID();
-                publisher.publish(
-                    publisher
-                        .message("hello".getBytes(UTF_8))
-                        .messageId(messageId)
-                        .subject(subject),
-                    acceptedCallback(confirmSync));
-              });
-
-      Assertions.assertThat(confirmSync).completes();
-
-      Management.QueueInfo queueInfo = connection.management().queueInfo(name);
-      Assertions.assertThat(queueInfo).hasName(name).hasNoConsumers().hasMessageCount(messageCount);
-
-      AtomicReference<String> receivedSubject = new AtomicReference<>();
-      Sync consumeSync = TestUtils.sync(messageCount);
-      com.rabbitmq.client.amqp.Consumer consumer =
-          connection
-              .consumerBuilder()
-              .queue(name)
-              .messageHandler(
-                  (context, message) -> {
-                    receivedSubject.set(message.subject());
-                    context.accept();
-                    consumeSync.down();
-                  })
-              .build();
-
-      Assertions.assertThat(consumeSync).completes();
-      assertThat(receivedSubject).doesNotHaveNullValue().hasValue(subject);
-
-      queueInfo = connection.management().queueInfo(name);
-      Assertions.assertThat(queueInfo).hasConsumerCount(1).isEmpty();
-
-      consumer.close();
-      publisher.close();
-    } finally {
-      connection.management().queueDeletion().delete(name);
-    }
-  }
-*/
 }
