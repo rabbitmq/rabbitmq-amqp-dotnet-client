@@ -9,9 +9,9 @@ public interface IConsumer : ILifeCycle
 {
     void Pause();
 
-    long UnsettledMessageCount();
-
     void Unpause();
+
+    long UnsettledMessageCount { get; }
 }
 
 public interface IMessageHandler

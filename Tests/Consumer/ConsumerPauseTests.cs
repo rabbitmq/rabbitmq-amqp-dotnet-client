@@ -33,25 +33,21 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : IDisposabl
             IQueueInfo declaredQueueInfo = await management.Queue().Exclusive(true).Declare();
             IPublisher publisher = await connection.PublisherBuilder().Queue(declaredQueueInfo.Name()).BuildAsync();
 
-            var publishTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            var publishTasks = new List<Task>();
+            var publishTasks = new List<Task<RabbitMQ.AMQP.Client.PublishResult>>();
             for (int i = 0; i < messageCount; i++)
             {
                 int idx = i;
                 IMessage message = new AmqpMessage($"message_{i}");
-                publishTasks.Add(publisher.Publish(message,
-                    (message, descriptor) =>
-                    {
-                        Assert.Equal(OutcomeState.Accepted, descriptor.State);
-                        if (idx == (messageCount - 1))
-                        {
-                            publishTcs.SetResult();
-                        }
-                    }));
+                publishTasks.Add(publisher.PublishAsync(message));
             }
 
             await Task.WhenAll(publishTasks);
-            await publishTcs.Task;
+
+            foreach (Task<RabbitMQ.AMQP.Client.PublishResult> pt in publishTasks)
+            {
+                RabbitMQ.AMQP.Client.PublishResult pr = await pt;
+                Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
+            }
 
             const int initialCredits = 10;
 
@@ -87,6 +83,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : IDisposabl
 
             Assert.NotNull(apiQueue);
             Assert.Equal(initialCredits, apiQueue.MessagesUnacknowledged);
+            Assert.Equal((uint)initialCredits, consumer.UnsettledMessageCount);
 
             consumer.Pause();
 
@@ -104,6 +101,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : IDisposabl
             await SystemUtils.WaitUntilAsync(MessagesUnacknowledgedIsZero);
 
             Assert.Equal(initialCredits, messageContexts.Count);
+            Assert.Equal((uint)0, consumer.UnsettledMessageCount);
 
             consumer.Unpause();
 

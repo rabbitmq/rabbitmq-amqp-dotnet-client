@@ -86,19 +86,16 @@ for (int i = 0; i < totalMessagesToSend; i++)
     try
     {
         pausePublishing.WaitOne();
-        await publisher.Publish(
-            new AmqpMessage($"Hello World_{i}"),
-            (message, descriptor) =>
-            {
-                if (descriptor.State == OutcomeState.Accepted)
-                {
-                    Interlocked.Increment(ref messagesConfirmed);
-                }
-                else
-                {
-                    Interlocked.Increment(ref notMessagesConfirmed);
-                }
-            }).ConfigureAwait(false);
+        var message = new AmqpMessage($"Hello World_{i}");
+        PublishResult pr = await publisher.PublishAsync(message);
+        if (pr.Outcome.State == OutcomeState.Accepted)
+        {
+            Interlocked.Increment(ref messagesConfirmed);
+        }
+        else
+        {
+            Interlocked.Increment(ref notMessagesConfirmed);
+        }
     }
     catch (Exception e)
     {
@@ -107,7 +104,6 @@ for (int i = 0; i < totalMessagesToSend; i++)
         await Task.Delay(500).ConfigureAwait(false);
     }
 }
-
 
 Trace.WriteLine(TraceLevel.Information, "Queue Created");
 Console.WriteLine("Press any key to delete the queue and close the connection.");

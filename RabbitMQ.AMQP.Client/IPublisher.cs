@@ -8,20 +8,39 @@ public enum OutcomeState
     Failed,
 }
 
-public class OutcomeDescriptor(ulong code, string description, OutcomeState state, Error? error)
+public class PublishOutcome
 {
-    public OutcomeState State { get; internal set; } = state;
-    public ulong Code { get; internal set; } = code;
-    public string Description { get; internal set; } = description;
+    private readonly OutcomeState _state;
+    private readonly Error? _error;
 
-    public Error? Error { get; internal set; } = error;
+    public PublishOutcome(OutcomeState state, Error? error)
+    {
+        _state = state;
+        _error = error;
+    }
+
+    public OutcomeState State => _state;
+    public Error? Error => _error;
 }
 
-public delegate void OutcomeDescriptorCallback(IMessage message, OutcomeDescriptor outcomeDescriptor);
+// public delegate void OutcomeDescriptorCallback(IMessage message, PublishOutcome publishOutcome);
+
+public class PublishResult
+{
+    private IMessage _message;
+    private PublishOutcome _outcome;
+
+    public PublishResult(IMessage message, PublishOutcome outcome)
+    {
+        _message = message;
+        _outcome = outcome;
+    }
+
+    public IMessage Message => _message;
+    public PublishOutcome Outcome => _outcome;
+}
 
 public interface IPublisher : ILifeCycle
 {
-    // TODO this should be named PublishAsync
-    Task Publish(IMessage message,
-        OutcomeDescriptorCallback outcomeCallback); // TODO: Add CancellationToken and callBack
+    Task<PublishResult> PublishAsync(IMessage message, CancellationToken cancellationToken = default);
 }
