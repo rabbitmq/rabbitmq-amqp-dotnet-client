@@ -178,7 +178,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
         int messagesConfirmed = 0;
         for (int i = 0; i < 10; i++)
         {
-            await publisher.Publish(new AmqpMessage("Hello World"),
+            await publisher.PublishAsync(new AmqpMessage("Hello World"),
                 (message, descriptor) =>
                 {
                     Assert.Equal(OutcomeState.Accepted, descriptor.State);
@@ -196,7 +196,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
 
         for (int i = 0; i < 10; i++)
         {
-            await publisher.Publish(new AmqpMessage("Hello World"),
+            await publisher.PublishAsync(new AmqpMessage("Hello World"),
                 (message, descriptor) =>
                 {
                     Interlocked.Increment(ref messagesConfirmed);

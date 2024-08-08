@@ -39,7 +39,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : IDisposabl
             {
                 int idx = i;
                 IMessage message = new AmqpMessage($"message_{i}");
-                publishTasks.Add(publisher.Publish(message,
+                publishTasks.Add(publisher.PublishAsync(message,
                     (message, descriptor) =>
                     {
                         Assert.Equal(OutcomeState.Accepted, descriptor.State);

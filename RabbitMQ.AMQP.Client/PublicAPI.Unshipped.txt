@@ -265,7 +265,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpNotOpenException
 RabbitMQ.AMQP.Client.Impl.AmqpNotOpenException.AmqpNotOpenException(string! message) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpPublisher
 RabbitMQ.AMQP.Client.Impl.AmqpPublisher.AmqpPublisher(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection, string! address, System.TimeSpan timeout, int maxInFlight) -> void
-RabbitMQ.AMQP.Client.Impl.AmqpPublisher.Publish(RabbitMQ.AMQP.Client.IMessage! message, RabbitMQ.AMQP.Client.OutcomeDescriptorCallback! outcomeCallback) -> System.Threading.Tasks.Task!
+RabbitMQ.AMQP.Client.Impl.AmqpPublisher.PublishAsync(RabbitMQ.AMQP.Client.IMessage! message, RabbitMQ.AMQP.Client.OutcomeDescriptorCallback! outcomeDescriptorCallback, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.AmqpPublisherBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IPublisher!>!
@@ -447,7 +447,7 @@ RabbitMQ.AMQP.Client.Impl.Utils
 RabbitMQ.AMQP.Client.InvalidAddressException
 RabbitMQ.AMQP.Client.InvalidAddressException.InvalidAddressException(string! message) -> void
 RabbitMQ.AMQP.Client.IPublisher
-RabbitMQ.AMQP.Client.IPublisher.Publish(RabbitMQ.AMQP.Client.IMessage! message, RabbitMQ.AMQP.Client.OutcomeDescriptorCallback! outcomeCallback) -> System.Threading.Tasks.Task!
+RabbitMQ.AMQP.Client.IPublisher.PublishAsync(RabbitMQ.AMQP.Client.IMessage! message, RabbitMQ.AMQP.Client.OutcomeDescriptorCallback! outcomeCallback, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.IPublisherBuilder
 RabbitMQ.AMQP.Client.IPublisherBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IPublisher!>!
 RabbitMQ.AMQP.Client.IPublisherBuilder.MaxInflightMessages(int maxInFlight) -> RabbitMQ.AMQP.Client.IPublisherBuilder!

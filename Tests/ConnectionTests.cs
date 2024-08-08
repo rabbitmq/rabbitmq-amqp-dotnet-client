@@ -105,7 +105,7 @@ public class ConnectionTests(ITestOutputHelper output)
         await publisher.CloseAsync();
 
         await Assert.ThrowsAsync<AmqpNotOpenException>(async () =>
-            await publisher.Publish(new AmqpMessage("Hello wold!"), (message, descriptor) =>
+            await publisher.PublishAsync(new AmqpMessage("Hello wold!"), (message, descriptor) =>
             {
                 // it doest matter
             }));

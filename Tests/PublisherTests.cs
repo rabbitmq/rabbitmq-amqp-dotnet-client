@@ -49,7 +49,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
 
         IPublisher publisher = await connection.PublisherBuilder().Queue("queue_to_send").BuildAsync();
 
-        await publisher.Publish(new AmqpMessage("Hello wold!"),
+        await publisher.PublishAsync(new AmqpMessage("Hello wold!"),
             (message, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
 
         await SystemUtils.WaitUntilQueueMessageCount("queue_to_send", 1);
@@ -75,7 +75,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
         {
             IPublisher publisher = await connection.PublisherBuilder().Queue("queue_publishers_count").BuildAsync();
 
-            await publisher.Publish(new AmqpMessage("Hello wold!"),
+            await publisher.PublishAsync(new AmqpMessage("Hello wold!"),
                 (message, descriptor) =>
                 {
                     Assert.Equal(OutcomeState.Accepted, descriptor.State);
@@ -110,7 +110,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
 
         IPublisher publisher = await connection.PublisherBuilder().Exchange("exchange_to_send").Key("key").BuildAsync();
 
-        await publisher.Publish(new AmqpMessage("Hello wold!"),
+        await publisher.PublishAsync(new AmqpMessage("Hello wold!"),
             (message, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
 
         await SystemUtils.WaitUntilQueueMessageCount("queue_to_send_1", 1);

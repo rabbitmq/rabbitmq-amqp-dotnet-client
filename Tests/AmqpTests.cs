@@ -117,7 +117,7 @@ public class AmqpTests : IntegrationTest
             message.MessageId(messageId.ToString());
             message.Subject(subject);
 
-            publishTasks.Add(publisher.Publish(message, (IMessage msg, OutcomeDescriptor outcome) =>
+            publishTasks.Add(publisher.PublishAsync(message, (IMessage msg, OutcomeDescriptor outcome) =>
             {
                 if (outcome.State == OutcomeState.Accepted)
                 {
@@ -166,5 +166,97 @@ public class AmqpTests : IntegrationTest
 
         await publisher.CloseAsync();
         await consumer.CloseAsync();
+    }
+
+    [Theory]
+    [InlineData("foo", false)]
+    [InlineData("foo", true)]
+    [InlineData("фообар", true)]
+    [InlineData("фообар", false)]
+    [InlineData("фоо!бар", false)]
+    [InlineData("фоо!бар", true)]
+    public async Task BindingTest(string prefix, bool addBindingArgments)
+    {
+        byte[] messageBody = Encoding.UTF8.GetBytes("hello");
+
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        string now = Now;
+        string e1 = $"{prefix}-e1-{_testDisplayName}-{now}";
+        string e2 = $"{prefix}-e2-{_testDisplayName}-{now}";
+        string rk = $"{prefix}-foo-{now}";
+
+        Dictionary<string, object> bindingArguments = new();
+        if (addBindingArgments)
+        {
+            bindingArguments.Add("foo", prefix + "-bar");
+        }
+
+        await _management.Exchange().Name(e1).Type(ExchangeType.DIRECT).Declare();
+        await _management.Exchange().Name(e2).Type(ExchangeType.FANOUT).Declare();
+        await _management.Queue().Name(_queueName).Type(QueueType.CLASSIC).Declare();
+
+        IBindingSpecification e1e2Binding = _management.Binding().SourceExchange(e1).DestinationExchange(e2).Key(rk).Arguments(bindingArguments);
+        IBindingSpecification e2qBinding = _management.Binding().SourceExchange(e2).DestinationQueue(_queueName).Arguments(bindingArguments);
+
+        await e1e2Binding.Bind();
+        await e2qBinding.Bind();
+
+        IPublisherBuilder publisherBuilder1 = _connection.PublisherBuilder();
+        IPublisherBuilder publisherBuilder2 = _connection.PublisherBuilder();
+
+        IPublisher publisher1 = await publisherBuilder1.Exchange(e1).Key(rk).BuildAsync();
+        IPublisher publisher2 = await publisherBuilder2.Exchange(e2).BuildAsync();
+
+        IMessage message = new AmqpMessage(messageBody);
+
+        const int expectedMessageCount = 2;
+        int publishCount = 0;
+        var allMessagesPublishedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        void PublishCallback(IMessage msg, OutcomeDescriptor outcome)
+        {
+            if (outcome.State == OutcomeState.Accepted)
+            {
+                if (Interlocked.Increment(ref publishCount) == expectedMessageCount)
+                {
+                    allMessagesPublishedTcs.SetResult();
+                }
+            }
+        }
+
+        Task publish1Task = publisher1.PublishAsync(message, PublishCallback);
+        Task publish2Task = publisher2.PublishAsync(message, PublishCallback);
+
+        await WhenAllComplete([publish1Task, publish2Task]);
+        await WhenTaskCompletes(allMessagesPublishedTcs.Task);
+
+        long receivedMessageCount = 0;
+        var allMessagesReceivedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        void MessageHandler(IContext ctx, IMessage msg)
+        {
+            ctx.Accept();
+            if (Interlocked.Increment(ref receivedMessageCount) == expectedMessageCount)
+            {
+                allMessagesReceivedTcs.SetResult();
+            }
+        }
+
+        IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder();
+        IConsumer consumer = await consumerBuilder.Queue(_queueName).MessageHandler(MessageHandler).BuildAsync();
+
+        await WhenTaskCompletes(allMessagesReceivedTcs.Task);
+
+        await publisher1.CloseAsync();
+        await publisher2.CloseAsync();
+        await consumer.CloseAsync();
+
+        // TODO these fail with 400
+        // await e1e2Binding.Unbind();
+        // await e2qBinding.Unbind();
+
+        await _management.ExchangeDeletion().Delete(e2);
+        await _management.ExchangeDeletion().Delete(e1);
+        // Note: DisposeAsync will delete the queue
     }
 }
