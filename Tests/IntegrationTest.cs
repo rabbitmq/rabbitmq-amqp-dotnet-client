@@ -39,7 +39,7 @@ public abstract class IntegrationTest : IAsyncLifetime
         }
     }
 
-    public async Task InitializeAsync()
+    public virtual async Task InitializeAsync()
     {
         ConnectionSettingBuilder connectionSettingBuilder = ConnectionSettingBuilder.Create();
 
@@ -50,7 +50,7 @@ public abstract class IntegrationTest : IAsyncLifetime
         _connection = await AmqpConnection.CreateAsync(connectionSettings);
     }
 
-    public async Task DisposeAsync()
+    public virtual async Task DisposeAsync()
     {
         if (_connection is not null)
         {

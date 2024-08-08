@@ -17,21 +17,47 @@ namespace Tests;
 public class AmqpTests : IntegrationTest
 {
     private readonly string _queueName;
+    private IManagement? _management;
 
     public AmqpTests(ITestOutputHelper testOutputHelper) : base(testOutputHelper)
     {
         _queueName = $"{_testDisplayName}-queue-{Now}";
     }
 
+    public override async Task InitializeAsync()
+    {
+        await base.InitializeAsync();
+
+        if (_connection is null)
+        {
+            throw new InvalidOperationException("_connection is null");
+        }
+        else
+        {
+            _management = _connection.Management();
+        }
+    }
+
+    public override Task DisposeAsync()
+    {
+        if (_management is not null)
+        {
+            IQueueDeletion queueDeletion = _management.QueueDeletion();
+            queueDeletion.Delete(_queueName);
+            _management.Dispose();
+        }
+
+        return base.DisposeAsync();
+    }
+
     [Fact]
     public async Task QueueInfoTest()
     {
         Assert.NotNull(_connection);
+        Assert.NotNull(_management);
 
-        IManagement management = _connection.Management();
-
-        IQueueInfo declaredQueueInfo = await management.Queue(_queueName).Quorum().Queue().Declare();
-        IQueueInfo retrievedQueueInfo = await management.GetQueueInfoAsync(_queueName);
+        IQueueInfo declaredQueueInfo = await _management.Queue(_queueName).Quorum().Queue().Declare();
+        IQueueInfo retrievedQueueInfo = await _management.GetQueueInfoAsync(_queueName);
 
         Assert.Equal(_queueName, declaredQueueInfo.Name());
         Assert.Equal(_queueName, retrievedQueueInfo.Name());
@@ -71,11 +97,10 @@ public class AmqpTests : IntegrationTest
         const int messageCount = 100;
 
         Assert.NotNull(_connection);
+        Assert.NotNull(_management);
 
-        IManagement management = _connection.Management();
-
-        // IQueueInfo declaredQueueInfo = await management.Queue().Name(_queueName).Quorum().Queue().Declare();
-        IQueueInfo declaredQueueInfo = await management.Queue().Name(_queueName).Classic().Queue().Declare();
+        // IQueueInfo declaredQueueInfo = await _management.Queue().Name(_queueName).Quorum().Queue().Declare();
+        IQueueInfo declaredQueueInfo = await _management.Queue().Name(_queueName).Classic().Queue().Declare();
         Assert.Equal(_queueName, declaredQueueInfo.Name());
 
         IPublisherBuilder publisherBuilder = _connection.PublisherBuilder();
@@ -109,7 +134,7 @@ public class AmqpTests : IntegrationTest
 
         Assert.Equal(messageCount, publishedMessageCount);
 
-        IQueueInfo retrievedQueueInfo0 = await management.GetQueueInfoAsync(_queueName);
+        IQueueInfo retrievedQueueInfo0 = await _management.GetQueueInfoAsync(_queueName);
         Assert.Equal(_queueName, retrievedQueueInfo0.Name());
         Assert.Equal((uint)0, retrievedQueueInfo0.ConsumerCount());
         Assert.Equal((ulong)messageCount, retrievedQueueInfo0.MessageCount());
@@ -135,8 +160,11 @@ public class AmqpTests : IntegrationTest
         Assert.NotNull(receivedSubject);
         Assert.Equal(subject, receivedSubject);
 
-        IQueueInfo retrievedQueueInfo1 = await management.GetQueueInfoAsync(_queueName);
+        IQueueInfo retrievedQueueInfo1 = await _management.GetQueueInfoAsync(_queueName);
         Assert.Equal((uint)1, retrievedQueueInfo1.ConsumerCount());
         Assert.Equal((uint)0, retrievedQueueInfo1.MessageCount());
+
+        await publisher.CloseAsync();
+        await consumer.CloseAsync();
     }
 }
