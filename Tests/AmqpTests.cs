@@ -2,46 +2,23 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
-using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Tests;
 
-public class AmqpTests
+public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
 {
-    private readonly ITestOutputHelper _testOutputHelper;
-    private readonly string _testDisplayName = nameof(AmqpTests);
-
-    public AmqpTests(ITestOutputHelper testOutputHelper)
-    {
-        _testOutputHelper = testOutputHelper;
-
-        Type type = _testOutputHelper.GetType();
-        FieldInfo? testMember = type.GetField("test", BindingFlags.Instance | BindingFlags.NonPublic);
-        if (testMember is not null)
-        {
-            object? testObj = testMember.GetValue(_testOutputHelper);
-            if (testObj is ITest test)
-            {
-                _testDisplayName = test.DisplayName;
-            }
-        }
-    }
-
     [Fact]
     public async Task QueueInfoTest()
     {
         string queueName = _testDisplayName;
+        Assert.NotNull(_connection);
 
-        using IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-
-        IManagement management = connection.Management();
+        IManagement management = _connection.Management();
 
         IQueueInfo declaredQueueInfo = await management.Queue(queueName).Quorum().Queue().Declare();
         IQueueInfo retrievedQueueInfo = await management.GetQueueInfoAsync(queueName);
@@ -73,7 +50,5 @@ public class AmqpTests
         Assert.True(retrievedArgs.ContainsKey("x-queue-type"));
         Assert.Equal(declaredArgs["x-queue-type"], "quorum");
         Assert.Equal(retrievedArgs["x-queue-type"], "quorum");
-
-        await connection.CloseAsync();
     }
 }
