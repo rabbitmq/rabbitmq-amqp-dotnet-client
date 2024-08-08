@@ -87,6 +87,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : IDisposabl
 
             Assert.NotNull(apiQueue);
             Assert.Equal(initialCredits, apiQueue.MessagesUnacknowledged);
+            Assert.Equal((uint)initialCredits, consumer.UnsettledMessageCount);
 
             consumer.Pause();
 
@@ -104,6 +105,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : IDisposabl
             await SystemUtils.WaitUntilAsync(MessagesUnacknowledgedIsZero);
 
             Assert.Equal(initialCredits, messageContexts.Count);
+            Assert.Equal((uint)0, consumer.UnsettledMessageCount);
 
             consumer.Unpause();
 
