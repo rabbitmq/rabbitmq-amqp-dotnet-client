@@ -175,18 +175,26 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
                 }
             }).BuildAsync();
 
+        const int publishCount = 10;
         int messagesConfirmed = 0;
-        for (int i = 0; i < 10; i++)
+        var message = new AmqpMessage("Hello World");
+        var publishTasks = new List<Task<PublishResult>>();
+        for (int i = 0; i < publishCount; i++)
         {
-            await publisher.Publish(new AmqpMessage("Hello World"),
-                (message, descriptor) =>
-                {
-                    Assert.Equal(OutcomeState.Accepted, descriptor.State);
-                    Interlocked.Increment(ref messagesConfirmed);
-                });
+            publishTasks.Add(publisher.PublishAsync(message));
         }
 
-        await SystemUtils.WaitUntilFuncAsync(() => messagesConfirmed == 10);
+        await Task.WhenAll(publishTasks);
+
+        foreach (Task<PublishResult> pt in publishTasks)
+        {
+            PublishResult pr = await pt;
+            Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
+            ++messagesConfirmed;
+        }
+        publishTasks.Clear();
+        Assert.Equal(publishCount, messagesConfirmed);
+
         await SystemUtils.WaitUntilFuncAsync(() => messagesReceived == 10);
 
         await SystemUtils.WaitUntilConnectionIsKilledAndOpen(connectionName);
@@ -196,15 +204,20 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
 
         for (int i = 0; i < 10; i++)
         {
-            await publisher.Publish(new AmqpMessage("Hello World"),
-                (message, descriptor) =>
-                {
-                    Interlocked.Increment(ref messagesConfirmed);
-                    Assert.Equal(OutcomeState.Accepted, descriptor.State);
-                });
+            publishTasks.Add(publisher.PublishAsync(message));
         }
 
-        await SystemUtils.WaitUntilFuncAsync(() => messagesConfirmed == 20);
+        await Task.WhenAll(publishTasks);
+
+        foreach (Task<PublishResult> pt in publishTasks)
+        {
+            PublishResult pr = await pt;
+            Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
+            ++messagesConfirmed;
+        }
+        publishTasks.Clear();
+        Assert.Equal(publishCount * 2, messagesConfirmed);
+
         Assert.Equal(State.Open, publisher.State);
 
         await publisher.CloseAsync();
@@ -273,7 +286,6 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.DoesNotContain((State.Open, State.Closing), statesConsumer);
         Assert.DoesNotContain((State.Closing, State.Closed), statesConsumer);
         Assert.Contains((State.Open, State.Closed), statesConsumer);
-
 
         // Here we need a second connection since the RecoveryConfiguration is disabled
         // and the connection is closed. So we can't use the same connection to delete the queue

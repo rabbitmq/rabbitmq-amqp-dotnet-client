@@ -1,3 +1,7 @@
+// This source code is dual-licensed under the Apache License, version
+// 2.0, and the Mozilla Public License, version 2.0.
+// Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using Amqp;
@@ -342,18 +346,19 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                         {
                             try
                             {
-                                int next = _connectionSettings.Recovery.GetBackOffDelayPolicy().Delay();
+                                int nextDelayMs = _connectionSettings.Recovery.GetBackOffDelayPolicy().Delay();
 
                                 Trace.WriteLine(TraceLevel.Information,
-                                    $"Trying Recovering connection in {next} milliseconds, " +
+                                    $"Trying Recovering connection in {nextDelayMs} milliseconds, " +
                                     $"attempt: {_connectionSettings.Recovery.GetBackOffDelayPolicy().CurrentAttempt}. " +
                                     $"Info: {ToString()})");
 
-                                await Task.Delay(TimeSpan.FromMilliseconds(next))
+                                await Task.Delay(TimeSpan.FromMilliseconds(nextDelayMs))
                                     .ConfigureAwait(false);
 
                                 await OpenConnectionAsync()
                                     .ConfigureAwait(false);
+
                                 connected = true;
                             }
                             catch (Exception e)

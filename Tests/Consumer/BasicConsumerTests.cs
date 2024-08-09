@@ -21,8 +21,9 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
 
         IPublisher publisher = await connection.PublisherBuilder().Queue("SimpleConsumeMessage").BuildAsync();
 
-        await publisher.Publish(new AmqpMessage("Hello world!"),
-            (_, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
+        var message = new AmqpMessage("Hello world!");
+        PublishResult pr = await publisher.PublishAsync(message);
+        Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
 
         TaskCompletionSource<IMessage> tcs = new();
 
@@ -59,8 +60,9 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
 
         IPublisher publisher = await connection.PublisherBuilder().Queue("ConsumerReQueueMessage").BuildAsync();
 
-        await publisher.Publish(new AmqpMessage("Hello world!"),
-            (_, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
+        var message = new AmqpMessage("Hello world!");
+        PublishResult pr = await publisher.PublishAsync(message);
+        Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
 
         TaskCompletionSource<int> tcs = new();
         int consumed = 0;
@@ -102,10 +104,17 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
 
         IPublisher publisher = await connection.PublisherBuilder().Queue("ConsumerRejectOnlySomeMessage").BuildAsync();
 
+        var publishTasks = new List<Task<PublishResult>>();
         for (int i = 0; i < 500; i++)
         {
-            await publisher.Publish(new AmqpMessage($"message_{i}"),
-                (_, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
+            var message = new AmqpMessage($"message_{i}");
+            publishTasks.Add(publisher.PublishAsync(message));
+        }
+        await Task.WhenAll(publishTasks);
+        foreach (Task<PublishResult> pt in publishTasks)
+        {
+            PublishResult pr = await pt;
+            Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
         }
 
         TaskCompletionSource<List<IMessage>> tcs = new();
@@ -141,7 +150,6 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
 
         Assert.Equal(500, messages.Count);
 
-
         for (int i = 0; i < 500; i++)
         {
             if (i % 2 == 0)
@@ -154,7 +162,6 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
         await management.QueueDeletion().Delete("ConsumerRejectOnlySomeMessage");
         await connection.CloseAsync();
     }
-
 
     /// <summary>
     /// Test the consumer for a stream queue with offset
@@ -296,6 +303,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
     {
         IPublisher publisher = await connection.PublisherBuilder().Queue(queue).BuildAsync();
 
+        var publishTasks = new List<Task<PublishResult>>();
         for (int i = 0; i < numberOfMessages; i++)
         {
             IMessage message = new AmqpMessage($"message_{i}");
@@ -304,8 +312,13 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
                 message.Annotation("x-stream-filter-value", filter);
             }
 
-            await publisher.Publish(message,
-                (_, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
+            publishTasks.Add(publisher.PublishAsync(message));
+        }
+        await Task.WhenAll(publishTasks);
+        foreach (Task<PublishResult> pt in publishTasks)
+        {
+            PublishResult pr = await pt;
+            Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
         }
     }
 }

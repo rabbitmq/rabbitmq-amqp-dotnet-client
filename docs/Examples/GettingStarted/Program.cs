@@ -39,23 +39,20 @@ IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).Initial
 const int total = 10;
 for (int i = 0; i < total; i++)
 {
-    await publisher.Publish(
-        new AmqpMessage($"Hello World_{i}"),
-        (message, descriptor) =>
-        {
-            if (descriptor.State == OutcomeState.Accepted)
-            {
-                Trace.WriteLine(TraceLevel.Information, $"[Publisher] Message: {message.Body()} confirmed");
-            }
-            else
-            {
-                Trace.WriteLine(TraceLevel.Error,
-                    $"outcome result, state: {descriptor.State}, code: {descriptor.Code}, message_id: " +
-                    $"{message.MessageId()} Description: {descriptor.Description}, error: {descriptor.Error}");
-            }
-        });
-}
+    var message = new AmqpMessage($"Hello World_{i}");
+    PublishResult pr = await publisher.PublishAsync(message);
 
+    if (pr.Outcome.State == OutcomeState.Accepted)
+    {
+        Trace.WriteLine(TraceLevel.Information, $"[Publisher] Message: {message.Body()} confirmed");
+    }
+    else
+    {
+        Trace.WriteLine(TraceLevel.Error,
+            $"outcome result, state: {pr.Outcome.State}, message_id: " +
+            $"{message.MessageId()}, error: {pr.Outcome.Error}");
+    }
+}
 
 Trace.WriteLine(TraceLevel.Information, "Queue Created");
 Console.WriteLine("Press any key to delete the queue and close the connection.");

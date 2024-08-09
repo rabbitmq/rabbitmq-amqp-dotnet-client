@@ -60,27 +60,24 @@ try
                 Console.WriteLine($"Sending Time: {endp - start} - messages {i}");
             }
 
-            await publisher.Publish(
-                new AmqpMessage(new byte[10]),
-                (message, descriptor) =>
+            var message = new AmqpMessage(new byte[10]);
+            PublishResult pr = await publisher.PublishAsync(message);
+            if (pr.Outcome.State == OutcomeState.Accepted)
+            {
+                if (Interlocked.Increment(ref confirmed) % 200_000 != 0)
                 {
-                    if (descriptor.State == OutcomeState.Accepted)
-                    {
-                        if (Interlocked.Increment(ref confirmed) % 200_000 != 0)
-                        {
-                            return;
-                        }
+                    return;
+                }
 
-                        DateTime end = DateTime.Now;
-                        Console.WriteLine($"Confirmed Time: {end - start} {confirmed}");
-                    }
-                    else
-                    {
-                        Console.WriteLine(
-                            $"outcome result, state: {descriptor.State}, code: {descriptor.Code}, message_id: " +
-                            $"{message.MessageId()} Description: {descriptor.Description}, error: {descriptor.Error}");
-                    }
-                }).ConfigureAwait(false);
+                DateTime confirmEnd = DateTime.Now;
+                Console.WriteLine($"Confirmed Time: {confirmEnd - start} {confirmed}");
+            }
+            else
+            {
+                Console.WriteLine(
+                    $"outcome result, state: {pr.Outcome.State}, message_id: " +
+                    $"{message.MessageId()}, error: {pr.Outcome.Error}");
+            }
         }
         catch (Exception e)
         {

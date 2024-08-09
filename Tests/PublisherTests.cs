@@ -1,5 +1,3 @@
-using System;
-using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
@@ -49,8 +47,8 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
 
         IPublisher publisher = await connection.PublisherBuilder().Queue("queue_to_send").BuildAsync();
 
-        await publisher.Publish(new AmqpMessage("Hello wold!"),
-            (message, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
+        PublishResult pr = await publisher.PublishAsync(new AmqpMessage("Hello wold!"));
+        Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
 
         await SystemUtils.WaitUntilQueueMessageCount("queue_to_send", 1);
 
@@ -69,25 +67,15 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
         IManagement management = connection.Management();
         await management.Queue().Name("queue_publishers_count").Declare();
 
-        TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        int received = 0;
         for (int i = 1; i <= 10; i++)
         {
             IPublisher publisher = await connection.PublisherBuilder().Queue("queue_publishers_count").BuildAsync();
 
-            await publisher.Publish(new AmqpMessage("Hello wold!"),
-                (message, descriptor) =>
-                {
-                    Assert.Equal(OutcomeState.Accepted, descriptor.State);
-                    if (Interlocked.Increment(ref received) == 10)
-                    {
-                        tcs.SetResult(true);
-                    }
-                });
+            PublishResult pr = await publisher.PublishAsync(new AmqpMessage("Hello wold!"));
+            Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
             Assert.Equal(i, connection.GetPublishers().Count);
         }
 
-        await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
         foreach (IPublisher publisher in connection.GetPublishers())
         {
             await publisher.CloseAsync();
@@ -110,8 +98,8 @@ public class PublisherTests(ITestOutputHelper testOutputHelper)
 
         IPublisher publisher = await connection.PublisherBuilder().Exchange("exchange_to_send").Key("key").BuildAsync();
 
-        await publisher.Publish(new AmqpMessage("Hello wold!"),
-            (message, descriptor) => { Assert.Equal(OutcomeState.Accepted, descriptor.State); });
+        PublishResult pr = await publisher.PublishAsync(new AmqpMessage("Hello wold!"));
+        Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
 
         await SystemUtils.WaitUntilQueueMessageCount("queue_to_send_1", 1);
 
