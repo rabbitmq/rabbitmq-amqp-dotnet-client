@@ -23,8 +23,6 @@ public class PublishOutcome
     public Error? Error => _error;
 }
 
-// public delegate void OutcomeDescriptorCallback(IMessage message, PublishOutcome publishOutcome);
-
 public class PublishResult
 {
     private IMessage _message;

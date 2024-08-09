@@ -11,11 +11,11 @@ namespace RabbitMQ.AMQP.Client.Impl;
 
 public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
 {
-    private enum PauseStatus : byte
+    private enum PauseStatus
     {
-        UNPAUSED = 0,
-        PAUSING = 1,
-        PAUSED = 2
+        UNPAUSED,
+        PAUSING,
+        PAUSED,
     }
 
     private readonly AmqpConnection _connection;
