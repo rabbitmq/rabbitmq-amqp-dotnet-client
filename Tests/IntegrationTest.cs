@@ -21,11 +21,20 @@ public abstract class IntegrationTest : IAsyncLifetime
     protected readonly TimeSpan _waitSpan = TimeSpan.FromSeconds(5);
 
     protected IConnection? _connection;
-    protected string _connectionName = $"integration-test-{Now}";
+    protected IManagement? _management;
+    protected string _queueName;
+    protected string _exchangeName;
+    protected string _containerId = $"integration-test-{Now}";
 
-    public IntegrationTest(ITestOutputHelper testOutputHelper)
+    private readonly bool _setupConnectionAndManagement;
+
+    public IntegrationTest(ITestOutputHelper testOutputHelper,
+        bool setupConnectionAndManagement = true)
     {
         _testOutputHelper = testOutputHelper;
+        _setupConnectionAndManagement = setupConnectionAndManagement;
+        _queueName = $"{_testDisplayName}-queue-{Now}";
+        _exchangeName = $"{_testDisplayName}-exchange-{Now}";
 
         Type testOutputHelperType = _testOutputHelper.GetType();
         FieldInfo? testMember = testOutputHelperType.GetField("test", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -41,20 +50,63 @@ public abstract class IntegrationTest : IAsyncLifetime
 
     public virtual async Task InitializeAsync()
     {
-        ConnectionSettingBuilder connectionSettingBuilder = ConnectionSettingBuilder.Create();
+        if (_setupConnectionAndManagement)
+        {
+            ConnectionSettingBuilder connectionSettingBuilder = ConnectionSettingBuilder.Create();
 
-        _connectionName = $"{_testDisplayName}:{Now}";
-        connectionSettingBuilder.ContainerId(_connectionName);
+            _containerId = $"{_testDisplayName}:{Now}";
+            connectionSettingBuilder.ContainerId(_containerId);
 
-        ConnectionSettings connectionSettings = connectionSettingBuilder.Build();
-        _connection = await AmqpConnection.CreateAsync(connectionSettings);
+            ConnectionSettings connectionSettings = connectionSettingBuilder.Build();
+            _connection = await AmqpConnection.CreateAsync(connectionSettings);
+            _management = _connection.Management();
+        }
+
+        /*
+         * Note: re-assigning here since Theory tests
+         * will include the theory data at this point
+         */
+        _queueName = $"{_testDisplayName}-queue-{Now}";
+        _exchangeName = $"{_testDisplayName}-exchange-{Now}";
     }
 
     public virtual async Task DisposeAsync()
     {
-        if (_connection is not null)
+        if (_management is not null)
         {
-            await _connection.CloseAsync();
+            if (_management.State == State.Open)
+            {
+                try
+                {
+                    IQueueSpecification queueSpecification = _management.Queue(_queueName);
+                    await queueSpecification.DeleteAsync();
+                }
+                catch
+                {
+                }
+
+                try
+                {
+                    IExchangeSpecification exchangeSpecification = _management.Exchange(_exchangeName);
+                    await exchangeSpecification.DeleteAsync();
+                }
+                catch
+                {
+                }
+
+                await _management.CloseAsync();
+            }
+            Assert.Equal(State.Closed, _management.State);
+            _management.Dispose();
+        }
+
+        if (_connection is not null && _connection.State == State.Open)
+        {
+            if (_connection.State == State.Open)
+            {
+                await _connection.CloseAsync();
+            }
+            Assert.Equal(State.Closed, _connection.State);
             _connection.Dispose();
         }
     }

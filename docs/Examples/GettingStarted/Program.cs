@@ -1,4 +1,8 @@
-﻿using System.Diagnostics;
+﻿// This source code is dual-licensed under the Apache License, version
+// 2.0, and the Mozilla Public License, version 2.0.
+// Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+
+using System.Diagnostics;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Trace = Amqp.Trace;
@@ -22,9 +26,9 @@ Trace.WriteLine(TraceLevel.Information, "Connected");
 
 IManagement management = connection.Management();
 const string queueName = "amqp10-client-test";
-await management.QueueDeletion().Delete(queueName).ConfigureAwait(false);
-
-await management.Queue(queueName).Type(QueueType.QUORUM).Declare();
+IQueueSpecification queueSpec = management.Queue(queueName).Type(QueueType.QUORUM);
+await queueSpec.DeleteAsync();
+await queueSpec.DeclareAsync();
 
 IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).MaxInflightMessages(2000).BuildAsync();
 
@@ -56,8 +60,15 @@ for (int i = 0; i < total; i++)
 Trace.WriteLine(TraceLevel.Information, "Queue Created");
 Console.WriteLine("Press any key to delete the queue and close the connection.");
 Console.ReadKey();
+
 await publisher.CloseAsync();
+publisher.Dispose();
+
 await consumer.CloseAsync();
-await management.QueueDeletion().Delete(queueName);
+consumer.Dispose();
+
+await queueSpec.DeleteAsync();
+
 await environment.CloseAsync();
+
 Trace.WriteLine(TraceLevel.Information, "Closed");

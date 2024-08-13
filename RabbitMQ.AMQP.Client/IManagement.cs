@@ -9,16 +9,13 @@ public interface IManagement : ILifeCycle
     IQueueSpecification Queue();
     IQueueSpecification Queue(string name);
 
+    Task<IQueueInfo> GetQueueInfoAsync(IQueueSpecification queueSpec,
+        CancellationToken cancellationToken = default);
     Task<IQueueInfo> GetQueueInfoAsync(string queueName,
         CancellationToken cancellationToken = default);
 
-    IQueueDeletion QueueDeletion();
-
     IExchangeSpecification Exchange();
-
     IExchangeSpecification Exchange(string name);
-
-    IExchangeDeletion ExchangeDeletion();
 
     IBindingSpecification Binding();
 

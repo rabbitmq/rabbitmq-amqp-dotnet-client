@@ -1,4 +1,3 @@
-using Amqp;
 using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
@@ -11,13 +10,12 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
     private string _typeString = ""; // TODO: add this
     private readonly Map _arguments = new();
 
-    public async Task Declare()
+    public Task DeclareAsync()
     {
         if (string.IsNullOrEmpty(_name))
         {
             throw new ArgumentException("Exchange name must be set");
         }
-
 
         var kv = new Map
         {
@@ -30,13 +28,24 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
         // TODO: encodePathSegment(queues)
         // Message request = await management.Request(kv, $"/{Consts.Exchanges}/{_name}",
         // for the moment we won't use the message response
-        await management.RequestAsync(kv, $"/{Consts.Exchanges}/{Utils.EncodePathSegment(_name)}",
-            AmqpManagement.Put,
-            [
-                AmqpManagement.Code204,
-                AmqpManagement.Code201,
-                AmqpManagement.Code409
-            ]).ConfigureAwait(false);
+        string path = $"/{Consts.Exchanges}/{Utils.EncodePathSegment(_name)}";
+        string method = AmqpManagement.Put;
+        int[] expectedResponseCodes = [AmqpManagement.Code204, AmqpManagement.Code201, AmqpManagement.Code409];
+        return management.RequestAsync(kv, path, method, expectedResponseCodes);
+    }
+
+    public Task DeleteAsync()
+    {
+        string path = $"/{Consts.Exchanges}/{Utils.EncodePathSegment(_name)}";
+        string method = AmqpManagement.Delete;
+        int[] expectedResponseCodes = [AmqpManagement.Code204];
+        // TODO management topology listener?
+        return management.RequestAsync(null, path, method, expectedResponseCodes);
+    }
+
+    public string Name()
+    {
+        return _name;
     }
 
     public IExchangeSpecification Name(string name)
@@ -67,16 +76,5 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
     {
         _arguments[key] = value;
         return this;
-    }
-}
-
-public class AmqpExchangeDeletion(AmqpManagement management) : IExchangeDeletion
-{
-    public async Task Delete(string name)
-    {
-        await management
-            .RequestAsync(null, $"/{Consts.Exchanges}/{Utils.EncodePathSegment(name)}", AmqpManagement.Delete,
-                new[] { AmqpManagement.Code204, })
-            .ConfigureAwait(false);
     }
 }

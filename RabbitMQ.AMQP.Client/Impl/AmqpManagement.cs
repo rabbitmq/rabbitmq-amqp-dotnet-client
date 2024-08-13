@@ -48,6 +48,12 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
         return Queue().Name(name);
     }
 
+    public Task<IQueueInfo> GetQueueInfoAsync(IQueueSpecification queueSpec,
+        CancellationToken cancellationToken = default)
+    {
+        return GetQueueInfoAsync(queueSpec.Name(), cancellationToken);
+    }
+
     public async Task<IQueueInfo> GetQueueInfoAsync(string queueName,
         CancellationToken cancellationToken = default)
     {
@@ -70,11 +76,6 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
             .Arguments(spec.Arguments);
     }
 
-    public IQueueDeletion QueueDeletion()
-    {
-        return new AmqpQueueDeletion(this);
-    }
-
     public IExchangeSpecification Exchange()
     {
         ThrowIfClosed();
@@ -84,11 +85,6 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
     public IExchangeSpecification Exchange(string name)
     {
         return Exchange().Name(name);
-    }
-
-    public IExchangeDeletion ExchangeDeletion()
-    {
-        return new AmqpExchangeDeletion(this);
     }
 
     public IBindingSpecification Binding()
@@ -207,7 +203,9 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
             await tcs.Task
                 .ConfigureAwait(false);
 
-            _receiverLink.SetCredit(1);
+            // TODO
+            // using a credit of 1 can result in AmqpExceptions in ProcessResponses
+            _receiverLink.SetCredit(100);
         }
     }
 
@@ -271,7 +269,7 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
         }
     }
 
-    internal ValueTask<Message> RequestAsync(string path, string method,
+    internal Task<Message> RequestAsync(string path, string method,
         int[] expectedResponseCodes,
         TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
@@ -280,16 +278,16 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
             timeout, cancellationToken);
     }
 
-    internal ValueTask<Message> RequestAsync(object? body, string path, string method,
+    internal Task<Message> RequestAsync(object? body, string path, string method,
         int[] expectedResponseCodes,
         TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
     {
         string id = Guid.NewGuid().ToString();
-        return RequestAsync(id, body, path, method, expectedResponseCodes, timeout);
+        return RequestAsync(id, body, path, method, expectedResponseCodes, timeout, cancellationToken);
     }
 
-    internal ValueTask<Message> RequestAsync(string id, object? body, string path, string method,
+    internal Task<Message> RequestAsync(string id, object? body, string path, string method,
         int[] expectedResponseCodes,
         TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
@@ -304,6 +302,7 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
                 ReplyTo = ReplyTo
             }
         };
+
         return RequestAsync(message, expectedResponseCodes, timeout, cancellationToken);
     }
 
@@ -322,7 +321,7 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
     /// <param name="cancellationToken">Cancellation token for this request</param>
     /// <returns> A message with the Info response. For example in case of Queue creation is DefaultQueueInfo </returns>
     /// <exception cref="ModelException"> Application errors, see <see cref="ModelException"/> </exception>
-    internal async ValueTask<Message> RequestAsync(Message message, int[] expectedResponseCodes,
+    internal async Task<Message> RequestAsync(Message message, int[] expectedResponseCodes,
         TimeSpan? argTimeout = null, CancellationToken cancellationToken = default)
     {
         ThrowIfClosed();
@@ -359,11 +358,13 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
         using CancellationTokenRegistration ctsr = timeoutCts.Token.Register(RequestTimeoutAction);
 
         // NOTE: no cancellation token support
-        await InternalSendAsync(message, timeout)
-            .ConfigureAwait(false);
+        Task sendTask = InternalSendAsync(message, timeout);
 
         // The response is handled in a separate thread, see ProcessResponses method in the Init method
         Message result = await mre.Task.WaitAsync(linkedCts.Token)
+            .ConfigureAwait(false);
+
+        await sendTask.WaitAsync(linkedCts.Token)
             .ConfigureAwait(false);
 
         // Check the responses and throw exceptions if needed.
@@ -412,7 +413,7 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
         }
     }
 
-    protected virtual async Task InternalSendAsync(Message message, TimeSpan timeout)
+    protected virtual Task InternalSendAsync(Message message, TimeSpan timeout)
     {
         if (_senderLink is null)
         {
@@ -420,8 +421,7 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
             throw new InvalidOperationException("_senderLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
         }
 
-        await _senderLink.SendAsync(message, timeout)
-            .ConfigureAwait(false);
+        return _senderLink.SendAsync(message, timeout);
     }
 
     public override async Task CloseAsync()

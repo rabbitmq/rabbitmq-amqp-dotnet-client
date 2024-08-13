@@ -4,10 +4,11 @@ public class InvalidAddressException(string message) : Exception(message);
 
 public interface IAddressBuilder<out T>
 {
+    T Exchange(IExchangeSpecification exchangeSpec);
+    T Exchange(string exchangeName);
 
-    T Exchange(string exchange);
-
-    T Queue(string queue);
+    T Queue(IQueueSpecification queueSpec);
+    T Queue(string queueName);
 
     T Key(string key);
 }

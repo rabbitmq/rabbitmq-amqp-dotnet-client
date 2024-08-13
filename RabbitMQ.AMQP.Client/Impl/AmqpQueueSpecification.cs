@@ -18,6 +18,14 @@ public class DefaultQueueInfo : IQueueInfo
     private readonly uint _consumerCount;
 
 
+    internal DefaultQueueInfo(string queueName)
+    {
+        _name = queueName;
+        _arguments = new Dictionary<string, object>();
+        _leader = string.Empty;
+        _replicas = new List<string>();
+    }
+
     internal DefaultQueueInfo(Map response)
     {
         _name = (string)response["name"];
@@ -254,7 +262,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         return this;
     }
 
-    public async Task<IQueueInfo> Declare()
+    public async Task<IQueueInfo> DeclareAsync()
     {
         if (Type() is QueueType.QUORUM or QueueType.STREAM)
         {
@@ -291,6 +299,24 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         var result = new DefaultQueueInfo((Map)response.Body);
         management.TopologyListener().QueueDeclared(this);
         return result;
+    }
+
+    public async Task<IQueueInfo> DeleteAsync()
+    {
+        if (string.IsNullOrEmpty(_name))
+        {
+            // TODO create "internal bug" exception type?
+            throw new InvalidOperationException("_name is null or empty, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+        }
+
+        string path = $"/{Consts.Queues}/{Utils.EncodePathSegment(_name)}";
+        string method = AmqpManagement.Delete;
+        int[] expectedResponseCodes = [AmqpManagement.Code200];
+        await management.RequestAsync(null, path, method, expectedResponseCodes)
+            .ConfigureAwait(false);
+
+        management.TopologyListener().QueueDeleted(_name);
+        return new DefaultQueueInfo(_name);
     }
 }
 
@@ -391,23 +417,5 @@ public class AmqpClassicSpecification(AmqpQueueSpecification parent) : IClassicQ
     public IQueueSpecification Queue()
     {
         return parent;
-    }
-}
-
-public class DefaultQueueDeletionInfo : IEntityInfo
-{
-}
-
-public class AmqpQueueDeletion(AmqpManagement management) : IQueueDeletion
-{
-    public async Task<IEntityInfo> Delete(string name)
-    {
-        await management
-            .RequestAsync(null, $"/{Consts.Queues}/{Utils.EncodePathSegment(name)}", AmqpManagement.Delete,
-                new[] { AmqpManagement.Code200, })
-            .ConfigureAwait(false);
-
-        management.TopologyListener().QueueDeleted(name);
-        return new DefaultQueueDeletionInfo();
     }
 }

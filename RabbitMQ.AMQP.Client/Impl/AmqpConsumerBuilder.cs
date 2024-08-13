@@ -7,16 +7,18 @@ public class AmqpConsumerBuilder(AmqpConnection connection) : IConsumerBuilder
     private string _queue = "";
     private int _initialCredits = 10;
     private readonly Map _filters = new Map();
+    private MessageHandler? _handler;
 
-
-    public IConsumerBuilder Queue(string queue)
+    public IConsumerBuilder Queue(IQueueSpecification queueSpec)
     {
-        _queue = queue;
-        return this;
+        return Queue(queueSpec.Name());
     }
 
-
-    private MessageHandler? _handler;
+    public IConsumerBuilder Queue(string queueName)
+    {
+        _queue = queueName;
+        return this;
+    }
 
     public IConsumerBuilder MessageHandler(MessageHandler handler)
     {
@@ -34,7 +36,6 @@ public class AmqpConsumerBuilder(AmqpConnection connection) : IConsumerBuilder
     {
         return new DefaultStreamOptions(this, _filters);
     }
-
 
     public async Task<IConsumer> BuildAsync(CancellationToken cancellationToken = default)
     {
@@ -78,7 +79,6 @@ public class DefaultStreamOptions(IConsumerBuilder builder, Map filters)
         return this;
     }
 
-
     public IConsumerBuilder.IStreamOptions Offset(string interval)
     {
         // notNull(interval, "Interval offset cannot be null");
@@ -95,7 +95,6 @@ public class DefaultStreamOptions(IConsumerBuilder builder, Map filters)
         return this;
     }
 
-
     public IConsumerBuilder.IStreamOptions FilterValues(string[] values)
     {
         filters[new Symbol("rabbitmq:stream-filter")] = values.ToList();
@@ -108,7 +107,6 @@ public class DefaultStreamOptions(IConsumerBuilder builder, Map filters)
         filters[new Symbol("rabbitmq:stream-match-unfiltered")] = matchUnfiltered;
         return this;
     }
-
 
     public IConsumerBuilder Builder()
     {

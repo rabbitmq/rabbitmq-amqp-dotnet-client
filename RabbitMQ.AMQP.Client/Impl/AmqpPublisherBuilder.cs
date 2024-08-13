@@ -8,10 +8,20 @@ public class AddressBuilder : IAddressBuilder<AddressBuilder>
 
     private string? _key;
 
+    public AddressBuilder Exchange(IExchangeSpecification exchangeSpec)
+    {
+        return Exchange(exchangeSpec.Name());
+    }
+
     public AddressBuilder Exchange(string? exchange)
     {
         _exchange = exchange;
         return this;
+    }
+
+    public AddressBuilder Queue(IQueueSpecification queueSpec)
+    {
+        return Queue(queueSpec.Name());
     }
 
     public AddressBuilder Queue(string? queue)
@@ -76,15 +86,25 @@ public class AmqpPublisherBuilder(AmqpConnection connection) : IPublisherBuilder
     private int _maxInFlight = 1000;
 
 
-    public IPublisherBuilder Exchange(string exchange)
+    public IPublisherBuilder Exchange(IExchangeSpecification exchangeSpec)
     {
-        _exchange = exchange;
+        return Exchange(exchangeSpec.Name());
+    }
+
+    public IPublisherBuilder Exchange(string exchangeName)
+    {
+        _exchange = exchangeName;
         return this;
     }
 
-    public IPublisherBuilder Queue(string queue)
+    public IPublisherBuilder Queue(IQueueSpecification queueSpec)
     {
-        _queue = queue;
+        return Queue(queueSpec.Name());
+    }
+
+    public IPublisherBuilder Queue(string queueName)
+    {
+        _queue = queueName;
         return this;
     }
 

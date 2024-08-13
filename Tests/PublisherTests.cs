@@ -6,111 +6,114 @@ using Xunit.Abstractions;
 
 namespace Tests;
 
-public class PublisherTests(ITestOutputHelper testOutputHelper)
+public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
 {
-    private readonly ITestOutputHelper _testOutputHelper = testOutputHelper;
-
     [Fact]
     public async Task ValidateBuilderRaiseExceptionIfQueueOrExchangeAreNotSetCorrectly()
     {
-        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        Assert.NotNull(_connection);
 
         await Assert.ThrowsAsync<InvalidAddressException>(() =>
-            connection.PublisherBuilder().Queue("does_not_matter").Exchange("i_should_not_stay_here").BuildAsync());
+            _connection.PublisherBuilder().Queue("does_not_matter").Exchange("i_should_not_stay_here").BuildAsync());
 
-        await Assert.ThrowsAsync<InvalidAddressException>(() => connection.PublisherBuilder().Exchange("").BuildAsync());
+        await Assert.ThrowsAsync<InvalidAddressException>(() => _connection.PublisherBuilder().Exchange("").BuildAsync());
 
-        await Assert.ThrowsAsync<InvalidAddressException>(() => connection.PublisherBuilder().Queue("").BuildAsync());
+        await Assert.ThrowsAsync<InvalidAddressException>(() => _connection.PublisherBuilder().Queue("").BuildAsync());
 
-        Assert.Empty(connection.GetPublishers());
+        Assert.Empty(_connection.GetPublishers());
 
-        await connection.CloseAsync();
+        await _connection.CloseAsync();
     }
 
     [Fact]
     public async Task RaiseErrorIfQueueDoesNotExist()
     {
-        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
 
         await Assert.ThrowsAsync<PublisherException>(() =>
-            connection.PublisherBuilder().Queue("queue_does_not_exist").BuildAsync());
-
-        await connection.CloseAsync();
+            _connection.PublisherBuilder().Queue("queue_does_not_exist").BuildAsync());
     }
 
     [Fact]
     public async Task SendAMessageToAQueue()
     {
-        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        IManagement management = connection.Management();
-        await management.Queue().Name("queue_to_send").Declare();
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
 
-        IPublisher publisher = await connection.PublisherBuilder().Queue("queue_to_send").BuildAsync();
+        IQueueSpecification queueSpecification = _management.Queue(_queueName);
+        await queueSpecification.DeclareAsync();
+
+        IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpecification).BuildAsync();
 
         PublishResult pr = await publisher.PublishAsync(new AmqpMessage("Hello wold!"));
         Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
 
-        await SystemUtils.WaitUntilQueueMessageCount("queue_to_send", 1);
+        await SystemUtils.WaitUntilQueueMessageCount(queueSpecification, 1);
 
-        Assert.Single(connection.GetPublishers());
+        Assert.Single(_connection.GetPublishers());
         await publisher.CloseAsync();
-        Assert.Empty(connection.GetPublishers());
-        await management.QueueDeletion().Delete("queue_to_send");
-        await connection.CloseAsync();
+        Assert.Empty(_connection.GetPublishers());
     }
 
 
     [Fact]
     public async Task ValidatePublishersCount()
     {
-        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        IManagement management = connection.Management();
-        await management.Queue().Name("queue_publishers_count").Declare();
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IQueueSpecification queueSpec = _management.Queue(_queueName);
+        await queueSpec.DeclareAsync();
 
         for (int i = 1; i <= 10; i++)
         {
-            IPublisher publisher = await connection.PublisherBuilder().Queue("queue_publishers_count").BuildAsync();
+            IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
 
             PublishResult pr = await publisher.PublishAsync(new AmqpMessage("Hello wold!"));
             Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
-            Assert.Equal(i, connection.GetPublishers().Count);
+            Assert.Equal(i, _connection.GetPublishers().Count);
         }
 
-        foreach (IPublisher publisher in connection.GetPublishers())
+        foreach (IPublisher publisher in _connection.GetPublishers())
         {
             await publisher.CloseAsync();
         }
 
-        await management.QueueDeletion().Delete("queue_publishers_count");
-        await connection.CloseAsync();
-        Assert.Empty(connection.GetPublishers());
+        await _connection.CloseAsync();
+        Assert.Empty(_connection.GetPublishers());
     }
 
     [Fact]
     public async Task SendAMessageToAnExchange()
     {
-        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        IManagement management = connection.Management();
-        await management.Queue().Name("queue_to_send_1").Declare();
-        await management.Exchange().Name("exchange_to_send").Declare();
-        await management.Binding().SourceExchange("exchange_to_send").DestinationQueue("queue_to_send_1").Key("key")
-            .Bind();
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
 
-        IPublisher publisher = await connection.PublisherBuilder().Exchange("exchange_to_send").Key("key").BuildAsync();
+        IQueueSpecification queueToSend1 = _management.Queue(_queueName);
+        IExchangeSpecification exchangeToSend = _management.Exchange(_exchangeName);
+
+        await queueToSend1.DeclareAsync();
+        await exchangeToSend.DeclareAsync();
+
+        IBindingSpecification bindingSpec = _management.Binding()
+            .SourceExchange(exchangeToSend)
+            .DestinationQueue(queueToSend1)
+            .Key("key");
+        await bindingSpec.BindAsync();
+
+        IPublisher publisher = await _connection.PublisherBuilder()
+            .Exchange(exchangeToSend).Key("key").BuildAsync();
 
         PublishResult pr = await publisher.PublishAsync(new AmqpMessage("Hello wold!"));
         Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
 
-        await SystemUtils.WaitUntilQueueMessageCount("queue_to_send_1", 1);
+        await SystemUtils.WaitUntilQueueMessageCount(queueToSend1, 1);
 
-        Assert.Single(connection.GetPublishers());
+        Assert.Single(_connection.GetPublishers());
         await publisher.CloseAsync();
-        Assert.Empty(connection.GetPublishers());
+        Assert.Empty(_connection.GetPublishers());
 
-        await management.Binding().SourceExchange("exchange_to_send").DestinationQueue("queue_to_send_1").Key("key")
-            .Unbind();
-        await management.ExchangeDeletion().Delete("exchange_to_send");
-        await management.QueueDeletion().Delete("queue_to_send_1");
-        await connection.CloseAsync();
+        await bindingSpec.UnbindAsync();
     }
 }

@@ -223,7 +223,7 @@ public class ConnectionRecoveryTests()
             }
         };
         var management = connection.Management();
-        await management.Queue().Name(queueName).AutoDelete(true).Exclusive(true).Declare();
+        await management.Queue().Name(queueName).AutoDelete(true).Exclusive(true).DeclareAsync();
         Assert.Equal(1, management.TopologyListener().QueueCount());
 
 
@@ -270,7 +270,7 @@ public class ConnectionRecoveryTests()
             }
         };
         var management = connection.Management();
-        await management.Queue().Name(queueName).AutoDelete(true).Exclusive(true).Declare();
+        await management.Queue().Name(queueName).AutoDelete(true).Exclusive(true).DeclareAsync();
         Assert.Equal(1, management.TopologyListener().QueueCount());
 
 

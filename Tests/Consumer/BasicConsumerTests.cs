@@ -9,41 +9,42 @@ using Xunit.Abstractions;
 
 namespace Tests.Consumer;
 
-public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
+public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
 {
-    private readonly ITestOutputHelper _testOutputHelper = testOutputHelper;
-
     [Fact]
     public async Task SimpleConsumeMessage()
     {
-        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        IManagement management = connection.Management();
-        await management.Queue().Name("SimpleConsumeMessage").Declare();
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
 
-        IPublisher publisher = await connection.PublisherBuilder().Queue("SimpleConsumeMessage").BuildAsync();
+        IQueueSpecification queueSpec = _management.Queue().Name(_queueName);
+        await queueSpec.DeclareAsync();
+
+        IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
 
         var message = new AmqpMessage("Hello world!");
         PublishResult pr = await publisher.PublishAsync(message);
         Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
 
         TaskCompletionSource<IMessage> tcs = new();
-        IConsumer consumer = await connection.ConsumerBuilder().Queue("SimpleConsumeMessage").MessageHandler(
-            async (context, message) =>
+        IConsumer consumer = await _connection.ConsumerBuilder()
+            .Queue(queueSpec)
+            .MessageHandler(async (context, message) =>
             {
                 await context.AcceptAsync();
                 tcs.SetResult(message);
             }
         ).BuildAsync();
 
-        await Task.WhenAny(tcs.Task, Task.Delay(5000));
-        Assert.True(tcs.Task.IsCompleted);
+        await tcs.Task.WaitAsync(_waitSpan);
         IMessage receivedMessage = await tcs.Task;
         Assert.Equal("Hello world!", receivedMessage.Body());
-        await consumer.CloseAsync();
-        await management.QueueDeletion().Delete("SimpleConsumeMessage");
-        await connection.CloseAsync();
-    }
 
+        await consumer.CloseAsync();
+        consumer.Dispose();
+        await publisher.CloseAsync();
+        publisher.Dispose();
+    }
 
     /// <summary>
     /// Test the Requeue method of the IContext interface
@@ -54,11 +55,13 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task ConsumerReQueueMessage()
     {
-        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        IManagement management = connection.Management();
-        await management.Queue().Name("ConsumerReQueueMessage").Declare();
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
 
-        IPublisher publisher = await connection.PublisherBuilder().Queue("ConsumerReQueueMessage").BuildAsync();
+        IQueueSpecification queueSpec = _management.Queue(_queueName);
+        await queueSpec.DeclareAsync();
+
+        IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
 
         var message = new AmqpMessage("Hello world!");
         PublishResult pr = await publisher.PublishAsync(message);
@@ -66,8 +69,9 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
 
         TaskCompletionSource<int> tcs = new();
         int consumed = 0;
-        IConsumer consumer = await connection.ConsumerBuilder().Queue("ConsumerReQueueMessage").MessageHandler(
-            async (context, message) =>
+        IConsumer consumer = await _connection.ConsumerBuilder()
+            .Queue(queueSpec)
+            .MessageHandler(async (context, message) =>
             {
                 Assert.Equal("Hello world!", message.Body());
                 Interlocked.Increment(ref consumed);
@@ -86,13 +90,15 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
             }
         ).BuildAsync();
 
-        await Task.WhenAny(tcs.Task, Task.Delay(10000));
-        Assert.True(tcs.Task.IsCompleted);
-        await consumer.CloseAsync();
+        await tcs.Task.WaitAsync(_waitSpan);
 
-        await SystemUtils.WaitUntilQueueMessageCount("ConsumerReQueueMessage", 0);
-        await management.QueueDeletion().Delete("ConsumerReQueueMessage");
-        await connection.CloseAsync();
+        await consumer.CloseAsync();
+        consumer.Dispose();
+        await publisher.CloseAsync();
+        publisher.Dispose();
+
+        await SystemUtils.WaitUntilQueueMessageCount(queueSpec, 0);
+        await queueSpec.DeleteAsync();
     }
 
     [Fact]
@@ -100,18 +106,18 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
     {
         const int publishCount = 500;
         const int initialCredits = 100;
-        const string queueName = nameof(ConsumerRejectOnlySomeMessage);
 
-        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        IManagement management = connection.Management();
-        IQueueSpecification queueSpec = management.Queue(queueName);
-        await queueSpec.Declare();
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IQueueSpecification queueSpec = _management.Queue(_queueName);
+        await queueSpec.DeclareAsync();
 
         IPublisher? publisher = null;
         IConsumer? consumer = null;
         try
         {
-            publisher = await connection.PublisherBuilder().Queue("ConsumerRejectOnlySomeMessage").BuildAsync();
+            publisher = await _connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
 
             var publishTasks = new List<Task<PublishResult>>();
             for (int i = 0; i < publishCount; i++)
@@ -150,11 +156,12 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
                 }
             }
 
-            consumer = await connection.ConsumerBuilder().Queue("ConsumerRejectOnlySomeMessage").InitialCredits(initialCredits)
+            consumer = await _connection.ConsumerBuilder()
+                .Queue(queueSpec)
+                .InitialCredits(initialCredits)
                 .MessageHandler(MessageHandler).BuildAsync();
 
-            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
-            Assert.True(tcs.Task.IsCompleted);
+            await tcs.Task.WaitAsync(_waitSpan);
             List<IMessage> receivedMessagesFromTask = await tcs.Task;
 
             Assert.Equal(publishCount, receivedMessagesFromTask.Count);
@@ -172,15 +179,14 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
             if (publisher is not null)
             {
                 await publisher.CloseAsync();
+                publisher.Dispose();
             }
 
             if (consumer is not null)
             {
                 await consumer.CloseAsync();
+                consumer.Dispose();
             }
-
-            await management.QueueDeletion().Delete(queueName);
-            await connection.CloseAsync();
         }
     }
 
@@ -197,33 +203,41 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
     [InlineData(StreamOffsetSpecification.Next, 0)]
     public async Task ConsumerForStreamQueueWithOffset(StreamOffsetSpecification offset, int numberOfMessagesExpected)
     {
-        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        IManagement management = connection.Management();
-        string queueName = $"ConsumerForStreamQueueWithOffset_{offset}";
-        await management.Queue().Name(queueName).Type(QueueType.STREAM).Declare();
-        await Publish(connection, queueName, 100);
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(QueueType.STREAM);
+        await queueSpec.DeclareAsync();
+
+        await Publish(_connection, queueSpec, 100);
+
         int consumed = 0;
-        IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).InitialCredits(100)
+        IConsumer consumer = await _connection.ConsumerBuilder()
+            .Queue(queueSpec)
+            .InitialCredits(100)
             .MessageHandler((context, message) =>
             {
                 Interlocked.Increment(ref consumed);
                 return Task.CompletedTask;
-            }).Stream().Offset(offset)
-            .Builder().BuildAsync();
+            })
+            .Stream()
+            .Offset(offset)
+            .Builder()
+            .BuildAsync();
 
         // wait for the consumer to consume all messages
         // we can't use the TaskCompletionSource here because we don't know how many messages will be consumed
         // In two seconds, the consumer should consume all messages
-        await Task.Delay(2000);
+        await SystemUtils.WaitUntilFuncAsync(() => consumed >= numberOfMessagesExpected);
 
         // we don't know how many messages will be consumed
         // expect for the case FIRST
         // we just assume that the messages consumed are greater than or equal to the expected number of messages
         // For example in case of "LAST" we expect 1 message to be consumed, but it could be more
         Assert.True(consumed >= numberOfMessagesExpected);
+
         await consumer.CloseAsync();
-        await management.QueueDeletion().Delete(queueName);
-        await connection.CloseAsync();
+        consumer.Dispose();
     }
 
 
@@ -241,54 +255,69 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
     [InlineData("pizza", 1)]
     public async Task ConsumerWithStreamFilterShouldReceiveOnlyPartOfTheMessages(string filter, int expected)
     {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
         string[] filters = filter.Split(",");
 
-        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        IManagement management = connection.Management();
-        string queueName = $"ConsumerWithStreamFilterShouldReceiveOnlyPartOfTheMessages_{filter}";
-        await management.Queue().Name(queueName).Type(QueueType.STREAM).Declare();
+        IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(QueueType.STREAM);
+        await queueSpec.DeclareAsync();
+
+        var publishTasks = new List<Task>();
         foreach (string se in filters)
         {
-            await Publish(connection, queueName, 1, se);
+            publishTasks.Add(Publish(_connection, queueSpec, 1, se));
         }
+        await Task.WhenAll(publishTasks);
+        publishTasks.Clear();
 
         // wait for the messages to be published and the chunks to be created
-        await Task.Delay(1000);
+        await Task.Delay(TimeSpan.FromSeconds(1)); // TODO better way to do this?
+
         // publish extra messages without filter and these messages should be always excluded
         // by the consumer with the filter
-        await Publish(connection, queueName, 10);
+        await Publish(_connection, queueSpec, 10);
 
         List<IMessage> receivedMessages = [];
-        IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).InitialCredits(100)
+        IConsumer consumer = await _connection.ConsumerBuilder()
+            .Queue(queueSpec)
+            .InitialCredits(100)
             .MessageHandler((context, message) =>
             {
                 receivedMessages.Add(message);
                 return context.AcceptAsync();
-            }).Stream().FilterValues(filters).FilterMatchUnfiltered(false)
+            })
+            .Stream()
+            .FilterValues(filters)
+            .FilterMatchUnfiltered(false)
             .Offset(StreamOffsetSpecification.First).Builder()
             .BuildAsync();
 
         int receivedWithoutFilters = 0;
-        IConsumer consumerWithoutFilters = await connection.ConsumerBuilder().Queue(queueName).InitialCredits(100)
+        IConsumer consumerWithoutFilters = await _connection.ConsumerBuilder()
+            .Queue(queueSpec)
+            .InitialCredits(100)
             .MessageHandler((context, message) =>
             {
                 Interlocked.Increment(ref receivedWithoutFilters);
                 return context.AcceptAsync();
-            }).Stream()
+            })
+            .Stream()
             .Offset(StreamOffsetSpecification.First).Builder()
             .BuildAsync();
 
         // wait for the consumer to consume all messages
-        await Task.Delay(500);
+        await Task.Delay(500); // TODO yuck
+
         Assert.Equal(expected, receivedMessages.Count);
         Assert.Equal(filters.Length + 10, receivedWithoutFilters);
 
         await consumer.CloseAsync();
-        await consumerWithoutFilters.CloseAsync();
-        await management.QueueDeletion().Delete(queueName);
-        await connection.CloseAsync();
-    }
+        consumer.Dispose();
 
+        await consumerWithoutFilters.CloseAsync();
+        consumerWithoutFilters.Dispose();
+    }
 
     /// <summary>
     /// Test the offset value for the stream queue
@@ -301,52 +330,67 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
     [InlineData(99, 1)]
     public async Task ConsumerForStreamQueueWithOffsetValue(int offsetStart, int numberOfMessagesExpected)
     {
-        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        IManagement management = connection.Management();
-        string queueName = $"ConsumerForStreamQueueWithOffsetValue_{offsetStart}";
-        await management.Queue().Name(queueName).Type(QueueType.STREAM).Declare();
-        await Publish(connection, queueName, 100);
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(QueueType.STREAM);
+        await queueSpec.DeclareAsync();
+
+        await Publish(_connection, queueSpec, 100);
+
         int consumed = 0;
-        IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).InitialCredits(100)
+        IConsumer consumer = await _connection.ConsumerBuilder()
+            .Queue(queueSpec)
+            .InitialCredits(100)
             .MessageHandler((context, message) =>
             {
                 Interlocked.Increment(ref consumed);
                 return Task.CompletedTask;
-            }).Stream().Offset(offsetStart)
-            .Builder().BuildAsync();
+            })
+            .Stream()
+            .Offset(offsetStart)
+            .Builder()
+            .BuildAsync();
 
         // wait for the consumer to consume all messages
         // we can't use the TaskCompletionSource here because we don't know how many messages will be consumed
         // In two seconds, the consumer should consume all messages
-        await Task.Delay(2000);
+        await Task.Delay(TimeSpan.FromSeconds(2)); // TODO
 
         Assert.Equal(consumed, numberOfMessagesExpected);
+
         await consumer.CloseAsync();
-        await management.QueueDeletion().Delete(queueName);
-        await connection.CloseAsync();
+        consumer.Dispose();
     }
 
-    private static async Task Publish(IConnection connection, string queue, int numberOfMessages,
+    private static async Task Publish(IConnection _connection, IQueueSpecification queueSpec, int numberOfMessages,
         string? filter = null)
     {
-        IPublisher publisher = await connection.PublisherBuilder().Queue(queue).BuildAsync();
-
-        var publishTasks = new List<Task<PublishResult>>();
-        for (int i = 0; i < numberOfMessages; i++)
+        IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
+        try
         {
-            IMessage message = new AmqpMessage($"message_{i}");
-            if (filter != null)
+            var publishTasks = new List<Task<PublishResult>>();
+            for (int i = 0; i < numberOfMessages; i++)
             {
-                message.Annotation("x-stream-filter-value", filter);
-            }
+                IMessage message = new AmqpMessage($"message_{i}");
+                if (filter != null)
+                {
+                    message.Annotation("x-stream-filter-value", filter);
+                }
 
-            publishTasks.Add(publisher.PublishAsync(message));
+                publishTasks.Add(publisher.PublishAsync(message));
+            }
+            await Task.WhenAll(publishTasks);
+            foreach (Task<PublishResult> pt in publishTasks)
+            {
+                PublishResult pr = await pt;
+                Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
+            }
         }
-        await Task.WhenAll(publishTasks);
-        foreach (Task<PublishResult> pt in publishTasks)
+        finally
         {
-            PublishResult pr = await pt;
-            Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
+            await publisher.CloseAsync();
+            publisher.Dispose();
         }
     }
 }

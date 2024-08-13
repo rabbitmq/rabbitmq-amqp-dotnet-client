@@ -5,22 +5,22 @@ public interface IEntityInfo
 }
 
 /// <summary>
-/// Generic interface for declaring entities with result of type T
+/// Generic interface for managing entities with result of type T
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public interface IEntityInfoDeclaration<T> where T : IEntityInfo
+public interface IEntityInfoSpecification<T> where T : IEntityInfo
 {
-    // TODO this really should be named DeclareAsync
-    Task<T> Declare();
+    Task<T> DeclareAsync();
+    Task<T> DeleteAsync();
 }
 
 /// <summary>
-/// Generic interface for declaring entities without result
+/// Generic interface for specifying entities without result
 /// </summary>
-public interface IEntityDeclaration
+public interface IEntitySpecification
 {
-    // TODO this really should be named DeclareAsync
-    Task Declare();
+    Task DeclareAsync();
+    Task DeleteAsync();
 }
 
 public enum OverFlowStrategy
@@ -34,22 +34,22 @@ public enum OverFlowStrategy
     // REJECT_PUBLISH_DLX("reject-publish-dlx");
 }
 
-public interface IQueueSpecification : IEntityInfoDeclaration<IQueueInfo>
+public interface IQueueSpecification : IEntityInfoSpecification<IQueueInfo>
 {
-    IQueueSpecification Name(string name);
     public string Name();
+    IQueueSpecification Name(string name);
 
-    IQueueSpecification Exclusive(bool exclusive);
     public bool Exclusive();
+    IQueueSpecification Exclusive(bool exclusive);
 
-    IQueueSpecification AutoDelete(bool autoDelete);
     public bool AutoDelete();
+    IQueueSpecification AutoDelete(bool autoDelete);
 
-    IQueueSpecification Arguments(Dictionary<object, object> arguments);
     public Dictionary<object, object> Arguments();
+    IQueueSpecification Arguments(Dictionary<object, object> arguments);
 
-    IQueueSpecification Type(QueueType type);
     public QueueType Type();
+    IQueueSpecification Type(QueueType type);
 
     IQueueSpecification DeadLetterExchange(string dlx);
 
@@ -130,15 +130,9 @@ public interface IClassicQueueSpecification
     IQueueSpecification Queue();
 }
 
-public interface IQueueDeletion
+public interface IExchangeSpecification : IEntitySpecification
 {
-    // TODO consider returning a QueueStatus object with some info after deletion
-    // TODO should be named DeleteAsync and take CancellationToken
-    Task<IEntityInfo> Delete(string name);
-}
-
-public interface IExchangeSpecification : IEntityDeclaration
-{
+    string Name();
     IExchangeSpecification Name(string name);
 
     IExchangeSpecification AutoDelete(bool autoDelete);
@@ -150,20 +144,16 @@ public interface IExchangeSpecification : IEntityDeclaration
     IExchangeSpecification Argument(string key, object value);
 }
 
-public interface IExchangeDeletion
-{
-    // TODO consider returning a ExchangeStatus object with some info after deletion
-    // TODO should be named DeleteAsync and take CancellationToken
-    Task Delete(string name);
-}
-
 public interface IBindingSpecification
 {
-    IBindingSpecification SourceExchange(string exchange);
+    IBindingSpecification SourceExchange(IExchangeSpecification exchangeSpec);
+    IBindingSpecification SourceExchange(string exchangeName);
 
-    IBindingSpecification DestinationQueue(string queue);
+    IBindingSpecification DestinationQueue(IQueueSpecification queueSpec);
+    IBindingSpecification DestinationQueue(string queueName);
 
-    IBindingSpecification DestinationExchange(string exchange);
+    IBindingSpecification DestinationExchange(IExchangeSpecification exchangeSpec);
+    IBindingSpecification DestinationExchange(string exchangeName);
 
     IBindingSpecification Key(string key);
 
@@ -171,6 +161,6 @@ public interface IBindingSpecification
 
     IBindingSpecification Arguments(Dictionary<string, object> arguments);
 
-    Task Bind();
-    Task Unbind();
+    Task BindAsync();
+    Task UnbindAsync();
 }

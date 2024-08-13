@@ -162,7 +162,6 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     private async Task CloseAllPublishers()
     {
         var cloned = new List<IPublisher>(Publishers.Values);
-
         foreach (IPublisher publisher in cloned)
         {
             await publisher.CloseAsync()
@@ -173,7 +172,6 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     private async Task CloseAllConsumers()
     {
         var cloned = new List<IConsumer>(Consumers.Values);
-
         foreach (IConsumer consumer in cloned)
         {
             await consumer.CloseAsync()
@@ -489,7 +487,7 @@ internal class Visitor(AmqpManagement management) : IVisitor
             Trace.WriteLine(TraceLevel.Information, $"Recovering queue {spec.Name}");
             try
             {
-                await Management.Queue(spec).Declare()
+                await Management.Queue(spec).DeclareAsync()
                     .ConfigureAwait(false);
             }
             catch (Exception e)
