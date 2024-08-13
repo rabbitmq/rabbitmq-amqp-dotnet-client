@@ -10,22 +10,22 @@ using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public enum DeliveryMode
+internal enum DeliveryMode
 {
     AtMostOnce,
     AtLeastOnce
 }
 
-public static class Utils
+internal static class Utils
 {
     private const string DefaultPrefix = "client.gen-";
 
-    public static string GenerateQueueName()
+    internal static string GenerateQueueName()
     {
         return GenerateName(DefaultPrefix);
     }
 
-    private static string GenerateName(string prefix)
+    internal static string GenerateName(string prefix)
     {
         string uuid = Guid.NewGuid().ToString();
         byte[] digest = MD5.HashData(Encoding.UTF8.GetBytes(uuid));
@@ -35,7 +35,7 @@ public static class Utils
             .Replace("=", "");
     }
 
-    public static RabbitMQ.AMQP.Client.Error? ConvertError(Amqp.Framing.Error? sourceError)
+    internal static RabbitMQ.AMQP.Client.Error? ConvertError(Amqp.Framing.Error? sourceError)
     {
         Error? resultError = null;
         if (sourceError == null)
@@ -47,7 +47,7 @@ public static class Utils
         return resultError;
     }
 
-    public static void ValidateNonNegative(string label, long value, long max)
+    internal static void ValidateNonNegative(string label, long value, long max)
     {
         if (value < 0)
         {
@@ -63,7 +63,7 @@ public static class Utils
         }
     }
 
-    public static void ValidatePositive(string label, long value, long max)
+    internal static void ValidatePositive(string label, long value, long max)
     {
         if (value <= 0)
         {
@@ -79,7 +79,7 @@ public static class Utils
         }
     }
 
-    public static void ValidatePositive(string label, long value)
+    internal static void ValidatePositive(string label, long value)
     {
         if (value <= 0)
         {
@@ -97,8 +97,8 @@ public static class Utils
     //         protonSender.setReceiverSettleMode(ReceiverSettleMode.FIRST);
     //         break;
 
-    public static Attach CreateAttach(string address,
-        DeliveryMode deliveryMode, string linkName, Map? sourceFilter = null)
+    internal static Attach CreateAttach(string address,
+        DeliveryMode deliveryMode, Guid linkId, Map? sourceFilter = null)
     {
         var attach = new Attach
         {
@@ -106,8 +106,7 @@ public static class Utils
                 ? SenderSettleMode.Settled
                 : SenderSettleMode.Unsettled,
             RcvSettleMode = ReceiverSettleMode.First,
-            LinkName = linkName,
-
+            LinkName = linkId.ToString(),
             // Role = true,
             Target = new Target()
             {
@@ -129,17 +128,17 @@ public static class Utils
         return attach;
     }
 
-    public static string? EncodePathSegment(string url)
+    internal static string? EncodePathSegment(string url)
     {
         return PercentCodec.EncodePathSegment(url);
     }
 
-    public static string EncodeHttpParameter(string url)
+    internal static string EncodeHttpParameter(string url)
     {
         return HttpUtility.UrlEncode(url);
     }
 
-    public static bool CompareMap(Map map1, Map map2)
+    internal static bool CompareMap(Map map1, Map map2)
     {
         if (map1.Count != map2.Count)
         {
@@ -162,7 +161,8 @@ public static class Utils
     }
 }
 
-public static class PercentCodec
+// TODO why can't we use normal HTTP encoding?
+internal static class PercentCodec
 {
     private const int Radix = 16;
     private static readonly bool[] s_unreserved;
@@ -191,7 +191,7 @@ public static class PercentCodec
         s_unreserved['~'] = true;
     }
 
-    public static string? EncodePathSegment(string? segment)
+    internal static string? EncodePathSegment(string? segment)
     {
         if (segment == null)
         {

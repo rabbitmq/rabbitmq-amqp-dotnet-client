@@ -25,6 +25,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
 
     // The native AMQP.Net Lite connection
     private Connection? _nativeConnection;
+    private ClosedCallback? _closedCallback;
 
     private readonly AmqpManagement _management;
     private readonly RecordingTopologyListener _recordingTopologyListener = new();
@@ -38,8 +39,8 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     /// They key is the publisher Id ( a Guid)  
     /// See <see cref="AmqpPublisher"/>
     /// </summary>
-    internal ConcurrentDictionary<string, IPublisher> Publishers { get; } = new();
-    internal ConcurrentDictionary<string, IConsumer> Consumers { get; } = new();
+    internal ConcurrentDictionary<Guid, IPublisher> Publishers { get; } = new();
+    internal ConcurrentDictionary<Guid, IConsumer> Consumers { get; } = new();
 
     public ReadOnlyCollection<IPublisher> GetPublishers()
     {
@@ -52,7 +53,6 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     }
 
     public long Id { get; set; }
-
     /// <summary>
     /// Creates a new instance of <see cref="AmqpConnection"/>
     /// Through the Connection is possible to create:
@@ -79,9 +79,11 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
         return new AmqpConsumerBuilder(this);
     }
 
+    // TODO cancellation token
     public override async Task OpenAsync()
     {
-        await OpenConnectionAsync()
+        // TODO cancellation token
+        await OpenConnectionAsync(CancellationToken.None)
             .ConfigureAwait(false);
         await base.OpenAsync()
             .ConfigureAwait(false);
@@ -100,8 +102,10 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             .ConfigureAwait(false);
         try
         {
-            await CloseAllPublishers().ConfigureAwait(false);
-            await CloseAllConsumers().ConfigureAwait(false);
+            await CloseAllPublishersAsync()
+                .ConfigureAwait(false);
+            await CloseAllConsumersAsync()
+                .ConfigureAwait(false);
 
             _recordingTopologyListener.Clear();
             _nativePubSubSessions.ClearSessions();
@@ -127,7 +131,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             _semaphoreClose.Release();
         }
 
-        await ConnectionCloseTaskCompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(10))
+        await _connectionCloseTaskCompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(10))
             .ConfigureAwait(false);
 
         OnNewStatus(State.Closed, null);
@@ -139,16 +143,23 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
         return info;
     }
 
-    internal Connection? NativeConnection()
+    internal Connection? NativeConnection
     {
-        return _nativeConnection;
+        get
+        {
+            return _nativeConnection;
+        }
     }
 
     protected override void Dispose(bool disposing)
     {
         if (disposing)
         {
-            // TODO probably more should/could happen in this method
+            if (_nativeConnection is not null &&
+                _closedCallback is not null)
+            {
+                _nativeConnection.Closed -= _closedCallback;
+            }
             _semaphoreOpen.Dispose();
             _semaphoreClose.Dispose();
         }
@@ -159,7 +170,8 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     /// <summary>
     /// Closes all the publishers. It is called when the connection is closed.
     /// </summary>
-    private async Task CloseAllPublishers()
+    // TODO cancellation token, parallel?
+    private async Task CloseAllPublishersAsync()
     {
         var cloned = new List<IPublisher>(Publishers.Values);
         foreach (IPublisher publisher in cloned)
@@ -169,7 +181,8 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
         }
     }
 
-    private async Task CloseAllConsumers()
+    // TODO cancellation token, parallel?
+    private async Task CloseAllConsumersAsync()
     {
         var cloned = new List<IConsumer>(Consumers.Values);
         foreach (IConsumer consumer in cloned)
@@ -187,21 +200,23 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             new AmqpManagement(new AmqpManagementParameters(this).TopologyListener(_recordingTopologyListener));
     }
 
-    // TODO cancellation token
-    private async Task OpenConnectionAsync()
+    private async Task OpenConnectionAsync(CancellationToken cancellationToken)
     {
         await _semaphoreOpen.WaitAsync()
             .ConfigureAwait(false);
         try
         {
-            if (_nativeConnection is { IsClosed: false })
+            if (_nativeConnection is not null &&
+                _nativeConnection.ConnectionState == ConnectionState.Opened)
             {
                 return;
             }
 
             var open = new Open
             {
+                // Note: no need to set cf.AMQP.HostName
                 HostName = $"vhost:{_connectionSettings.VirtualHost}",
+                // Note: no need to set cf.AMQP.ContainerId
                 ContainerId = _connectionSettings.ContainerId,
                 Properties = new Fields()
                 {
@@ -213,12 +228,6 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             {
                 // Note: when set here, there is no need to set cf.AMQP.MaxFrameSize
                 open.MaxFrameSize = _connectionSettings.MaxFrameSize;
-            }
-
-            void OnOpened(Amqp.IConnection connection, Open open1)
-            {
-                Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is open");
-                OnNewStatus(State.Open, null);
             }
 
             var cf = new ConnectionFactory();
@@ -251,15 +260,32 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                 cf.SASL.Profile = SaslProfile.External;
             }
 
+            void OnOpened(Amqp.IConnection connection, Open open1)
+            {
+                Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is open");
+                OnNewStatus(State.Open, null);
+            }
+
             try
             {
-                _nativeConnection = await cf.CreateAsync((_connectionSettings as ConnectionSettings)?.Address, open: open, onOpened: OnOpened)
-                    .ConfigureAwait(false);
+                ConnectionSettings connectionSettings;
+                if (_connectionSettings is null)
+                {
+                    // TODO create "internal bug" exception type?
+                    throw new InvalidOperationException("_connectionSettings is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                }
+                else
+                {
+                    connectionSettings = (ConnectionSettings)_connectionSettings;
+                    Address address = connectionSettings.Address;
+                    _nativeConnection = await cf.CreateAsync(address: address, open: open, onOpened: OnOpened)
+                        .ConfigureAwait(false);
+                }
             }
             catch (Exception ex)
             {
                 throw new ConnectionException(
-                    $"{ToString()}  connection failed.", ex);
+                    $"{ToString()} connection failed.", ex);
             }
 
             if (_nativeConnection.IsClosed)
@@ -271,8 +297,8 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             await _management.OpenAsync()
                 .ConfigureAwait(false);
 
-            ClosedCallback closedCallback = BuildClosedCallback();
-            _nativeConnection.AddClosedCallback(closedCallback);
+            _closedCallback = BuildClosedCallback();
+            _nativeConnection.AddClosedCallback(_closedCallback);
         }
         catch (AmqpException e)
         {
@@ -300,6 +326,11 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     {
         return async (sender, error) =>
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             await _semaphoreClose.WaitAsync()
                 .ConfigureAwait(false);
             try
@@ -313,7 +344,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                     Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is closed");
                     OnNewStatus(State.Closed, err);
                     ChangeEntitiesStatus(State.Closed, err);
-                    ConnectionCloseTaskCompletionSource.SetResult(true);
+                    _connectionCloseTaskCompletionSource.SetResult(true);
                 }
 
                 if (error is null)
@@ -366,7 +397,8 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                             await Task.Delay(TimeSpan.FromMilliseconds(nextDelayMs))
                                 .ConfigureAwait(false);
 
-                            await OpenConnectionAsync()
+                            // TODO cancellation token
+                            await OpenConnectionAsync(CancellationToken.None)
                                 .ConfigureAwait(false);
 
                             connected = true;
@@ -402,11 +434,12 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                     }
 
                     OnNewStatus(State.Open, null);
-                    // after the connection is recovered we have to reconnect all the publishers and consumers
 
+                    // after the connection is recovered we have to reconnect all the publishers and consumers
                     try
                     {
-                        await ReconnectEntitiesAsync().ConfigureAwait(false);
+                        await ReconnectEntitiesAsync()
+                            .ConfigureAwait(false);
                     }
                     catch (Exception e)
                     {
@@ -419,12 +452,19 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                 // TODO set states to Closed? Error?
                 // This will be skipped if reconnection succeeds, but if there
                 // is an exception, it's important that this be called.
-                ConnectionCloseTaskCompletionSource.SetResult(true);
+                _connectionCloseTaskCompletionSource.SetResult(true);
                 throw;
             }
             finally
             {
-                _semaphoreClose.Release();
+                // TODO it is odd to have to add this code, figure out why
+                try
+                {
+                    _semaphoreClose.Release();
+                }
+                catch (ObjectDisposedException)
+                {
+                }
             }
         };
     }
@@ -479,7 +519,8 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
         foreach (IConsumer consumer1 in Consumers.Values)
         {
             var consumer = (AmqpConsumer)consumer1;
-            await consumer.ReconnectAsync().ConfigureAwait(false);
+            await consumer.ReconnectAsync()
+                .ConfigureAwait(false);
         }
     }
 }
