@@ -8,36 +8,54 @@ namespace RabbitMQ.AMQP.Client.Impl;
 
 public class DeliveryContext(IReceiverLink link, Message message, UnsettledMessageCounter unsettledMessageCounter) : IContext
 {
-    public void Accept()
+    public Task AcceptAsync()
     {
         if (link.IsClosed)
         {
             throw new ConsumerException("Link is closed");
         }
 
-        link.Accept(message);
-        unsettledMessageCounter.Decrement();
+        Task acceptTask = Task.Run(() =>
+        {
+            link.Accept(message);
+            unsettledMessageCounter.Decrement();
+            message.Dispose();
+        });
+
+        return acceptTask;
     }
 
-    public void Discard()
+    public Task DiscardAsync()
     {
         if (link.IsClosed)
         {
             throw new ConsumerException("Link is closed");
         }
 
-        link.Reject(message);
-        unsettledMessageCounter.Decrement();
+        Task rejectTask = Task.Run(() =>
+        {
+            link.Reject(message);
+            unsettledMessageCounter.Decrement();
+            message.Dispose();
+        });
+
+        return rejectTask;
     }
 
-    public void Requeue()
+    public Task RequeueAsync()
     {
-        if (!link.IsClosed)
+        if (link.IsClosed)
         {
             throw new ConsumerException("Link is closed");
         }
 
-        link.Release(message);
-        unsettledMessageCounter.Decrement();
+        Task requeueTask = Task.Run(() =>
+        {
+            link.Release(message);
+            unsettledMessageCounter.Decrement();
+            message.Dispose();
+        });
+
+        return requeueTask;
     }
 }

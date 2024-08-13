@@ -145,6 +145,6 @@ public class AmqpPublisher : AbstractReconnectLifeCycle, IPublisher
 
     public override string ToString()
     {
-        return $"Publisher{{Address='{_address}', id={Id} ConnectionName='{_connection}', State='{State}'}}";
+        return $"Publisher{{Address='{_address}', id={Id} Connection='{_connection}', State='{State}'}}";
     }
 }

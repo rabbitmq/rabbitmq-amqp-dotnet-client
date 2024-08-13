@@ -42,28 +42,42 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
     {
         try
         {
-            TaskCompletionSource attachCompletedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<ReceiverLink> attachCompletedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
             Attach attach = Utils.CreateAttach(_address, DeliveryMode.AtLeastOnce, Id, _filters);
 
             void onAttached(ILink argLink, Attach argAttach)
             {
-                attachCompletedTcs.SetResult();
+                if (argLink is ReceiverLink link)
+                {
+                    attachCompletedTcs.SetResult(link);
+                }
+                else
+                {
+                    // TODO create "internal bug" exception type?
+                    var ex = new InvalidOperationException(
+                        "invalid link in onAttached, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                    attachCompletedTcs.SetException(ex);
+                }
             }
 
+            ReceiverLink? tmpReceiverLink = null;
             Task receiverLinkTask = Task.Run(() =>
             {
-                _receiverLink = new ReceiverLink(_connection._nativePubSubSessions.GetOrCreateSession(), Id, attach, onAttached);
+                tmpReceiverLink = new ReceiverLink(_connection._nativePubSubSessions.GetOrCreateSession(), Id, attach, onAttached);
             });
 
             // TODO configurable timeout
             TimeSpan waitSpan = TimeSpan.FromSeconds(5);
 
-            await attachCompletedTcs.Task.WaitAsync(waitSpan)
+            _receiverLink = await attachCompletedTcs.Task.WaitAsync(waitSpan)
                 .ConfigureAwait(false);
 
             await receiverLinkTask.WaitAsync(waitSpan)
                 .ConfigureAwait(false);
+
+            System.Diagnostics.Debug.Assert(tmpReceiverLink != null);
+            System.Diagnostics.Debug.Assert(Object.ReferenceEquals(_receiverLink, tmpReceiverLink));
 
             if (_receiverLink is null)
             {
@@ -77,9 +91,10 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
             }
             else
             {
-                // TODO: Check the performance during the download messages
-                // The publisher is faster than the consumer
-                _receiverLink.Start(_initialCredits, OnReceiverLinkMessage);
+                _receiverLink.SetCredit(_initialCredits);
+
+                // TODO save / cancel task
+                _ = Task.Run(ProcessMessages);
 
                 await base.OpenAsync()
                     .ConfigureAwait(false);
@@ -91,11 +106,51 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
         }
     }
 
-    private void OnReceiverLinkMessage(IReceiverLink link, Message message)
+    private async Task ProcessMessages()
     {
-        _unsettledMessageCounter.Increment();
-        IContext context = new DeliveryContext(link, message, _unsettledMessageCounter);
-        _messageHandler(context, new AmqpMessage(message));
+        try
+        {
+            if (_receiverLink is null)
+            {
+                // TODO is this a serious error?
+                return;
+            }
+
+            while (_receiverLink is { LinkState: LinkState.Attached })
+            {
+                TimeSpan timeout = TimeSpan.FromSeconds(60); // TODO configurable
+                Message? nativeMessage = await _receiverLink.ReceiveAsync(timeout).ConfigureAwait(false);
+                if (nativeMessage is null)
+                {
+                    // this is not a problem, it is just a timeout. 
+                    // the timeout is set to 60 seconds. 
+                    // For the moment I'd trace it at some point we can remove it
+                    Trace.WriteLine(TraceLevel.Verbose,
+                        $"{ToString()}: Timeout {timeout.Seconds} s.. waiting for message.");
+                    continue;
+                }
+
+                _unsettledMessageCounter.Increment();
+
+                IContext context = new DeliveryContext(_receiverLink, nativeMessage, _unsettledMessageCounter);
+                var amqpMessage = new AmqpMessage(nativeMessage);
+
+                // TODO catch exceptions thrown by handlers,
+                // then call exception handler?
+                await _messageHandler(context, amqpMessage).ConfigureAwait(false);
+            }
+        }
+        catch (Exception e)
+        {
+            if (State == State.Closing)
+            {
+                return;
+            }
+
+            Trace.WriteLine(TraceLevel.Error, $"{ToString()} Failed to process messages, {e}");
+        }
+
+        Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is closed.");
     }
 
     private string Id { get; } = Guid.NewGuid().ToString();
@@ -111,7 +166,7 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
         if ((int)PauseStatus.UNPAUSED == Interlocked.CompareExchange(ref Unsafe.As<PauseStatus, int>(ref _pauseStatus),
             (int)PauseStatus.PAUSING, (int)PauseStatus.UNPAUSED))
         {
-            _receiverLink.SetCredit(credit: 0, autoRestore: false);
+            _receiverLink.SetCredit(credit: 0);
 
             if ((int)PauseStatus.PAUSING != Interlocked.CompareExchange(ref Unsafe.As<PauseStatus, int>(ref _pauseStatus),
                 (int)PauseStatus.PAUSED, (int)PauseStatus.PAUSING))
@@ -163,8 +218,8 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
 
         OnNewStatus(State.Closing, null);
 
-        // TODO timeout
-        await _receiverLink.CloseAsync()
+        // TODO global timeout for closing, other async actions?
+        await _receiverLink.CloseAsync(TimeSpan.FromSeconds(5))
             .ConfigureAwait(false);
 
         _receiverLink = null;
@@ -176,6 +231,9 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
 
     public override string ToString()
     {
-        return $"Consumer{{Address='{_address}', id={Id} ConnectionName='{_connection}', State='{State}'}}";
+        return $"Consumer{{Address='{_address}', " +
+               $"id={Id}, " +
+               $"Connection='{_connection}', " +
+               $"State='{State}'}}";
     }
 }

@@ -25,7 +25,7 @@ public class EnvironmentTests
     {
         string envConnectionName = "EnvironmentConnection_" + Guid.NewGuid();
         IEnvironment env = await AmqpEnvironment.CreateAsync(
-            ConnectionSettingBuilder.Create().ConnectionName(envConnectionName).Build());
+            ConnectionSettingBuilder.Create().ContainerId(envConnectionName).Build());
 
         IConnection connection = await env.CreateConnectionAsync();
         Assert.NotNull(connection);
@@ -36,7 +36,7 @@ public class EnvironmentTests
         string envConnectionName2 = "EnvironmentConnection2_" + Guid.NewGuid();
 
         IConnection connection2 = await env.CreateConnectionAsync(
-            ConnectionSettingBuilder.Create().ConnectionName(envConnectionName2).Build());
+            ConnectionSettingBuilder.Create().ContainerId(envConnectionName2).Build());
         Assert.NotNull(connection2);
         Assert.Equal(2, env.GetConnections().Count);
         await SystemUtils.WaitUntilConnectionIsOpen(envConnectionName2);
@@ -52,7 +52,7 @@ public class EnvironmentTests
     {
         string envConnectionName = "EnvironmentConnection_" + Guid.NewGuid();
         IEnvironment env = await AmqpEnvironment.CreateAsync(
-            ConnectionSettingBuilder.Create().ConnectionName(envConnectionName).Build());
+            ConnectionSettingBuilder.Create().ContainerId(envConnectionName).Build());
         IConnection connection = await env.CreateConnectionAsync();
         await SystemUtils.WaitUntilConnectionIsOpen(envConnectionName);
         Assert.Single(env.GetConnections());
@@ -61,14 +61,14 @@ public class EnvironmentTests
 
         string envConnectionName2 = "EnvironmentConnection2_" + Guid.NewGuid().ToString();
         IConnection connection2 = await env.CreateConnectionAsync(
-            ConnectionSettingBuilder.Create().ConnectionName(envConnectionName2).Build());
+            ConnectionSettingBuilder.Create().ContainerId(envConnectionName2).Build());
         Assert.Equal(2, env.GetConnections().Count);
         Assert.Equal(2, env.GetConnections()[1].Id);
         await SystemUtils.WaitUntilConnectionIsOpen(envConnectionName2);
 
         string envConnectionName3 = "EnvironmentConnection3_" + Guid.NewGuid().ToString();
         IConnection connection3 = await env.CreateConnectionAsync(
-            ConnectionSettingBuilder.Create().ConnectionName(envConnectionName3).Build());
+            ConnectionSettingBuilder.Create().ContainerId(envConnectionName3).Build());
         Assert.Equal(3, env.GetConnections().Count);
         Assert.Equal(3, env.GetConnections()[2].Id);
         await SystemUtils.WaitUntilConnectionIsOpen(envConnectionName3);

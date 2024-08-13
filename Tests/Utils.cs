@@ -57,27 +57,27 @@ public static class SystemUtils
         }
     }
 
-    public static Task WaitUntilConnectionIsOpen(string connectionName)
+    public static Task WaitUntilConnectionIsOpen(string containerId)
     {
-        return WaitUntilAsync(() => s_httpApiClient.CheckConnectionAsync(connectionName, checkOpened: true));
+        return WaitUntilAsync(() => s_httpApiClient.CheckConnectionAsync(containerId, checkOpened: true));
     }
 
-    public static Task WaitUntilConnectionIsClosed(string connectionName)
+    public static Task WaitUntilConnectionIsClosed(string containerId)
     {
-        return WaitUntilAsync(() => s_httpApiClient.CheckConnectionAsync(connectionName, checkOpened: false));
+        return WaitUntilAsync(() => s_httpApiClient.CheckConnectionAsync(containerId, checkOpened: false));
     }
 
-    public static async Task WaitUntilConnectionIsKilled(string connectionName)
+    public static async Task WaitUntilConnectionIsKilled(string containerId)
     {
-        await WaitUntilConnectionIsOpen(connectionName);
-        await WaitUntilAsync(async () => await s_httpApiClient.KillConnectionAsync(connectionName) == 1);
+        await WaitUntilConnectionIsOpen(containerId);
+        await WaitUntilAsync(async () => await s_httpApiClient.KillConnectionAsync(containerId) == 1);
     }
 
-    public static async Task WaitUntilConnectionIsKilledAndOpen(string connectionName)
+    public static async Task WaitUntilConnectionIsKilledAndOpen(string containerId)
     {
-        await WaitUntilConnectionIsOpen(connectionName);
-        await WaitUntilAsync(async () => await s_httpApiClient.KillConnectionAsync(connectionName) == 1);
-        await WaitUntilConnectionIsOpen(connectionName);
+        await WaitUntilConnectionIsOpen(containerId);
+        await WaitUntilAsync(async () => await s_httpApiClient.KillConnectionAsync(containerId) == 1);
+        await WaitUntilConnectionIsOpen(containerId);
     }
 
     public static Task WaitUntilQueueExistsAsync(string queueNameStr)

@@ -80,7 +80,7 @@ RabbitMQ.AMQP.Client.IConnection.Id.set -> void
 RabbitMQ.AMQP.Client.IConnection.Management() -> RabbitMQ.AMQP.Client.IManagement!
 RabbitMQ.AMQP.Client.IConnection.PublisherBuilder() -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.IConnectionSettings
-RabbitMQ.AMQP.Client.IConnectionSettings.ConnectionName.get -> string!
+RabbitMQ.AMQP.Client.IConnectionSettings.ContainerId.get -> string!
 RabbitMQ.AMQP.Client.IConnectionSettings.Host.get -> string!
 RabbitMQ.AMQP.Client.IConnectionSettings.MaxFrameSize.get -> uint
 RabbitMQ.AMQP.Client.IConnectionSettings.Password.get -> string?
@@ -111,9 +111,9 @@ RabbitMQ.AMQP.Client.IConsumerBuilder.MessageHandler(RabbitMQ.AMQP.Client.Messag
 RabbitMQ.AMQP.Client.IConsumerBuilder.Queue(string! queue) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.Stream() -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.IContext
-RabbitMQ.AMQP.Client.IContext.Accept() -> void
-RabbitMQ.AMQP.Client.IContext.Discard() -> void
-RabbitMQ.AMQP.Client.IContext.Requeue() -> void
+RabbitMQ.AMQP.Client.IContext.AcceptAsync() -> System.Threading.Tasks.Task!
+RabbitMQ.AMQP.Client.IContext.DiscardAsync() -> System.Threading.Tasks.Task!
+RabbitMQ.AMQP.Client.IContext.RequeueAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.IEntityDeclaration
 RabbitMQ.AMQP.Client.IEntityDeclaration.Declare() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.IEntityInfo
@@ -158,8 +158,6 @@ RabbitMQ.AMQP.Client.IMessage.ReplyTo() -> string!
 RabbitMQ.AMQP.Client.IMessage.ReplyTo(string! id) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IMessage.Subject() -> string!
 RabbitMQ.AMQP.Client.IMessage.Subject(string! subject) -> RabbitMQ.AMQP.Client.IMessage!
-RabbitMQ.AMQP.Client.IMessageHandler
-RabbitMQ.AMQP.Client.IMessageHandler.Handle(Amqp.Listener.Context! context, RabbitMQ.AMQP.Client.IMessage! message) -> void
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.AbstractLifeCycle() -> void
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.ChangeState -> RabbitMQ.AMQP.Client.LifeCycleCallBack?
@@ -332,7 +330,7 @@ RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase.ToQueue -> bool
 RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase._arguments -> System.Collections.Generic.Dictionary<string!, object!>!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.Build() -> RabbitMQ.AMQP.Client.Impl.ConnectionSettings!
-RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.ConnectionName(string! connectionName) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
+RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.ContainerId(string! containerId) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.Host(string! host) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.MaxFrameSize(uint maxFrameSize) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.Password(string! password) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
@@ -343,9 +341,9 @@ RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.Scheme(string! scheme) -> Rab
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.User(string! user) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.VirtualHost(string! virtualHost) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings
-RabbitMQ.AMQP.Client.Impl.ConnectionSettings.ConnectionName.get -> string!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.ConnectionSettings(string! address, RabbitMQ.AMQP.Client.ITlsSettings? tlsSettings = null) -> void
-RabbitMQ.AMQP.Client.Impl.ConnectionSettings.ConnectionSettings(string! scheme, string! host, int port, string? user, string? password, string! virtualHost, string! connectionName, RabbitMQ.AMQP.Client.SaslMechanism! saslMechanism, uint maxFrameSize = 0, RabbitMQ.AMQP.Client.ITlsSettings? tlsSettings = null) -> void
+RabbitMQ.AMQP.Client.Impl.ConnectionSettings.ConnectionSettings(string! scheme, string! host, int port, string? user, string? password, string! virtualHost, string! containerId, RabbitMQ.AMQP.Client.SaslMechanism! saslMechanism, uint maxFrameSize = 0, RabbitMQ.AMQP.Client.ITlsSettings? tlsSettings = null) -> void
+RabbitMQ.AMQP.Client.Impl.ConnectionSettings.ContainerId.get -> string!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Equals(RabbitMQ.AMQP.Client.IConnectionSettings? other) -> bool
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Equals(RabbitMQ.AMQP.Client.Impl.ConnectionSettings! other) -> bool
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Host.get -> string!
@@ -385,10 +383,10 @@ RabbitMQ.AMQP.Client.Impl.DefaultStreamOptions.Offset(long offset) -> RabbitMQ.A
 RabbitMQ.AMQP.Client.Impl.DefaultStreamOptions.Offset(RabbitMQ.AMQP.Client.StreamOffsetSpecification specification) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.Impl.DefaultStreamOptions.Offset(string! interval) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.Impl.DeliveryContext
-RabbitMQ.AMQP.Client.Impl.DeliveryContext.Accept() -> void
+RabbitMQ.AMQP.Client.Impl.DeliveryContext.AcceptAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.DeliveryContext.DeliveryContext(Amqp.IReceiverLink! link, Amqp.Message! message, RabbitMQ.AMQP.Client.Impl.UnsettledMessageCounter! unsettledMessageCounter) -> void
-RabbitMQ.AMQP.Client.Impl.DeliveryContext.Discard() -> void
-RabbitMQ.AMQP.Client.Impl.DeliveryContext.Requeue() -> void
+RabbitMQ.AMQP.Client.Impl.DeliveryContext.DiscardAsync() -> System.Threading.Tasks.Task!
+RabbitMQ.AMQP.Client.Impl.DeliveryContext.RequeueAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.DeliveryMode
 RabbitMQ.AMQP.Client.Impl.DeliveryMode.AtLeastOnce = 1 -> RabbitMQ.AMQP.Client.Impl.DeliveryMode
 RabbitMQ.AMQP.Client.Impl.DeliveryMode.AtMostOnce = 0 -> RabbitMQ.AMQP.Client.Impl.DeliveryMode

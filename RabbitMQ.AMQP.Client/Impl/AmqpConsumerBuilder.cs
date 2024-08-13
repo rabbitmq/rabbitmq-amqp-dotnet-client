@@ -16,7 +16,7 @@ public class AmqpConsumerBuilder(AmqpConnection connection) : IConsumerBuilder
     }
 
 
-    private MessageHandler _handler = (message, context) => { };
+    private MessageHandler? _handler;
 
     public IConsumerBuilder MessageHandler(MessageHandler handler)
     {
@@ -38,6 +38,11 @@ public class AmqpConsumerBuilder(AmqpConnection connection) : IConsumerBuilder
 
     public async Task<IConsumer> BuildAsync(CancellationToken cancellationToken = default)
     {
+        if (_handler is null)
+        {
+            throw new ConsumerException("Message handler is not set");
+        }
+
         string address = new AddressBuilder().Queue(_queue).Address();
 
         AmqpConsumer consumer = new(connection, address, _handler, _initialCredits, _filters);

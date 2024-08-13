@@ -124,7 +124,7 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
 
         _managementSession.Closed += (sender, error) =>
         {
-            if (State != State.Closed)
+            if (State != State.Closed && error != null)
             {
                 Trace.WriteLine(TraceLevel.Warning, $"Management session closed " +
                                                     $"with error: {Utils.ConvertError(error)} " +
@@ -151,11 +151,15 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
                     continue;
                 }
 
-                using (Message msg = await _receiverLink.ReceiveAsync().ConfigureAwait(false))
+                TimeSpan timeout = TimeSpan.FromSeconds(59);
+                using (Message msg = await _receiverLink.ReceiveAsync(timeout).ConfigureAwait(false))
                 {
                     if (msg == null)
                     {
-                        Trace.WriteLine(TraceLevel.Warning, "Received null message");
+                        // this is not a problem, it is just a timeout. 
+                        // the timeout is set to 60 seconds. 
+                        // For the moment I'd trace it at some point we can remove it
+                        Trace.WriteLine(TraceLevel.Verbose, $"Management:Timeout {timeout.Seconds} s.. waiting for message.");
                         continue;
                     }
 

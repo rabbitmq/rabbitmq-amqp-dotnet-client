@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,11 +27,10 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
 
         TaskCompletionSource<IMessage> tcs = new();
-
         IConsumer consumer = await connection.ConsumerBuilder().Queue("SimpleConsumeMessage").MessageHandler(
-            (context, message) =>
+            async (context, message) =>
             {
-                context.Accept();
+                await context.AcceptAsync();
                 tcs.SetResult(message);
             }
         ).BuildAsync();
@@ -67,7 +67,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
         TaskCompletionSource<int> tcs = new();
         int consumed = 0;
         IConsumer consumer = await connection.ConsumerBuilder().Queue("ConsumerReQueueMessage").MessageHandler(
-            (context, message) =>
+            async (context, message) =>
             {
                 Assert.Equal("Hello world!", message.Body());
                 Interlocked.Increment(ref consumed);
@@ -76,10 +76,10 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
                     case 1:
                         // first time requeue the message
                         // it must consume again
-                        context.Requeue();
+                        await context.RequeueAsync();
                         break;
                     case 2:
-                        context.Accept();
+                        await context.AcceptAsync();
                         tcs.SetResult(consumed);
                         break;
                 }
@@ -98,69 +98,90 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task ConsumerRejectOnlySomeMessage()
     {
+        const int publishCount = 500;
+        const int initialCredits = 100;
+        const string queueName = nameof(ConsumerRejectOnlySomeMessage);
+
         IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
         IManagement management = connection.Management();
-        await management.Queue().Name("ConsumerRejectOnlySomeMessage").Declare();
+        IQueueSpecification queueSpec = management.Queue(queueName);
+        await queueSpec.Declare();
 
-        IPublisher publisher = await connection.PublisherBuilder().Queue("ConsumerRejectOnlySomeMessage").BuildAsync();
-
-        var publishTasks = new List<Task<PublishResult>>();
-        for (int i = 0; i < 500; i++)
+        IPublisher? publisher = null;
+        IConsumer? consumer = null;
+        try
         {
-            var message = new AmqpMessage($"message_{i}");
-            publishTasks.Add(publisher.PublishAsync(message));
-        }
-        await Task.WhenAll(publishTasks);
-        foreach (Task<PublishResult> pt in publishTasks)
-        {
-            PublishResult pr = await pt;
-            Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
-        }
+            publisher = await connection.PublisherBuilder().Queue("ConsumerRejectOnlySomeMessage").BuildAsync();
 
-        TaskCompletionSource<List<IMessage>> tcs = new();
-        int consumed = 0;
-
-        List<IMessage> receivedMessages = new();
-        IConsumer consumer = await connection.ConsumerBuilder().Queue("ConsumerRejectOnlySomeMessage").InitialCredits(100)
-            .MessageHandler((
-                context, message) =>
+            var publishTasks = new List<Task<PublishResult>>();
+            for (int i = 0; i < publishCount; i++)
             {
-                receivedMessages.Add(message);
-                Interlocked.Increment(ref consumed);
-                if (consumed % 2 == 0)
+                var message = new AmqpMessage($"message_{i}");
+                publishTasks.Add(publisher.PublishAsync(message));
+            }
+            await Task.WhenAll(publishTasks);
+            foreach (Task<PublishResult> pt in publishTasks)
+            {
+                PublishResult pr = await pt;
+                Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
+            }
+
+            TaskCompletionSource<List<IMessage>> tcs = new();
+            int messagesConsumedCount = 0;
+            List<IMessage> receivedMessages = new();
+            async Task MessageHandler(IContext cxt, IMessage msg)
+            {
+                receivedMessages.Add(msg);
+
+                Interlocked.Increment(ref messagesConsumedCount);
+
+                if (messagesConsumedCount % 2 == 0)
                 {
-                    context.Discard();
+                    await cxt.DiscardAsync();
                 }
                 else
                 {
-                    context.Accept();
+                    await cxt.AcceptAsync();
                 }
 
-                if (consumed == 500)
+                if (messagesConsumedCount == publishCount)
                 {
                     tcs.SetResult(receivedMessages);
                 }
-            }).BuildAsync();
+            }
 
-        await Task.WhenAny(tcs.Task, Task.Delay(5000));
+            consumer = await connection.ConsumerBuilder().Queue("ConsumerRejectOnlySomeMessage").InitialCredits(initialCredits)
+                .MessageHandler(MessageHandler).BuildAsync();
 
-        Assert.True(tcs.Task.IsCompleted);
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(tcs.Task.IsCompleted);
+            List<IMessage> receivedMessagesFromTask = await tcs.Task;
 
-        List<IMessage> messages = await tcs.Task;
+            Assert.Equal(publishCount, receivedMessagesFromTask.Count);
 
-        Assert.Equal(500, messages.Count);
-
-        for (int i = 0; i < 500; i++)
-        {
-            if (i % 2 == 0)
+            for (int i = 0; i < publishCount; i++)
             {
-                Assert.Equal($"message_{i}", messages[i].Body());
+                if (i % 2 == 0)
+                {
+                    Assert.Equal($"message_{i}", receivedMessagesFromTask[i].Body());
+                }
             }
         }
+        finally
+        {
+            if (publisher is not null)
+            {
+                await publisher.CloseAsync();
+            }
 
-        await consumer.CloseAsync();
-        await management.QueueDeletion().Delete("ConsumerRejectOnlySomeMessage");
-        await connection.CloseAsync();
+            if (consumer is not null)
+            {
+                await consumer.CloseAsync();
+            }
+
+            await management.QueueDeletion().Delete(queueName);
+            await connection.CloseAsync();
+        }
     }
 
     /// <summary>
@@ -183,7 +204,11 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
         await Publish(connection, queueName, 100);
         int consumed = 0;
         IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).InitialCredits(100)
-            .MessageHandler((context, message) => { Interlocked.Increment(ref consumed); }).Stream().Offset(offset)
+            .MessageHandler((context, message) =>
+            {
+                Interlocked.Increment(ref consumed);
+                return Task.CompletedTask;
+            }).Stream().Offset(offset)
             .Builder().BuildAsync();
 
         // wait for the consumer to consume all messages
@@ -238,7 +263,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
             .MessageHandler((context, message) =>
             {
                 receivedMessages.Add(message);
-                context.Accept();
+                return context.AcceptAsync();
             }).Stream().FilterValues(filters).FilterMatchUnfiltered(false)
             .Offset(StreamOffsetSpecification.First).Builder()
             .BuildAsync();
@@ -248,7 +273,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
             .MessageHandler((context, message) =>
             {
                 Interlocked.Increment(ref receivedWithoutFilters);
-                context.Accept();
+                return context.AcceptAsync();
             }).Stream()
             .Offset(StreamOffsetSpecification.First).Builder()
             .BuildAsync();
@@ -270,7 +295,6 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
     /// </summary>
     /// <param name="offsetStart"></param>
     /// <param name="numberOfMessagesExpected"></param>
-
     [Theory]
     [InlineData(0, 100)]
     [InlineData(50, 50)]
@@ -284,7 +308,11 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper)
         await Publish(connection, queueName, 100);
         int consumed = 0;
         IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).InitialCredits(100)
-            .MessageHandler((context, message) => { Interlocked.Increment(ref consumed); }).Stream().Offset(offsetStart)
+            .MessageHandler((context, message) =>
+            {
+                Interlocked.Increment(ref consumed);
+                return Task.CompletedTask;
+            }).Stream().Offset(offsetStart)
             .Builder().BuildAsync();
 
         // wait for the consumer to consume all messages

@@ -26,7 +26,10 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : IDisposabl
     {
         const int messageCount = 100;
 
-        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        ConnectionSettingBuilder connectionSettingsBuilder = ConnectionSettingBuilder.Create();
+        IConnectionSettings connectionSettings = connectionSettingsBuilder
+            .ContainerId(nameof(PauseShouldStopMessageArrivalUnpauseShouldResumeIt)).Build();
+        IConnection connection = await AmqpConnection.CreateAsync(connectionSettings);
         IManagement management = connection.Management();
         try
         {
@@ -59,6 +62,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : IDisposabl
                 .MessageHandler((IContext ctx, IMessage msg) =>
                 {
                     messageContexts.Add(ctx);
+                    return Task.CompletedTask;
                 }).BuildAsync();
 
             Task<bool> WaitForMessageContextCountAtLeast(int expectedCount)
@@ -73,23 +77,24 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : IDisposabl
             Assert.Equal(expectedMessageCount, queueInfo.MessageCount());
 
             Queue? apiQueue = null;
-            async Task<bool> MessagesUnacknowledgedIsGreaterThanZero()
+            async Task<bool> MessagesUnacknowledgedIsEqualTo(long expectedMessagesUnacknowledged)
             {
                 apiQueue = await _httpApiClient.GetQueueAsync(declaredQueueInfo.Name());
-                return apiQueue.MessagesUnacknowledged > 0;
+                return apiQueue.MessagesUnacknowledged == expectedMessagesUnacknowledged;
             }
 
-            await SystemUtils.WaitUntilAsync(MessagesUnacknowledgedIsGreaterThanZero);
+            await SystemUtils.WaitUntilAsync(() => MessagesUnacknowledgedIsEqualTo(initialCredits));
 
             Assert.NotNull(apiQueue);
             Assert.Equal(initialCredits, apiQueue.MessagesUnacknowledged);
-            Assert.Equal((uint)initialCredits, consumer.UnsettledMessageCount);
+            Assert.Equal(messageContexts.Count, consumer.UnsettledMessageCount);
 
             consumer.Pause();
 
+            var acceptTasks = new List<Task>();
             foreach (IContext ctx in messageContexts)
             {
-                ctx.Accept();
+                acceptTasks.Add(ctx.AcceptAsync());
             }
 
             async Task<bool> MessagesUnacknowledgedIsZero()
@@ -97,22 +102,38 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : IDisposabl
                 Queue apiQueue = await _httpApiClient.GetQueueAsync(declaredQueueInfo.Name());
                 return apiQueue.MessagesUnacknowledged == 0;
             }
-
             await SystemUtils.WaitUntilAsync(MessagesUnacknowledgedIsZero);
+
+            await Task.WhenAll(acceptTasks);
+            acceptTasks.Clear();
 
             Assert.Equal(initialCredits, messageContexts.Count);
             Assert.Equal((uint)0, consumer.UnsettledMessageCount);
+            messageContexts.Clear();
 
             consumer.Unpause();
 
-            await SystemUtils.WaitUntilAsync(() => WaitForMessageContextCountAtLeast(initialCredits * 2));
+            await SystemUtils.WaitUntilAsync(() => WaitForMessageContextCountAtLeast(initialCredits));
+
+            queueInfo = await management.GetQueueInfoAsync(declaredQueueInfo.Name());
+            expectedMessageCount = messageCount - (initialCredits * 2);
+            Assert.Equal(expectedMessageCount, queueInfo.MessageCount());
+
+            await SystemUtils.WaitUntilAsync(() => MessagesUnacknowledgedIsEqualTo(initialCredits));
+
+            Assert.NotNull(apiQueue);
+            Assert.Equal(initialCredits, apiQueue.MessagesUnacknowledged);
+            Assert.Equal(messageContexts.Count, consumer.UnsettledMessageCount);
 
             consumer.Pause();
 
             foreach (IContext ctx in messageContexts)
             {
-                ctx.Accept();
+                acceptTasks.Add(ctx.AcceptAsync());
             }
+
+            await Task.WhenAll(acceptTasks);
+            acceptTasks.Clear();
         }
         finally
         {
