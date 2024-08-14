@@ -104,7 +104,12 @@ catch (Exception e)
 
 Console.WriteLine("Press any key to delete the queue and close the connection.");
 Console.ReadKey();
+
 await publisher.CloseAsync();
+publisher.Dispose();
+
 await consumer.CloseAsync();
+consumer.Dispose();
+
 await queueSpec.DeleteAsync();
 await environment.CloseAsync();

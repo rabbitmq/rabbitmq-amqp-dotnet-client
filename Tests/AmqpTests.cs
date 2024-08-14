@@ -122,7 +122,9 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         Assert.Equal((uint)0, retrievedQueueInfo1.MessageCount());
 
         await publisher.CloseAsync();
+        publisher.Dispose();
         await consumer.CloseAsync();
+        consumer.Dispose();
     }
 
     [Theory]
@@ -205,8 +207,13 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         await WhenTaskCompletes(allMessagesReceivedTcs.Task);
 
         await publisher1.CloseAsync();
+        publisher1.Dispose();
+
         await publisher2.CloseAsync();
+        publisher2.Dispose();
+
         await consumer.CloseAsync();
+        consumer.Dispose();
 
         await e1e2Binding.UnbindAsync();
         await e2qBinding.UnbindAsync();
