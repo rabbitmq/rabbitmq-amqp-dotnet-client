@@ -166,6 +166,8 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
         }
         catch (Exception e)
         {
+            // TODO this is a serious situation that should be thrown
+            // up to the client application
             if (_receiverLink?.IsClosed == false)
             {
                 Trace.WriteLine(TraceLevel.Error,
@@ -256,7 +258,7 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
     protected void HandleResponseMessage(Message msg)
     {
         if (msg.Properties.CorrelationId != null &&
-            _requests.TryRemove(msg.Properties.CorrelationId, out var mre))
+            _requests.TryRemove(msg.Properties.CorrelationId, out TaskCompletionSource<Message>? mre))
         {
             if (mre.TrySetResult(msg))
             {
@@ -332,7 +334,10 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
         TaskCompletionSource<Message> mre = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // Add TaskCompletionSource to the dictionary it will be used to set the result of the request
-        _requests.TryAdd(message.Properties.MessageId, mre);
+        if (false == _requests.TryAdd(message.Properties.MessageId, mre))
+        {
+            // TODO what to do in this error case?
+        }
 
         // TODO: re-use with TryReset?
         using var timeoutCts = new CancellationTokenSource(timeout);
@@ -426,18 +431,23 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
 
     public override async Task CloseAsync()
     {
+        // TODO 10 seconds seems too long
+        TimeSpan closeSpan = TimeSpan.FromSeconds(10);
+
         if (_managementSession is { IsClosed: false })
         {
             OnNewStatus(State.Closing, null);
 
-            await _managementSession.CloseAsync()
+            await _managementSession.CloseAsync(closeSpan)
                 .ConfigureAwait(false);
 
-            await ConnectionCloseTaskCompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
+            await ConnectionCloseTaskCompletionSource.Task.WaitAsync(closeSpan)
+                .ConfigureAwait(false);
 
             _managementSession = null;
             _senderLink = null;
             _receiverLink = null;
+
             // this is actually a double set of the status, but it is needed to ensure that the status is set to closed
             // but the `OnNewStatus` is idempotent
             OnNewStatus(State.Closed, null);
