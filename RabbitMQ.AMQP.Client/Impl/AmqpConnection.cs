@@ -271,7 +271,8 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             await _management.OpenAsync()
                 .ConfigureAwait(false);
 
-            _nativeConnection.Closed += MaybeRecoverConnection();
+            ClosedCallback closedCallback = BuildClosedCallback();
+            _nativeConnection.AddClosedCallback(closedCallback);
         }
         catch (AmqpException e)
         {
@@ -295,7 +296,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     /// and then kick off a task dedicated to recovery
     /// </summary>
     /// <returns></returns>
-    private ClosedCallback MaybeRecoverConnection()
+    private ClosedCallback BuildClosedCallback()
     {
         return async (sender, error) =>
         {
@@ -309,8 +310,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                 if (error != null)
                 {
                     //  we assume here that the connection is closed unexpectedly, since the error is not null
-                    Trace.WriteLine(TraceLevel.Warning, $"{ToString()}  is closed unexpectedly. "
-                                                        );
+                    Trace.WriteLine(TraceLevel.Warning, $"{ToString()} closed unexpectedly.");
 
                     // we have to check if the recovery is active.
                     // The user may want to disable the recovery mechanism
@@ -327,7 +327,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                     OnNewStatus(State.Reconnecting, Utils.ConvertError(error));
                     ChangeEntitiesStatus(State.Reconnecting, Utils.ConvertError(error));
 
-                    await Task.Run(async () =>
+                    Task reconnectionTask = Task.Run(async () =>
                     {
                         bool connected = false;
                         // as first step we try to recover the connection
@@ -403,7 +403,10 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                         {
                             Trace.WriteLine(TraceLevel.Error, $"{ToString()} error trying to reconnect entities {e}");
                         }
-                    }).ConfigureAwait(false);
+                    });
+
+                    // TODO reconnection timeout?
+                    await reconnectionTask.ConfigureAwait(false);
 
                     return;
                 }

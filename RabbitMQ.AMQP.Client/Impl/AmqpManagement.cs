@@ -128,6 +128,7 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
             }
 
             OnNewStatus(State.Closed, Utils.ConvertError(error));
+            // Note: TrySetResult *must* be used here
             ConnectionCloseTaskCompletionSource.TrySetResult(true);
         };
 
