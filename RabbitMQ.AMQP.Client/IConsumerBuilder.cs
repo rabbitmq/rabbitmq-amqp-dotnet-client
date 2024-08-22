@@ -7,9 +7,11 @@ public enum StreamOffsetSpecification
     Next
 }
 
+// TODO IAddressBuilder<IConsumerBuilder>?
 public interface IConsumerBuilder
 {
-    IConsumerBuilder Queue(string queue);
+    IConsumerBuilder Queue(IQueueSpecification queueSpecification);
+    IConsumerBuilder Queue(string queueName);
 
     IConsumerBuilder MessageHandler(MessageHandler handler);
 

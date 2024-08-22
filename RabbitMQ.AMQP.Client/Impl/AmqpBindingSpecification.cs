@@ -23,11 +23,16 @@ public abstract class BindingSpecificationBase
     }
 }
 
-public class AmqpBindingSpecification(AmqpManagement management) : BindingSpecificationBase, IBindingSpecification
+public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecification
 {
-    private AmqpManagement Management { get; } = management;
+    private readonly AmqpManagement _management;
 
-    public async Task Bind()
+    public AmqpBindingSpecification(AmqpManagement management)
+    {
+        _management = management;
+    }
+
+    public async Task BindAsync()
     {
         var kv = new Map
         {
@@ -37,58 +42,79 @@ public class AmqpBindingSpecification(AmqpManagement management) : BindingSpecif
             { ToQueue ? "destination_queue" : "destination_exchange", Destination }
         };
 
-        await Management.RequestAsync(kv, $"/{Consts.Bindings}",
-            AmqpManagement.Post,
-            [
-                AmqpManagement.Code204,
-            ]).ConfigureAwait(false);
+        string path = $"/{Consts.Bindings}";
+        string method = AmqpManagement.Post;
+        int[] expectedReturnCodes = [AmqpManagement.Code204];
+        // Note: must use await so that ConfigureAwait(false) can be called
+        await _management.RequestAsync(kv, path, method, expectedReturnCodes)
+            .ConfigureAwait(false);
     }
 
-    public async Task Unbind()
+    public async Task UnbindAsync()
     {
+        string method = AmqpManagement.Delete;
         string destinationCharacter = ToQueue ? "dstq" : "dste";
+        int[] expectedReturnCodes = [AmqpManagement.Code204];
+
         if (_arguments.Count == 0)
         {
-            string target =
+            string path =
                 $"/{Consts.Bindings}/src={Utils.EncodePathSegment(Source)};" +
                 $"{($"{destinationCharacter}={Utils.EncodePathSegment(Destination)};" +
                     $"key={Utils.EncodePathSegment(RoutingKey)};args=")}";
 
-            await Management.RequestAsync(
-                null, target,
-                AmqpManagement.Delete, new[] { AmqpManagement.Code204 }).ConfigureAwait(false);
+            await _management.RequestAsync(null, path, method, expectedReturnCodes)
+                .ConfigureAwait(false);
         }
         else
         {
-            string path = BindingsTarget(destinationCharacter, Source, Destination, RoutingKey);
-            List<Map> bindings = await GetBindings(path).ConfigureAwait(false);
-            string? uri = MatchBinding(bindings, RoutingKey, ArgsToMap());
-            if (uri != null)
+            string bindingsPath = BindingsTarget(destinationCharacter, Source, Destination, RoutingKey);
+            List<Map> bindings = await GetBindings(bindingsPath).ConfigureAwait(false);
+            string? path = MatchBinding(bindings, RoutingKey, ArgsToMap());
+            if (path is null)
             {
-                await Management.RequestAsync(
-                    null, uri,
-                    AmqpManagement.Delete, new[] { AmqpManagement.Code204 }).ConfigureAwait(false);
+                // TODO is this an error?
+            }
+            else
+            {
+                await _management.RequestAsync(null, path, method, expectedReturnCodes)
+                    .ConfigureAwait(false);
             }
         }
     }
 
-    public IBindingSpecification SourceExchange(string exchange)
+    public IBindingSpecification SourceExchange(IExchangeSpecification exchangeSpec)
+    {
+        return SourceExchange(exchangeSpec.Name());
+    }
+
+    public IBindingSpecification SourceExchange(string exchangeName)
     {
         ToQueue = false;
-        Source = exchange;
+        Source = exchangeName;
         return this;
     }
 
-    public IBindingSpecification DestinationQueue(string queue)
+    public IBindingSpecification DestinationQueue(IQueueSpecification queueSpec)
+    {
+        return DestinationQueue(queueSpec.Name());
+    }
+
+    public IBindingSpecification DestinationQueue(string queueName)
     {
         ToQueue = true;
-        Destination = queue;
+        Destination = queueName;
         return this;
     }
 
-    public IBindingSpecification DestinationExchange(string exchange)
+    public IBindingSpecification DestinationExchange(IExchangeSpecification exchangeSpec)
     {
-        Destination = exchange;
+        return DestinationExchange(exchangeSpec.Name());
+    }
+
+    public IBindingSpecification DestinationExchange(string exchangeName)
+    {
+        Destination = exchangeName;
         return this;
     }
 
@@ -125,7 +151,7 @@ public class AmqpBindingSpecification(AmqpManagement management) : BindingSpecif
 
     private async Task<List<Map>> GetBindings(string path)
     {
-        Amqp.Message result = await Management.RequestAsync(
+        Amqp.Message result = await _management.RequestAsync(
             null, path,
             AmqpManagement.Get, new[] { AmqpManagement.Code200 }).ConfigureAwait(false);
 

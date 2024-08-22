@@ -1,15 +1,16 @@
-﻿using System.Threading.Tasks;
+﻿// This source code is dual-licensed under the Apache License, version
+// 2.0, and the Mozilla Public License, version 2.0.
+// Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+
+using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
-using Xunit.Abstractions;
 
-namespace Tests;
+namespace Tests.ConnectionTests;
 
-public class ConnectionTests(ITestOutputHelper output)
+public class ConnectionValidationTests
 {
-    private readonly ITestOutputHelper _output = output;
-
     [Fact]
     public void ValidateAddress()
     {
@@ -92,31 +93,5 @@ public class ConnectionTests(ITestOutputHelper output)
         // TODO check inner exception is a SocketException
         await Assert.ThrowsAnyAsync<ConnectionException>(async () =>
             await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Port(1234).Build()));
-    }
-
-    [Fact]
-    public async Task ThrowAmqpClosedExceptionWhenItemIsClosed()
-    {
-        IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Build());
-        IManagement management = connection.Management();
-        await management.Queue().Name("ThrowAmqpClosedExceptionWhenItemIsClosed").Declare();
-
-        IPublisher publisher = await connection.PublisherBuilder().Queue("ThrowAmqpClosedExceptionWhenItemIsClosed").BuildAsync();
-        await publisher.CloseAsync();
-
-        await Assert.ThrowsAsync<AmqpNotOpenException>(() =>
-        {
-            var message = new AmqpMessage("Hello wold!");
-            return publisher.PublishAsync(message);
-        });
-        await management.QueueDeletion().Delete("ThrowAmqpClosedExceptionWhenItemIsClosed");
-        await connection.CloseAsync();
-        Assert.Empty(connection.GetPublishers());
-
-        await Assert.ThrowsAsync<AmqpNotOpenException>(() =>
-            connection.PublisherBuilder().Queue("ThrowAmqpClosedExceptionWhenItemIsClosed").BuildAsync());
-
-        await Assert.ThrowsAsync<AmqpNotOpenException>(async () =>
-            await management.Queue().Name("ThrowAmqpClosedExceptionWhenItemIsClosed").Declare());
     }
 }

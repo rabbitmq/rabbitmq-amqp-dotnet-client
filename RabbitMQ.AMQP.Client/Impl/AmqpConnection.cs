@@ -162,7 +162,6 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     private async Task CloseAllPublishers()
     {
         var cloned = new List<IPublisher>(Publishers.Values);
-
         foreach (IPublisher publisher in cloned)
         {
             await publisher.CloseAsync()
@@ -173,7 +172,6 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     private async Task CloseAllConsumers()
     {
         var cloned = new List<IConsumer>(Consumers.Values);
-
         foreach (IConsumer consumer in cloned)
         {
             await consumer.CloseAsync()
@@ -273,7 +271,8 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             await _management.OpenAsync()
                 .ConfigureAwait(false);
 
-            _nativeConnection.Closed += MaybeRecoverConnection();
+            ClosedCallback closedCallback = BuildClosedCallback();
+            _nativeConnection.AddClosedCallback(closedCallback);
         }
         catch (AmqpException e)
         {
@@ -297,7 +296,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     /// and then kick off a task dedicated to recovery
     /// </summary>
     /// <returns></returns>
-    private ClosedCallback MaybeRecoverConnection()
+    private ClosedCallback BuildClosedCallback()
     {
         return async (sender, error) =>
         {
@@ -308,19 +307,31 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                 // close all the sessions, if the connection is closed the sessions are not valid anymore
                 _nativePubSubSessions.ClearSessions();
 
-                if (error != null)
+                void DoClose(Error? argError = null)
+                {
+                    Error? err = argError ?? Utils.ConvertError(error);
+                    Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is closed");
+                    OnNewStatus(State.Closed, err);
+                    ChangeEntitiesStatus(State.Closed, err);
+                    ConnectionCloseTaskCompletionSource.SetResult(true);
+                }
+
+                if (error is null)
+                {
+                    DoClose();
+                    return;
+                }
+                else
                 {
                     //  we assume here that the connection is closed unexpectedly, since the error is not null
-                    Trace.WriteLine(TraceLevel.Warning, $"{ToString()}  is closed unexpectedly. "
-                                                        );
+                    Trace.WriteLine(TraceLevel.Warning, $"{ToString()} closed unexpectedly.");
 
                     // we have to check if the recovery is active.
                     // The user may want to disable the recovery mechanism
                     // the user can use the lifecycle callback to handle the error
-                    if (!_connectionSettings.Recovery.IsActivate())
+                    if (false == _connectionSettings.Recovery.IsActivate())
                     {
-                        OnNewStatus(State.Closed, Utils.ConvertError(error));
-                        ChangeEntitiesStatus(State.Closed, Utils.ConvertError(error));
+                        DoClose();
                         return;
                     }
 
@@ -329,96 +340,92 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                     OnNewStatus(State.Reconnecting, Utils.ConvertError(error));
                     ChangeEntitiesStatus(State.Reconnecting, Utils.ConvertError(error));
 
-                    await Task.Run(async () =>
+                    IBackOffDelayPolicy backOffDelayPolicy = _connectionSettings.Recovery.GetBackOffDelayPolicy();
+                    bool connected = false;
+                    // as first step we try to recover the connection
+                    // so the connected flag is false
+                    while (false == connected &&
+                           // we have to check if the backoff policy is active
+                           // the user may want to disable the backoff policy or 
+                           // the backoff policy is not active due of some condition
+                           // for example: Reaching the maximum number of retries and avoid the forever loop
+                           backOffDelayPolicy.IsActive() &&
+
+                           // even we set the status to reconnecting up, we need to check if the connection is still in the
+                           // reconnecting status. The user may close the connection in the meanwhile
+                           State == State.Reconnecting)
                     {
-                        bool connected = false;
-                        // as first step we try to recover the connection
-                        // so the connected flag is false
-                        while (!connected &&
-                               // we have to check if the backoff policy is active
-                               // the user may want to disable the backoff policy or 
-                               // the backoff policy is not active due of some condition
-                               // for example: Reaching the maximum number of retries and avoid the forever loop
-                               _connectionSettings.Recovery.GetBackOffDelayPolicy().IsActive() &&
-
-                               // even we set the status to reconnecting up, we need to check if the connection is still in the
-                               // reconnecting status. The user may close the connection in the meanwhile
-                               State == State.Reconnecting)
-                        {
-                            try
-                            {
-                                int nextDelayMs = _connectionSettings.Recovery.GetBackOffDelayPolicy().Delay();
-
-                                Trace.WriteLine(TraceLevel.Information,
-                                    $"{ToString()} is trying Recovering connection in {nextDelayMs} milliseconds, " +
-                                    $"attempt: {_connectionSettings.Recovery.GetBackOffDelayPolicy().CurrentAttempt}. ");
-
-                                await Task.Delay(TimeSpan.FromMilliseconds(nextDelayMs))
-                                    .ConfigureAwait(false);
-
-                                await OpenConnectionAsync()
-                                    .ConfigureAwait(false);
-
-                                connected = true;
-                            }
-                            catch (Exception e)
-                            {
-                                Trace.WriteLine(TraceLevel.Warning,
-                                    $"{ToString()} Error trying to recover connection {e}");
-                            }
-                        }
-
-                        _connectionSettings.Recovery.GetBackOffDelayPolicy().Reset();
-                        string connectionDescription = connected ? "recovered" : "not recovered";
-                        Trace.WriteLine(TraceLevel.Information,
-                            $"{ToString()} is {connectionDescription}");
-
-                        if (!connected)
-                        {
-                            Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} connection is closed");
-                            OnNewStatus(State.Closed,
-                                new Error(ConnectionNotRecoveredCode,
-                                    $"{ConnectionNotRecoveredMessage}, recover status: {_connectionSettings.Recovery}"));
-
-                            ChangeEntitiesStatus(State.Closed, new Error(ConnectionNotRecoveredCode,
-                                $"{ConnectionNotRecoveredMessage}, recover status: {_connectionSettings.Recovery}"));
-
-                            return;
-                        }
-
-                        if (_connectionSettings.Recovery.IsTopologyActive())
-                        {
-                            Trace.WriteLine(TraceLevel.Information, $"{ToString()} Recovering topology");
-                            var visitor = new Visitor(_management);
-                            await _recordingTopologyListener.Accept(visitor)
-                                .ConfigureAwait(false);
-                        }
-
-                        OnNewStatus(State.Open, null);
-                        // after the connection is recovered we have to reconnect all the publishers and consumers
-
                         try
                         {
-                            await ReconnectEntitiesAsync().ConfigureAwait(false);
+                            int nextDelayMs = backOffDelayPolicy.Delay();
+
+                            Trace.WriteLine(TraceLevel.Information,
+                                $"{ToString()} is trying Recovering connection in {nextDelayMs} milliseconds, " +
+                                $"attempt: {_connectionSettings.Recovery.GetBackOffDelayPolicy().CurrentAttempt}. ");
+
+                            await Task.Delay(TimeSpan.FromMilliseconds(nextDelayMs))
+                                .ConfigureAwait(false);
+
+                            await OpenConnectionAsync()
+                                .ConfigureAwait(false);
+
+                            connected = true;
                         }
                         catch (Exception e)
                         {
-                            Trace.WriteLine(TraceLevel.Error, $"{ToString()} error trying to reconnect entities {e}");
+                            // TODO this could / should be more visible to the user, perhaps?
+                            Trace.WriteLine(TraceLevel.Warning,
+                                $"{ToString()} Error trying to recover connection {e}");
                         }
-                    }).ConfigureAwait(false);
+                    }
 
-                    return;
+                    backOffDelayPolicy.Reset();
+                    string connectionDescription = connected ? "recovered" : "not recovered";
+                    Trace.WriteLine(TraceLevel.Information,
+                        $"{ToString()} is {connectionDescription}");
+
+                    if (false == connected)
+                    {
+                        var notRecoveredError = new Error(ConnectionNotRecoveredCode,
+                                $"{ConnectionNotRecoveredMessage}," +
+                                $"recover status: {_connectionSettings.Recovery}");
+                        DoClose(notRecoveredError);
+                        return;
+                    }
+
+                    if (_connectionSettings.Recovery.IsTopologyActive())
+                    {
+                        Trace.WriteLine(TraceLevel.Information, $"{ToString()} Recovering topology");
+                        var visitor = new Visitor(_management);
+                        await _recordingTopologyListener.Accept(visitor)
+                            .ConfigureAwait(false);
+                    }
+
+                    OnNewStatus(State.Open, null);
+                    // after the connection is recovered we have to reconnect all the publishers and consumers
+
+                    try
+                    {
+                        await ReconnectEntitiesAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception e)
+                    {
+                        Trace.WriteLine(TraceLevel.Error, $"{ToString()} error trying to reconnect entities {e}");
+                    }
                 }
-
-                Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is closed");
-                OnNewStatus(State.Closed, Utils.ConvertError(error));
+            }
+            catch
+            {
+                // TODO set states to Closed? Error?
+                // This will be skipped if reconnection succeeds, but if there
+                // is an exception, it's important that this be called.
+                ConnectionCloseTaskCompletionSource.SetResult(true);
+                throw;
             }
             finally
             {
                 _semaphoreClose.Release();
             }
-
-            ConnectionCloseTaskCompletionSource.SetResult(true);
         };
     }
 
@@ -489,7 +496,7 @@ internal class Visitor(AmqpManagement management) : IVisitor
             Trace.WriteLine(TraceLevel.Information, $"Recovering queue {spec.Name}");
             try
             {
-                await Management.Queue(spec).Declare()
+                await Management.Queue(spec).DeclareAsync()
                     .ConfigureAwait(false);
             }
             catch (Exception e)

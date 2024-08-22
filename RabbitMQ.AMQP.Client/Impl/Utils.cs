@@ -1,3 +1,7 @@
+// This source code is dual-licensed under the Apache License, version
+// 2.0, and the Mozilla Public License, version 2.0.
+// Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+
 using System.Security.Cryptography;
 using System.Text;
 using System.Web;
@@ -132,7 +136,7 @@ public static class Utils
 
     public static string EncodeHttpParameter(string url)
     {
-        return HttpUtility.UrlPathEncode(url);
+        return HttpUtility.UrlEncode(url);
     }
 
     public static bool CompareMap(Map map1, Map map2)

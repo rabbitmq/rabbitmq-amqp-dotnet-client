@@ -33,7 +33,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : IDisposabl
         IManagement management = connection.Management();
         try
         {
-            IQueueInfo declaredQueueInfo = await management.Queue().Exclusive(true).Declare();
+            IQueueInfo declaredQueueInfo = await management.Queue().Exclusive(true).DeclareAsync();
             IPublisher publisher = await connection.PublisherBuilder().Queue(declaredQueueInfo.Name()).BuildAsync();
 
             var publishTasks = new List<Task<RabbitMQ.AMQP.Client.PublishResult>>();

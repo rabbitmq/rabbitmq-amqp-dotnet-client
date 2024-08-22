@@ -14,49 +14,15 @@ using Xunit.Abstractions;
 
 namespace Tests;
 
-public class AmqpTests : IntegrationTest
+public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
 {
-    private readonly string _queueName;
-    private IManagement? _management;
-
-    public AmqpTests(ITestOutputHelper testOutputHelper) : base(testOutputHelper)
-    {
-        _queueName = $"{_testDisplayName}-queue-{Now}";
-    }
-
-    public override async Task InitializeAsync()
-    {
-        await base.InitializeAsync();
-
-        if (_connection is null)
-        {
-            throw new InvalidOperationException("_connection is null");
-        }
-        else
-        {
-            _management = _connection.Management();
-        }
-    }
-
-    public override Task DisposeAsync()
-    {
-        if (_management is not null)
-        {
-            IQueueDeletion queueDeletion = _management.QueueDeletion();
-            queueDeletion.Delete(_queueName);
-            _management.Dispose();
-        }
-
-        return base.DisposeAsync();
-    }
-
     [Fact]
     public async Task QueueInfoTest()
     {
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-        IQueueInfo declaredQueueInfo = await _management.Queue(_queueName).Quorum().Queue().Declare();
+        IQueueInfo declaredQueueInfo = await _management.Queue(_queueName).Quorum().Queue().DeclareAsync();
         IQueueInfo retrievedQueueInfo = await _management.GetQueueInfoAsync(_queueName);
 
         Assert.Equal(_queueName, declaredQueueInfo.Name());
@@ -100,7 +66,7 @@ public class AmqpTests : IntegrationTest
         Assert.NotNull(_management);
 
         // IQueueInfo declaredQueueInfo = await _management.Queue().Name(_queueName).Quorum().Queue().Declare();
-        IQueueInfo declaredQueueInfo = await _management.Queue().Name(_queueName).Classic().Queue().Declare();
+        IQueueInfo declaredQueueInfo = await _management.Queue().Name(_queueName).Classic().Queue().DeclareAsync();
         Assert.Equal(_queueName, declaredQueueInfo.Name());
 
         IPublisherBuilder publisherBuilder = _connection.PublisherBuilder();
@@ -156,7 +122,9 @@ public class AmqpTests : IntegrationTest
         Assert.Equal((uint)0, retrievedQueueInfo1.MessageCount());
 
         await publisher.CloseAsync();
+        publisher.Dispose();
         await consumer.CloseAsync();
+        consumer.Dispose();
     }
 
     [Theory]
@@ -174,9 +142,7 @@ public class AmqpTests : IntegrationTest
         Assert.NotNull(_management);
 
         string now = Now;
-        string e1 = $"{prefix}-e1-{_testDisplayName}-{now}";
-        string e2 = $"{prefix}-e2-{_testDisplayName}-{now}";
-        string rk = $"{prefix}-foo-{now}";
+        string rkStr = $"{prefix}-foo-{now}";
 
         Dictionary<string, object> bindingArguments = new();
         if (addBindingArgments)
@@ -184,21 +150,32 @@ public class AmqpTests : IntegrationTest
             bindingArguments.Add("foo", prefix + "-bar");
         }
 
-        await _management.Exchange().Name(e1).Type(ExchangeType.DIRECT).Declare();
-        await _management.Exchange().Name(e2).Type(ExchangeType.FANOUT).Declare();
-        await _management.Queue().Name(_queueName).Type(QueueType.CLASSIC).Declare();
+        IExchangeSpecification ex1spec = _management.Exchange($"{prefix}-e1-{_testDisplayName}-{now}").Type(ExchangeType.DIRECT);
+        IExchangeSpecification ex2spec = _management.Exchange($"{prefix}-e2-{_testDisplayName}-{now}").Type(ExchangeType.FANOUT);
+        IQueueSpecification queueSpec = _management.Queue(_queueName).Type(QueueType.CLASSIC);
 
-        IBindingSpecification e1e2Binding = _management.Binding().SourceExchange(e1).DestinationExchange(e2).Key(rk).Arguments(bindingArguments);
-        IBindingSpecification e2qBinding = _management.Binding().SourceExchange(e2).DestinationQueue(_queueName).Arguments(bindingArguments);
+        await ex1spec.DeclareAsync();
+        await ex2spec.DeclareAsync();
+        await queueSpec.DeclareAsync();
 
-        await e1e2Binding.Bind();
-        await e2qBinding.Bind();
+        IBindingSpecification e1e2Binding = _management.Binding()
+            .SourceExchange(ex1spec)
+            .DestinationExchange(ex2spec)
+            .Key(rkStr)
+            .Arguments(bindingArguments);
+        IBindingSpecification e2qBinding = _management.Binding()
+            .SourceExchange(ex2spec)
+            .DestinationQueue(queueSpec)
+            .Arguments(bindingArguments);
+
+        await e1e2Binding.BindAsync();
+        await e2qBinding.BindAsync();
 
         IPublisherBuilder publisherBuilder1 = _connection.PublisherBuilder();
         IPublisherBuilder publisherBuilder2 = _connection.PublisherBuilder();
 
-        IPublisher publisher1 = await publisherBuilder1.Exchange(e1).Key(rk).BuildAsync();
-        IPublisher publisher2 = await publisherBuilder2.Exchange(e2).BuildAsync();
+        IPublisher publisher1 = await publisherBuilder1.Exchange(ex1spec).Key(rkStr).BuildAsync();
+        IPublisher publisher2 = await publisherBuilder2.Exchange(ex2spec).BuildAsync();
 
         IMessage message = new AmqpMessage(messageBody);
 
@@ -230,15 +207,19 @@ public class AmqpTests : IntegrationTest
         await WhenTaskCompletes(allMessagesReceivedTcs.Task);
 
         await publisher1.CloseAsync();
+        publisher1.Dispose();
+
         await publisher2.CloseAsync();
+        publisher2.Dispose();
+
         await consumer.CloseAsync();
+        consumer.Dispose();
 
-        // TODO these fail with 400
-        // await e1e2Binding.Unbind();
-        // await e2qBinding.Unbind();
+        await e1e2Binding.UnbindAsync();
+        await e2qBinding.UnbindAsync();
 
-        await _management.ExchangeDeletion().Delete(e2);
-        await _management.ExchangeDeletion().Delete(e1);
+        await ex2spec.DeleteAsync();
+        await ex2spec.DeleteAsync();
         // Note: DisposeAsync will delete the queue
     }
 }
