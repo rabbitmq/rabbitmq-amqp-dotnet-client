@@ -23,7 +23,10 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
     private readonly MessageHandler _messageHandler;
     private readonly int _initialCredits;
     private readonly Map _filters;
+    private readonly Guid _id = Guid.NewGuid();
+
     private ReceiverLink? _receiverLink;
+
     private PauseStatus _pauseStatus = PauseStatus.UNPAUSED;
     private readonly UnsettledMessageCounter _unsettledMessageCounter = new();
 
@@ -35,7 +38,11 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
         _messageHandler = messageHandler;
         _initialCredits = initialCredits;
         _filters = filters;
-        _connection.Consumers.TryAdd(Id, this);
+
+        if (false == _connection.Consumers.TryAdd(_id, this))
+        {
+            // TODO error?
+        }
     }
 
     public override async Task OpenAsync()
@@ -44,7 +51,7 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
         {
             TaskCompletionSource<ReceiverLink> attachCompletedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            Attach attach = Utils.CreateAttach(_address, DeliveryMode.AtLeastOnce, Id, _filters);
+            Attach attach = Utils.CreateAttach(_address, DeliveryMode.AtLeastOnce, _id, _filters);
 
             void onAttached(ILink argLink, Attach argAttach)
             {
@@ -64,7 +71,7 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
             ReceiverLink? tmpReceiverLink = null;
             Task receiverLinkTask = Task.Run(() =>
             {
-                tmpReceiverLink = new ReceiverLink(_connection._nativePubSubSessions.GetOrCreateSession(), Id, attach, onAttached);
+                tmpReceiverLink = new ReceiverLink(_connection._nativePubSubSessions.GetOrCreateSession(), _id.ToString(), attach, onAttached);
             });
 
             // TODO configurable timeout
@@ -153,8 +160,6 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
         Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is closed.");
     }
 
-    private string Id { get; } = Guid.NewGuid().ToString();
-
     public void Pause()
     {
         if (_receiverLink is null)
@@ -211,6 +216,7 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
 
     public override async Task CloseAsync()
     {
+        // TODO make this method similar to publisher CloseAsync
         if (_receiverLink == null)
         {
             return;
@@ -223,16 +229,14 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
             .ConfigureAwait(false);
 
         _receiverLink = null;
-
         OnNewStatus(State.Closed, null);
-
-        _connection.Consumers.TryRemove(Id, out _);
+        _connection.Consumers.TryRemove(_id, out _);
     }
 
     public override string ToString()
     {
         return $"Consumer{{Address='{_address}', " +
-               $"id={Id}, " +
+               $"id={_id}, " +
                $"Connection='{_connection}', " +
                $"State='{State}'}}";
     }

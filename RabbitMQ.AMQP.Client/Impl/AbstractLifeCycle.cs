@@ -6,7 +6,12 @@ public class AmqpNotOpenException(string message) : Exception(message);
 
 public abstract class AbstractLifeCycle : ILifeCycle
 {
-    private bool _disposedValue;
+    protected bool _disposed;
+
+    // TODO this should not be part of AbstractLifeCycle
+    // wait until the close operation is completed
+    protected readonly TaskCompletionSource<bool> _connectionCloseTaskCompletionSource =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public virtual Task OpenAsync()
     {
@@ -44,10 +49,6 @@ public abstract class AbstractLifeCycle : ILifeCycle
         }
     }
 
-    // wait until the close operation is completed
-    protected readonly TaskCompletionSource<bool> ConnectionCloseTaskCompletionSource =
-        new(TaskCreationOptions.RunContinuationsAsynchronously);
-
     protected void OnNewStatus(State newState, Error? error)
     {
         if (State == newState)
@@ -62,7 +63,7 @@ public abstract class AbstractLifeCycle : ILifeCycle
 
     protected virtual void Dispose(bool disposing)
     {
-        if (!_disposedValue)
+        if (false == _disposed)
         {
             if (disposing)
             {
@@ -71,7 +72,7 @@ public abstract class AbstractLifeCycle : ILifeCycle
 
             // TODO: free unmanaged resources (unmanaged objects) and override finalizer
             // TODO: set large fields to null
-            _disposedValue = true;
+            _disposed = true;
         }
     }
 
@@ -99,10 +100,15 @@ public abstract class AbstractReconnectLifeCycle : AbstractLifeCycle
             int randomWait = Random.Shared.Next(300, 900);
             Trace.WriteLine(TraceLevel.Information, $"{ToString()} is reconnecting in {randomWait} ms, " +
                                                     $"attempt: {_backOffDelayPolicy.CurrentAttempt}");
-            await Task.Delay(randomWait).ConfigureAwait(false);
-            await OpenAsync().ConfigureAwait(false);
+            await Task.Delay(randomWait)
+                .ConfigureAwait(false);
+
+            await OpenAsync()
+                .ConfigureAwait(false);
+
             Trace.WriteLine(TraceLevel.Information,
                 $"{ToString()} is reconnected, attempt: {_backOffDelayPolicy.CurrentAttempt}");
+
             _backOffDelayPolicy.Reset();
         }
         catch (Exception e)
@@ -111,11 +117,15 @@ public abstract class AbstractReconnectLifeCycle : AbstractLifeCycle
             // that's an edge case, where the link is not ready for some reason
             // the backoff policy will be used to delay the reconnection and give just a few attempts
             Trace.WriteLine(TraceLevel.Error, $"{ToString()} Failed to reconnect, {e.Message}");
+
             int delay = _backOffDelayPolicy.Delay();
-            await Task.Delay(delay).ConfigureAwait(false);
+            await Task.Delay(delay)
+                .ConfigureAwait(false);
+
             if (_backOffDelayPolicy.IsActive())
             {
-                await ReconnectAsync().ConfigureAwait(false);
+                await ReconnectAsync()
+                    .ConfigureAwait(false);
             }
         }
     }

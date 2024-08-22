@@ -14,7 +14,7 @@ public class AmqpSessionManagement(AmqpConnection amqpConnection, int maxSession
             return Sessions.First();
         }
 
-        var session = new Session(amqpConnection.NativeConnection());
+        var session = new Session(amqpConnection.NativeConnection);
         Sessions.Add(session);
         return session;
     }

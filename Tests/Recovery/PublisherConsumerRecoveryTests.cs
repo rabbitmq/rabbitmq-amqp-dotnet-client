@@ -30,7 +30,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
         IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
 
         List<(State, State)> states = [];
-        publisher.ChangeState += (sender, fromState, toState, e) =>
+        publisher.ChangeState += (_, fromState, toState, _) =>
         {
             states.Add((fromState, toState));
         };
@@ -68,8 +68,9 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
                 return Task.CompletedTask;
             }).BuildAsync();
 
+
         List<(State, State)> states = [];
-        consumer.ChangeState += (sender, fromState, toState, e) =>
+        consumer.ChangeState += (_, fromState, toState, _) =>
         {
             states.Add((fromState, toState));
         };
@@ -109,7 +110,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
             .BuildAsync();
 
         List<(State, State)> states = [];
-        publisher.ChangeState += (sender, fromState, toState, e) =>
+        publisher.ChangeState += (_, fromState, toState, _) =>
         {
             states.Add((fromState, toState));
         };
@@ -156,7 +157,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
             }).BuildAsync();
 
         List<(State, State)> states = [];
-        consumer.ChangeState += (sender, fromState, toState, e) => { states.Add((fromState, toState)); };
+        consumer.ChangeState += (_, fromState, toState, _) => { states.Add((fromState, toState)); };
 
         await SystemUtils.WaitUntilConnectionIsKilledAndOpen(_containerId);
 
@@ -194,7 +195,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
         long messagesReceived = 0;
 
         IConsumer consumer = await _connection.ConsumerBuilder().InitialCredits(100).Queue(queueSpec)
-            .MessageHandler(async (context, message) =>
+            .MessageHandler(async (context, _) =>
             {
                 Interlocked.Increment(ref messagesReceived);
                 try
@@ -289,7 +290,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
         IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
 
         List<(State, State)> statesProducer = [];
-        publisher.ChangeState += (sender, fromState, toState, e) =>
+        publisher.ChangeState += (_, fromState, toState, _) =>
         {
             statesProducer.Add((fromState, toState));
         };
@@ -297,7 +298,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
         IConsumer consumer = await _connection.ConsumerBuilder()
             .InitialCredits(100)
             .Queue(queueSpec)
-            .MessageHandler(async (context, message) =>
+            .MessageHandler(async (context, _) =>
             {
                 try
                 {
@@ -310,7 +311,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
             }).BuildAsync();
 
         List<(State, State)> statesConsumer = [];
-        consumer.ChangeState += (sender, fromState, toState, e) =>
+        consumer.ChangeState += (_, fromState, toState, _) =>
         {
             statesConsumer.Add((fromState, toState));
         };

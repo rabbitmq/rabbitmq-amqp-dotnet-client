@@ -13,8 +13,10 @@ namespace RabbitMQ.AMQP.Client.Impl;
 /// RabbitMQ uses AMQP end  point: "/management" to manage the resources like queues, exchanges, and bindings.
 /// The management endpoint works like an HTTP RPC endpoint where the client sends a request to the server
 /// </summary>
-public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeCycle, IManagement
+public class AmqpManagement : AbstractLifeCycle, IManagement
 {
+    private readonly AmqpManagementParameters _amqpManagementParameters;
+
     // The requests are stored in a dictionary with the correlationId as the key
     // The correlationId is used to match the request with the response
     private readonly ConcurrentDictionary<string, TaskCompletionSource<Message>> _requests = new();
@@ -36,6 +38,11 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
     internal const string Post = "POST";
     internal const string Delete = "DELETE";
     private const string ReplyTo = "$me";
+
+    internal AmqpManagement(AmqpManagementParameters amqpManagementParameters)
+    {
+        _amqpManagementParameters = amqpManagementParameters;
+    }
 
     public IQueueSpecification Queue()
     {
@@ -94,7 +101,7 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
 
     public ITopologyListener TopologyListener()
     {
-        return parameters.TopologyListener();
+        return _amqpManagementParameters.TopologyListener();
     }
 
     public override async Task OpenAsync()
@@ -106,7 +113,7 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
 
         if (_managementSession == null || _managementSession.IsClosed)
         {
-            _managementSession = new Session(parameters.Connection().NativeConnection());
+            _managementSession = new Session(_amqpManagementParameters.NativeConnection);
         }
 
         await EnsureSenderLinkAsync()
@@ -118,22 +125,25 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
         // TODO do something with this task?
         _ = Task.Run(ProcessResponses);
 
-        _managementSession.Closed += (sender, error) =>
-        {
-            if (State != State.Closed && error != null)
-            {
-                Trace.WriteLine(TraceLevel.Warning, $"Management session closed " +
-                                                    $"with error: {Utils.ConvertError(error)} " +
-                                                    $" AmqpManagement: {ToString()}");
-            }
-
-            OnNewStatus(State.Closed, Utils.ConvertError(error));
-            // Note: TrySetResult *must* be used here
-            ConnectionCloseTaskCompletionSource.TrySetResult(true);
-        };
+        _managementSession.AddClosedCallback(OnManagementSessionClosed);
 
         await base.OpenAsync()
             .ConfigureAwait(false);
+    }
+
+    private void OnManagementSessionClosed(IAmqpObject sender, Amqp.Framing.Error error)
+    {
+        if (State != State.Closed && error != null)
+        {
+            Trace.WriteLine(TraceLevel.Warning, $"Management session closed " +
+                                                $"with error: {Utils.ConvertError(error)} " +
+                                                $" AmqpManagement: {ToString()}");
+        }
+
+        OnNewStatus(State.Closed, Utils.ConvertError(error));
+
+        // Note: TrySetResult *must* be used here
+        _connectionCloseTaskCompletionSource.TrySetResult(true);
     }
 
     private async Task ProcessResponses()
@@ -141,7 +151,7 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
         try
         {
             while (_managementSession?.IsClosed == false &&
-                   parameters.Connection().NativeConnection()!.IsClosed == false)
+                   _amqpManagementParameters.IsNativeConnectionClosed == false)
             {
                 if (_receiverLink == null)
                 {
@@ -442,7 +452,7 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
             await _managementSession.CloseAsync(closeSpan)
                 .ConfigureAwait(false);
 
-            await ConnectionCloseTaskCompletionSource.Task.WaitAsync(closeSpan)
+            await _connectionCloseTaskCompletionSource.Task.WaitAsync(closeSpan)
                 .ConfigureAwait(false);
 
             _managementSession = null;
@@ -458,7 +468,7 @@ public class AmqpManagement(AmqpManagementParameters parameters) : AbstractLifeC
     public override string ToString()
     {
         string info = $"AmqpManagement{{" +
-                      $"AmqpConnection='{parameters.Connection()}', " +
+                      $"AmqpConnection='{_amqpManagementParameters.Connection}', " +
                       $"Status='{State.ToString()}'" +
                       $"ReceiverLink closed: {_receiverLink?.IsClosed} " +
                       $"}}";
