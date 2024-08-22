@@ -69,9 +69,11 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
             }
 
             ReceiverLink? tmpReceiverLink = null;
-            Task receiverLinkTask = Task.Run(() =>
+            Task receiverLinkTask = Task.Run(async () =>
             {
-                tmpReceiverLink = new ReceiverLink(_connection._nativePubSubSessions.GetOrCreateSession(), _id.ToString(), attach, onAttached);
+                Session session = await _connection._nativePubSubSessions.GetOrCreateSessionAsync()
+                    .ConfigureAwait(false);
+                tmpReceiverLink = new ReceiverLink(session, _id.ToString(), attach, onAttached);
             });
 
             // TODO configurable timeout
@@ -214,19 +216,26 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
         }
     }
 
+    // TODO cancellation token
     public override async Task CloseAsync()
     {
-        // TODO make this method similar to publisher CloseAsync
-        if (_receiverLink == null)
+        if (_receiverLink is null)
         {
             return;
         }
 
         OnNewStatus(State.Closing, null);
 
-        // TODO global timeout for closing, other async actions?
-        await _receiverLink.CloseAsync(TimeSpan.FromSeconds(5))
-            .ConfigureAwait(false);
+        try
+        {
+            // TODO global timeout for closing, other async actions?
+            await _receiverLink.CloseAsync(TimeSpan.FromSeconds(5))
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine(TraceLevel.Warning, "Failed to close receiver link. The consumer will be closed anyway", ex);
+        }
 
         _receiverLink = null;
         OnNewStatus(State.Closed, null);

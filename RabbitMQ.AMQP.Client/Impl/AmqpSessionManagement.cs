@@ -1,26 +1,66 @@
+// This source code is dual-licensed under the Apache License, version
+// 2.0, and the Mozilla Public License, version 2.0.
+// Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+
+using System.Collections.Concurrent;
 using Amqp;
+using Amqp.Framing;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public class AmqpSessionManagement(AmqpConnection amqpConnection, int maxSessionsPerItem)
+internal class AmqpSessionManagement
 {
-    private int MaxSessionsPerItem { get; } = maxSessionsPerItem;
-    private List<Session> Sessions { get; } = [];
+    private readonly AmqpConnection _amqpConnection;
+    private readonly int _maxSessionsPerItem;
+    private readonly ConcurrentBag<Session> _sessions = [];
 
-    public Session GetOrCreateSession()
+    internal AmqpSessionManagement(AmqpConnection amqpConnection, int maxSessionsPerItem)
     {
-        if (Sessions.Count >= MaxSessionsPerItem)
-        {
-            return Sessions.First();
-        }
-
-        var session = new Session(amqpConnection.NativeConnection);
-        Sessions.Add(session);
-        return session;
+        _amqpConnection = amqpConnection;
+        _maxSessionsPerItem = maxSessionsPerItem;
     }
 
-    public void ClearSessions()
+    // TODO cancellation token
+    internal async Task<Session> GetOrCreateSessionAsync()
     {
-        Sessions.Clear();
+        Session rv;
+
+        if (_sessions.Count >= _maxSessionsPerItem)
+        {
+            rv = _sessions.First();
+        }
+        else
+        {
+            TaskCompletionSource<ISession> sessionBeginTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            void OnBegin(ISession session, Begin peerBegin)
+            {
+                sessionBeginTcs.SetResult(session);
+            }
+
+            rv = new Session(_amqpConnection.NativeConnection, GetDefaultBegin(), OnBegin);
+            ISession awaitedSession = await sessionBeginTcs.Task.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+            System.Diagnostics.Debug.Assert(Object.ReferenceEquals(rv, awaitedSession));
+            _sessions.Add(rv);
+        }
+
+        return rv;
+    }
+
+    internal void ClearSessions()
+    {
+        // TODO close open sessions?
+        _sessions.Clear();
+    }
+
+    // Note: these values come from Amqp.NET
+    static Begin GetDefaultBegin()
+    {
+        return new Begin()
+        {
+            IncomingWindow = 2048,
+            OutgoingWindow = 2048,
+            HandleMax = 1024,
+            NextOutgoingId = uint.MaxValue - 2u
+        };
     }
 }

@@ -309,10 +309,6 @@ RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.DeadLetterStrategy(RabbitMQ.AM
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.DeliveryLimit(int limit) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.QuorumInitialGroupSize(int size) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
-RabbitMQ.AMQP.Client.Impl.AmqpSessionManagement
-RabbitMQ.AMQP.Client.Impl.AmqpSessionManagement.AmqpSessionManagement(RabbitMQ.AMQP.Client.Impl.AmqpConnection! amqpConnection, int maxSessionsPerItem) -> void
-RabbitMQ.AMQP.Client.Impl.AmqpSessionManagement.ClearSessions() -> void
-RabbitMQ.AMQP.Client.Impl.AmqpSessionManagement.GetOrCreateSession() -> Amqp.Session!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.AmqpStreamSpecification(RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification! parent) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.InitialClusterSize(int initialClusterSize) -> RabbitMQ.AMQP.Client.IStreamSpecification!

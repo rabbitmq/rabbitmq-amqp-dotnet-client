@@ -56,9 +56,11 @@ public class AmqpPublisher : AbstractReconnectLifeCycle, IPublisher
             }
 
             SenderLink? tmpSenderLink = null;
-            Task senderLinkTask = Task.Run(() =>
+            Task senderLinkTask = Task.Run(async () =>
             {
-                tmpSenderLink = new SenderLink(_connection._nativePubSubSessions.GetOrCreateSession(), _id.ToString(), attach, onAttached);
+                Session session = await _connection._nativePubSubSessions.GetOrCreateSessionAsync()
+                    .ConfigureAwait(false);
+                tmpSenderLink = new SenderLink(session, _id.ToString(), attach, onAttached);
             });
 
             // TODO configurable timeout
@@ -164,8 +166,7 @@ public class AmqpPublisher : AbstractReconnectLifeCycle, IPublisher
 
     public override async Task CloseAsync()
     {
-        // TODO make this method similar to consumer CloseAsync
-        if (State == State.Closed)
+        if (_senderLink is null)
         {
             return;
         }
@@ -174,17 +175,13 @@ public class AmqpPublisher : AbstractReconnectLifeCycle, IPublisher
 
         try
         {
-            if (_senderLink != null)
-            {
-                await _senderLink.DetachAsync()
-                    .ConfigureAwait(false);
-                await _senderLink.CloseAsync()
-                    .ConfigureAwait(false);
-            }
+            // TODO global timeout for closing, other async actions?
+            await _senderLink.CloseAsync(TimeSpan.FromSeconds(5))
+                .ConfigureAwait(false);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Trace.WriteLine(TraceLevel.Warning, "Failed to close sender link. The publisher will be closed anyway", e);
+            Trace.WriteLine(TraceLevel.Warning, "Failed to close sender link. The publisher will be closed anyway", ex);
         }
 
         _senderLink = null;
