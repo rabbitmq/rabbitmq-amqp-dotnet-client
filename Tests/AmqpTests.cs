@@ -16,20 +16,24 @@ namespace Tests;
 
 public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
 {
-    [Fact]
-    public async Task QueueInfoTest()
+    [Theory]
+    [InlineData(QueueType.CLASSIC, "classic")]
+    [InlineData(QueueType.QUORUM, "quorum")]
+    public async Task QueueInfoTest(QueueType expectedQueueType, string expectedQueueTypeName)
     {
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-        IQueueInfo declaredQueueInfo = await _management.Queue(_queueName).Quorum().Queue().DeclareAsync();
+        IQueueSpecification queueSpecification = _management.Queue(_queueName).Type(expectedQueueType);
+
+        IQueueInfo declaredQueueInfo = await queueSpecification.DeclareAsync();
         IQueueInfo retrievedQueueInfo = await _management.GetQueueInfoAsync(_queueName);
 
         Assert.Equal(_queueName, declaredQueueInfo.Name());
         Assert.Equal(_queueName, retrievedQueueInfo.Name());
 
-        Assert.Equal(QueueType.QUORUM, declaredQueueInfo.Type());
-        Assert.Equal(QueueType.QUORUM, retrievedQueueInfo.Type());
+        Assert.Equal(expectedQueueType, declaredQueueInfo.Type());
+        Assert.Equal(expectedQueueType, retrievedQueueInfo.Type());
 
         Assert.True(declaredQueueInfo.Durable());
         Assert.True(retrievedQueueInfo.Durable());
@@ -48,10 +52,11 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
 
         Dictionary<string, object> declaredArgs = declaredQueueInfo.Arguments();
         Dictionary<string, object> retrievedArgs = retrievedQueueInfo.Arguments();
+
         Assert.True(declaredArgs.ContainsKey("x-queue-type"));
         Assert.True(retrievedArgs.ContainsKey("x-queue-type"));
-        Assert.Equal(declaredArgs["x-queue-type"], "quorum");
-        Assert.Equal(retrievedArgs["x-queue-type"], "quorum");
+        Assert.Equal(declaredArgs["x-queue-type"], expectedQueueTypeName);
+        Assert.Equal(retrievedArgs["x-queue-type"], expectedQueueTypeName);
     }
 
     [Theory]
