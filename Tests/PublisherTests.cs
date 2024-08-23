@@ -160,10 +160,9 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         {
             IQueueSpecification queueSpecification = _management.Queue().Exclusive(true);
             IQueueInfo queueInfo = await queueSpecification.DeclareAsync();
-            Assert.Equal(_queueName, queueInfo.Name());
             IBindingSpecification bindingSpecification = _management.Binding()
                 .SourceExchange(_exchangeName)
-                .DestinationQueue(queueSpecification);
+                .DestinationQueue(queueInfo.Name());
             await bindingSpecification.BindAsync();
 
             PublishResult publishResult = await publisher.PublishAsync(message);
