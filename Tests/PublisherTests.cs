@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
@@ -27,7 +28,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
     }
 
     [Fact]
-    public async Task RaiseErrorIfQueueDoesNotExist()
+    public async Task PublisherShouldThrowWhenQueueDoesNotExist()
     {
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
@@ -134,5 +135,59 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         Assert.Empty(_connection.GetPublishers());
 
         await bindingSpec.UnbindAsync();
+    }
+
+    [Fact]
+    public async Task PublisherSendingShouldThrowWhenExchangeHasBeenDeleted()
+    {
+        /*
+         * TODO
+         * Note: this test is a little different than the Java client
+         * The Java client has a dedicated "entity not found" exception
+         */
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+        IMessage message = new AmqpMessage(Encoding.ASCII.GetBytes("hello"));
+
+        IExchangeSpecification exchangeSpecification = _management.Exchange(_exchangeName).Type(ExchangeType.FANOUT);
+        await exchangeSpecification.DeclareAsync();
+
+        IPublisherBuilder publisherBuilder = _connection.PublisherBuilder();
+        // TODO implement Listeners
+        IPublisher publisher = await publisherBuilder.Exchange(_exchangeName).BuildAsync();
+
+        try
+        {
+            IQueueSpecification queueSpecification = _management.Queue().Exclusive(true);
+            IQueueInfo queueInfo = await queueSpecification.DeclareAsync();
+            IBindingSpecification bindingSpecification = _management.Binding()
+                .SourceExchange(_exchangeName)
+                .DestinationQueue(queueSpecification);
+            await bindingSpecification.BindAsync();
+
+            PublishResult publishResult = await publisher.PublishAsync(message);
+            Assert.Equal(OutcomeState.Accepted, publishResult.Outcome.State);
+        }
+        finally
+        {
+            await exchangeSpecification.DeleteAsync();
+        }
+
+        PublishOutcome? publishOutcome = null;
+        for (int i = 0; i < 100; i++)
+        {
+            PublishResult nextPublishResult = await publisher.PublishAsync(message);
+            if (OutcomeState.Failed == nextPublishResult.Outcome.State)
+            {
+                publishOutcome = nextPublishResult.Outcome;
+                break;
+            }
+            await Task.Delay(TimeSpan.FromMilliseconds(100));
+        }
+
+        Assert.NotNull(publishOutcome);
+        Assert.NotNull(publishOutcome.Error);
+        Assert.Contains(_exchangeName, publishOutcome.Error.Description);
+        Assert.Equal("amqp:not-found", publishOutcome.Error.ErrorCode);
     }
 }
