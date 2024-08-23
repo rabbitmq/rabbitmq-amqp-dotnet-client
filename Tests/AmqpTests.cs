@@ -3,6 +3,7 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -16,6 +17,8 @@ namespace Tests;
 
 public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
 {
+    private readonly byte[] _messageBody = Encoding.UTF8.GetBytes("hello");
+
     [Theory]
     [InlineData(QueueType.CLASSIC, "classic")]
     [InlineData(QueueType.QUORUM, "quorum")]
@@ -121,11 +124,18 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         string? receivedSubject = null;
         async Task MessageHandler(IContext ctx, IMessage msg)
         {
-            receivedSubject = msg.Subject();
-            await ctx.AcceptAsync();
-            if (Interlocked.Increment(ref receivedMessageCount) == messageCount)
+            try
             {
-                allMessagesReceivedTcs.SetResult();
+                receivedSubject = msg.Subject();
+                await ctx.AcceptAsync();
+                if (Interlocked.Increment(ref receivedMessageCount) == messageCount)
+                {
+                    allMessagesReceivedTcs.SetResult();
+                }
+            }
+            catch (Exception ex)
+            {
+                allMessagesReceivedTcs.SetException(ex);
             }
         }
 
@@ -156,8 +166,6 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
     [InlineData("фоо!бар", true)]
     public async Task BindingTest(string prefix, bool addBindingArgments)
     {
-        byte[] messageBody = Encoding.UTF8.GetBytes("hello");
-
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
@@ -197,7 +205,7 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         IPublisher publisher1 = await publisherBuilder1.Exchange(ex1spec).Key(rkStr).BuildAsync();
         IPublisher publisher2 = await publisherBuilder2.Exchange(ex2spec).BuildAsync();
 
-        IMessage message = new AmqpMessage(messageBody);
+        IMessage message = new AmqpMessage(_messageBody);
 
         Task<PublishResult> publish1Task = publisher1.PublishAsync(message);
         Task<PublishResult> publish2Task = publisher2.PublishAsync(message);
@@ -214,10 +222,17 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         var allMessagesReceivedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         async Task MessageHandler(IContext ctx, IMessage msg)
         {
-            await ctx.AcceptAsync();
-            if (Interlocked.Increment(ref receivedMessageCount) == expectedMessageCount)
+            try
             {
-                allMessagesReceivedTcs.SetResult();
+                await ctx.AcceptAsync();
+                if (Interlocked.Increment(ref receivedMessageCount) == expectedMessageCount)
+                {
+                    allMessagesReceivedTcs.SetResult();
+                }
+            }
+            catch (Exception ex)
+            {
+                allMessagesReceivedTcs.SetException(ex);
             }
         }
 
@@ -241,5 +256,59 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         await ex2spec.DeleteAsync();
         await ex2spec.DeleteAsync();
         // Note: DisposeAsync will delete the queue
+    }
+
+    [Fact]
+    public async Task SameTypeMessagesInQueue()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IQueueSpecification queueSpecification = _management.Queue(_queueName).Exclusive(true);
+        IQueueInfo declaredQueueInfo = await queueSpecification.DeclareAsync();
+
+        var messageBodies = new ConcurrentBag<string>();
+        const int expectedMessageCount = 2;
+        long receivedMessageCount = 0;
+        var allMessagesReceivedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        async Task MessageHandler(IContext ctx, IMessage msg)
+        {
+            try
+            {
+                await ctx.AcceptAsync();
+                messageBodies.Add(Encoding.UTF8.GetString((byte[])msg.Body()));
+                if (Interlocked.Increment(ref receivedMessageCount) == expectedMessageCount)
+                {
+                    allMessagesReceivedTcs.SetResult();
+                }
+            }
+            catch (Exception ex)
+            {
+                allMessagesReceivedTcs.SetException(ex);
+            }
+        }
+
+        IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder();
+        IConsumer consumer = await consumerBuilder.Queue(queueSpecification).MessageHandler(MessageHandler).BuildAsync();
+
+        IPublisherBuilder publisherBuilder = _connection.PublisherBuilder();
+        IPublisher publisher = await publisherBuilder.Queue(queueSpecification).BuildAsync();
+
+        IMessage message1 = new AmqpMessage(_messageBody);
+        IMessage message2 = new AmqpMessage(Encoding.UTF8.GetBytes("world"));
+
+        Task<PublishResult> publish1Task = publisher.PublishAsync(message1);
+        Task<PublishResult> publish2Task = publisher.PublishAsync(message2);
+        await WhenAllComplete([publish1Task, publish2Task]);
+
+        PublishResult publish1Result = await publish1Task;
+        Assert.Equal(OutcomeState.Accepted, publish1Result.Outcome.State);
+        PublishResult publish2Result = await publish2Task;
+        Assert.Equal(OutcomeState.Accepted, publish2Result.Outcome.State);
+
+        await WhenTaskCompletes(allMessagesReceivedTcs.Task);
+
+        Assert.Contains("hello", messageBodies);
+        Assert.Contains("world", messageBodies);
     }
 }
