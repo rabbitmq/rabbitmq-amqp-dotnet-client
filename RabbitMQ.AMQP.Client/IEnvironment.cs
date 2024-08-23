@@ -14,13 +14,13 @@ public interface IEnvironment
     /// <param name="connectionSettings"></param>
     /// <returns>IConnection</returns>
     public Task<IConnection> CreateConnectionAsync(IConnectionSettings connectionSettings);
-    
-    
+
+
     /// <summary>
     /// Create a new connection with the default connection settings.
     /// </summary>
     /// <returns>IConnection</returns>
-    
+
     public Task<IConnection> CreateConnectionAsync();
 
 
@@ -30,6 +30,6 @@ public interface IEnvironment
     /// Close all connections.
     /// </summary>
     /// <returns></returns>
-    
+
     Task CloseAsync();
 }

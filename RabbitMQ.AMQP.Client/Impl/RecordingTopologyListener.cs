@@ -5,6 +5,7 @@ namespace RabbitMQ.AMQP.Client.Impl;
 public interface IVisitor
 {
     Task VisitQueuesAsync(IEnumerable<QueueSpec> queueSpec);
+    Task VisitExchangesAsync(IEnumerable<ExchangeSpec> exchangeSpec);
 }
 
 /// <summary>
@@ -17,6 +18,9 @@ public class RecordingTopologyListener : ITopologyListener
 {
     private readonly ConcurrentDictionary<string, QueueSpec> _queueSpecifications = new();
 
+    private readonly ConcurrentDictionary<string, ExchangeSpec> _exchangeSpecifications = new();
+
+
     public void QueueDeclared(IQueueSpecification specification)
     {
         _queueSpecifications.TryAdd(specification.Name(), new QueueSpec(specification));
@@ -27,9 +31,20 @@ public class RecordingTopologyListener : ITopologyListener
         _queueSpecifications.TryRemove(name, out _);
     }
 
+    public void ExchangeDeclared(IExchangeSpecification specification)
+    {
+        _exchangeSpecifications.TryAdd(specification.Name(), new ExchangeSpec(specification));
+    }
+
+    public void ExchangeDeleted(string name)
+    {
+        _exchangeSpecifications.TryRemove(name, out _);
+    }
+
     public void Clear()
     {
         _queueSpecifications.Clear();
+        _exchangeSpecifications.Clear();
     }
 
     public int QueueCount()
@@ -37,10 +52,18 @@ public class RecordingTopologyListener : ITopologyListener
         return _queueSpecifications.Count;
     }
 
+    public int ExchangeCount()
+    {
+        return _exchangeSpecifications.Count;
+    }
+
+
     public async Task Accept(IVisitor visitor)
     {
         await visitor.VisitQueuesAsync(_queueSpecifications.Values)
             .ConfigureAwait(false);
+
+        await visitor.VisitExchangesAsync(_exchangeSpecifications.Values).ConfigureAwait(false);
     }
 }
 
@@ -53,4 +76,15 @@ public class QueueSpec(IQueueSpecification specification)
     public bool AutoDelete { get; init; } = specification.AutoDelete();
 
     public Dictionary<object, object> Arguments { get; init; } = specification.Arguments();
+}
+
+public class ExchangeSpec(IExchangeSpecification specification)
+{
+    public string Name { get; init; } = specification.Name();
+
+    public ExchangeType Type { get; init; } = specification.Type();
+
+    public bool AutoDelete { get; init; } = specification.AutoDelete();
+
+    public Dictionary<string, object> Arguments { get; init; } = specification.Arguments();
 }

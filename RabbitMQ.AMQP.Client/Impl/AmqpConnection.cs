@@ -547,4 +547,24 @@ internal class Visitor(AmqpManagement management) : IVisitor
             }
         }
     }
+
+
+    public async Task VisitExchangesAsync(IEnumerable<ExchangeSpec> exchangeSpec)
+    {
+        // TODO this could be done in parallel
+        foreach (ExchangeSpec spec in exchangeSpec)
+        {
+            Trace.WriteLine(TraceLevel.Information, $"Recovering exchange {spec.Name}");
+            try
+            {
+                await Management.Exchange(spec).DeclareAsync()
+                    .ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                Trace.WriteLine(TraceLevel.Error,
+                    $"Error recovering exchange {spec.Name}. Error: {e}. Management Status: {Management}");
+            }
+        }
+    }
 }

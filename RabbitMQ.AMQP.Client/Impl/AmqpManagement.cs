@@ -94,6 +94,14 @@ public class AmqpManagement : AbstractLifeCycle, IManagement
         return Exchange().Name(name);
     }
 
+    public IExchangeSpecification Exchange(ExchangeSpec spec)
+    {
+        return Exchange().Name(spec.Name)
+            .AutoDelete(spec.AutoDelete)
+            .Type(spec.Type)
+            .Arguments(spec.Arguments);
+    }
+
     public IBindingSpecification Binding()
     {
         return new AmqpBindingSpecification(this);

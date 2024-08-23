@@ -137,11 +137,16 @@ public interface IExchangeSpecification : IEntitySpecification
 
     IExchangeSpecification AutoDelete(bool autoDelete);
 
+    bool AutoDelete();
+
     IExchangeSpecification Type(ExchangeType type);
 
-    IExchangeSpecification Type(string type); // TODO: Add this
+    ExchangeType Type();
 
     IExchangeSpecification Argument(string key, object value);
+    Dictionary<string, object> Arguments();
+
+    IExchangeSpecification Arguments(Dictionary<string, object> arguments);
 }
 
 public interface IBindingSpecification

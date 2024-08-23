@@ -7,7 +7,6 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
     private string _name = "";
     private bool _autoDelete;
     private ExchangeType _type = ExchangeType.DIRECT;
-    private string _typeString = ""; // TODO: add this
     private readonly Map _arguments = new();
 
     public Task DeclareAsync()
@@ -31,6 +30,7 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
         string path = $"/{Consts.Exchanges}/{Utils.EncodePathSegment(_name)}";
         string method = AmqpManagement.Put;
         int[] expectedResponseCodes = [AmqpManagement.Code204, AmqpManagement.Code201, AmqpManagement.Code409];
+        management.TopologyListener().ExchangeDeclared(this);
         return management.RequestAsync(kv, path, method, expectedResponseCodes);
     }
 
@@ -39,7 +39,7 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
         string path = $"/{Consts.Exchanges}/{Utils.EncodePathSegment(_name)}";
         string method = AmqpManagement.Delete;
         int[] expectedResponseCodes = [AmqpManagement.Code204];
-        // TODO management topology listener?
+        management.TopologyListener().ExchangeDeleted(_name);
         return management.RequestAsync(null, path, method, expectedResponseCodes);
     }
 
@@ -60,21 +60,42 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
         return this;
     }
 
+    public bool AutoDelete() => _autoDelete;
+
     public IExchangeSpecification Type(ExchangeType type)
     {
         _type = type;
         return this;
     }
 
-    public IExchangeSpecification Type(string type)
-    {
-        _typeString = type;
-        return this;
-    }
+    public ExchangeType Type() => _type;
+
 
     public IExchangeSpecification Argument(string key, object value)
     {
         _arguments[key] = value;
+        return this;
+    }
+
+    public Dictionary<string, object> Arguments()
+    {
+        var result = new Dictionary<string, object>();
+
+        foreach ((object key, object value) in _arguments)
+        {
+            result[key.ToString() ?? throw new InvalidOperationException()] = value;
+        }
+        return result;
+    }
+
+
+    public IExchangeSpecification Arguments(Dictionary<string, object> arguments)
+    {
+        foreach ((object key, object value) in arguments)
+        {
+            _arguments[key] = value;
+        }
+
         return this;
     }
 }

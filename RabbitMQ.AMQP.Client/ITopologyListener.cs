@@ -6,6 +6,10 @@ public interface ITopologyListener
 
     void QueueDeleted(string name);
 
+    void ExchangeDeclared(IExchangeSpecification specification);
+
+    void ExchangeDeleted(string name);
+
     void Clear();
 
     int QueueCount();
