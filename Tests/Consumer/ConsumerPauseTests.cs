@@ -35,7 +35,6 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
         var publishTasks = new List<Task<RabbitMQ.AMQP.Client.PublishResult>>();
         for (int i = 0; i < messageCount; i++)
         {
-            int idx = i;
             IMessage message = new AmqpMessage($"message_{i}");
             publishTasks.Add(publisher.PublishAsync(message));
         }
@@ -149,7 +148,6 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
         var publishTasks = new List<Task<RabbitMQ.AMQP.Client.PublishResult>>();
         for (int i = 0; i < messageCount; i++)
         {
-            int idx = i;
             IMessage message = new AmqpMessage($"message_{i}");
             publishTasks.Add(publisher.PublishAsync(message));
         }
@@ -219,6 +217,74 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
         Assert.Equal(receivedCountAfterPause, receivedCount);
 
         IQueueInfo queueInfo1 = await _management.GetQueueInfoAsync(_queueName);
+        ulong expectedMessageCount = (ulong)(messageCount - receivedCount);
+        Assert.Equal(expectedMessageCount, queueInfo1.MessageCount());
+    }
+
+    [Fact]
+    public async Task ConsumerGracefulShutdownExample()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        const int messageCount = 100;
+
+        IQueueSpecification queueSpecification = _management.Queue(_queueName).Exclusive(true);
+        IQueueInfo queueInfo = await queueSpecification.DeclareAsync();
+        IPublisherBuilder publisherBuilder = _connection.PublisherBuilder().Queue(queueSpecification);
+        IPublisher publisher = await publisherBuilder.BuildAsync();
+
+        var publishTasks = new List<Task<RabbitMQ.AMQP.Client.PublishResult>>();
+        for (int i = 0; i < messageCount; i++)
+        {
+            IMessage message = new AmqpMessage($"message_{i}");
+            publishTasks.Add(publisher.PublishAsync(message));
+        }
+
+        await Task.WhenAll(publishTasks);
+
+        foreach (Task<RabbitMQ.AMQP.Client.PublishResult> pt in publishTasks)
+        {
+            RabbitMQ.AMQP.Client.PublishResult pr = await pt;
+            Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
+        }
+
+        TaskCompletionSource receivedTwiceInitialCreditsTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        const int initialCredits = 10;
+        long receivedCount = 0;
+        var unsettledMessages = new ConcurrentBag<IContext>();
+        IConsumer consumer = await _connection.ConsumerBuilder()
+            .Queue(queueInfo.Name())
+            .InitialCredits(initialCredits)
+            .MessageHandler(async (IContext ctx, IMessage msg) =>
+            {
+                if (Interlocked.Increment(ref receivedCount) > (initialCredits * 2))
+                {
+                    receivedTwiceInitialCreditsTcs.TrySetResult();
+                }
+                await Task.Delay(TimeSpan.FromMilliseconds(Random.Shared.Next(1, 10)));
+                await ctx.AcceptAsync();
+            }).BuildAsync();
+
+        await receivedTwiceInitialCreditsTcs.Task.WaitAsync(_waitSpan);
+
+        consumer.Pause();
+
+        DateTime start = DateTime.Now;
+        while (consumer.UnsettledMessageCount != 0)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(100));
+            DateTime now = DateTime.Now;
+            if (start - now > _waitSpan)
+            {
+                Assert.Fail("consumer.UnsettledMessageCount never reached zero!");
+            }
+        }
+
+        await consumer.CloseAsync();
+        consumer.Dispose();
+
+        IQueueInfo queueInfo1 = await _management.GetQueueInfoAsync(queueSpecification);
         ulong expectedMessageCount = (ulong)(messageCount - receivedCount);
         Assert.Equal(expectedMessageCount, queueInfo1.MessageCount());
     }
