@@ -130,14 +130,19 @@ public class AmqpPublisher : AbstractReconnectLifeCycle, IPublisher
                 // Note: sometimes `message` is null 🤔
                 // System.Diagnostics.Debug.Assert(Object.ReferenceEquals(nativeMessage, message));
 
-                OutcomeState publishState = OutcomeState.Accepted;
                 // TODO what about other outcomes, like Released?
+                PublishOutcome publishOutcome;
                 if (outcome is Rejected rejectedOutcome)
                 {
-                    publishState = OutcomeState.Failed;
+                    OutcomeState publishState = OutcomeState.Failed;
+                    publishOutcome = new PublishOutcome(publishState, Utils.ConvertError(rejectedOutcome.Error));
+                }
+                else
+                {
+                    OutcomeState publishState = OutcomeState.Accepted;
+                    publishOutcome = new PublishOutcome(publishState, null);
                 }
 
-                var publishOutcome = new PublishOutcome(publishState, null);
                 messagePublishedTcs.SetResult(publishOutcome);
             }
 

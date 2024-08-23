@@ -154,12 +154,13 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
 
         IPublisherBuilder publisherBuilder = _connection.PublisherBuilder();
         // TODO implement Listeners
-        IPublisher publisher = await publisherBuilder.Exchange(_exchangeName).BuildAsync();
+        IPublisher publisher = await publisherBuilder.Exchange(exchangeSpecification).BuildAsync();
 
         try
         {
             IQueueSpecification queueSpecification = _management.Queue().Exclusive(true);
             IQueueInfo queueInfo = await queueSpecification.DeclareAsync();
+            Assert.Equal(_queueName, queueInfo.Name());
             IBindingSpecification bindingSpecification = _management.Binding()
                 .SourceExchange(_exchangeName)
                 .DestinationQueue(queueSpecification);
@@ -189,5 +190,55 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         Assert.NotNull(publishOutcome.Error);
         Assert.Contains(_exchangeName, publishOutcome.Error.Description);
         Assert.Equal("amqp:not-found", publishOutcome.Error.ErrorCode);
+    }
+
+    [Fact]
+    public async Task PublisherSendingShouldThrowWhenQueueHasBeenDeleted()
+    {
+        /*
+         * TODO
+         * Note: this test is a little different than the Java client
+         * The Java client has a dedicated "entity not found" exception
+         */
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+        IMessage message = new AmqpMessage(Encoding.ASCII.GetBytes("hello"));
+
+        IQueueSpecification queueSpecification = _management.Queue(_queueName).Exclusive(true);
+        IQueueInfo queueInfo = await queueSpecification.DeclareAsync();
+        Assert.Equal(_queueName, queueInfo.Name());
+
+        IPublisherBuilder publisherBuilder = _connection.PublisherBuilder();
+        // TODO implement Listeners
+        IPublisher publisher = await publisherBuilder.Queue(queueSpecification).BuildAsync();
+
+        try
+        {
+            PublishResult publishResult = await publisher.PublishAsync(message);
+            Assert.Equal(OutcomeState.Accepted, publishResult.Outcome.State);
+        }
+        finally
+        {
+            await queueSpecification.DeleteAsync();
+        }
+
+        PublishOutcome? publishOutcome = null;
+        for (int i = 0; i < 100; i++)
+        {
+            PublishResult nextPublishResult = await publisher.PublishAsync(message);
+            if (OutcomeState.Failed == nextPublishResult.Outcome.State)
+            {
+                publishOutcome = nextPublishResult.Outcome;
+                break;
+            }
+            await Task.Delay(TimeSpan.FromMilliseconds(100));
+        }
+
+        Assert.NotNull(publishOutcome);
+        Assert.NotNull(publishOutcome.Error);
+
+        // TODO this is quite different than the Java client
+        Assert.Null(publishOutcome.Error.Description);
+        Assert.Equal("amqp:resource-deleted", publishOutcome.Error.ErrorCode);
     }
 }
