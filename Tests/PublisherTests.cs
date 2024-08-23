@@ -37,8 +37,8 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
 
         // TODO these are timeout exceptions under the hood, compare
         // with the Java client
-        PublisherException ex = await Assert.ThrowsAsync<PublisherException>(() =>
-            _connection.PublisherBuilder().Queue(doesNotExist).BuildAsync());
+        IPublisherBuilder publisherBuilder = _connection.PublisherBuilder().Queue(doesNotExist);
+        PublisherException ex = await Assert.ThrowsAsync<PublisherException>(() => publisherBuilder.BuildAsync());
 
         Assert.Contains(doesNotExist, ex.Message);
     }
@@ -51,8 +51,8 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
 
         string doesNotExist = Guid.NewGuid().ToString();
 
-        PublisherException ex = await Assert.ThrowsAsync<PublisherException>(() =>
-            _connection.PublisherBuilder().Exchange(doesNotExist).BuildAsync());
+        IPublisherBuilder publisherBuilder = _connection.PublisherBuilder().Exchange(doesNotExist);
+        PublisherException ex = await Assert.ThrowsAsync<PublisherException>(() => publisherBuilder.BuildAsync());
 
         Assert.Contains(doesNotExist, ex.Message);
     }

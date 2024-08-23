@@ -56,7 +56,8 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-        IQueueSpecification queueSpec = _management.Queue().Name(_queueName)
+        IQueueSpecification queueSpec = _management.Queue()
+            .Name(_queueName)
             .AutoDelete(autoDelete)
             .Exclusive(exclusive)
             .Type(type);
@@ -81,14 +82,15 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-        IQueueSpecification queueSpec = _management.Queue().Name(_queueName).AutoDelete(false);
-        await queueSpec.DeclareAsync();
+        IQueueSpecification queueSpec0 = _management.Queue().Name(_queueName).AutoDelete(false);
+        await queueSpec0.DeclareAsync();
 
         // Re-declare, for kicks
-        await _management.Queue().Name(_queueName).AutoDelete(false).DeclareAsync();
+        IQueueSpecification queueSpec1 = _management.Queue().Name(_queueName).AutoDelete(false);
+        await queueSpec1.DeclareAsync();
 
-        await Assert.ThrowsAsync<PreconditionFailedException>(async () =>
-            await _management.Queue().Name(_queueName).AutoDelete(true).DeclareAsync());
+        IQueueSpecification queueSpec3 = _management.Queue().Name(_queueName).AutoDelete(true);
+        await Assert.ThrowsAsync<PreconditionFailedException>(() => queueSpec3.DeclareAsync());
     }
 
     [Fact]
@@ -101,12 +103,11 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         IQueueSpecification queueSpec2 = _management.Queue().Name(_queueName).AutoDelete(false);
         await Task.WhenAll(queueSpec1.DeclareAsync(), queueSpec2.DeclareAsync());
 
-        await queueSpec1.DeleteAsync();
-        await queueSpec2.DeleteAsync();
+        await Task.WhenAll(queueSpec1.DeleteAsync(), queueSpec2.DeleteAsync());
     }
 
     [Fact]
-    public async Task DeclareQueueWithDifferentArguments()
+    public async Task DeclareQueueWithArguments()
     {
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
@@ -135,13 +136,17 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
     }
 
     [Fact]
-    public async Task DeclareStreamQueueWithDifferentArguments()
+    public async Task DeclareStreamQueueWithArguments()
     {
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-        IQueueInfo queueInfo = await _management.Queue().Name(_queueName)
-            .Stream().MaxAge(TimeSpan.FromSeconds(10)).MaxSegmentSizeBytes(ByteCapacity.Kb(1024)).InitialClusterSize(1)
+        IQueueInfo queueInfo = await _management.Queue()
+            .Name(_queueName)
+            .Stream()
+            .MaxAge(TimeSpan.FromSeconds(10))
+            .MaxSegmentSizeBytes(ByteCapacity.Kb(1024))
+            .InitialClusterSize(1)
             .Queue()
             .DeclareAsync();
 
@@ -153,12 +158,13 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
     }
 
     [Fact]
-    public async Task DeclareQuorumQueueWithDifferentArguments()
+    public async Task DeclareQuorumQueueWithArguments()
     {
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-        IQueueInfo queueInfo = await _management.Queue().Name(_queueName)
+        IQueueInfo queueInfo = await _management.Queue()
+            .Name(_queueName)
             .Quorum()
             .DeliveryLimit(12)
             .DeadLetterStrategy(QuorumQueueDeadLetterStrategy.AtLeastOnce)
@@ -174,18 +180,18 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
     }
 
     [Fact]
-    public async Task DeclareClassicQueueWithDifferentArguments()
+    public async Task DeclareClassicQueueWithArguments()
     {
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-        IQueueInfo info = await _management.Queue().Name(_queueName)
+        IQueueInfo info = await _management.Queue()
+            .Name(_queueName)
             .Classic()
             .Mode(ClassicQueueMode.Lazy)
             .Version(ClassicQueueVersion.V2)
             .Queue()
             .DeclareAsync();
-
 
         Assert.Equal("lazy", info.Arguments()["x-queue-mode"]);
         Assert.Equal(2, info.Arguments()["x-queue-version"]);
@@ -264,21 +270,39 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
     }
 
     [Fact]
-    public async Task ExchangeWithDifferentArgs()
+    public async Task RedeclareExchangeWithSameArgs()
     {
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-        IExchangeSpecification exchangeSpec = _management.Exchange(_exchangeName).AutoDelete(true).Argument("my_key", "my _value");
-        await exchangeSpec.DeclareAsync();
+        IExchangeSpecification exchangeSpec0 = _management.Exchange(_exchangeName).AutoDelete(true).Argument("my_key", "my _value");
+        await exchangeSpec0.DeclareAsync();
 
         // Second re-declare
-        await _management.Exchange(_exchangeName).AutoDelete(true).Argument("my_key", "my _value").DeclareAsync();
+        IExchangeSpecification exchangeSpec1 = _management.Exchange(_exchangeName).AutoDelete(true).Argument("my_key", "my _value");
+        await exchangeSpec1.DeclareAsync();
 
-        await SystemUtils.WaitUntilExchangeExistsAsync(exchangeSpec);
+        await SystemUtils.WaitUntilExchangeExistsAsync(exchangeSpec0);
 
-        await exchangeSpec.DeleteAsync();
-        await SystemUtils.WaitUntilExchangeDeletedAsync(exchangeSpec);
+        await exchangeSpec0.DeleteAsync();
+        await SystemUtils.WaitUntilExchangeDeletedAsync(exchangeSpec0);
+    }
+
+    [Fact]
+    public async Task RedeclareExchangeWithDifferentArgs()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IExchangeSpecification exchangeSpec0 = _management.Exchange(_exchangeName).Type(ExchangeType.DIRECT);
+        await exchangeSpec0.DeclareAsync();
+
+        IExchangeSpecification exchangeSpec1 = _management.Exchange(_exchangeName).Type(ExchangeType.FANOUT);
+
+        PreconditionFailedException pfex = await Assert.ThrowsAsync<PreconditionFailedException>(exchangeSpec1.DeclareAsync);
+
+        await exchangeSpec0.DeleteAsync();
+        await SystemUtils.WaitUntilExchangeDeletedAsync(exchangeSpec0);
     }
 
     [Fact]
