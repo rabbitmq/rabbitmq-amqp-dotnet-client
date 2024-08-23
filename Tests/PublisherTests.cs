@@ -35,6 +35,8 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
 
         string doesNotExist = Guid.NewGuid().ToString();
 
+        // TODO these are timeout exceptions under the hood, compare
+        // with the Java client
         PublisherException ex = await Assert.ThrowsAsync<PublisherException>(() =>
             _connection.PublisherBuilder().Queue(doesNotExist).BuildAsync());
 

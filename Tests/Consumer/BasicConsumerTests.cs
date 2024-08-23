@@ -393,4 +393,26 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
             publisher.Dispose();
         }
     }
+
+    [Fact]
+    public async Task ConsumerShouldThrowWhenQueueDoesNotExist()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+        string doesNotExist = Guid.NewGuid().ToString();
+
+        IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder()
+            .Queue(doesNotExist)
+            .MessageHandler((context, message) =>
+            {
+                return Task.CompletedTask;
+            }
+        );
+
+        // TODO these are timeout exceptions under the hood, compare
+        // with the Java client
+        ConsumerException ex = await Assert.ThrowsAsync<ConsumerException>(
+            () => consumerBuilder.BuildAsync());
+        Assert.Contains(doesNotExist, ex.Message);
+    }
 }
