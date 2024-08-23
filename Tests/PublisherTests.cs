@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
@@ -31,8 +32,26 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-        await Assert.ThrowsAsync<PublisherException>(() =>
-            _connection.PublisherBuilder().Queue("queue_does_not_exist").BuildAsync());
+        string doesNotExist = Guid.NewGuid().ToString();
+
+        PublisherException ex = await Assert.ThrowsAsync<PublisherException>(() =>
+            _connection.PublisherBuilder().Queue(doesNotExist).BuildAsync());
+
+        Assert.Contains(doesNotExist, ex.Message);
+    }
+
+    [Fact]
+    public async Task PublisherShouldThrowWhenExchangeDoesNotExist()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        string doesNotExist = Guid.NewGuid().ToString();
+
+        PublisherException ex = await Assert.ThrowsAsync<PublisherException>(() =>
+            _connection.PublisherBuilder().Exchange(doesNotExist).BuildAsync());
+
+        Assert.Contains(doesNotExist, ex.Message);
     }
 
     [Fact]
