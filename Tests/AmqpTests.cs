@@ -60,9 +60,11 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
     }
 
     [Theory]
-    [InlineData("foobar")]
-    [InlineData("фообар")]
-    public async Task QueueDeclareDeletePublishConsume(string subject)
+    [InlineData("foobar", QueueType.CLASSIC)]
+    [InlineData("foobar", QueueType.QUORUM)]
+    [InlineData("фообар", QueueType.CLASSIC)]
+    [InlineData("фообар", QueueType.QUORUM)]
+    public async Task QueueDeclareDeletePublishConsume(string subject, QueueType expectedQueueType)
     {
         byte[] messageBody = Encoding.UTF8.GetBytes("hello");
         const int messageCount = 100;
@@ -70,8 +72,21 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-        // IQueueInfo declaredQueueInfo = await _management.Queue().Name(_queueName).Quorum().Queue().Declare();
-        IQueueInfo declaredQueueInfo = await _management.Queue().Name(_queueName).Classic().Queue().DeclareAsync();
+        IQueueSpecification? queueSpecification = null;
+        switch (expectedQueueType)
+        {
+            case QueueType.CLASSIC:
+                queueSpecification = _management.Queue().Name(_queueName).Classic().Queue();
+                break;
+            case QueueType.QUORUM:
+                queueSpecification = _management.Queue().Name(_queueName).Quorum().Queue();
+                break;
+            default:
+                Assert.Fail();
+                break;
+        }
+
+        IQueueInfo declaredQueueInfo = await queueSpecification.DeclareAsync();
         Assert.Equal(_queueName, declaredQueueInfo.Name());
 
         IPublisherBuilder publisherBuilder = _connection.PublisherBuilder();
