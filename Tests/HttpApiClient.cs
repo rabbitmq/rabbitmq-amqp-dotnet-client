@@ -330,4 +330,11 @@ public class HttpApiClient : IDisposable
     }
 
     public void Dispose() => _managementClient.Dispose();
+
+
+    public async Task DeleteExchangeAsync(string exchangeNameStr)
+    {
+        var exchangeName = new ExchangeName(exchangeNameStr, "/");
+        await _managementClient.DeleteExchangeAsync(exchangeName);
+    }
 }

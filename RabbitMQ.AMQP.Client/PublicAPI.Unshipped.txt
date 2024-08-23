@@ -528,6 +528,7 @@ RabbitMQ.AMQP.Client.ITlsSettings.RemoteCertificateValidationCallback.get -> Sys
 RabbitMQ.AMQP.Client.ITlsSettings.RemoteCertificateValidationCallback.set -> void
 RabbitMQ.AMQP.Client.ITopologyListener
 RabbitMQ.AMQP.Client.ITopologyListener.Clear() -> void
+RabbitMQ.AMQP.Client.ITopologyListener.ExchangeCount() -> int
 RabbitMQ.AMQP.Client.ITopologyListener.ExchangeDeclared(RabbitMQ.AMQP.Client.IExchangeSpecification! specification) -> void
 RabbitMQ.AMQP.Client.ITopologyListener.ExchangeDeleted(string! name) -> void
 RabbitMQ.AMQP.Client.ITopologyListener.QueueCount() -> int

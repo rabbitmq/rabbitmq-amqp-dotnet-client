@@ -13,4 +13,6 @@ public interface ITopologyListener
     void Clear();
 
     int QueueCount();
+
+    int ExchangeCount();
 }
