@@ -363,6 +363,68 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         consumer.Dispose();
     }
 
+    [Fact]
+    public async Task ConsumerShouldThrowWhenQueueDoesNotExist()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+        string doesNotExist = Guid.NewGuid().ToString();
+
+        IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder()
+            .Queue(doesNotExist)
+            .MessageHandler((context, message) =>
+            {
+                return Task.CompletedTask;
+            }
+        );
+
+        // TODO these are timeout exceptions under the hood, compare
+        // with the Java client
+        ConsumerException ex = await Assert.ThrowsAsync<ConsumerException>(
+            () => consumerBuilder.BuildAsync());
+        Assert.Contains(doesNotExist, ex.Message);
+    }
+
+    [Fact]
+    public async Task ConsumerShouldBeClosedWhenQueueIsDeleted()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IQueueSpecification queueSpecification = _management.Queue(_queueName).Exclusive(true);
+        IQueueInfo queueInfo = await queueSpecification.DeclareAsync();
+        Assert.Equal(_queueName, queueInfo.Name());
+
+        TaskCompletionSource messageHandledTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        async Task MessageHandler(IContext cxt, IMessage msg)
+        {
+            await cxt.AcceptAsync();
+            messageHandledTcs.SetResult();
+        }
+
+        IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder()
+            .Queue(_queueName)
+            .MessageHandler(MessageHandler);
+        IConsumer consumer = await consumerBuilder.BuildAsync();
+
+        IPublisherBuilder publisherBuilder = _connection.PublisherBuilder().Queue(queueInfo.Name());
+        IPublisher publisher = await publisherBuilder.BuildAsync();
+        IMessage message = new AmqpMessage(_testDisplayName);
+        PublishResult publishResult = await publisher.PublishAsync(message);
+        Assert.Equal(OutcomeState.Accepted, publishResult.Outcome.State);
+
+        await messageHandledTcs.Task.WaitAsync(_waitSpan);
+
+        await queueSpecification.DeleteAsync();
+
+        // TODO here is where the consumer Listener should see a closed event
+
+        await consumer.CloseAsync();
+        consumer.Dispose();
+        await publisher.CloseAsync();
+        publisher.Dispose();
+    }
+
     private static async Task Publish(IConnection _connection, IQueueSpecification queueSpec, int numberOfMessages,
         string? filter = null)
     {
@@ -392,27 +454,5 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
             await publisher.CloseAsync();
             publisher.Dispose();
         }
-    }
-
-    [Fact]
-    public async Task ConsumerShouldThrowWhenQueueDoesNotExist()
-    {
-        Assert.NotNull(_connection);
-        Assert.NotNull(_management);
-        string doesNotExist = Guid.NewGuid().ToString();
-
-        IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder()
-            .Queue(doesNotExist)
-            .MessageHandler((context, message) =>
-            {
-                return Task.CompletedTask;
-            }
-        );
-
-        // TODO these are timeout exceptions under the hood, compare
-        // with the Java client
-        ConsumerException ex = await Assert.ThrowsAsync<ConsumerException>(
-            () => consumerBuilder.BuildAsync());
-        Assert.Contains(doesNotExist, ex.Message);
     }
 }
