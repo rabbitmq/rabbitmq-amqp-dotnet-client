@@ -1,3 +1,7 @@
+// This source code is dual-licensed under the Apache License, version
+// 2.0, and the Mozilla Public License, version 2.0.
+// Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -117,20 +121,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         IConsumer? consumer = null;
         try
         {
-            publisher = await _connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
-
-            var publishTasks = new List<Task<PublishResult>>();
-            for (int i = 0; i < publishCount; i++)
-            {
-                var message = new AmqpMessage($"message_{i}");
-                publishTasks.Add(publisher.PublishAsync(message));
-            }
-            await Task.WhenAll(publishTasks);
-            foreach (Task<PublishResult> pt in publishTasks)
-            {
-                PublishResult pr = await pt;
-                Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
-            }
+            await PublishAsync(_connection, queueSpec, publishCount);
 
             TaskCompletionSource<List<IMessage>> tcs = new();
             int messagesConsumedCount = 0;
@@ -209,7 +200,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(QueueType.STREAM);
         await queueSpec.DeclareAsync();
 
-        await Publish(_connection, queueSpec, 100);
+        await PublishAsync(_connection, queueSpec, 100);
 
         int consumed = 0;
         IConsumer consumer = await _connection.ConsumerBuilder()
@@ -266,7 +257,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         var publishTasks = new List<Task>();
         foreach (string se in filters)
         {
-            publishTasks.Add(Publish(_connection, queueSpec, 1, se));
+            publishTasks.Add(PublishAsync(_connection, queueSpec, 1, se));
         }
         await Task.WhenAll(publishTasks);
         publishTasks.Clear();
@@ -276,7 +267,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
 
         // publish extra messages without filter and these messages should be always excluded
         // by the consumer with the filter
-        await Publish(_connection, queueSpec, 10);
+        await PublishAsync(_connection, queueSpec, 10);
 
         List<IMessage> receivedMessages = [];
         IConsumer consumer = await _connection.ConsumerBuilder()
@@ -336,7 +327,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(QueueType.STREAM);
         await queueSpec.DeclareAsync();
 
-        await Publish(_connection, queueSpec, 100);
+        await PublishAsync(_connection, queueSpec, 100);
 
         int consumed = 0;
         IConsumer consumer = await _connection.ConsumerBuilder()
@@ -425,7 +416,51 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         publisher.Dispose();
     }
 
-    private static async Task Publish(IConnection _connection, IQueueSpecification queueSpec, int numberOfMessages,
+    [Fact]
+    public async Task ConsumerUnsettledMessagesGoBackToQueueAfterClosing()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        int messageCount = 100;
+        int initialCredits = messageCount / 10;
+        int settledCount = initialCredits * 2;
+
+        IQueueSpecification queueSpecification = _management.Queue(_queueName).Exclusive(true);
+        IQueueInfo queueInfo0 = await queueSpecification.DeclareAsync();
+        Assert.Equal(_queueName, queueInfo0.Name());
+
+        await PublishAsync(_connection, queueSpecification, messageCount);
+
+        TaskCompletionSource receivedGreaterThanSettledTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        long receivedCount = 0;
+        IConsumer consumer = await _connection.ConsumerBuilder()
+            .Queue(queueInfo0.Name())
+            .InitialCredits(initialCredits)
+            .MessageHandler(async (IContext ctx, IMessage msg) =>
+            {
+                if (Interlocked.Increment(ref receivedCount) <= settledCount)
+                {
+                    await ctx.AcceptAsync();
+                }
+                else
+                {
+                    receivedGreaterThanSettledTcs.TrySetResult();
+                }
+            }).BuildAsync();
+
+        await receivedGreaterThanSettledTcs.Task.WaitAsync(_waitSpan);
+
+        await consumer.CloseAsync();
+
+        IQueueInfo queueInfo1 = await _management.GetQueueInfoAsync(queueSpecification);
+        ulong expectedMessageCount = (ulong)(messageCount - settledCount);
+        Assert.Equal(expectedMessageCount, queueInfo1.MessageCount());
+    }
+
+
+    // TODO move this to IntegrationTests, use elsewhere?
+    private static async Task PublishAsync(IConnection _connection, IQueueSpecification queueSpec, int numberOfMessages,
         string? filter = null)
     {
         IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
