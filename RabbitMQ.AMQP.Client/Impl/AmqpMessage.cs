@@ -55,9 +55,9 @@ public class AmqpMessage : IMessage
         NativeMessage.MessageAnnotations ??= new MessageAnnotations();
     }
 
-
     public object Body()
     {
+        // TODO do we need to do anything with NativeMessage.BodySection?
         return NativeMessage.Body;
     }
 
