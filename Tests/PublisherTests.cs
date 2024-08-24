@@ -14,6 +14,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
     public async Task ValidateBuilderRaiseExceptionIfQueueOrExchangeAreNotSetCorrectly()
     {
         Assert.NotNull(_connection);
+        Assert.NotNull(_management);
 
         await Assert.ThrowsAsync<InvalidAddressException>(() =>
             _connection.PublisherBuilder().Queue("does_not_matter").Exchange("i_should_not_stay_here").BuildAsync());
@@ -22,9 +23,8 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
 
         await Assert.ThrowsAsync<InvalidAddressException>(() => _connection.PublisherBuilder().Queue("").BuildAsync());
 
-        Assert.Empty(_connection.GetPublishers());
-
         await _connection.CloseAsync();
+        Assert.Empty(_connection.GetPublishers());
     }
 
     [Fact]
@@ -75,6 +75,8 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
 
         Assert.Single(_connection.GetPublishers());
         await publisher.CloseAsync();
+        publisher.Dispose();
+
         Assert.Empty(_connection.GetPublishers());
     }
 
@@ -100,6 +102,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         foreach (IPublisher publisher in _connection.GetPublishers())
         {
             await publisher.CloseAsync();
+            publisher.Dispose();
         }
 
         await _connection.CloseAsync();
@@ -133,7 +136,10 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         await SystemUtils.WaitUntilQueueMessageCount(queueToSend1, 1);
 
         Assert.Single(_connection.GetPublishers());
+
         await publisher.CloseAsync();
+        publisher.Dispose();
+
         Assert.Empty(_connection.GetPublishers());
 
         await bindingSpec.UnbindAsync();
@@ -191,6 +197,9 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         Assert.NotNull(publishOutcome.Error);
         Assert.Contains(_exchangeName, publishOutcome.Error.Description);
         Assert.Equal("amqp:not-found", publishOutcome.Error.ErrorCode);
+
+        await publisher.CloseAsync();
+        publisher.Dispose();
     }
 
     [Fact]
@@ -241,5 +250,8 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         // TODO this is quite different than the Java client
         Assert.Null(publishOutcome.Error.Description);
         Assert.Equal("amqp:resource-deleted", publishOutcome.Error.ErrorCode);
+
+        await publisher.CloseAsync();
+        publisher.Dispose();
     }
 }

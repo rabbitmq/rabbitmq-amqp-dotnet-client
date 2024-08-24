@@ -9,7 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using EasyNetQ.Management.Client.Model;
 using RabbitMQ.AMQP.Client;
-using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -29,23 +28,10 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
 
         const int messageCount = 100;
 
-        IQueueInfo declaredQueueInfo = await _management.Queue().Exclusive(true).DeclareAsync();
-        IPublisher publisher = await _connection.PublisherBuilder().Queue(declaredQueueInfo.Name()).BuildAsync();
+        IQueueSpecification queueSpecification = _management.Queue().Exclusive(true);
+        IQueueInfo declaredQueueInfo = await queueSpecification.DeclareAsync();
 
-        var publishTasks = new List<Task<RabbitMQ.AMQP.Client.PublishResult>>();
-        for (int i = 0; i < messageCount; i++)
-        {
-            IMessage message = new AmqpMessage($"message_{i}");
-            publishTasks.Add(publisher.PublishAsync(message));
-        }
-
-        await Task.WhenAll(publishTasks);
-
-        foreach (Task<RabbitMQ.AMQP.Client.PublishResult> pt in publishTasks)
-        {
-            RabbitMQ.AMQP.Client.PublishResult pr = await pt;
-            Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
-        }
+        await PublishAsync(queueSpecification, messageCount);
 
         const int initialCredits = 10;
 
@@ -99,7 +85,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
         }
         await SystemUtils.WaitUntilAsync(MessagesUnacknowledgedIsZero);
 
-        await Task.WhenAll(acceptTasks);
+        await WhenAllComplete(acceptTasks);
         acceptTasks.Clear();
 
         Assert.Equal(initialCredits, messageContexts.Count);
@@ -127,7 +113,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
             acceptTasks.Add(ctx.AcceptAsync());
         }
 
-        await Task.WhenAll(acceptTasks);
+        await WhenAllComplete(acceptTasks);
         acceptTasks.Clear();
     }
 
@@ -142,23 +128,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
         IQueueSpecification queueSpecification = _management.Queue(_queueName).Exclusive(true);
         IQueueInfo queueInfo = await queueSpecification.DeclareAsync();
 
-        IPublisherBuilder publisherBuilder = _connection.PublisherBuilder().Queue(queueSpecification);
-        IPublisher publisher = await publisherBuilder.BuildAsync();
-
-        var publishTasks = new List<Task<RabbitMQ.AMQP.Client.PublishResult>>();
-        for (int i = 0; i < messageCount; i++)
-        {
-            IMessage message = new AmqpMessage($"message_{i}");
-            publishTasks.Add(publisher.PublishAsync(message));
-        }
-
-        await Task.WhenAll(publishTasks);
-
-        foreach (Task<RabbitMQ.AMQP.Client.PublishResult> pt in publishTasks)
-        {
-            RabbitMQ.AMQP.Client.PublishResult pr = await pt;
-            Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
-        }
+        await PublishAsync(queueSpecification, messageCount);
 
         const int initialCredits = 10;
         long receivedCount = 0;
@@ -231,23 +201,8 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
 
         IQueueSpecification queueSpecification = _management.Queue(_queueName).Exclusive(true);
         IQueueInfo queueInfo = await queueSpecification.DeclareAsync();
-        IPublisherBuilder publisherBuilder = _connection.PublisherBuilder().Queue(queueSpecification);
-        IPublisher publisher = await publisherBuilder.BuildAsync();
 
-        var publishTasks = new List<Task<RabbitMQ.AMQP.Client.PublishResult>>();
-        for (int i = 0; i < messageCount; i++)
-        {
-            IMessage message = new AmqpMessage($"message_{i}");
-            publishTasks.Add(publisher.PublishAsync(message));
-        }
-
-        await Task.WhenAll(publishTasks);
-
-        foreach (Task<RabbitMQ.AMQP.Client.PublishResult> pt in publishTasks)
-        {
-            RabbitMQ.AMQP.Client.PublishResult pr = await pt;
-            Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
-        }
+        await PublishAsync(queueSpecification, messageCount);
 
         TaskCompletionSource receivedTwiceInitialCreditsTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
         const int initialCredits = 10;

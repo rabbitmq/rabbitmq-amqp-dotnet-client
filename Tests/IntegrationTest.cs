@@ -113,6 +113,11 @@ public abstract class IntegrationTest : IAsyncLifetime
 
     protected static string Now => DateTime.UtcNow.ToString("s", CultureInfo.InvariantCulture);
 
+    protected Task WhenAllComplete(params Task[] tasks)
+    {
+        return Task.WhenAll(tasks).WaitAsync(_waitSpan);
+    }
+
     protected Task WhenAllComplete(IEnumerable<Task> tasks)
     {
         return Task.WhenAll(tasks).WaitAsync(_waitSpan);
@@ -121,5 +126,65 @@ public abstract class IntegrationTest : IAsyncLifetime
     protected Task WhenTaskCompletes(Task task)
     {
         return task.WaitAsync(_waitSpan);
+    }
+
+    protected Task PublishAsync(IQueueSpecification queueSpecification, int numberOfMessages)
+    {
+        return DoPublishAsync(queueSpecification, numberOfMessages);
+    }
+
+    protected Task PublishWithFilterAsync(IQueueSpecification queueSpecification, int numberOfMessages,
+        string streamFilter)
+    {
+        return DoPublishAsync(queueSpecification, numberOfMessages, null, streamFilter);
+    }
+
+    protected Task PublishWithSubjectAsync(IQueueSpecification queueSpecification, int numberOfMessages,
+        string subject)
+    {
+        return DoPublishAsync(queueSpecification, numberOfMessages, subject, null);
+    }
+
+    private async Task DoPublishAsync(IQueueSpecification queueSpecification, int numberOfMessages,
+        string? subject = null, string? streamFilter = null)
+    {
+        Assert.NotNull(_connection);
+
+        IPublisherBuilder publisherBuilder = _connection.PublisherBuilder().Queue(queueSpecification);
+        IPublisher publisher = await publisherBuilder.BuildAsync();
+        try
+        {
+            var publishTasks = new List<Task<PublishResult>>();
+            for (int i = 0; i < numberOfMessages; i++)
+            {
+                IMessage message = new AmqpMessage($"message_{i}");
+                message.MessageId(i.ToString());
+
+                if (subject != null)
+                {
+                    message.Subject(subject);
+                }
+
+                if (streamFilter != null)
+                {
+                    message.Annotation("x-stream-filter-value", streamFilter);
+                }
+
+                publishTasks.Add(publisher.PublishAsync(message));
+            }
+
+            await WhenAllComplete(publishTasks);
+
+            foreach (Task<PublishResult> pt in publishTasks)
+            {
+                PublishResult pr = await pt;
+                Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
+            }
+        }
+        finally
+        {
+            await publisher.CloseAsync();
+            publisher.Dispose();
+        }
     }
 }

@@ -92,27 +92,7 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         IQueueInfo declaredQueueInfo = await queueSpecification.DeclareAsync();
         Assert.Equal(_queueName, declaredQueueInfo.Name());
 
-        IPublisherBuilder publisherBuilder = _connection.PublisherBuilder();
-        IPublisher publisher = await publisherBuilder.Queue(declaredQueueInfo.Name()).BuildAsync();
-
-        var publishTasks = new List<Task<PublishResult>>();
-        for (int i = 0; i < messageCount; i++)
-        {
-            Guid messageId = Guid.NewGuid();
-
-            IMessage message = new AmqpMessage(messageBody);
-            message.MessageId(messageId.ToString());
-            message.Subject(subject);
-            publishTasks.Add(publisher.PublishAsync(message));
-        }
-
-        await WhenAllComplete(publishTasks);
-
-        foreach (Task<PublishResult> pt in publishTasks)
-        {
-            PublishResult pr = await pt;
-            Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
-        }
+        await PublishWithSubjectAsync(queueSpecification, messageCount, subject: subject);
 
         IQueueInfo retrievedQueueInfo0 = await _management.GetQueueInfoAsync(_queueName);
         Assert.Equal(_queueName, retrievedQueueInfo0.Name());
@@ -122,11 +102,13 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         long receivedMessageCount = 0;
         var allMessagesReceivedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         string? receivedSubject = null;
+        var messageIds = new ConcurrentBag<int>();
         async Task MessageHandler(IContext ctx, IMessage msg)
         {
             try
             {
                 receivedSubject = msg.Subject();
+                messageIds.Add(int.Parse(msg.MessageId()));
                 await ctx.AcceptAsync();
                 if (Interlocked.Increment(ref receivedMessageCount) == messageCount)
                 {
@@ -143,6 +125,7 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         IConsumer consumer = await consumerBuilder.Queue(_queueName).MessageHandler(MessageHandler).BuildAsync();
 
         await WhenTaskCompletes(allMessagesReceivedTcs.Task);
+        Assert.Equal(messageCount, messageIds.Count);
 
         Assert.NotNull(receivedSubject);
         Assert.Equal(subject, receivedSubject);
@@ -151,8 +134,6 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         Assert.Equal((uint)1, retrievedQueueInfo1.ConsumerCount());
         Assert.Equal((uint)0, retrievedQueueInfo1.MessageCount());
 
-        await publisher.CloseAsync();
-        publisher.Dispose();
         await consumer.CloseAsync();
         consumer.Dispose();
     }

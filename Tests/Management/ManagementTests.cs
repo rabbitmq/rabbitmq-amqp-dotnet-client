@@ -101,9 +101,8 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
 
         IQueueSpecification queueSpec1 = _management.Queue().Name(_queueName).AutoDelete(false);
         IQueueSpecification queueSpec2 = _management.Queue().Name(_queueName).AutoDelete(false);
-        await Task.WhenAll(queueSpec1.DeclareAsync(), queueSpec2.DeclareAsync());
-
-        await Task.WhenAll(queueSpec1.DeleteAsync(), queueSpec2.DeleteAsync());
+        await WhenAllComplete(queueSpec1.DeclareAsync(), queueSpec2.DeclareAsync());
+        await WhenAllComplete(queueSpec1.DeleteAsync(), queueSpec2.DeleteAsync());
     }
 
     [Fact]

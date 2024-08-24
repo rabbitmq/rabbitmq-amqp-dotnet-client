@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
-using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -24,11 +23,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         IQueueSpecification queueSpec = _management.Queue().Name(_queueName);
         await queueSpec.DeclareAsync();
 
-        IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
-
-        var message = new AmqpMessage("Hello world!");
-        PublishResult pr = await publisher.PublishAsync(message);
-        Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
+        await PublishAsync(queueSpec, 1);
 
         TaskCompletionSource<IMessage> tcs = new();
         IConsumer consumer = await _connection.ConsumerBuilder()
@@ -42,12 +37,10 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
 
         await tcs.Task.WaitAsync(_waitSpan);
         IMessage receivedMessage = await tcs.Task;
-        Assert.Equal("Hello world!", receivedMessage.Body());
+        Assert.Equal("message_0", receivedMessage.Body());
 
         await consumer.CloseAsync();
         consumer.Dispose();
-        await publisher.CloseAsync();
-        publisher.Dispose();
     }
 
     /// <summary>
@@ -62,22 +55,18 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-        IQueueSpecification queueSpec = _management.Queue(_queueName);
-        await queueSpec.DeclareAsync();
+        IQueueSpecification queueSpecification = _management.Queue(_queueName);
+        await queueSpecification.DeclareAsync();
 
-        IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
-
-        var message = new AmqpMessage("Hello world!");
-        PublishResult pr = await publisher.PublishAsync(message);
-        Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
+        await PublishAsync(queueSpecification, 1);
 
         TaskCompletionSource<int> tcs = new();
         int consumed = 0;
         IConsumer consumer = await _connection.ConsumerBuilder()
-            .Queue(queueSpec)
+            .Queue(queueSpecification)
             .MessageHandler(async (context, message) =>
             {
-                Assert.Equal("Hello world!", message.Body());
+                Assert.Equal("message_0", message.Body());
                 Interlocked.Increment(ref consumed);
                 switch (consumed)
                 {
@@ -98,11 +87,9 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
 
         await consumer.CloseAsync();
         consumer.Dispose();
-        await publisher.CloseAsync();
-        publisher.Dispose();
 
-        await SystemUtils.WaitUntilQueueMessageCount(queueSpec, 0);
-        await queueSpec.DeleteAsync();
+        await SystemUtils.WaitUntilQueueMessageCount(queueSpecification, 0);
+        await queueSpecification.DeleteAsync();
     }
 
     [Fact]
@@ -117,11 +104,10 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         IQueueSpecification queueSpec = _management.Queue(_queueName);
         await queueSpec.DeclareAsync();
 
-        IPublisher? publisher = null;
         IConsumer? consumer = null;
         try
         {
-            await PublishAsync(_connection, queueSpec, publishCount);
+            await PublishAsync(queueSpec, publishCount);
 
             TaskCompletionSource<List<IMessage>> tcs = new();
             int messagesConsumedCount = 0;
@@ -167,12 +153,6 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         }
         finally
         {
-            if (publisher is not null)
-            {
-                await publisher.CloseAsync();
-                publisher.Dispose();
-            }
-
             if (consumer is not null)
             {
                 await consumer.CloseAsync();
@@ -200,7 +180,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(QueueType.STREAM);
         await queueSpec.DeclareAsync();
 
-        await PublishAsync(_connection, queueSpec, 100);
+        await PublishAsync(queueSpec, 100);
 
         int consumed = 0;
         IConsumer consumer = await _connection.ConsumerBuilder()
@@ -257,9 +237,9 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         var publishTasks = new List<Task>();
         foreach (string se in filters)
         {
-            publishTasks.Add(PublishAsync(_connection, queueSpec, 1, se));
+            publishTasks.Add(PublishWithFilterAsync(queueSpec, 1, streamFilter: se));
         }
-        await Task.WhenAll(publishTasks);
+        await WhenAllComplete(publishTasks);
         publishTasks.Clear();
 
         // wait for the messages to be published and the chunks to be created
@@ -267,7 +247,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
 
         // publish extra messages without filter and these messages should be always excluded
         // by the consumer with the filter
-        await PublishAsync(_connection, queueSpec, 10);
+        await PublishAsync(queueSpec, 10);
 
         List<IMessage> receivedMessages = [];
         IConsumer consumer = await _connection.ConsumerBuilder()
@@ -327,7 +307,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(QueueType.STREAM);
         await queueSpec.DeclareAsync();
 
-        await PublishAsync(_connection, queueSpec, 100);
+        await PublishAsync(queueSpec, 100);
 
         int consumed = 0;
         IConsumer consumer = await _connection.ConsumerBuilder()
@@ -398,11 +378,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
             .MessageHandler(MessageHandler);
         IConsumer consumer = await consumerBuilder.BuildAsync();
 
-        IPublisherBuilder publisherBuilder = _connection.PublisherBuilder().Queue(queueInfo.Name());
-        IPublisher publisher = await publisherBuilder.BuildAsync();
-        IMessage message = new AmqpMessage(_testDisplayName);
-        PublishResult publishResult = await publisher.PublishAsync(message);
-        Assert.Equal(OutcomeState.Accepted, publishResult.Outcome.State);
+        await PublishAsync(queueSpecification, 1);
 
         await messageHandledTcs.Task.WaitAsync(_waitSpan);
 
@@ -412,8 +388,6 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
 
         await consumer.CloseAsync();
         consumer.Dispose();
-        await publisher.CloseAsync();
-        publisher.Dispose();
     }
 
     [Fact]
@@ -430,7 +404,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         IQueueInfo queueInfo0 = await queueSpecification.DeclareAsync();
         Assert.Equal(_queueName, queueInfo0.Name());
 
-        await PublishAsync(_connection, queueSpecification, messageCount);
+        await PublishAsync(queueSpecification, messageCount);
 
         TaskCompletionSource receivedGreaterThanSettledTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
         long receivedCount = 0;
@@ -456,38 +430,5 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         IQueueInfo queueInfo1 = await _management.GetQueueInfoAsync(queueSpecification);
         ulong expectedMessageCount = (ulong)(messageCount - settledCount);
         Assert.Equal(expectedMessageCount, queueInfo1.MessageCount());
-    }
-
-
-    // TODO move this to IntegrationTests, use elsewhere?
-    private static async Task PublishAsync(IConnection _connection, IQueueSpecification queueSpec, int numberOfMessages,
-        string? filter = null)
-    {
-        IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
-        try
-        {
-            var publishTasks = new List<Task<PublishResult>>();
-            for (int i = 0; i < numberOfMessages; i++)
-            {
-                IMessage message = new AmqpMessage($"message_{i}");
-                if (filter != null)
-                {
-                    message.Annotation("x-stream-filter-value", filter);
-                }
-
-                publishTasks.Add(publisher.PublishAsync(message));
-            }
-            await Task.WhenAll(publishTasks);
-            foreach (Task<PublishResult> pt in publishTasks)
-            {
-                PublishResult pr = await pt;
-                Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
-            }
-        }
-        finally
-        {
-            await publisher.CloseAsync();
-            publisher.Dispose();
-        }
     }
 }
