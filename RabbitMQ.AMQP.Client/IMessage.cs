@@ -3,6 +3,8 @@ namespace RabbitMQ.AMQP.Client;
 public interface IMessage
 {
     // TODO: Complete the IMessage interface with all the  properties
+
+    // TODO does this depend on NativeMessage.BodySection?
     public object Body();
 
     // properties

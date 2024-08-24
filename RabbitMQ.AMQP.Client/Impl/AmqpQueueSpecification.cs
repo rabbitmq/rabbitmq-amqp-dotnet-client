@@ -160,13 +160,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
 
     public Dictionary<object, object> Arguments()
     {
-        var result = new Dictionary<object, object>();
-        foreach ((object? key, object? value) in _arguments)
-        {
-            result[key] = value;
-        }
-
-        return result;
+        return _arguments;
     }
 
     public IQueueSpecification Type(QueueType type)

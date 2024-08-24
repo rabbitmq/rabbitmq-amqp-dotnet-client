@@ -6,12 +6,12 @@
     <!-- RabbitMQ.Amqp.Client -->
     <PackageVersion Include="AMQPNetLite.Core" Version="2.4.11" />
     <!-- Tests -->
-    <PackageVersion Include="AltCover" Version="8.8.165" />
+    <PackageVersion Include="AltCover" Version="8.9.3" />
     <PackageVersion Include="xunit" Version="2.9.0" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageVersion Include="Xunit.SkippableFact" Version="1.4.13" />
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.11.0" />
     <PackageVersion Include="EasyNetQ.Management.Client" Version="3.0.0" />
   </ItemGroup>
   <ItemGroup Label=".NET 6 Specific" Condition="'$(TargetFramework)' == 'net6.0'">

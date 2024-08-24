@@ -90,6 +90,12 @@ public class CustomPublisherConsumerRecoveryTests(ITestOutputHelper testOutputHe
 
         IQueueSpecification queueSpec2 = connection2.Management().Queue(_queueName);
         await queueSpec2.DeleteAsync();
+
+        await publisher.CloseAsync();
+        publisher.Dispose();
+        await consumer.CloseAsync();
+        consumer.Dispose();
+
         await connection2.CloseAsync();
         connection2.Dispose();
     }
