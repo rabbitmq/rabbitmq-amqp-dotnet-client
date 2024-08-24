@@ -199,6 +199,30 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
     }
 
     [Fact]
+    public async Task DeclareQueueWithUnsupportedArgument()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IQueueSpecification queueSpecification0 = _management.Queue(_queueName).Type(QueueType.CLASSIC);
+        Dictionary<object, object> queueSpec0Args = queueSpecification0.Arguments();
+        queueSpec0Args.Add("x-max-age", "1000s");
+        PreconditionFailedException pex0 = await Assert.ThrowsAsync<PreconditionFailedException>(queueSpecification0.DeclareAsync);
+        Assert.Contains("409", pex0.Message);
+
+        IQueueSpecification queueSpecification1 = _management.Queue(_queueName).Type(QueueType.QUORUM);
+        Dictionary<object, object> queueSpec1Args = queueSpecification1.Arguments();
+        queueSpec1Args.Add("x-max-age", "1000s");
+        PreconditionFailedException pex1 = await Assert.ThrowsAsync<PreconditionFailedException>(queueSpecification1.DeclareAsync);
+        Assert.Contains("409", pex1.Message);
+
+        IQueueSpecification queueSpecification2 = _management.Queue(_queueName).Type(QueueType.STREAM);
+        queueSpecification2.DeadLetterRoutingKey("not-supported");
+        PreconditionFailedException pex2 = await Assert.ThrowsAsync<PreconditionFailedException>(queueSpecification2.DeclareAsync);
+        Assert.Contains("409", pex2.Message);
+    }
+
+    [Fact]
     public async Task ValidateDeclareQueueArguments()
     {
         Assert.NotNull(_connection);

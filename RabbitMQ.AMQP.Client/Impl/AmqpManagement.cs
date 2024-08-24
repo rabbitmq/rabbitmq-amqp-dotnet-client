@@ -75,7 +75,7 @@ public class AmqpManagement : AbstractLifeCycle, IManagement
         return new DefaultQueueInfo((Map)response.Body);
     }
 
-    public IQueueSpecification Queue(QueueSpec spec)
+    internal IQueueSpecification Queue(QueueSpec spec)
     {
         return Queue().Name(spec.Name)
             .AutoDelete(spec.AutoDelete)
@@ -410,7 +410,7 @@ public class AmqpManagement : AbstractLifeCycle, IManagement
         switch (responseCode)
         {
             case Code409:
-                throw new PreconditionFailedException($"{receivedMessage.Body}");
+                throw new PreconditionFailedException($"{receivedMessage.Body}, response code: {responseCode}");
         }
 
         // Check if the correlationId is the same as the messageId
