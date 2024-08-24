@@ -113,6 +113,16 @@ public abstract class IntegrationTest : IAsyncLifetime
 
     protected static string Now => DateTime.UtcNow.ToString("s", CultureInfo.InvariantCulture);
 
+    protected Task WhenTcsCompletes<T>(TaskCompletionSource<T> tcs)
+    {
+        return WhenTaskCompletes(tcs.Task);
+    }
+
+    protected Task WhenTcsCompletes(TaskCompletionSource tcs)
+    {
+        return WhenTaskCompletes(tcs.Task);
+    }
+
     protected Task WhenAllComplete(params Task[] tasks)
     {
         return Task.WhenAll(tasks).WaitAsync(_waitSpan);

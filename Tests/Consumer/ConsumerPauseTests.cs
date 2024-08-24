@@ -221,7 +221,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
                 await ctx.AcceptAsync();
             }).BuildAsync();
 
-        await receivedTwiceInitialCreditsTcs.Task.WaitAsync(_waitSpan);
+        await WhenTcsCompletes(receivedTwiceInitialCreditsTcs);
 
         consumer.Pause();
 
