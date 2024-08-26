@@ -127,7 +127,8 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
 
             while (_receiverLink is { LinkState: LinkState.Attached })
             {
-                TimeSpan timeout = TimeSpan.FromSeconds(60); // TODO configurable
+                // TODO the timeout waiting for messages should be configurable
+                TimeSpan timeout = TimeSpan.FromSeconds(60);
                 Message? nativeMessage = await _receiverLink.ReceiveAsync(timeout).ConfigureAwait(false);
                 if (nativeMessage is null)
                 {
@@ -157,6 +158,8 @@ public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
             }
 
             Trace.WriteLine(TraceLevel.Error, $"{ToString()} Failed to process messages, {e}");
+            // TODO this is where a Listener should get a closed event
+            // See the ConsumerShouldBeClosedWhenQueueIsDeleted test
         }
 
         Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is closed.");
