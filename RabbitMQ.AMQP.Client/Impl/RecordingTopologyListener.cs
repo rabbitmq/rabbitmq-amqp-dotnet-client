@@ -130,17 +130,17 @@ internal class ExchangeSpec(IExchangeSpecification specification)
     internal Dictionary<string, object> Arguments { get; } = specification.Arguments();
 }
 
-public class BindingSpec(IBindingSpecification specification)
+internal class BindingSpec(IBindingSpecification specification)
 {
-    public string SourceExchange { get; } = specification.SourceExchangeName();
+    internal string SourceExchange { get; } = specification.SourceExchangeName();
 
-    public string DestinationQueue { get; } = specification.DestinationQueueName();
+    internal string DestinationQueue { get; } = specification.DestinationQueueName();
 
-    public string DestinationExchange { get; } = specification.DestinationExchangeName();
+    internal string DestinationExchange { get; } = specification.DestinationExchangeName();
 
-    public string Key { get; } = specification.Key();
+    internal string Key { get; } = specification.Key();
 
-    public Dictionary<string, object> Arguments { get; } = specification.Arguments();
+    internal Dictionary<string, object> Arguments { get; } = specification.Arguments();
 
-    public string Path { get; } = specification.Path();
+    internal string Path { get; } = specification.Path();
 }

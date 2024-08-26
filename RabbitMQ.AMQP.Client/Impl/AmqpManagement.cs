@@ -107,7 +107,7 @@ public class AmqpManagement : AbstractLifeCycle, IManagement
         return new AmqpBindingSpecification(this);
     }
 
-    public IBindingSpecification Binding(BindingSpec spec)
+    internal IBindingSpecification Binding(BindingSpec spec)
     {
         return Binding()
             .SourceExchange(spec.SourceExchange)

@@ -257,7 +257,6 @@ RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.Type() -> RabbitMQ.AMQP.Clie
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.Type(RabbitMQ.AMQP.Client.ExchangeType type) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Binding() -> RabbitMQ.AMQP.Client.IBindingSpecification!
-RabbitMQ.AMQP.Client.Impl.AmqpManagement.Binding(RabbitMQ.AMQP.Client.Impl.BindingSpec! spec) -> RabbitMQ.AMQP.Client.IBindingSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Exchange() -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Exchange(string! name) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.GetQueueInfoAsync(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpec, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IQueueInfo!>!
@@ -338,14 +337,6 @@ RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.CurrentAttempt.get -> int
 RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.Delay() -> int
 RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.IsActive() -> bool
 RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.Reset() -> void
-RabbitMQ.AMQP.Client.Impl.BindingSpec
-RabbitMQ.AMQP.Client.Impl.BindingSpec.Arguments.get -> System.Collections.Generic.Dictionary<string!, object!>!
-RabbitMQ.AMQP.Client.Impl.BindingSpec.BindingSpec(RabbitMQ.AMQP.Client.IBindingSpecification! specification) -> void
-RabbitMQ.AMQP.Client.Impl.BindingSpec.DestinationExchange.get -> string!
-RabbitMQ.AMQP.Client.Impl.BindingSpec.DestinationQueue.get -> string!
-RabbitMQ.AMQP.Client.Impl.BindingSpec.Key.get -> string!
-RabbitMQ.AMQP.Client.Impl.BindingSpec.Path.get -> string!
-RabbitMQ.AMQP.Client.Impl.BindingSpec.SourceExchange.get -> string!
 RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase
 RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase.ArgsToMap() -> Amqp.Types.Map!
 RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase.BindingSpecificationBase() -> void
