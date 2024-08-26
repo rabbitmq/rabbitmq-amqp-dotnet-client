@@ -1,3 +1,7 @@
+// This source code is dual-licensed under the Apache License, version
+// 2.0, and the Mozilla Public License, version 2.0.
+// Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+
 using Amqp;
 
 namespace RabbitMQ.AMQP.Client.Impl;
@@ -7,11 +11,6 @@ public class AmqpNotOpenException(string message) : Exception(message);
 public abstract class AbstractLifeCycle : ILifeCycle
 {
     protected bool _disposed;
-
-    // TODO this should not be part of AbstractLifeCycle
-    // wait until the close operation is completed
-    protected readonly TaskCompletionSource<bool> _connectionCloseTaskCompletionSource =
-        new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public virtual Task OpenAsync()
     {

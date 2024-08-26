@@ -335,14 +335,14 @@ RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.CurrentAttempt.get -> int
 RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.Delay() -> int
 RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.IsActive() -> bool
 RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.Reset() -> void
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase.ArgsToMap() -> Amqp.Types.Map!
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase.BindingSpecificationBase() -> void
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase._arguments -> System.Collections.Generic.Dictionary<string!, object!>!
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase._destination -> string!
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase._routingKey -> string!
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase._source -> string!
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase._toQueue -> bool
+RabbitMQ.AMQP.Client.Impl.BindingSpecification
+RabbitMQ.AMQP.Client.Impl.BindingSpecification.ArgsToMap() -> Amqp.Types.Map!
+RabbitMQ.AMQP.Client.Impl.BindingSpecification.BindingSpecification() -> void
+RabbitMQ.AMQP.Client.Impl.BindingSpecification._arguments -> System.Collections.Generic.Dictionary<string!, object!>!
+RabbitMQ.AMQP.Client.Impl.BindingSpecification._destination -> string!
+RabbitMQ.AMQP.Client.Impl.BindingSpecification._routingKey -> string!
+RabbitMQ.AMQP.Client.Impl.BindingSpecification._source -> string!
+RabbitMQ.AMQP.Client.Impl.BindingSpecification._toQueue -> bool
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.Build() -> RabbitMQ.AMQP.Client.Impl.ConnectionSettings!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.ContainerId(string! containerId) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
@@ -555,7 +555,6 @@ RabbitMQ.AMQP.Client.StreamOffsetSpecification
 RabbitMQ.AMQP.Client.StreamOffsetSpecification.First = 0 -> RabbitMQ.AMQP.Client.StreamOffsetSpecification
 RabbitMQ.AMQP.Client.StreamOffsetSpecification.Last = 1 -> RabbitMQ.AMQP.Client.StreamOffsetSpecification
 RabbitMQ.AMQP.Client.StreamOffsetSpecification.Next = 2 -> RabbitMQ.AMQP.Client.StreamOffsetSpecification
-readonly RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle._connectionCloseTaskCompletionSource -> System.Threading.Tasks.TaskCompletionSource<bool>!
 static RabbitMQ.AMQP.Client.ByteCapacity.B(long bytes) -> RabbitMQ.AMQP.Client.ByteCapacity!
 static RabbitMQ.AMQP.Client.ByteCapacity.From(string! value) -> RabbitMQ.AMQP.Client.ByteCapacity!
 static RabbitMQ.AMQP.Client.ByteCapacity.Gb(long gigabytes) -> RabbitMQ.AMQP.Client.ByteCapacity!

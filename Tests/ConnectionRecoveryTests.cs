@@ -1,3 +1,7 @@
+// This source code is dual-licensed under the Apache License, version
+// 2.0, and the Mozilla Public License, version 2.0.
+// Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -60,7 +64,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
             ConnectionSettingBuilder.Create().ContainerId(containerId).RecoveryConfiguration(
                 RecoveryConfiguration.Create().Activated(activeRecovery).Topology(false)).Build());
 
-        TaskCompletionSource completion = new TaskCompletionSource();
+        TaskCompletionSource connectionClosedStateTcs = new TaskCompletionSource();
         var listFromStatus = new List<State>();
         var listToStatus = new List<State>();
         var listError = new List<Error?>();
@@ -71,14 +75,14 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
             listError.Add(error);
             if (to == State.Closed)
             {
-                completion.SetResult();
+                connectionClosedStateTcs.SetResult();
             }
         };
 
         Assert.Equal(State.Open, connection.State);
         await connection.CloseAsync();
         Assert.Equal(State.Closed, connection.State);
-        await completion.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await connectionClosedStateTcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(State.Open, listFromStatus[0]);
         Assert.Equal(State.Closing, listToStatus[0]);
         Assert.Null(listError[0]);
@@ -239,13 +243,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                     .Topology(true))
                 .ContainerId(containerId)
                 .Build());
-        TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource twoRecoveryEventsSeenTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
         int recoveryEvents = 0;
         connection.ChangeState += (sender, from, to, error) =>
         {
             if (Interlocked.Increment(ref recoveryEvents) == 2)
             {
-                completion.SetResult(true);
+                twoRecoveryEventsSeenTcs.SetResult();
             }
         };
         IManagement management = connection.Management();
@@ -253,9 +257,8 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         await management.Queue().Name(queueName).AutoDelete(true).Exclusive(true).DeclareAsync();
         Assert.Equal(1, topologyListener.QueueCount());
 
-
         await SystemUtils.WaitUntilConnectionIsKilled(containerId);
-        await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await twoRecoveryEventsSeenTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
         await SystemUtils.WaitUntilFuncAsync(() => recoveryEvents == 2);
 
         await SystemUtils.WaitUntilQueueExistsAsync(queueName);
@@ -286,13 +289,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                     .Topology(false))
                 .ContainerId(containerId)
                 .Build());
-        TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource oneRecoveryEventSeenTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
         int recoveryEvents = 0;
         connection.ChangeState += (sender, from, to, error) =>
         {
             if (Interlocked.Increment(ref recoveryEvents) == 1)
             {
-                completion.SetResult(true);
+                oneRecoveryEventSeenTcs.SetResult();
             }
         };
         IManagement management = connection.Management();
@@ -302,7 +305,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
 
         await SystemUtils.WaitUntilConnectionIsKilled(containerId);
-        await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await oneRecoveryEventSeenTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
         await SystemUtils.WaitUntilQueueDeletedAsync(queueName);
 
@@ -323,13 +326,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                     .Topology(topologyEnabled))
                 .ContainerId(containerId)
                 .Build());
-        TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource twoRecoveryEventsSeenTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
         int recoveryEvents = 0;
         connection.ChangeState += (sender, from, to, error) =>
         {
             if (Interlocked.Increment(ref recoveryEvents) == 2)
             {
-                completion.SetResult(true);
+                twoRecoveryEventsSeenTcs.SetResult();
             }
         };
         IManagement management = connection.Management();
@@ -343,7 +346,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         // the exchange is recovered.
         await SystemUtils.DeleteExchangeAsync("exchange-should-recover");
         await SystemUtils.WaitUntilConnectionIsKilled(containerId);
-        await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await twoRecoveryEventsSeenTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
         if (topologyEnabled)
         {
@@ -376,13 +379,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                     .Topology(topologyEnabled))
                 .ContainerId(containerId)
                 .Build());
-        TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource twoRecoveryEventsSeenTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
         int recoveryEvents = 0;
         connection.ChangeState += (sender, from, to, error) =>
         {
             if (Interlocked.Increment(ref recoveryEvents) == 2)
             {
-                completion.SetResult(true);
+                twoRecoveryEventsSeenTcs.SetResult();
             }
         };
         IManagement management = connection.Management();
@@ -405,7 +408,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         // The queue will be deleted due of the auto-delete flag
         await SystemUtils.WaitUntilConnectionIsKilled(containerId);
-        await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await twoRecoveryEventsSeenTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
         if (topologyEnabled)
         {

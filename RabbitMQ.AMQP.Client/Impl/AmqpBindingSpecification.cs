@@ -1,8 +1,12 @@
+// This source code is dual-licensed under the Apache License, version
+// 2.0, and the Mozilla Public License, version 2.0.
+// Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+
 using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public abstract class BindingSpecificationBase
+public abstract class BindingSpecification
 {
     protected string _source = "";
     protected string _destination = "";
@@ -23,7 +27,7 @@ public abstract class BindingSpecificationBase
     }
 }
 
-public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecification
+public class AmqpBindingSpecification : BindingSpecification, IBindingSpecification
 {
     private readonly AmqpManagement _management;
     private readonly ITopologyListener _topologyListener;

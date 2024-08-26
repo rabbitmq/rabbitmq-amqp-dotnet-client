@@ -42,6 +42,9 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
     internal ConcurrentDictionary<Guid, IPublisher> Publishers { get; } = new();
     internal ConcurrentDictionary<Guid, IConsumer> Consumers { get; } = new();
 
+    private readonly TaskCompletionSource _connectionClosedTcs =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     public ReadOnlyCollection<IPublisher> GetPublishers()
     {
         return Publishers.Values.ToList().AsReadOnly();
@@ -131,7 +134,8 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             _semaphoreClose.Release();
         }
 
-        await _connectionCloseTaskCompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(10))
+        // TODO configurable timeout?
+        await _connectionClosedTcs.Task.WaitAsync(TimeSpan.FromSeconds(10))
             .ConfigureAwait(false);
 
         OnNewStatus(State.Closed, null);
@@ -344,7 +348,7 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
                     Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is closed");
                     OnNewStatus(State.Closed, err);
                     ChangeEntitiesStatus(State.Closed, err);
-                    _connectionCloseTaskCompletionSource.SetResult(true);
+                    _connectionClosedTcs.SetResult();
                 }
 
                 if (error is null)
@@ -449,10 +453,10 @@ public class AmqpConnection : AbstractLifeCycle, IConnection
             }
             catch
             {
-                // TODO set states to Closed? Error?
+                // TODO set states to Closed? Error? Log exception? Set exception on TCS?
                 // This will be skipped if reconnection succeeds, but if there
                 // is an exception, it's important that this be called.
-                _connectionCloseTaskCompletionSource.SetResult(true);
+                _connectionClosedTcs.SetResult();
                 throw;
             }
             finally
