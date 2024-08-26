@@ -4,10 +4,10 @@ namespace RabbitMQ.AMQP.Client.Impl;
 
 public abstract class BindingSpecificationBase
 {
-    protected string Source = "";
-    protected string Destination = "";
-    protected string RoutingKey = "";
-    protected bool ToQueue = true;
+    protected string _source = "";
+    protected string _destination = "";
+    protected string _routingKey = "";
+    protected bool _toQueue = true;
     protected Dictionary<string, object> _arguments = new();
 
     protected Map ArgsToMap()
@@ -26,10 +26,12 @@ public abstract class BindingSpecificationBase
 public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecification
 {
     private readonly AmqpManagement _management;
+    private readonly ITopologyListener _topologyListener;
 
     public AmqpBindingSpecification(AmqpManagement management)
     {
         _management = management;
+        _topologyListener = ((IManagementTopology)_management).TopologyListener();
     }
 
     public Dictionary<string, object> Arguments()
@@ -43,17 +45,19 @@ public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecif
     {
         var kv = new Map
         {
-            { "source", Source },
-            { "binding_key", RoutingKey },
+            { "source", _source },
+            { "binding_key", _routingKey },
             { "arguments", ArgsToMap() },
-            { ToQueue ? "destination_queue" : "destination_exchange", Destination }
+            { _toQueue ? "destination_queue" : "destination_exchange", _destination }
         };
 
         string path = $"/{Consts.Bindings}";
         string method = AmqpManagement.Post;
         int[] expectedReturnCodes = [AmqpManagement.Code204];
+
         // Note: must use await so that ConfigureAwait(false) can be called
-        _management.TopologyListener().BindingDeclared(this);
+        _topologyListener.BindingDeclared(this);
+
         await _management.RequestAsync(kv, path, method, expectedReturnCodes)
             .ConfigureAwait(false);
     }
@@ -61,17 +65,17 @@ public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecif
     public async Task UnbindAsync()
     {
         string method = AmqpManagement.Delete;
-        string destinationCharacter = ToQueue ? "dstq" : "dste";
+        string destinationCharacter = _toQueue ? "dstq" : "dste";
         int[] expectedReturnCodes = [AmqpManagement.Code204];
 
         if (_arguments.Count == 0)
         {
             string path =
-                $"/{Consts.Bindings}/src={Utils.EncodePathSegment(Source)};" +
-                $"{($"{destinationCharacter}={Utils.EncodePathSegment(Destination)};" +
-                    $"key={Utils.EncodePathSegment(RoutingKey)};args=")}";
+                $"/{Consts.Bindings}/src={Utils.EncodePathSegment(_source)};" +
+                $"{($"{destinationCharacter}={Utils.EncodePathSegment(_destination)};" +
+                    $"key={Utils.EncodePathSegment(_routingKey)};args=")}";
 
-            _management.TopologyListener().BindingDeleted(Path());
+            _topologyListener.BindingDeleted(Path());
             await _management.RequestAsync(null, path, method, expectedReturnCodes)
                 .ConfigureAwait(false);
         }
@@ -79,14 +83,14 @@ public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecif
         {
             string bindingsPath = BindingsTarget();
             List<Map> bindings = await GetBindings(bindingsPath).ConfigureAwait(false);
-            string? path = MatchBinding(bindings, RoutingKey, ArgsToMap());
+            string? path = MatchBinding(bindings, _routingKey, ArgsToMap());
             if (path is null)
             {
                 // TODO is this an error?
             }
             else
             {
-                _management.TopologyListener().BindingDeclared(this);
+                _topologyListener.BindingDeclared(this);
                 await _management.RequestAsync(null, path, method, expectedReturnCodes)
                     .ConfigureAwait(false);
             }
@@ -100,14 +104,14 @@ public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecif
 
     public IBindingSpecification SourceExchange(string exchangeName)
     {
-        ToQueue = false;
-        Source = exchangeName;
+        _toQueue = false;
+        _source = exchangeName;
         return this;
     }
 
     public string SourceExchangeName()
     {
-        return Source;
+        return _source;
     }
 
     public IBindingSpecification DestinationQueue(IQueueSpecification queueSpec)
@@ -117,12 +121,12 @@ public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecif
 
     public IBindingSpecification DestinationQueue(string queueName)
     {
-        ToQueue = true;
-        Destination = queueName;
+        _toQueue = true;
+        _destination = queueName;
         return this;
     }
 
-    public string DestinationQueueName() => Destination;
+    public string DestinationQueueName() => _destination;
 
     public IBindingSpecification DestinationExchange(IExchangeSpecification exchangeSpec)
     {
@@ -131,19 +135,19 @@ public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecif
 
     public IBindingSpecification DestinationExchange(string exchangeName)
     {
-        Destination = exchangeName;
+        _destination = exchangeName;
         return this;
     }
 
-    public string DestinationExchangeName() => Destination;
+    public string DestinationExchangeName() => _destination;
 
     public IBindingSpecification Key(string key)
     {
-        RoutingKey = key;
+        _routingKey = key;
         return this;
     }
 
-    public string Key() => RoutingKey;
+    public string Key() => _routingKey;
 
     public IBindingSpecification Argument(string key, object value)
     {
@@ -159,15 +163,15 @@ public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecif
 
     private string BindingsTarget()
     {
-        string destinationField = ToQueue ? "dstq" : "dste";
+        string destinationField = _toQueue ? "dstq" : "dste";
         return "/bindings?src="
-               + Utils.EncodeHttpParameter(Source)
+               + Utils.EncodeHttpParameter(_source)
                + "&"
                + destinationField
                + "="
-               + Utils.EncodeHttpParameter(Destination)
+               + Utils.EncodeHttpParameter(_destination)
                + "&key="
-               + Utils.EncodeHttpParameter(RoutingKey);
+               + Utils.EncodeHttpParameter(_routingKey);
     }
 
     private async Task<List<Map>> GetBindings(string path)

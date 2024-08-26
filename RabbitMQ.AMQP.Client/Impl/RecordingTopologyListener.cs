@@ -2,11 +2,10 @@ using System.Collections.Concurrent;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public interface IVisitor
+internal interface IVisitor
 {
     Task VisitQueuesAsync(IEnumerable<QueueSpec> queueSpec);
     Task VisitExchangesAsync(IEnumerable<ExchangeSpec> exchangeSpec);
-
     Task VisitBindingsAsync(IEnumerable<BindingSpec> bindingSpec);
 }
 
@@ -99,7 +98,7 @@ public class RecordingTopologyListener : ITopologyListener
     public int BindingCount() => _bindingSpecifications.Count;
 
 
-    public async Task Accept(IVisitor visitor)
+    internal async Task Accept(IVisitor visitor)
     {
         await visitor.VisitQueuesAsync(_queueSpecifications.Values).ConfigureAwait(false);
 
@@ -109,40 +108,39 @@ public class RecordingTopologyListener : ITopologyListener
     }
 }
 
-// TODO this could probably be made internal
-public class QueueSpec(IQueueSpecification specification)
+internal class QueueSpec(IQueueSpecification specification)
 {
-    public string Name { get; init; } = specification.Name();
+    internal string Name { get; init; } = specification.Name();
 
-    public bool Exclusive { get; init; } = specification.Exclusive();
+    internal bool Exclusive { get; init; } = specification.Exclusive();
 
-    public bool AutoDelete { get; init; } = specification.AutoDelete();
+    internal bool AutoDelete { get; init; } = specification.AutoDelete();
 
-    public Dictionary<object, object> Arguments { get; init; } = specification.Arguments();
+    internal Dictionary<object, object> Arguments { get; init; } = specification.Arguments();
 }
 
-public class ExchangeSpec(IExchangeSpecification specification)
+internal class ExchangeSpec(IExchangeSpecification specification)
 {
-    public string Name { get; } = specification.Name();
+    internal string Name { get; } = specification.Name();
 
-    public ExchangeType Type { get; } = specification.Type();
+    internal ExchangeType Type { get; } = specification.Type();
 
-    public bool AutoDelete { get; } = specification.AutoDelete();
+    internal bool AutoDelete { get; } = specification.AutoDelete();
 
-    public Dictionary<string, object> Arguments { get; } = specification.Arguments();
+    internal Dictionary<string, object> Arguments { get; } = specification.Arguments();
 }
 
-public class BindingSpec(IBindingSpecification specification)
+internal class BindingSpec(IBindingSpecification specification)
 {
-    public string SourceExchange { get; } = specification.SourceExchangeName();
+    internal string SourceExchange { get; } = specification.SourceExchangeName();
 
-    public string DestinationQueue { get; } = specification.DestinationQueueName();
+    internal string DestinationQueue { get; } = specification.DestinationQueueName();
 
-    public string DestinationExchange { get; } = specification.DestinationExchangeName();
+    internal string DestinationExchange { get; } = specification.DestinationExchangeName();
 
-    public string Key { get; } = specification.Key();
+    internal string Key { get; } = specification.Key();
 
-    public Dictionary<string, object> Arguments { get; } = specification.Arguments();
+    internal Dictionary<string, object> Arguments { get; } = specification.Arguments();
 
-    public string Path { get; } = specification.Path();
+    internal string Path { get; } = specification.Path();
 }

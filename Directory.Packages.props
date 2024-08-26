@@ -18,10 +18,6 @@
     <!-- RabbitMQ.Amqp.Client -->
     <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="6.0.0" />
   </ItemGroup>
-  <ItemGroup Label=".NET 7 Specific" Condition="'$(TargetFramework)' == 'net7.0'">
-    <!-- RabbitMQ.Amqp.Client -->
-    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="7.0.0" />
-  </ItemGroup>
   <ItemGroup Label=".NET 8 Specific" Condition="'$(TargetFramework)' == 'net8.0'">
     <!-- RabbitMQ.Amqp.Client -->
     <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />

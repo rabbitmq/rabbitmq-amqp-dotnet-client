@@ -4,7 +4,7 @@
     <NoWarn>$(NoWarn);CA2007</NoWarn>
     <MinVerSkip>true</MinVerSkip>
     <IsTestProject>true</IsTestProject>
-    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <SignAssembly>True</SignAssembly>
   </PropertyGroup>

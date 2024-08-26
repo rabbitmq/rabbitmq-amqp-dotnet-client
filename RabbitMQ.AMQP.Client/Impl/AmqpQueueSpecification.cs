@@ -101,9 +101,11 @@ public class DefaultQueueInfo : IQueueInfo
 /// AmqpQueueSpecification is a concrete implementation of IQueueSpecification
 /// It contains the necessary information to declare a queue on the broker
 /// </summary>
-/// <param name="management"></param>
-public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecification
+public class AmqpQueueSpecification : IQueueSpecification
 {
+    private readonly AmqpManagement _management;
+    private readonly ITopologyListener _topologyListener;
+
     internal readonly TimeSpan _tenYears = TimeSpan.FromDays(365 * 10);
 
     private string? _name;
@@ -111,6 +113,12 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
     private bool _autoDelete = false;
     private const bool Durable = true;
     internal readonly Map _arguments = new();
+
+    public AmqpQueueSpecification(AmqpManagement management)
+    {
+        _management = management;
+        _topologyListener = ((IManagementTopology)_management).TopologyListener();
+    }
 
     public IQueueSpecification Name(string name)
     {
@@ -122,7 +130,6 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
     {
         return _name ?? "";
     }
-
 
     public IQueueSpecification Exclusive(bool exclusive)
     {
@@ -140,13 +147,11 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         return _autoDelete;
     }
 
-
     public IQueueSpecification AutoDelete(bool autoDelete)
     {
         _autoDelete = autoDelete;
         return this;
     }
-
 
     public IQueueSpecification Arguments(Dictionary<object, object> arguments)
     {
@@ -282,7 +287,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         };
 
         // TODO: encodePathSegment(queues)
-        Message response = await management.RequestAsync(kv, $"/{Consts.Queues}/{Utils.EncodePathSegment(_name)}",
+        Message response = await _management.RequestAsync(kv, $"/{Consts.Queues}/{Utils.EncodePathSegment(_name)}",
             AmqpManagement.Put,
             [
                 AmqpManagement.Code200,
@@ -291,7 +296,7 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
             ]).ConfigureAwait(false);
 
         var result = new DefaultQueueInfo((Map)response.Body);
-        management.TopologyListener().QueueDeclared(this);
+        _topologyListener.QueueDeclared(this);
         return result;
     }
 
@@ -306,10 +311,10 @@ public class AmqpQueueSpecification(AmqpManagement management) : IQueueSpecifica
         string path = $"/{Consts.Queues}/{Utils.EncodePathSegment(_name)}";
         string method = AmqpManagement.Delete;
         int[] expectedResponseCodes = [AmqpManagement.Code200];
-        await management.RequestAsync(null, path, method, expectedResponseCodes)
+        await _management.RequestAsync(null, path, method, expectedResponseCodes)
             .ConfigureAwait(false);
 
-        management.TopologyListener().QueueDeleted(_name);
+        _topologyListener.QueueDeleted(_name);
         return new DefaultQueueInfo(_name);
     }
 }

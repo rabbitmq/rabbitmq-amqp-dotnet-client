@@ -2,8 +2,17 @@ using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpecification
+public class AmqpExchangeSpecification : IExchangeSpecification
 {
+    private readonly AmqpManagement _management;
+    private readonly ITopologyListener _topologyListener;
+
+    public AmqpExchangeSpecification(AmqpManagement management)
+    {
+        _management = management;
+        _topologyListener = ((IManagementTopology)_management).TopologyListener();
+    }
+
     private string _name = "";
     private bool _autoDelete;
     private ExchangeType _type = ExchangeType.DIRECT;
@@ -30,8 +39,8 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
         string path = $"/{Consts.Exchanges}/{Utils.EncodePathSegment(_name)}";
         string method = AmqpManagement.Put;
         int[] expectedResponseCodes = [AmqpManagement.Code204, AmqpManagement.Code201, AmqpManagement.Code409];
-        management.TopologyListener().ExchangeDeclared(this);
-        return management.RequestAsync(kv, path, method, expectedResponseCodes);
+        _topologyListener.ExchangeDeclared(this);
+        return _management.RequestAsync(kv, path, method, expectedResponseCodes);
     }
 
     public Task DeleteAsync()
@@ -39,8 +48,8 @@ public class AmqpExchangeSpecification(AmqpManagement management) : IExchangeSpe
         string path = $"/{Consts.Exchanges}/{Utils.EncodePathSegment(_name)}";
         string method = AmqpManagement.Delete;
         int[] expectedResponseCodes = [AmqpManagement.Code204];
-        management.TopologyListener().ExchangeDeleted(_name);
-        return management.RequestAsync(null, path, method, expectedResponseCodes);
+        _topologyListener.ExchangeDeleted(_name);
+        return _management.RequestAsync(null, path, method, expectedResponseCodes);
     }
 
     public string Name()

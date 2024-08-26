@@ -18,6 +18,9 @@ public interface IManagement : ILifeCycle
     IExchangeSpecification Exchange(string name);
 
     IBindingSpecification Binding();
+}
 
+internal interface IManagementTopology
+{
     ITopologyListener TopologyListener();
 }

@@ -13,7 +13,7 @@ namespace RabbitMQ.AMQP.Client.Impl;
 /// RabbitMQ uses AMQP end  point: "/management" to manage the resources like queues, exchanges, and bindings.
 /// The management endpoint works like an HTTP RPC endpoint where the client sends a request to the server
 /// </summary>
-public class AmqpManagement : AbstractLifeCycle, IManagement
+public class AmqpManagement : AbstractLifeCycle, IManagement, IManagementTopology
 {
     private readonly AmqpManagementParameters _amqpManagementParameters;
 
@@ -94,7 +94,7 @@ public class AmqpManagement : AbstractLifeCycle, IManagement
         return Exchange().Name(name);
     }
 
-    public IExchangeSpecification Exchange(ExchangeSpec spec)
+    internal IExchangeSpecification Exchange(ExchangeSpec spec)
     {
         return Exchange().Name(spec.Name)
             .AutoDelete(spec.AutoDelete)
@@ -107,7 +107,7 @@ public class AmqpManagement : AbstractLifeCycle, IManagement
         return new AmqpBindingSpecification(this);
     }
 
-    public IBindingSpecification Binding(BindingSpec spec)
+    internal IBindingSpecification Binding(BindingSpec spec)
     {
         return Binding()
             .SourceExchange(spec.SourceExchange)
@@ -117,7 +117,7 @@ public class AmqpManagement : AbstractLifeCycle, IManagement
             .Arguments(spec.Arguments);
     }
 
-    public ITopologyListener TopologyListener()
+    ITopologyListener IManagementTopology.TopologyListener()
     {
         return _amqpManagementParameters.TopologyListener();
     }
