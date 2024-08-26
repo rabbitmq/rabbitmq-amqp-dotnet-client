@@ -252,4 +252,11 @@ public static class SystemUtils
 
         return false;
     }
+
+    public static Task DeleteExchangeAsync(string exchangeNameSt)
+    {
+        return s_httpApiClient.DeleteExchangeAsync(exchangeNameSt);
+    }
+
+
 }

@@ -5,6 +5,9 @@ namespace RabbitMQ.AMQP.Client.Impl;
 public interface IVisitor
 {
     Task VisitQueuesAsync(IEnumerable<QueueSpec> queueSpec);
+    Task VisitExchangesAsync(IEnumerable<ExchangeSpec> exchangeSpec);
+
+    Task VisitBindingsAsync(IEnumerable<BindingSpec> bindingSpec);
 }
 
 /// <summary>
@@ -17,6 +20,11 @@ public class RecordingTopologyListener : ITopologyListener
 {
     private readonly ConcurrentDictionary<string, QueueSpec> _queueSpecifications = new();
 
+    private readonly ConcurrentDictionary<string, ExchangeSpec> _exchangeSpecifications = new();
+
+    private readonly ConcurrentDictionary<string, BindingSpec> _bindingSpecifications = new();
+
+
     public void QueueDeclared(IQueueSpecification specification)
     {
         _queueSpecifications.TryAdd(specification.Name(), new QueueSpec(specification));
@@ -27,9 +35,31 @@ public class RecordingTopologyListener : ITopologyListener
         _queueSpecifications.TryRemove(name, out _);
     }
 
+    public void ExchangeDeclared(IExchangeSpecification specification)
+    {
+        _exchangeSpecifications.TryAdd(specification.Name(), new ExchangeSpec(specification));
+    }
+
+    public void ExchangeDeleted(string name)
+    {
+        _exchangeSpecifications.TryRemove(name, out _);
+    }
+
+    public void BindingDeclared(IBindingSpecification specification)
+    {
+        _bindingSpecifications.TryAdd(specification.Path(), new BindingSpec(specification));
+    }
+
+    public void BindingDeleted(string key)
+    {
+        _bindingSpecifications.TryRemove(key, out _);
+    }
+
     public void Clear()
     {
         _queueSpecifications.Clear();
+        _exchangeSpecifications.Clear();
+        _bindingSpecifications.Clear();
     }
 
     public int QueueCount()
@@ -37,10 +67,21 @@ public class RecordingTopologyListener : ITopologyListener
         return _queueSpecifications.Count;
     }
 
+    public int ExchangeCount()
+    {
+        return _exchangeSpecifications.Count;
+    }
+
+    public int BindingCount() => _bindingSpecifications.Count;
+
+
     public async Task Accept(IVisitor visitor)
     {
-        await visitor.VisitQueuesAsync(_queueSpecifications.Values)
-            .ConfigureAwait(false);
+        await visitor.VisitQueuesAsync(_queueSpecifications.Values).ConfigureAwait(false);
+
+        await visitor.VisitExchangesAsync(_exchangeSpecifications.Values).ConfigureAwait(false);
+
+        await visitor.VisitBindingsAsync(_bindingSpecifications.Values).ConfigureAwait(false);
     }
 }
 
@@ -54,4 +95,30 @@ public class QueueSpec(IQueueSpecification specification)
     public bool AutoDelete { get; init; } = specification.AutoDelete();
 
     public Dictionary<object, object> Arguments { get; init; } = specification.Arguments();
+}
+
+public class ExchangeSpec(IExchangeSpecification specification)
+{
+    public string Name { get; } = specification.Name();
+
+    public ExchangeType Type { get; } = specification.Type();
+
+    public bool AutoDelete { get; } = specification.AutoDelete();
+
+    public Dictionary<string, object> Arguments { get; } = specification.Arguments();
+}
+
+public class BindingSpec(IBindingSpecification specification)
+{
+    public string SourceExchange { get; } = specification.SourceExchangeName();
+
+    public string DestinationQueue { get; } = specification.DestinationQueueName();
+
+    public string DestinationExchange { get; } = specification.DestinationExchangeName();
+
+    public string Key { get; } = specification.Key();
+
+    public Dictionary<string, object> Arguments { get; } = specification.Arguments();
+
+    public string Path { get; } = specification.Path();
 }

@@ -547,4 +547,44 @@ internal class Visitor(AmqpManagement management) : IVisitor
             }
         }
     }
+
+
+    public async Task VisitExchangesAsync(IEnumerable<ExchangeSpec> exchangeSpec)
+    {
+        // TODO this could be done in parallel
+        foreach (ExchangeSpec spec in exchangeSpec)
+        {
+            Trace.WriteLine(TraceLevel.Information, $"Recovering exchange {spec.Name}");
+            try
+            {
+                await Management.Exchange(spec).DeclareAsync()
+                    .ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                Trace.WriteLine(TraceLevel.Error,
+                    $"Error recovering exchange {spec.Name}. Error: {e}. Management Status: {Management}");
+            }
+        }
+    }
+    
+    
+    public async Task VisitBindingsAsync(IEnumerable<BindingSpec> bindingSpec)
+    {
+        // TODO this could be done in parallel
+        foreach (BindingSpec spec in bindingSpec)
+        {
+            Trace.WriteLine(TraceLevel.Information, $"Recovering binding {spec.Path}");
+            try
+            {
+                await Management.Binding(spec).BindAsync()
+                    .ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                Trace.WriteLine(TraceLevel.Error,
+                    $"Error recovering binding {spec.Path}. Error: {e}. Management Status: {Management}");
+            }
+        }
+    }
 }

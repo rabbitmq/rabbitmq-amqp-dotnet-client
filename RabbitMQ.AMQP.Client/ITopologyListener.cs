@@ -6,7 +6,20 @@ public interface ITopologyListener
 
     void QueueDeleted(string name);
 
+    void ExchangeDeclared(IExchangeSpecification specification);
+
+    void ExchangeDeleted(string name);
+    
+    
+    void BindingDeclared(IBindingSpecification specification);
+        
+    void BindingDeleted(string path);
+
     void Clear();
 
     int QueueCount();
+
+    int ExchangeCount();
+    
+    int BindingCount();
 }

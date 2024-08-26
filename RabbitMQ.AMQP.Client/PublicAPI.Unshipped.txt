@@ -61,15 +61,21 @@ RabbitMQ.AMQP.Client.IBackOffDelayPolicy.IsActive() -> bool
 RabbitMQ.AMQP.Client.IBackOffDelayPolicy.Reset() -> void
 RabbitMQ.AMQP.Client.IBindingSpecification
 RabbitMQ.AMQP.Client.IBindingSpecification.Argument(string! key, object! value) -> RabbitMQ.AMQP.Client.IBindingSpecification!
+RabbitMQ.AMQP.Client.IBindingSpecification.Arguments() -> System.Collections.Generic.Dictionary<string!, object!>!
 RabbitMQ.AMQP.Client.IBindingSpecification.Arguments(System.Collections.Generic.Dictionary<string!, object!>! arguments) -> RabbitMQ.AMQP.Client.IBindingSpecification!
 RabbitMQ.AMQP.Client.IBindingSpecification.BindAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.IBindingSpecification.DestinationExchange(RabbitMQ.AMQP.Client.IExchangeSpecification! exchangeSpec) -> RabbitMQ.AMQP.Client.IBindingSpecification!
 RabbitMQ.AMQP.Client.IBindingSpecification.DestinationExchange(string! exchangeName) -> RabbitMQ.AMQP.Client.IBindingSpecification!
+RabbitMQ.AMQP.Client.IBindingSpecification.DestinationExchangeName() -> string!
 RabbitMQ.AMQP.Client.IBindingSpecification.DestinationQueue(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpec) -> RabbitMQ.AMQP.Client.IBindingSpecification!
 RabbitMQ.AMQP.Client.IBindingSpecification.DestinationQueue(string! queueName) -> RabbitMQ.AMQP.Client.IBindingSpecification!
+RabbitMQ.AMQP.Client.IBindingSpecification.DestinationQueueName() -> string!
+RabbitMQ.AMQP.Client.IBindingSpecification.Key() -> string!
 RabbitMQ.AMQP.Client.IBindingSpecification.Key(string! key) -> RabbitMQ.AMQP.Client.IBindingSpecification!
+RabbitMQ.AMQP.Client.IBindingSpecification.Path() -> string!
 RabbitMQ.AMQP.Client.IBindingSpecification.SourceExchange(RabbitMQ.AMQP.Client.IExchangeSpecification! exchangeSpec) -> RabbitMQ.AMQP.Client.IBindingSpecification!
 RabbitMQ.AMQP.Client.IBindingSpecification.SourceExchange(string! exchangeName) -> RabbitMQ.AMQP.Client.IBindingSpecification!
+RabbitMQ.AMQP.Client.IBindingSpecification.SourceExchangeName() -> string!
 RabbitMQ.AMQP.Client.IBindingSpecification.UnbindAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.IClassicQueueSpecification
 RabbitMQ.AMQP.Client.IClassicQueueSpecification.MaxPriority(int maxPriority) -> RabbitMQ.AMQP.Client.IClassicQueueSpecification!
@@ -134,11 +140,14 @@ RabbitMQ.AMQP.Client.IEnvironment.CreateConnectionAsync(RabbitMQ.AMQP.Client.ICo
 RabbitMQ.AMQP.Client.IEnvironment.GetConnections() -> System.Collections.ObjectModel.ReadOnlyCollection<RabbitMQ.AMQP.Client.IConnection!>!
 RabbitMQ.AMQP.Client.IExchangeSpecification
 RabbitMQ.AMQP.Client.IExchangeSpecification.Argument(string! key, object! value) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
+RabbitMQ.AMQP.Client.IExchangeSpecification.Arguments() -> System.Collections.Generic.Dictionary<string!, object!>!
+RabbitMQ.AMQP.Client.IExchangeSpecification.Arguments(System.Collections.Generic.Dictionary<string!, object!>! arguments) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
+RabbitMQ.AMQP.Client.IExchangeSpecification.AutoDelete() -> bool
 RabbitMQ.AMQP.Client.IExchangeSpecification.AutoDelete(bool autoDelete) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.IExchangeSpecification.Name() -> string!
 RabbitMQ.AMQP.Client.IExchangeSpecification.Name(string! name) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
+RabbitMQ.AMQP.Client.IExchangeSpecification.Type() -> RabbitMQ.AMQP.Client.ExchangeType
 RabbitMQ.AMQP.Client.IExchangeSpecification.Type(RabbitMQ.AMQP.Client.ExchangeType type) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
-RabbitMQ.AMQP.Client.IExchangeSpecification.Type(string! type) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.ILifeCycle
 RabbitMQ.AMQP.Client.ILifeCycle.ChangeState -> RabbitMQ.AMQP.Client.LifeCycleCallBack!
 RabbitMQ.AMQP.Client.ILifeCycle.CloseAsync() -> System.Threading.Tasks.Task!
@@ -185,15 +194,21 @@ RabbitMQ.AMQP.Client.Impl.AddressBuilder.Queue(string? queue) -> RabbitMQ.AMQP.C
 RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification
 RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.AmqpBindingSpecification(RabbitMQ.AMQP.Client.Impl.AmqpManagement! management) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.Argument(string! key, object! value) -> RabbitMQ.AMQP.Client.IBindingSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.Arguments() -> System.Collections.Generic.Dictionary<string!, object!>!
 RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.Arguments(System.Collections.Generic.Dictionary<string!, object!>! arguments) -> RabbitMQ.AMQP.Client.IBindingSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.BindAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.DestinationExchange(RabbitMQ.AMQP.Client.IExchangeSpecification! exchangeSpec) -> RabbitMQ.AMQP.Client.IBindingSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.DestinationExchange(string! exchangeName) -> RabbitMQ.AMQP.Client.IBindingSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.DestinationExchangeName() -> string!
 RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.DestinationQueue(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpec) -> RabbitMQ.AMQP.Client.IBindingSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.DestinationQueue(string! queueName) -> RabbitMQ.AMQP.Client.IBindingSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.DestinationQueueName() -> string!
+RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.Key() -> string!
 RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.Key(string! key) -> RabbitMQ.AMQP.Client.IBindingSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.Path() -> string!
 RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.SourceExchange(RabbitMQ.AMQP.Client.IExchangeSpecification! exchangeSpec) -> RabbitMQ.AMQP.Client.IBindingSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.SourceExchange(string! exchangeName) -> RabbitMQ.AMQP.Client.IBindingSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.SourceExchangeName() -> string!
 RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.UnbindAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.AmqpClassicSpecification
 RabbitMQ.AMQP.Client.Impl.AmqpClassicSpecification.AmqpClassicSpecification(RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification! parent) -> void
@@ -230,16 +245,21 @@ RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.GetConnections() -> System.Collections
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.AmqpExchangeSpecification(RabbitMQ.AMQP.Client.Impl.AmqpManagement! management) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.Argument(string! key, object! value) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.Arguments() -> System.Collections.Generic.Dictionary<string!, object!>!
+RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.Arguments(System.Collections.Generic.Dictionary<string!, object!>! arguments) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.AutoDelete() -> bool
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.AutoDelete(bool autoDelete) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.DeclareAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.DeleteAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.Name() -> string!
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.Name(string! name) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.Type() -> RabbitMQ.AMQP.Client.ExchangeType
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.Type(RabbitMQ.AMQP.Client.ExchangeType type) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
-RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.Type(string! type) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Binding() -> RabbitMQ.AMQP.Client.IBindingSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpManagement.Binding(RabbitMQ.AMQP.Client.Impl.BindingSpec! spec) -> RabbitMQ.AMQP.Client.IBindingSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Exchange() -> RabbitMQ.AMQP.Client.IExchangeSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpManagement.Exchange(RabbitMQ.AMQP.Client.Impl.ExchangeSpec! spec) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Exchange(string! name) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.GetQueueInfoAsync(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpec, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IQueueInfo!>!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.GetQueueInfoAsync(string! queueName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IQueueInfo!>!
@@ -319,6 +339,14 @@ RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.CurrentAttempt.get -> int
 RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.Delay() -> int
 RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.IsActive() -> bool
 RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.Reset() -> void
+RabbitMQ.AMQP.Client.Impl.BindingSpec
+RabbitMQ.AMQP.Client.Impl.BindingSpec.Arguments.get -> System.Collections.Generic.Dictionary<string!, object!>!
+RabbitMQ.AMQP.Client.Impl.BindingSpec.BindingSpec(RabbitMQ.AMQP.Client.IBindingSpecification! specification) -> void
+RabbitMQ.AMQP.Client.Impl.BindingSpec.DestinationExchange.get -> string!
+RabbitMQ.AMQP.Client.Impl.BindingSpec.DestinationQueue.get -> string!
+RabbitMQ.AMQP.Client.Impl.BindingSpec.Key.get -> string!
+RabbitMQ.AMQP.Client.Impl.BindingSpec.Path.get -> string!
+RabbitMQ.AMQP.Client.Impl.BindingSpec.SourceExchange.get -> string!
 RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase
 RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase.ArgsToMap() -> Amqp.Types.Map!
 RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase.BindingSpecificationBase() -> void
@@ -384,11 +412,19 @@ RabbitMQ.AMQP.Client.Impl.DeliveryContext.AcceptAsync() -> System.Threading.Task
 RabbitMQ.AMQP.Client.Impl.DeliveryContext.DeliveryContext(Amqp.IReceiverLink! link, Amqp.Message! message, RabbitMQ.AMQP.Client.Impl.UnsettledMessageCounter! unsettledMessageCounter) -> void
 RabbitMQ.AMQP.Client.Impl.DeliveryContext.DiscardAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.DeliveryContext.RequeueAsync() -> System.Threading.Tasks.Task!
+RabbitMQ.AMQP.Client.Impl.ExchangeSpec
+RabbitMQ.AMQP.Client.Impl.ExchangeSpec.Arguments.get -> System.Collections.Generic.Dictionary<string!, object!>!
+RabbitMQ.AMQP.Client.Impl.ExchangeSpec.AutoDelete.get -> bool
+RabbitMQ.AMQP.Client.Impl.ExchangeSpec.ExchangeSpec(RabbitMQ.AMQP.Client.IExchangeSpecification! specification) -> void
+RabbitMQ.AMQP.Client.Impl.ExchangeSpec.Name.get -> string!
+RabbitMQ.AMQP.Client.Impl.ExchangeSpec.Type.get -> RabbitMQ.AMQP.Client.ExchangeType
 RabbitMQ.AMQP.Client.Impl.FieldNotSetException
 RabbitMQ.AMQP.Client.Impl.FieldNotSetException.FieldNotSetException() -> void
 RabbitMQ.AMQP.Client.Impl.InvalidCodeException
 RabbitMQ.AMQP.Client.Impl.InvalidCodeException.InvalidCodeException(string! message) -> void
 RabbitMQ.AMQP.Client.Impl.IVisitor
+RabbitMQ.AMQP.Client.Impl.IVisitor.VisitBindingsAsync(System.Collections.Generic.IEnumerable<RabbitMQ.AMQP.Client.Impl.BindingSpec!>! bindingSpec) -> System.Threading.Tasks.Task!
+RabbitMQ.AMQP.Client.Impl.IVisitor.VisitExchangesAsync(System.Collections.Generic.IEnumerable<RabbitMQ.AMQP.Client.Impl.ExchangeSpec!>! exchangeSpec) -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.IVisitor.VisitQueuesAsync(System.Collections.Generic.IEnumerable<RabbitMQ.AMQP.Client.Impl.QueueSpec!>! queueSpec) -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.QueueSpec
 RabbitMQ.AMQP.Client.Impl.QueueSpec.Arguments.get -> System.Collections.Generic.Dictionary<object!, object!>!
@@ -402,7 +438,13 @@ RabbitMQ.AMQP.Client.Impl.QueueSpec.Name.init -> void
 RabbitMQ.AMQP.Client.Impl.QueueSpec.QueueSpec(RabbitMQ.AMQP.Client.IQueueSpecification! specification) -> void
 RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener
 RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener.Accept(RabbitMQ.AMQP.Client.Impl.IVisitor! visitor) -> System.Threading.Tasks.Task!
+RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener.BindingCount() -> int
+RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener.BindingDeclared(RabbitMQ.AMQP.Client.IBindingSpecification! specification) -> void
+RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener.BindingDeleted(string! key) -> void
 RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener.Clear() -> void
+RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener.ExchangeCount() -> int
+RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener.ExchangeDeclared(RabbitMQ.AMQP.Client.IExchangeSpecification! specification) -> void
+RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener.ExchangeDeleted(string! name) -> void
 RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener.QueueCount() -> int
 RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener.QueueDeclared(RabbitMQ.AMQP.Client.IQueueSpecification! specification) -> void
 RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener.QueueDeleted(string! name) -> void
@@ -505,7 +547,13 @@ RabbitMQ.AMQP.Client.ITlsSettings.Protocols.set -> void
 RabbitMQ.AMQP.Client.ITlsSettings.RemoteCertificateValidationCallback.get -> System.Net.Security.RemoteCertificateValidationCallback?
 RabbitMQ.AMQP.Client.ITlsSettings.RemoteCertificateValidationCallback.set -> void
 RabbitMQ.AMQP.Client.ITopologyListener
+RabbitMQ.AMQP.Client.ITopologyListener.BindingCount() -> int
+RabbitMQ.AMQP.Client.ITopologyListener.BindingDeclared(RabbitMQ.AMQP.Client.IBindingSpecification! specification) -> void
+RabbitMQ.AMQP.Client.ITopologyListener.BindingDeleted(string! path) -> void
 RabbitMQ.AMQP.Client.ITopologyListener.Clear() -> void
+RabbitMQ.AMQP.Client.ITopologyListener.ExchangeCount() -> int
+RabbitMQ.AMQP.Client.ITopologyListener.ExchangeDeclared(RabbitMQ.AMQP.Client.IExchangeSpecification! specification) -> void
+RabbitMQ.AMQP.Client.ITopologyListener.ExchangeDeleted(string! name) -> void
 RabbitMQ.AMQP.Client.ITopologyListener.QueueCount() -> int
 RabbitMQ.AMQP.Client.ITopologyListener.QueueDeclared(RabbitMQ.AMQP.Client.IQueueSpecification! specification) -> void
 RabbitMQ.AMQP.Client.ITopologyListener.QueueDeleted(string! name) -> void
