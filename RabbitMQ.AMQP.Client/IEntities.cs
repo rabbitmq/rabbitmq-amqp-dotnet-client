@@ -152,7 +152,7 @@ public interface IExchangeSpecification : IEntitySpecification
 public interface IBindingSpecification
 {
     IBindingSpecification SourceExchange(IExchangeSpecification exchangeSpec);
-    
+
     IBindingSpecification SourceExchange(string exchangeName);
     string SourceExchangeName();
 

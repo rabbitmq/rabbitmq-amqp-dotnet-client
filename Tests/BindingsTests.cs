@@ -41,7 +41,8 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
 
         await bindingSpec.UnbindAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(sourceExchangeSpec, destinationQueueSpec);
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(sourceExchangeSpec,
+            destinationQueueSpec);
 
         /*
          * TODO dispose assertions?
@@ -105,7 +106,12 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
         "[7][8][9] 他被广泛认为是理论计算机科学和人工智能之父。")]
     [InlineData("ήταν Άγγλος μαθηματικός, επιστήμονας υπολογιστών",
         "ήταν Άγγλος μαθηματικός, επιστήμονας", "επι")]
-    public async Task SimpleBindingsBetweenExchangeAndExchange(string sourceExchangeName, string destinationExchangeName,
+    [InlineData("(~~~!!++@~./.,€€#!!±§##§¶¡€#¢)",
+        "~~~!!++@----.", "==`£!-=+")]
+
+
+    public async Task SimpleBindingsBetweenExchangeAndExchange(string sourceExchangeName,
+        string destinationExchangeName,
         string key)
     {
         Assert.NotNull(_connection);
@@ -127,11 +133,13 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
         await bindingSpecification.BindAsync();
 
         await SystemUtils.WaitUntilExchangeExistsAsync(sourceExchangeSpec);
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(sourceExchangeSpec, destinationExchangeSpec);
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(sourceExchangeSpec,
+            destinationExchangeSpec);
 
         await bindingSpecification.UnbindAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(sourceExchangeSpec, destinationExchangeSpec);
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(sourceExchangeSpec,
+            destinationExchangeSpec);
 
         await sourceExchangeSpec.DeleteAsync();
         await destinationExchangeSpec.DeleteAsync();
@@ -146,6 +154,7 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
     [InlineData("B", 10000L, "H", 0.0001)]
     [InlineData("是英国", 10000.32, "W", 3.0001)]
     [InlineData("是英国", "是英国23", "W", 3.0001)]
+    [InlineData("(~~~!!++@----./.,€€#####§¶¡€#¢)", "~~~!!++@----", "==`£!-=+", "===£!-=+")]
     public async Task BindingsBetweenExchangeAndQueuesWithArgumentsDifferentValues(string key1, object value1,
         string key2, object value2)
     {
@@ -196,8 +205,7 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
     [Theory]
     [InlineData("my_source_exchange_multi_123", "my_destination_789", "myKey")]
     [InlineData("是英国v_", "destination_是英国v_", "μαθηματικός")]
-    // TODO: to validate.  Atm it seems there is a server side problem
-    // [InlineData("(~~~!!++@----./.,€€#####§¶¡€#¢)", ",,~~~!!++@----./.,€€#####§¶¡€#¢@@@", "===£!-=+")]
+    [InlineData("(~~~!!++@----./.,€€#####§¶¡€#¢)", ",,~~~!!++@----./.,€€#####§¶¡€#¢@@@", "===£!-=+")]
     public async Task MultiBindingsBetweenExchangeAndQueuesWithArgumentsDifferentValues(string source,
         string destination, string key)
     {
@@ -210,7 +218,6 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
         await WhenAllComplete(exchangeSpec.DeclareAsync(), queueSpec.DeclareAsync());
 
         // add 10 bindings to have a list of bindings to find
-        var bindingSpecs = new List<IBindingSpecification>();
         var bindingSpecTasks = new List<Task>();
         for (int i = 0; i < 10; i++)
         {
@@ -219,13 +226,14 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
                 .DestinationQueue(queueSpec)
                 .Key(key) // single key to use different args
                 .Arguments(new Dictionary<string, object>() { { $"是英国v_{i}", $"p_{i}" } });
-            bindingSpecs.Add(bindingSpec);
             bindingSpecTasks.Add(bindingSpec.BindAsync());
         }
+
         await WhenAllComplete(bindingSpecTasks);
         bindingSpecTasks.Clear();
 
-        var specialBindArgs = new Dictionary<string, object>() { { $"v_8", $"p_8" }, { $"v_1", 1 }, { $"v_r", 1000L }, };
+        var specialBindArgs =
+            new Dictionary<string, object>() { { $"v_8", $"p_8" }, { $"v_1", 1 }, { $"v_r", 1000L }, };
         IBindingSpecification specialBindSpec = _management.Binding()
             .SourceExchange(exchangeSpec)
             .DestinationQueue(queueSpec)
@@ -233,17 +241,20 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
             .Arguments(specialBindArgs);
         await specialBindSpec.BindAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(exchangeSpec, queueSpec, specialBindArgs);
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(exchangeSpec, queueSpec,
+            specialBindArgs);
 
         await specialBindSpec.UnbindAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(exchangeSpec, queueSpec, specialBindArgs);
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(exchangeSpec, queueSpec,
+            specialBindArgs);
 
         for (int i = 0; i < 10; i++)
         {
             var bindArgs = new Dictionary<string, object>() { { $"是英国v_{i}", $"p_{i}" } };
 
-            await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(exchangeSpec, queueSpec, bindArgs);
+            await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(exchangeSpec, queueSpec,
+                bindArgs);
 
             await _management.Binding()
                 .SourceExchange(exchangeSpec)
@@ -252,14 +263,11 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
                 .Arguments(bindArgs)
                 .UnbindAsync();
 
-            await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(exchangeSpec, queueSpec, bindArgs);
+            await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(exchangeSpec, queueSpec,
+                bindArgs);
         }
-
-        /*
-         * NB: test DisposeAsync will do this.
-        await _management.ExchangeDeletion().Delete(source);
-        await _management.QueueDeletion().Delete(destination);
+        await exchangeSpec.DeleteAsync();
+        await queueSpec.DeleteAsync();
         await _connection.CloseAsync();
-        */
     }
 }

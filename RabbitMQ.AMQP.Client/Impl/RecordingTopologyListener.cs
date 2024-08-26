@@ -24,6 +24,29 @@ public class RecordingTopologyListener : ITopologyListener
 
     private readonly ConcurrentDictionary<string, BindingSpec> _bindingSpecifications = new();
 
+    private void RemoveBindingsSpecificationFromQueue(string queueName)
+    {
+        foreach (var binding in _bindingSpecifications.Values)
+        {
+            if (binding.DestinationQueue == queueName)
+            {
+                _bindingSpecifications.TryRemove(binding.Path, out _);
+            }
+        }
+    }
+
+    private void RemoveBindingsSpecificationFromExchange(string exchangeName)
+    {
+        foreach (var binding in _bindingSpecifications.Values)
+        {
+            if (binding.SourceExchange == exchangeName
+                || binding.DestinationExchange == exchangeName)
+            {
+                _bindingSpecifications.TryRemove(binding.Path, out _);
+            }
+        }
+    }
+
 
     public void QueueDeclared(IQueueSpecification specification)
     {
@@ -33,6 +56,7 @@ public class RecordingTopologyListener : ITopologyListener
     public void QueueDeleted(string name)
     {
         _queueSpecifications.TryRemove(name, out _);
+        RemoveBindingsSpecificationFromQueue(name);
     }
 
     public void ExchangeDeclared(IExchangeSpecification specification)
@@ -43,6 +67,7 @@ public class RecordingTopologyListener : ITopologyListener
     public void ExchangeDeleted(string name)
     {
         _exchangeSpecifications.TryRemove(name, out _);
+        RemoveBindingsSpecificationFromExchange(name);
     }
 
     public void BindingDeclared(IBindingSpecification specification)

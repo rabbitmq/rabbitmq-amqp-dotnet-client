@@ -567,8 +567,8 @@ internal class Visitor(AmqpManagement management) : IVisitor
             }
         }
     }
-    
-    
+
+
     public async Task VisitBindingsAsync(IEnumerable<BindingSpec> bindingSpec)
     {
         // TODO this could be done in parallel

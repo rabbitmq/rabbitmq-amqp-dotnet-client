@@ -420,4 +420,194 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         await connection.CloseAsync();
     }
+
+
+    /// <summary>
+    /// Test if removed a queue should remove the bindings.
+    /// In this case there are two queues, one will be deleted to check if the bindings are removed.
+    /// another queue will not be deleted to check if the bindings are not removed.
+    ///
+    /// Only at the end the queue will be removed and bindings should be zero.
+    /// </summary>
+    [Fact]
+    public async Task RemoveAQueueShouldRemoveTheBindings()
+    {
+        _testOutputHelper.WriteLine("RemoveAQueueShouldRemoveTheBindings");
+        const string containerId = "remove-queue-should-remove-binding-connection-name";
+        var connection = await AmqpConnection.CreateAsync(
+            ConnectionSettingBuilder.Create()
+                .RecoveryConfiguration(RecoveryConfiguration.Create()
+                    .BackOffDelayPolicy(new FakeFastBackOffDelay())
+                    .Topology(true))
+                .ContainerId(containerId)
+                .Build());
+
+        var management = connection.Management();
+        var exSpec = management.Exchange().Name("e-remove-a-should-remove-binding")
+            .Type(ExchangeType.DIRECT);
+
+        await exSpec.DeclareAsync();
+
+        var queueSpec = management.Queue().Name("q-remove-a-should-remove-binding")
+            .AutoDelete(true).Exclusive(true);
+        await queueSpec.DeclareAsync();
+
+        var queueSpecWontDeleted = management.Queue().Name("q-remove-a-should-remove-binding-wont-delete")
+            .AutoDelete(true).Exclusive(true);
+
+        await queueSpecWontDeleted.DeclareAsync();
+
+        for (int i = 0; i < 10; i++)
+        {
+            await management.Binding().SourceExchange(exSpec)
+                .DestinationQueue(queueSpec).Key($"key_{i}").BindAsync();
+
+            await management.Binding().SourceExchange(exSpec)
+                .DestinationQueue(queueSpecWontDeleted).Key($"key_{i}").BindAsync();
+        }
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync("e-remove-a-should-remove-binding",
+            "q-remove-a-should-remove-binding");
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync("e-remove-a-should-remove-binding",
+            "q-remove-a-should-remove-binding-wont-delete");
+
+
+        Assert.Equal(20, management.TopologyListener().BindingCount());
+        await queueSpec.DeleteAsync();
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync("e-remove-a-should-remove-binding",
+            "q-remove-a-should-remove-binding");
+
+        Assert.Equal(10, management.TopologyListener().BindingCount());
+        await queueSpecWontDeleted.DeleteAsync();
+
+        await exSpec.DeleteAsync();
+
+        Assert.Equal(0, management.TopologyListener().ExchangeCount());
+        Assert.Equal(0, management.TopologyListener().QueueCount());
+
+        await connection.CloseAsync();
+    }
+
+    [Fact]
+    public async Task RemoveAnExchangeShouldRemoveTheBindings()
+    {
+        _testOutputHelper.WriteLine("RemoveAnExchangeShouldRemoveTheBindings");
+        const string containerId = "remove-exchange-should-remove-binding-connection-name";
+        var connection = await AmqpConnection.CreateAsync(
+            ConnectionSettingBuilder.Create()
+                .RecoveryConfiguration(RecoveryConfiguration.Create()
+                    .BackOffDelayPolicy(new FakeFastBackOffDelay())
+                    .Topology(true))
+                .ContainerId(containerId)
+                .Build());
+
+        var management = connection.Management();
+        var exSpec = management.Exchange().Name("e-remove-exchange-should-remove-binding")
+            .Type(ExchangeType.DIRECT);
+
+        await exSpec.DeclareAsync();
+
+        var exSpecWontDeleted = management.Exchange().Name("e-remove-exchange-should-remove-binding-wont-delete")
+            .Type(ExchangeType.DIRECT);
+
+        await exSpecWontDeleted.DeclareAsync();
+
+        var queueSpec = management.Queue().Name("q-remove-exchange-should-remove-binding")
+            .AutoDelete(true).Exclusive(true);
+        await queueSpec.DeclareAsync();
+
+        for (int i = 0; i < 10; i++)
+        {
+            await management.Binding().SourceExchange(exSpec)
+                .DestinationQueue(queueSpec).Key($"key_{i}").BindAsync();
+
+            await management.Binding().SourceExchange(exSpecWontDeleted)
+                .DestinationQueue(queueSpec).Key($"key_{i}").BindAsync();
+        }
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync("e-remove-exchange-should-remove-binding",
+            "q-remove-exchange-should-remove-binding");
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync(
+            "e-remove-exchange-should-remove-binding-wont-delete",
+            "q-remove-exchange-should-remove-binding");
+
+        Assert.Equal(20, management.TopologyListener().BindingCount());
+        await exSpec.DeleteAsync();
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(
+            "e-remove-exchange-should-remove-binding",
+            "q-remove-exchange-should-remove-binding");
+
+        Assert.Equal(10, management.TopologyListener().BindingCount());
+        await exSpecWontDeleted.DeleteAsync();
+
+        await queueSpec.DeleteAsync();
+
+        Assert.Equal(0, management.TopologyListener().ExchangeCount());
+        Assert.Equal(0, management.TopologyListener().QueueCount());
+
+        await connection.CloseAsync();
+    }
+
+    /// <summary>
+    /// This test is specific to check if the bindings are removed when a destination exchange is removed.
+    /// </summary>
+    [Fact]
+    public async Task RemoveAnExchangeBoundToAnotherExchangeShouldRemoveTheBindings()
+    {
+        _testOutputHelper.WriteLine("RemoveAnExchangeBoundToAnotherExchangeShouldRemoveTheBindings");
+
+        const string containerId = "remove-exchange-bound-to-another-exchange-should-remove-binding-connection-name";
+        var connection = await AmqpConnection.CreateAsync(
+            ConnectionSettingBuilder.Create()
+                .RecoveryConfiguration(RecoveryConfiguration.Create()
+                    .BackOffDelayPolicy(new FakeFastBackOffDelay())
+                    .Topology(true))
+                .ContainerId(containerId)
+                .Build());
+
+        var management = connection.Management();
+
+        var exSpec = management.Exchange().Name("e-remove-exchange-bound-to-another-exchange-should-remove-binding")
+            .Type(ExchangeType.DIRECT);
+
+        await exSpec.DeclareAsync();
+
+        var exSpecDestination = management.Exchange().Name("e-remove-exchange-bound-to-another-exchange-should-remove-binding-destination")
+            .Type(ExchangeType.DIRECT);
+
+        await exSpecDestination.DeclareAsync();
+
+        for (int i = 0; i < 10; i++)
+        {
+            await management.Binding().SourceExchange(exSpec)
+                .DestinationExchange(exSpecDestination).Key($"key_{i}").BindAsync();
+        }
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeExistAsync("e-remove-exchange-bound-to-another-exchange-should-remove-binding",
+            "e-remove-exchange-bound-to-another-exchange-should-remove-binding-destination");
+
+        Assert.Equal(10, management.TopologyListener().BindingCount());
+
+
+
+        await exSpecDestination.DeleteAsync();
+        Assert.Equal(0, management.TopologyListener().BindingCount());
+
+        await exSpec.DeleteAsync();
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync("e-remove-exchange-bound-to-another-exchange-should-remove-binding",
+            "e-remove-exchange-bound-to-another-exchange-should-remove-binding-destination");
+
+
+        Assert.Equal(0, management.TopologyListener().ExchangeCount());
+
+        await connection.CloseAsync();
+
+
+
+    }
 }

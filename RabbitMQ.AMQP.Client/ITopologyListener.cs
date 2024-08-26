@@ -9,10 +9,10 @@ public interface ITopologyListener
     void ExchangeDeclared(IExchangeSpecification specification);
 
     void ExchangeDeleted(string name);
-    
-    
+
+
     void BindingDeclared(IBindingSpecification specification);
-        
+
     void BindingDeleted(string path);
 
     void Clear();
@@ -20,6 +20,6 @@ public interface ITopologyListener
     int QueueCount();
 
     int ExchangeCount();
-    
+
     int BindingCount();
 }
