@@ -106,40 +106,56 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
             ConnectionSettingBuilder.Create().ContainerId(containerId).RecoveryConfiguration(
                 RecoveryConfiguration.Create().Activated(true).Topology(false)
                     .BackOffDelayPolicy(new FakeFastBackOffDelay())).Build());
-        var resetEvent = new ManualResetEvent(false);
+
+        TaskCompletionSource listErrorCountGreaterThanOrEqualToTwoTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource listErrorCountGreaterThanOrEqualToFourTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
         var listFromStatus = new List<State>();
         var listToStatus = new List<State>();
         var listError = new List<Error?>();
         connection.ChangeState += (sender, previousState, currentState, error) =>
         {
-            listFromStatus.Add(previousState);
-            listToStatus.Add(currentState);
-            listError.Add(error);
-            if (listError.Count >= 4)
+            try
             {
-                resetEvent.Set();
+                listFromStatus.Add(previousState);
+                listToStatus.Add(currentState);
+                listError.Add(error);
+                if (listError.Count >= 2)
+                {
+                    // Note: must use try since it'll be called again
+                    listErrorCountGreaterThanOrEqualToTwoTcs.TrySetResult();
+                }
+                if (listError.Count >= 4)
+                {
+                    listErrorCountGreaterThanOrEqualToFourTcs.SetResult();
+                }
+            }
+            catch (Exception ex)
+            {
+                listErrorCountGreaterThanOrEqualToTwoTcs.TrySetException(ex);
+                listErrorCountGreaterThanOrEqualToFourTcs.SetException(ex);
             }
         };
 
         Assert.Equal(State.Open, connection.State);
         await SystemUtils.WaitUntilConnectionIsKilled(containerId);
-        resetEvent.WaitOne(TimeSpan.FromSeconds(5));
-        await SystemUtils.WaitUntilFuncAsync(() => (listFromStatus.Count >= 2));
+        await listErrorCountGreaterThanOrEqualToTwoTcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
         Assert.Equal(State.Open, listFromStatus[0]);
         Assert.Equal(State.Reconnecting, listToStatus[0]);
         Assert.NotNull(listError[0]);
+
         Assert.Equal(State.Reconnecting, listFromStatus[1]);
         Assert.Equal(State.Open, listToStatus[1]);
         Assert.Null(listError[1]);
-        resetEvent.Reset();
-        resetEvent.Set();
+
         await connection.CloseAsync();
-        resetEvent.WaitOne(TimeSpan.FromSeconds(5));
-        await SystemUtils.WaitUntilFuncAsync(() => (listFromStatus.Count >= 4));
+        await listErrorCountGreaterThanOrEqualToFourTcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.Equal(State.Open, listFromStatus[2]);
         Assert.Equal(State.Closing, listToStatus[2]);
         Assert.Null(listError[2]);
+
         Assert.Equal(State.Closing, listFromStatus[3]);
         Assert.Equal(State.Closed, listToStatus[3]);
         Assert.Null(listError[3]);
@@ -160,8 +176,11 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
             ConnectionSettingBuilder.Create().ContainerId(containerId).RecoveryConfiguration(
                 RecoveryConfiguration.Create().Activated(true).Topology(false).BackOffDelayPolicy(
                     new FakeBackOffDelayPolicyDisabled())).Build());
-        var resetEvent = new ManualResetEvent(false);
+
         var listFromStatus = new List<State>();
+        TaskCompletionSource listFromStatusCountGreaterOrEqualToTwo = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource listErrorCountGreaterOrEqualToTwo = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
         var listToStatus = new List<State>();
         var listError = new List<Error>();
         connection.ChangeState += (sender, previousState, currentState, error) =>
@@ -172,26 +191,33 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
             {
                 listError.Add(error);
             }
-
-            if (listError.Count >= 4)
+            if (listFromStatus.Count >= 2)
             {
-                resetEvent.Set();
+                listFromStatusCountGreaterOrEqualToTwo.TrySetResult();
+            }
+            if (listError.Count >= 2)
+            {
+                listErrorCountGreaterOrEqualToTwo.SetResult();
             }
         };
 
         Assert.Equal(State.Open, connection.State);
         await SystemUtils.WaitUntilConnectionIsKilled(containerId);
-        resetEvent.WaitOne(TimeSpan.FromSeconds(5));
-        await SystemUtils.WaitUntilFuncAsync(() => (listFromStatus.Count >= 2));
+
+        await listFromStatusCountGreaterOrEqualToTwo.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
         Assert.Equal(State.Open, listFromStatus[0]);
         Assert.Equal(State.Reconnecting, listToStatus[0]);
         Assert.NotNull(listError[0]);
+
         Assert.Equal(State.Reconnecting, listFromStatus[1]);
         Assert.Equal(State.Closed, listToStatus[1]);
         Assert.NotNull(listError[1]);
         Assert.Equal("CONNECTION_NOT_RECOVERED", listError[1].ErrorCode);
+
         await connection.CloseAsync();
         Assert.Equal(State.Closed, connection.State);
+        await listErrorCountGreaterOrEqualToTwo.Task.WaitAsync(TimeSpan.FromSeconds(5));
     }
 
     /// <summary>
