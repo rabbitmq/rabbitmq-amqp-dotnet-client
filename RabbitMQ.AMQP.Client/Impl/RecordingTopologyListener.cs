@@ -39,7 +39,8 @@ public class RecordingTopologyListener : ITopologyListener
     {
         foreach (var binding in _bindingSpecifications.Values)
         {
-            if (binding.SourceExchange == exchangeName)
+            if (binding.SourceExchange == exchangeName 
+                || binding.DestinationExchange == exchangeName)
             {
                 _bindingSpecifications.TryRemove(binding.Path, out _);
             }
