@@ -43,6 +43,9 @@ public class AmqpManagement : AbstractLifeCycle, IManagement, IManagementTopolog
     internal const string Delete = "DELETE";
     private const string ReplyTo = "$me";
 
+    protected readonly TaskCompletionSource _managementSessionClosedTcs =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     internal AmqpManagement(AmqpManagementParameters amqpManagementParameters)
     {
         _amqpManagementParameters = amqpManagementParameters;
@@ -165,7 +168,7 @@ public class AmqpManagement : AbstractLifeCycle, IManagement, IManagementTopolog
         OnNewStatus(State.Closed, Utils.ConvertError(error));
 
         // Note: TrySetResult *must* be used here
-        _connectionCloseTaskCompletionSource.TrySetResult(true);
+        _managementSessionClosedTcs.TrySetResult();
     }
 
     private async Task ProcessResponses()
@@ -472,7 +475,7 @@ public class AmqpManagement : AbstractLifeCycle, IManagement, IManagementTopolog
             await _managementSession.CloseAsync(closeSpan)
                 .ConfigureAwait(false);
 
-            await _connectionCloseTaskCompletionSource.Task.WaitAsync(closeSpan)
+            await _managementSessionClosedTcs.Task.WaitAsync(closeSpan)
                 .ConfigureAwait(false);
 
             _managementSession = null;
