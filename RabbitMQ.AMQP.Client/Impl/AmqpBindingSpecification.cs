@@ -53,6 +53,7 @@ public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecif
         string method = AmqpManagement.Post;
         int[] expectedReturnCodes = [AmqpManagement.Code204];
         // Note: must use await so that ConfigureAwait(false) can be called
+        _management.TopologyListener().BindingDeclared(this);
         await _management.RequestAsync(kv, path, method, expectedReturnCodes)
             .ConfigureAwait(false);
     }

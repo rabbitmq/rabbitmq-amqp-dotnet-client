@@ -285,15 +285,17 @@ public class ConnectionRecoveryTests()
     }
 
 
-    [Fact]
-    public async Task RecoveryTopologyShouldRecoverExchanges()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task RecoveryTopologyShouldRecoverExchanges(bool topologyEnabled)
     {
         const string containerId = "exchange-should-recover-connection-name";
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
                 .RecoveryConfiguration(RecoveryConfiguration.Create()
                     .BackOffDelayPolicy(new FakeFastBackOffDelay())
-                    .Topology(true))
+                    .Topology(topologyEnabled))
                 .ContainerId(containerId)
                 .Build());
         TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -317,12 +319,94 @@ public class ConnectionRecoveryTests()
         await SystemUtils.WaitUntilConnectionIsKilled(containerId);
         await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
-        await SystemUtils.WaitUntilExchangeExistsAsync("exchange-should-recover");
+        if (topologyEnabled)
+        {
+            await SystemUtils.WaitUntilExchangeExistsAsync("exchange-should-recover");
+        }
+        else
+        {
+            await SystemUtils.WaitUntilExchangeDeletedAsync("exchange-should-recover");
+        }
+
         Assert.Equal(1, management.TopologyListener().ExchangeCount());
 
         await exSpec.DeleteAsync();
 
         Assert.Equal(0, management.TopologyListener().ExchangeCount());
+
+        await connection.CloseAsync();
+    }
+
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task RecoveryTopologyShouldRecoverBindings(bool topologyEnabled)
+    {
+        const string containerId = "binding-should-recover-connection-name";
+        var connection = await AmqpConnection.CreateAsync(
+            ConnectionSettingBuilder.Create()
+                .RecoveryConfiguration(RecoveryConfiguration.Create()
+                    .BackOffDelayPolicy(new FakeFastBackOffDelay())
+                    .Topology(topologyEnabled))
+                .ContainerId(containerId)
+                .Build());
+        TaskCompletionSource<bool> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        int recoveryEvents = 0;
+        connection.ChangeState += (sender, from, to, error) =>
+        {
+            if (Interlocked.Increment(ref recoveryEvents) == 2)
+            {
+                completion.SetResult(true);
+            }
+        };
+        var management = connection.Management();
+        var exSpec = management.Exchange().Name("exchange-should-recover-binding").AutoDelete(true)
+            .Type(ExchangeType.DIRECT);
+        await exSpec.DeclareAsync();
+        Assert.Equal(1, management.TopologyListener().ExchangeCount());
+        var queueSpec = management.Queue().Name("queue-should-recover-binding").AutoDelete(true).Exclusive(true);
+        await queueSpec.DeclareAsync();
+        Assert.Equal(1, management.TopologyListener().QueueCount());
+        var bindingSpec =
+            management.Binding().SourceExchange(exSpec).DestinationQueue(queueSpec).Key("key");
+        await bindingSpec.BindAsync();
+        Assert.Equal(1, management.TopologyListener().BindingCount());
+
+        // Since we cannot reboot the broker for this test we delete the exchange manually to simulate check if  
+        // the exchange is recovered.
+        await SystemUtils.DeleteExchangeAsync("exchange-should-recover-binding");
+
+        // The queue will be deleted due of the auto-delete flag
+        await SystemUtils.WaitUntilConnectionIsKilled(containerId);
+        await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        if (topologyEnabled)
+        {
+            await SystemUtils.WaitUntilExchangeExistsAsync("exchange-should-recover-binding");
+            await SystemUtils.WaitUntilQueueExistsAsync("queue-should-recover-binding");
+            await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync("exchange-should-recover-binding",
+                "queue-should-recover-binding");
+        }
+        else
+        {
+            await SystemUtils.WaitUntilExchangeDeletedAsync("exchange-should-recover-binding");
+            await SystemUtils.WaitUntilQueueDeletedAsync("queue-should-recover-binding");
+            await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync("exchange-should-recover-binding",
+                "queue-should-recover-binding");
+        }
+
+        Assert.Equal(1, management.TopologyListener().ExchangeCount());
+        Assert.Equal(1, management.TopologyListener().QueueCount());
+        Assert.Equal(1, management.TopologyListener().BindingCount());
+
+        await exSpec.DeleteAsync();
+        await queueSpec.DeleteAsync();
+        await bindingSpec.UnbindAsync();
+
+        Assert.Equal(0, management.TopologyListener().ExchangeCount());
+        Assert.Equal(0, management.TopologyListener().QueueCount());
+        Assert.Equal(0, management.TopologyListener().BindingCount());
 
         await connection.CloseAsync();
     }
