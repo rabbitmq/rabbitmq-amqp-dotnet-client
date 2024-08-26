@@ -14,30 +14,52 @@ ConsoleTraceListener consoleListener = new();
 Trace.TraceListener = (l, f, a) =>
     consoleListener.WriteLine($"[{DateTime.Now}] [{l}] - {f}");
 
-Trace.WriteLine(TraceLevel.Information, "Starting");
-const string containerId = "GettingStarted-Connection";
+Trace.WriteLine(TraceLevel.Information, "Starting the example...");
+const string containerId = "getting-started-Connection";
 
 IEnvironment environment = await AmqpEnvironment.CreateAsync(
     ConnectionSettingBuilder.Create().ContainerId(containerId).Build());
 
 IConnection connection = await environment.CreateConnectionAsync();
 
-Trace.WriteLine(TraceLevel.Information, "Connected");
+Trace.WriteLine(TraceLevel.Information, $"Connected to the broker {connection} successfully");
 
+
+// ------------------------------------------------------------------------------------
+// The management object is used to declare/delete queues, exchanges, and bindings
 IManagement management = connection.Management();
-const string queueName = "amqp10-client-test";
+const string exchangeName = "e_amqp10-client-test";
+const string queueName = "q_amqp10-client-test";
+const string routingKey = "routing_key";
 IQueueSpecification queueSpec = management.Queue(queueName).Type(QueueType.QUORUM);
-await queueSpec.DeleteAsync();
 await queueSpec.DeclareAsync();
+IExchangeSpecification exchangeSpec = management.Exchange(exchangeName).Type(ExchangeType.TOPIC);
+await exchangeSpec.DeclareAsync();
 
-IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).MaxInflightMessages(2000).BuildAsync();
+IBindingSpecification bindingSpec = management.Binding()
+    .SourceExchange(exchangeSpec)
+    .DestinationQueue(queueSpec)
+    .Key(routingKey);
+await bindingSpec.BindAsync();
+Trace.WriteLine(TraceLevel.Information,
+    $"Queue {queueName} and Exchange {exchangeName} declared and bound with key {routingKey} successfully");
+// ------------------------------------------------------------------------------------
 
-IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).InitialCredits(100).MessageHandler((context, message) =>
+
+// ------------------------------------------------------------------------------------
+// Declare a publisher and a consumer.
+// The publisher can use exchange (optionally with a key) or queue to publish messages. 
+IPublisher publisher = await connection.PublisherBuilder().Exchange(exchangeName).Key(routingKey)
+    .BuildAsync();
+
+IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).MessageHandler(
+    async (context, message) =>
     {
         Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.Body()} received");
-        return context.DiscardAsync();
+        await context.AcceptAsync();
     }
 ).BuildAsync();
+// ------------------------------------------------------------------------------------
 
 const int total = 10;
 for (int i = 0; i < total; i++)
@@ -47,18 +69,19 @@ for (int i = 0; i < total; i++)
 
     if (pr.Outcome.State == OutcomeState.Accepted)
     {
+        // The message was accepted by the broker
         Trace.WriteLine(TraceLevel.Information, $"[Publisher] Message: {message.Body()} confirmed");
     }
     else
     {
+        // The message was not accepted by the broker
         Trace.WriteLine(TraceLevel.Error,
             $"outcome result, state: {pr.Outcome.State}, message_id: " +
             $"{message.MessageId()}, error: {pr.Outcome.Error}");
     }
 }
 
-Trace.WriteLine(TraceLevel.Information, "Queue Created");
-Console.WriteLine("Press any key to delete the queue and close the connection.");
+Console.WriteLine("Press any key to delete queue, exchange and close the environment.");
 Console.ReadKey();
 
 await publisher.CloseAsync();
@@ -68,7 +91,8 @@ await consumer.CloseAsync();
 consumer.Dispose();
 
 await queueSpec.DeleteAsync();
+await exchangeSpec.DeleteAsync();
 
 await environment.CloseAsync();
 
-Trace.WriteLine(TraceLevel.Information, "Closed");
+Trace.WriteLine(TraceLevel.Information, "Example closed successfully");
