@@ -55,7 +55,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [InlineData(false)]
     public async Task NormalCloseTheStatusShouldBeCorrectAndErrorNull(bool activeRecovery)
     {
-        _testOutputHelper.WriteLine($"NormalCloseTheStatusShouldBeCorrectAndErrorNull: {activeRecovery}");
         string containerId = Guid.NewGuid().ToString();
         IConnection connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create().ContainerId(containerId).RecoveryConfiguration(
@@ -102,7 +101,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task UnexpectedCloseTheStatusShouldBeCorrectAndErrorNotNull()
     {
-        _testOutputHelper.WriteLine("UnexpectedCloseTheStatusShouldBeCorrectAndErrorNotNull");
         const string containerId = "unexpected-close-connection-name";
         IConnection connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create().ContainerId(containerId).RecoveryConfiguration(
@@ -157,7 +155,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task OverrideTheBackOffWithBackOffDisabled()
     {
-        _testOutputHelper.WriteLine("OverrideTheBackOffWithBackOffDisabled");
         string containerId = Guid.NewGuid().ToString();
         IConnection connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create().ContainerId(containerId).RecoveryConfiguration(
@@ -207,7 +204,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task RecoveryTopologyShouldRecoverTheTempQueues()
     {
-        _testOutputHelper.WriteLine("RecoveryTopologyShouldRecoverTheTempQueues");
         string queueName = $"temp-queue-should-recover-{true}";
         const string containerId = "temp-queue-should-recover-connection-name";
         var connection = await AmqpConnection.CreateAsync(
@@ -255,7 +251,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task RecoveryTopologyShouldNotRecoverTheTempQueues()
     {
-        _testOutputHelper.WriteLine("RecoveryTopologyShouldNotRecoverTheTempQueues");
         string queueName = $"temp-queue-should-recover-{false}";
         const string containerId = "temp-queue-should-not-recover-connection-name";
         var connection = await AmqpConnection.CreateAsync(
@@ -294,7 +289,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [InlineData(false)]
     public async Task RecoveryTopologyShouldRecoverExchanges(bool topologyEnabled)
     {
-        _testOutputHelper.WriteLine($"RecoveryTopologyShouldRecoverExchanges: {topologyEnabled}");
         const string containerId = "exchange-should-recover-connection-name";
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
@@ -348,7 +342,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [InlineData(false)]
     public async Task RecoveryTopologyShouldRecoverBindings(bool topologyEnabled)
     {
-        _testOutputHelper.WriteLine($"RecoveryTopologyShouldRecoverBindings: {topologyEnabled}");
         const string containerId = "binding-should-recover-connection-name";
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
@@ -489,7 +482,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task RemoveAnExchangeShouldRemoveTheBindings()
     {
-        _testOutputHelper.WriteLine("RemoveAnExchangeShouldRemoveTheBindings");
         const string containerId = "remove-exchange-should-remove-binding-connection-name";
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
