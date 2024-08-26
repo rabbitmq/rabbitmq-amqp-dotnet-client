@@ -314,7 +314,6 @@ public class ConnectionRecoveryTests()
         // Since we cannot reboot the broker for this test we delete the exchange manually to simulate check if  
         // the exchange is recovered.
         await SystemUtils.DeleteExchangeAsync("exchange-should-recover");
-
         await SystemUtils.WaitUntilConnectionIsKilled(containerId);
         await completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
 

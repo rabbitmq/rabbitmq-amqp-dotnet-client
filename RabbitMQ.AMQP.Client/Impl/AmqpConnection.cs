@@ -567,4 +567,24 @@ internal class Visitor(AmqpManagement management) : IVisitor
             }
         }
     }
+    
+    
+    public async Task VisitBindingsAsync(IEnumerable<BindingSpec> bindingSpec)
+    {
+        // TODO this could be done in parallel
+        foreach (BindingSpec spec in bindingSpec)
+        {
+            Trace.WriteLine(TraceLevel.Information, $"Recovering binding {spec.Path}");
+            try
+            {
+                await Management.Binding(spec).BindAsync()
+                    .ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                Trace.WriteLine(TraceLevel.Error,
+                    $"Error recovering binding {spec.Path}. Error: {e}. Management Status: {Management}");
+            }
+        }
+    }
 }

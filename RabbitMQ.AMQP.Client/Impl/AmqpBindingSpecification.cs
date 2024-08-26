@@ -32,6 +32,13 @@ public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecif
         _management = management;
     }
 
+    public Dictionary<string, object> Arguments()
+    {
+        return _arguments;
+    }
+
+    public string Path() => BindingsTarget();
+
     public async Task BindAsync()
     {
         var kv = new Map
@@ -63,12 +70,13 @@ public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecif
                 $"{($"{destinationCharacter}={Utils.EncodePathSegment(Destination)};" +
                     $"key={Utils.EncodePathSegment(RoutingKey)};args=")}";
 
+            _management.TopologyListener().BindingDeleted(Path());
             await _management.RequestAsync(null, path, method, expectedReturnCodes)
                 .ConfigureAwait(false);
         }
         else
         {
-            string bindingsPath = BindingsTarget(destinationCharacter, Source, Destination, RoutingKey);
+            string bindingsPath = BindingsTarget();
             List<Map> bindings = await GetBindings(bindingsPath).ConfigureAwait(false);
             string? path = MatchBinding(bindings, RoutingKey, ArgsToMap());
             if (path is null)
@@ -77,6 +85,7 @@ public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecif
             }
             else
             {
+                _management.TopologyListener().BindingDeclared(this);
                 await _management.RequestAsync(null, path, method, expectedReturnCodes)
                     .ConfigureAwait(false);
             }
@@ -95,6 +104,11 @@ public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecif
         return this;
     }
 
+    public string SourceExchangeName()
+    {
+        return Source;
+    }
+
     public IBindingSpecification DestinationQueue(IQueueSpecification queueSpec)
     {
         return DestinationQueue(queueSpec.Name());
@@ -107,6 +121,8 @@ public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecif
         return this;
     }
 
+    public string DestinationQueueName() => Destination;
+
     public IBindingSpecification DestinationExchange(IExchangeSpecification exchangeSpec)
     {
         return DestinationExchange(exchangeSpec.Name());
@@ -118,11 +134,15 @@ public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecif
         return this;
     }
 
+    public string DestinationExchangeName() => Destination;
+
     public IBindingSpecification Key(string key)
     {
         RoutingKey = key;
         return this;
     }
+
+    public string Key() => RoutingKey;
 
     public IBindingSpecification Argument(string key, object value)
     {
@@ -136,17 +156,17 @@ public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecif
         return this;
     }
 
-    private string BindingsTarget(
-        string destinationField, string source, string destination, string key)
+    private string BindingsTarget()
     {
+        string destinationField = ToQueue ? "dstq" : "dste";
         return "/bindings?src="
-               + Utils.EncodeHttpParameter(source)
+               + Utils.EncodeHttpParameter(Source)
                + "&"
                + destinationField
                + "="
-               + Utils.EncodeHttpParameter(destination)
+               + Utils.EncodeHttpParameter(Destination)
                + "&key="
-               + Utils.EncodeHttpParameter(key);
+               + Utils.EncodeHttpParameter(RoutingKey);
     }
 
     private async Task<List<Map>> GetBindings(string path)

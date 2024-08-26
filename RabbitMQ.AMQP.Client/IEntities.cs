@@ -152,19 +152,27 @@ public interface IExchangeSpecification : IEntitySpecification
 public interface IBindingSpecification
 {
     IBindingSpecification SourceExchange(IExchangeSpecification exchangeSpec);
+    
     IBindingSpecification SourceExchange(string exchangeName);
+    string SourceExchangeName();
 
     IBindingSpecification DestinationQueue(IQueueSpecification queueSpec);
     IBindingSpecification DestinationQueue(string queueName);
+    string DestinationQueueName();
 
     IBindingSpecification DestinationExchange(IExchangeSpecification exchangeSpec);
     IBindingSpecification DestinationExchange(string exchangeName);
+    string DestinationExchangeName();
 
     IBindingSpecification Key(string key);
+    string Key();
 
     IBindingSpecification Argument(string key, object value);
 
     IBindingSpecification Arguments(Dictionary<string, object> arguments);
+    Dictionary<string, object> Arguments();
+
+    string Path();
 
     Task BindAsync();
     Task UnbindAsync();

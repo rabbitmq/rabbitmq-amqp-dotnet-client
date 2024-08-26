@@ -106,6 +106,16 @@ public class AmqpManagement : AbstractLifeCycle, IManagement
     {
         return new AmqpBindingSpecification(this);
     }
+    
+    public IBindingSpecification Binding(BindingSpec spec)
+    {
+        return Binding()
+            .SourceExchange(spec.SourceExchange)
+            .DestinationQueue(spec.DestinationQueue)
+            .DestinationExchange(spec.DestinationExchange)
+            .Key(spec.Key)
+            .Arguments(spec.Arguments);
+    }
 
     public ITopologyListener TopologyListener()
     {
