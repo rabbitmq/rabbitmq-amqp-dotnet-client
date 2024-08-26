@@ -422,22 +422,7 @@ RabbitMQ.AMQP.Client.Impl.FieldNotSetException
 RabbitMQ.AMQP.Client.Impl.FieldNotSetException.FieldNotSetException() -> void
 RabbitMQ.AMQP.Client.Impl.InvalidCodeException
 RabbitMQ.AMQP.Client.Impl.InvalidCodeException.InvalidCodeException(string! message) -> void
-RabbitMQ.AMQP.Client.Impl.IVisitor
-RabbitMQ.AMQP.Client.Impl.IVisitor.VisitBindingsAsync(System.Collections.Generic.IEnumerable<RabbitMQ.AMQP.Client.Impl.BindingSpec!>! bindingSpec) -> System.Threading.Tasks.Task!
-RabbitMQ.AMQP.Client.Impl.IVisitor.VisitExchangesAsync(System.Collections.Generic.IEnumerable<RabbitMQ.AMQP.Client.Impl.ExchangeSpec!>! exchangeSpec) -> System.Threading.Tasks.Task!
-RabbitMQ.AMQP.Client.Impl.IVisitor.VisitQueuesAsync(System.Collections.Generic.IEnumerable<RabbitMQ.AMQP.Client.Impl.QueueSpec!>! queueSpec) -> System.Threading.Tasks.Task!
-RabbitMQ.AMQP.Client.Impl.QueueSpec
-RabbitMQ.AMQP.Client.Impl.QueueSpec.Arguments.get -> System.Collections.Generic.Dictionary<object!, object!>!
-RabbitMQ.AMQP.Client.Impl.QueueSpec.Arguments.init -> void
-RabbitMQ.AMQP.Client.Impl.QueueSpec.AutoDelete.get -> bool
-RabbitMQ.AMQP.Client.Impl.QueueSpec.AutoDelete.init -> void
-RabbitMQ.AMQP.Client.Impl.QueueSpec.Exclusive.get -> bool
-RabbitMQ.AMQP.Client.Impl.QueueSpec.Exclusive.init -> void
-RabbitMQ.AMQP.Client.Impl.QueueSpec.Name.get -> string!
-RabbitMQ.AMQP.Client.Impl.QueueSpec.Name.init -> void
-RabbitMQ.AMQP.Client.Impl.QueueSpec.QueueSpec(RabbitMQ.AMQP.Client.IQueueSpecification! specification) -> void
 RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener
-RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener.Accept(RabbitMQ.AMQP.Client.Impl.IVisitor! visitor) -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener.BindingCount() -> int
 RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener.BindingDeclared(RabbitMQ.AMQP.Client.IBindingSpecification! specification) -> void
 RabbitMQ.AMQP.Client.Impl.RecordingTopologyListener.BindingDeleted(string! key) -> void
