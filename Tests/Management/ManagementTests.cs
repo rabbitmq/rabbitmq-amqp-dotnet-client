@@ -361,6 +361,7 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
     {
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
+        ITopologyListener topologyListener = ((IManagementTopology)_management).TopologyListener();
 
         var queueSpecs = new List<IQueueSpecification>();
         for (int i = 1; i < 7; i++)
@@ -368,14 +369,14 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
             IQueueSpecification qs = _management.Queue().Name($"Q_{i}");
             await qs.DeclareAsync();
             queueSpecs.Add(qs);
-            Assert.Equal(((RecordingTopologyListener)_management.TopologyListener()).QueueCount(), i);
+            Assert.Equal(((RecordingTopologyListener)topologyListener).QueueCount(), i);
         }
 
         for (int i = 0; i < 6; i++)
         {
             IQueueSpecification qs = queueSpecs[i];
             await qs.DeleteAsync();
-            Assert.Equal(_management.TopologyListener().QueueCount(), 5 - i);
+            Assert.Equal(topologyListener.QueueCount(), 5 - i);
         }
 
         queueSpecs.Clear();

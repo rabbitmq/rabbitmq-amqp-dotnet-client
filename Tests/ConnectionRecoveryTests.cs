@@ -226,9 +226,10 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                 completion.SetResult(true);
             }
         };
-        var management = connection.Management();
+        IManagement management = connection.Management();
+        ITopologyListener topologyListener = ((IManagementTopology)management).TopologyListener();
         await management.Queue().Name(queueName).AutoDelete(true).Exclusive(true).DeclareAsync();
-        Assert.Equal(1, management.TopologyListener().QueueCount());
+        Assert.Equal(1, topologyListener.QueueCount());
 
 
         await SystemUtils.WaitUntilConnectionIsKilled(containerId);
@@ -241,7 +242,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         await SystemUtils.WaitUntilQueueDeletedAsync(queueName);
 
-        Assert.Equal(0, management.TopologyListener().QueueCount());
+        Assert.Equal(0, topologyListener.QueueCount());
     }
 
     /// <summary>
@@ -273,9 +274,10 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                 completion.SetResult(true);
             }
         };
-        var management = connection.Management();
+        IManagement management = connection.Management();
+        ITopologyListener topologyListener = ((IManagementTopology)management).TopologyListener();
         await management.Queue().Name(queueName).AutoDelete(true).Exclusive(true).DeclareAsync();
-        Assert.Equal(1, management.TopologyListener().QueueCount());
+        Assert.Equal(1, topologyListener.QueueCount());
 
 
         await SystemUtils.WaitUntilConnectionIsKilled(containerId);
@@ -284,7 +286,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         await SystemUtils.WaitUntilQueueDeletedAsync(queueName);
 
         await connection.CloseAsync();
-        Assert.Equal(0, management.TopologyListener().QueueCount());
+        Assert.Equal(0, topologyListener.QueueCount());
     }
 
     [Theory]
@@ -310,11 +312,12 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                 completion.SetResult(true);
             }
         };
-        var management = connection.Management();
-        var exSpec = management.Exchange().Name("exchange-should-recover").AutoDelete(true)
+        IManagement management = connection.Management();
+        ITopologyListener topologyListener = ((IManagementTopology)management).TopologyListener();
+        IExchangeSpecification exSpec = management.Exchange().Name("exchange-should-recover").AutoDelete(true)
             .Type(ExchangeType.DIRECT);
         await exSpec.DeclareAsync();
-        Assert.Equal(1, management.TopologyListener().ExchangeCount());
+        Assert.Equal(1, topologyListener.ExchangeCount());
 
         // Since we cannot reboot the broker for this test we delete the exchange manually to simulate check if  
         // the exchange is recovered.
@@ -331,11 +334,11 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
             await SystemUtils.WaitUntilExchangeDeletedAsync("exchange-should-recover");
         }
 
-        Assert.Equal(1, management.TopologyListener().ExchangeCount());
+        Assert.Equal(1, topologyListener.ExchangeCount());
 
         await exSpec.DeleteAsync();
 
-        Assert.Equal(0, management.TopologyListener().ExchangeCount());
+        Assert.Equal(0, topologyListener.ExchangeCount());
 
         await connection.CloseAsync();
     }
@@ -363,18 +366,19 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                 completion.SetResult(true);
             }
         };
-        var management = connection.Management();
+        IManagement management = connection.Management();
+        ITopologyListener topologyListener = ((IManagementTopology)management).TopologyListener();
         var exSpec = management.Exchange().Name("exchange-should-recover-binding").AutoDelete(true)
             .Type(ExchangeType.DIRECT);
         await exSpec.DeclareAsync();
-        Assert.Equal(1, management.TopologyListener().ExchangeCount());
+        Assert.Equal(1, topologyListener.ExchangeCount());
         var queueSpec = management.Queue().Name("queue-should-recover-binding").AutoDelete(true).Exclusive(true);
         await queueSpec.DeclareAsync();
-        Assert.Equal(1, management.TopologyListener().QueueCount());
+        Assert.Equal(1, topologyListener.QueueCount());
         var bindingSpec =
             management.Binding().SourceExchange(exSpec).DestinationQueue(queueSpec).Key("key");
         await bindingSpec.BindAsync();
-        Assert.Equal(1, management.TopologyListener().BindingCount());
+        Assert.Equal(1, topologyListener.BindingCount());
 
         // Since we cannot reboot the broker for this test we delete the exchange manually to simulate check if  
         // the exchange is recovered.
@@ -399,17 +403,17 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                 "queue-should-recover-binding");
         }
 
-        Assert.Equal(1, management.TopologyListener().ExchangeCount());
-        Assert.Equal(1, management.TopologyListener().QueueCount());
-        Assert.Equal(1, management.TopologyListener().BindingCount());
+        Assert.Equal(1, topologyListener.ExchangeCount());
+        Assert.Equal(1, topologyListener.QueueCount());
+        Assert.Equal(1, topologyListener.BindingCount());
 
         await exSpec.DeleteAsync();
         await queueSpec.DeleteAsync();
         await bindingSpec.UnbindAsync();
 
-        Assert.Equal(0, management.TopologyListener().ExchangeCount());
-        Assert.Equal(0, management.TopologyListener().QueueCount());
-        Assert.Equal(0, management.TopologyListener().BindingCount());
+        Assert.Equal(0, topologyListener.ExchangeCount());
+        Assert.Equal(0, topologyListener.QueueCount());
+        Assert.Equal(0, topologyListener.BindingCount());
 
         await connection.CloseAsync();
     }
@@ -425,7 +429,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     public async Task RemoveAQueueShouldRemoveTheBindings()
     {
         const string containerId = nameof(RemoveAQueueShouldRemoveTheBindings);
-        var connection = await AmqpConnection.CreateAsync(
+        IConnection connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
                 .RecoveryConfiguration(RecoveryConfiguration.Create()
                     .BackOffDelayPolicy(new FakeFastBackOffDelay())
@@ -433,7 +437,8 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                 .ContainerId(containerId)
                 .Build());
 
-        var management = connection.Management();
+        IManagement management = connection.Management();
+        ITopologyListener topologyListener = ((IManagementTopology)management).TopologyListener();
         var exSpec = management.Exchange().Name("e-remove-a-should-remove-binding")
             .Type(ExchangeType.DIRECT);
 
@@ -464,19 +469,19 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
             "q-remove-a-should-remove-binding-wont-delete");
 
 
-        Assert.Equal(20, management.TopologyListener().BindingCount());
+        Assert.Equal(20, topologyListener.BindingCount());
         await queueSpec.DeleteAsync();
 
         await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync("e-remove-a-should-remove-binding",
             "q-remove-a-should-remove-binding");
 
-        Assert.Equal(10, management.TopologyListener().BindingCount());
+        Assert.Equal(10, topologyListener.BindingCount());
         await queueSpecWontDeleted.DeleteAsync();
 
         await exSpec.DeleteAsync();
 
-        Assert.Equal(0, management.TopologyListener().ExchangeCount());
-        Assert.Equal(0, management.TopologyListener().QueueCount());
+        Assert.Equal(0, topologyListener.ExchangeCount());
+        Assert.Equal(0, topologyListener.QueueCount());
 
         await connection.CloseAsync();
     }
@@ -494,7 +499,8 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                 .ContainerId(containerId)
                 .Build());
 
-        var management = connection.Management();
+        IManagement management = connection.Management();
+        ITopologyListener topologyListener = ((IManagementTopology)management).TopologyListener();
         var exSpec = management.Exchange().Name("e-remove-exchange-should-remove-binding")
             .Type(ExchangeType.DIRECT);
 
@@ -525,20 +531,20 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
             "e-remove-exchange-should-remove-binding-wont-delete",
             "q-remove-exchange-should-remove-binding");
 
-        Assert.Equal(20, management.TopologyListener().BindingCount());
+        Assert.Equal(20, topologyListener.BindingCount());
         await exSpec.DeleteAsync();
 
         await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(
             "e-remove-exchange-should-remove-binding",
             "q-remove-exchange-should-remove-binding");
 
-        Assert.Equal(10, management.TopologyListener().BindingCount());
+        Assert.Equal(10, topologyListener.BindingCount());
         await exSpecWontDeleted.DeleteAsync();
 
         await queueSpec.DeleteAsync();
 
-        Assert.Equal(0, management.TopologyListener().ExchangeCount());
-        Assert.Equal(0, management.TopologyListener().QueueCount());
+        Assert.Equal(0, topologyListener.ExchangeCount());
+        Assert.Equal(0, topologyListener.QueueCount());
 
         await connection.CloseAsync();
     }
@@ -558,7 +564,8 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                 .ContainerId(containerId)
                 .Build());
 
-        var management = connection.Management();
+        IManagement management = connection.Management();
+        ITopologyListener topologyListener = ((IManagementTopology)management).TopologyListener();
 
         var exSpec = management.Exchange().Name("e-remove-exchange-bound-to-another-exchange-should-remove-binding")
             .Type(ExchangeType.DIRECT);
@@ -579,17 +586,17 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeExistAsync("e-remove-exchange-bound-to-another-exchange-should-remove-binding",
             "e-remove-exchange-bound-to-another-exchange-should-remove-binding-destination");
 
-        Assert.Equal(10, management.TopologyListener().BindingCount());
+        Assert.Equal(10, topologyListener.BindingCount());
 
         await exSpecDestination.DeleteAsync();
-        Assert.Equal(0, management.TopologyListener().BindingCount());
+        Assert.Equal(0, topologyListener.BindingCount());
 
         await exSpec.DeleteAsync();
 
         await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync("e-remove-exchange-bound-to-another-exchange-should-remove-binding",
             "e-remove-exchange-bound-to-another-exchange-should-remove-binding-destination");
 
-        Assert.Equal(0, management.TopologyListener().ExchangeCount());
+        Assert.Equal(0, topologyListener.ExchangeCount());
 
         await connection.CloseAsync();
     }

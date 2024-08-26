@@ -1,6 +1,6 @@
 namespace RabbitMQ.AMQP.Client;
 
-public interface ITopologyListener
+internal interface ITopologyListener
 {
     void QueueDeclared(IQueueSpecification specification);
 

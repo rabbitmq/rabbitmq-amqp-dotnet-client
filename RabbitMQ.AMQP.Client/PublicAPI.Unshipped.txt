@@ -160,7 +160,6 @@ RabbitMQ.AMQP.Client.IManagement.GetQueueInfoAsync(RabbitMQ.AMQP.Client.IQueueSp
 RabbitMQ.AMQP.Client.IManagement.GetQueueInfoAsync(string! queueName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IQueueInfo!>!
 RabbitMQ.AMQP.Client.IManagement.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IManagement.Queue(string! name) -> RabbitMQ.AMQP.Client.IQueueSpecification!
-RabbitMQ.AMQP.Client.IManagement.TopologyListener() -> RabbitMQ.AMQP.Client.ITopologyListener!
 RabbitMQ.AMQP.Client.IMessage
 RabbitMQ.AMQP.Client.IMessage.Annotation(string! key) -> object!
 RabbitMQ.AMQP.Client.IMessage.Annotation(string! key, object! value) -> RabbitMQ.AMQP.Client.IMessage!
@@ -263,7 +262,6 @@ RabbitMQ.AMQP.Client.Impl.AmqpManagement.GetQueueInfoAsync(RabbitMQ.AMQP.Client.
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.GetQueueInfoAsync(string! queueName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IQueueInfo!>!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Queue(string! name) -> RabbitMQ.AMQP.Client.IQueueSpecification!
-RabbitMQ.AMQP.Client.Impl.AmqpManagement.TopologyListener() -> RabbitMQ.AMQP.Client.ITopologyListener!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.AmqpMessage() -> void
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.AmqpMessage(Amqp.Message! nativeMessage) -> void
@@ -340,11 +338,11 @@ RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.Reset() -> void
 RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase
 RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase.ArgsToMap() -> Amqp.Types.Map!
 RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase.BindingSpecificationBase() -> void
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase.Destination -> string!
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase.RoutingKey -> string!
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase.Source -> string!
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase.ToQueue -> bool
 RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase._arguments -> System.Collections.Generic.Dictionary<string!, object!>!
+RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase._destination -> string!
+RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase._routingKey -> string!
+RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase._source -> string!
+RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase._toQueue -> bool
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.Build() -> RabbitMQ.AMQP.Client.Impl.ConnectionSettings!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.ContainerId(string! containerId) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
@@ -515,17 +513,6 @@ RabbitMQ.AMQP.Client.ITlsSettings.Protocols.get -> System.Security.Authenticatio
 RabbitMQ.AMQP.Client.ITlsSettings.Protocols.set -> void
 RabbitMQ.AMQP.Client.ITlsSettings.RemoteCertificateValidationCallback.get -> System.Net.Security.RemoteCertificateValidationCallback?
 RabbitMQ.AMQP.Client.ITlsSettings.RemoteCertificateValidationCallback.set -> void
-RabbitMQ.AMQP.Client.ITopologyListener
-RabbitMQ.AMQP.Client.ITopologyListener.BindingCount() -> int
-RabbitMQ.AMQP.Client.ITopologyListener.BindingDeclared(RabbitMQ.AMQP.Client.IBindingSpecification! specification) -> void
-RabbitMQ.AMQP.Client.ITopologyListener.BindingDeleted(string! path) -> void
-RabbitMQ.AMQP.Client.ITopologyListener.Clear() -> void
-RabbitMQ.AMQP.Client.ITopologyListener.ExchangeCount() -> int
-RabbitMQ.AMQP.Client.ITopologyListener.ExchangeDeclared(RabbitMQ.AMQP.Client.IExchangeSpecification! specification) -> void
-RabbitMQ.AMQP.Client.ITopologyListener.ExchangeDeleted(string! name) -> void
-RabbitMQ.AMQP.Client.ITopologyListener.QueueCount() -> int
-RabbitMQ.AMQP.Client.ITopologyListener.QueueDeclared(RabbitMQ.AMQP.Client.IQueueSpecification! specification) -> void
-RabbitMQ.AMQP.Client.ITopologyListener.QueueDeleted(string! name) -> void
 RabbitMQ.AMQP.Client.LifeCycleCallBack
 RabbitMQ.AMQP.Client.MessageHandler
 RabbitMQ.AMQP.Client.ModelException
