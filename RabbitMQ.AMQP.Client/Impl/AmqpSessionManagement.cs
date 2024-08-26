@@ -2,65 +2,69 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System;
 using System.Collections.Concurrent;
+using System.Linq;
+using System.Threading.Tasks;
 using Amqp;
 using Amqp.Framing;
 
-namespace RabbitMQ.AMQP.Client.Impl;
-
-internal class AmqpSessionManagement
+namespace RabbitMQ.AMQP.Client.Impl
 {
-    private readonly AmqpConnection _amqpConnection;
-    private readonly int _maxSessionsPerItem;
-    private readonly ConcurrentBag<Session> _sessions = [];
-
-    internal AmqpSessionManagement(AmqpConnection amqpConnection, int maxSessionsPerItem)
+    internal class AmqpSessionManagement
     {
-        _amqpConnection = amqpConnection;
-        _maxSessionsPerItem = maxSessionsPerItem;
-    }
+        private readonly AmqpConnection _amqpConnection;
+        private readonly int _maxSessionsPerItem;
+        private readonly ConcurrentBag<Session> _sessions = new();
 
-    // TODO cancellation token
-    internal async Task<Session> GetOrCreateSessionAsync()
-    {
-        Session rv;
-
-        if (_sessions.Count >= _maxSessionsPerItem)
+        internal AmqpSessionManagement(AmqpConnection amqpConnection, int maxSessionsPerItem)
         {
-            rv = _sessions.First();
+            _amqpConnection = amqpConnection;
+            _maxSessionsPerItem = maxSessionsPerItem;
         }
-        else
+
+        // TODO cancellation token
+        internal async Task<Session> GetOrCreateSessionAsync()
         {
-            TaskCompletionSource<ISession> sessionBeginTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            void OnBegin(ISession session, Begin peerBegin)
+            Session rv;
+
+            if (_sessions.Count >= _maxSessionsPerItem)
             {
-                sessionBeginTcs.SetResult(session);
+                rv = _sessions.First();
+            }
+            else
+            {
+                TaskCompletionSource<ISession> sessionBeginTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                void OnBegin(ISession session, Begin peerBegin)
+                {
+                    sessionBeginTcs.SetResult(session);
+                }
+
+                rv = new Session(_amqpConnection.NativeConnection, GetDefaultBegin(), OnBegin);
+                ISession awaitedSession = await sessionBeginTcs.Task.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+                System.Diagnostics.Debug.Assert(Object.ReferenceEquals(rv, awaitedSession));
+                _sessions.Add(rv);
             }
 
-            rv = new Session(_amqpConnection.NativeConnection, GetDefaultBegin(), OnBegin);
-            ISession awaitedSession = await sessionBeginTcs.Task.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
-            System.Diagnostics.Debug.Assert(Object.ReferenceEquals(rv, awaitedSession));
-            _sessions.Add(rv);
+            return rv;
         }
 
-        return rv;
-    }
-
-    internal void ClearSessions()
-    {
-        // TODO close open sessions?
-        _sessions.Clear();
-    }
-
-    // Note: these values come from Amqp.NET
-    static Begin GetDefaultBegin()
-    {
-        return new Begin()
+        internal void ClearSessions()
         {
-            IncomingWindow = 2048,
-            OutgoingWindow = 2048,
-            HandleMax = 1024,
-            NextOutgoingId = uint.MaxValue - 2u
-        };
+            // TODO close open sessions?
+            _sessions.Clear();
+        }
+
+        // Note: these values come from Amqp.NET
+        static Begin GetDefaultBegin()
+        {
+            return new Begin()
+            {
+                IncomingWindow = 2048,
+                OutgoingWindow = 2048,
+                HandleMax = 1024,
+                NextOutgoingId = uint.MaxValue - 2u
+            };
+        }
     }
 }

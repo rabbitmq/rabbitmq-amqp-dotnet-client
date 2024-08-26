@@ -2,182 +2,187 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-namespace RabbitMQ.AMQP.Client;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
-public interface IEntityInfo
+namespace RabbitMQ.AMQP.Client
 {
-}
+    public interface IEntityInfo
+    {
+    }
 
-/// <summary>
-/// Generic interface for managing entities with result of type T
-/// </summary>
-/// <typeparam name="T"></typeparam>
-public interface IEntityInfoSpecification<T> where T : IEntityInfo
-{
-    Task<T> DeclareAsync();
-    Task<T> DeleteAsync();
-}
+    /// <summary>
+    /// Generic interface for managing entities with result of type T
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public interface IEntityInfoSpecification<T> where T : IEntityInfo
+    {
+        Task<T> DeclareAsync();
+        Task<T> DeleteAsync();
+    }
 
-/// <summary>
-/// Generic interface for specifying entities without result
-/// </summary>
-public interface IEntitySpecification
-{
-    Task DeclareAsync();
-    Task DeleteAsync();
-}
+    /// <summary>
+    /// Generic interface for specifying entities without result
+    /// </summary>
+    public interface IEntitySpecification
+    {
+        Task DeclareAsync();
+        Task DeleteAsync();
+    }
 
-public enum OverFlowStrategy
-{
-    DropHead,
-    RejectPublish,
+    public enum OverFlowStrategy
+    {
+        DropHead,
+        RejectPublish,
 
-    RejectPublishDlx
-    // DROP_HEAD("drop-head"),
-    // REJECT_PUBLISH("reject-publish"),
-    // REJECT_PUBLISH_DLX("reject-publish-dlx");
-}
+        RejectPublishDlx
+        // DROP_HEAD("drop-head"),
+        // REJECT_PUBLISH("reject-publish"),
+        // REJECT_PUBLISH_DLX("reject-publish-dlx");
+    }
 
-public interface IQueueSpecification : IEntityInfoSpecification<IQueueInfo>
-{
-    public string Name();
-    IQueueSpecification Name(string name);
+    public interface IQueueSpecification : IEntityInfoSpecification<IQueueInfo>
+    {
+        public string Name();
+        IQueueSpecification Name(string name);
 
-    public bool Exclusive();
-    IQueueSpecification Exclusive(bool exclusive);
+        public bool Exclusive();
+        IQueueSpecification Exclusive(bool exclusive);
 
-    public bool AutoDelete();
-    IQueueSpecification AutoDelete(bool autoDelete);
+        public bool AutoDelete();
+        IQueueSpecification AutoDelete(bool autoDelete);
 
-    public Dictionary<object, object> Arguments();
-    IQueueSpecification Arguments(Dictionary<object, object> arguments);
+        public Dictionary<object, object> Arguments();
+        IQueueSpecification Arguments(Dictionary<object, object> arguments);
 
-    public QueueType Type();
-    IQueueSpecification Type(QueueType type);
+        public QueueType Type();
+        IQueueSpecification Type(QueueType type);
 
-    IQueueSpecification DeadLetterExchange(string dlx);
+        IQueueSpecification DeadLetterExchange(string dlx);
 
-    IQueueSpecification DeadLetterRoutingKey(string dlrk);
+        IQueueSpecification DeadLetterRoutingKey(string dlrk);
 
-    IQueueSpecification OverflowStrategy(OverFlowStrategy overflow);
+        IQueueSpecification OverflowStrategy(OverFlowStrategy overflow);
 
-    IQueueSpecification MaxLengthBytes(ByteCapacity maxLengthBytes);
+        IQueueSpecification MaxLengthBytes(ByteCapacity maxLengthBytes);
 
-    IQueueSpecification SingleActiveConsumer(bool singleActiveConsumer);
+        IQueueSpecification SingleActiveConsumer(bool singleActiveConsumer);
 
-    IQueueSpecification Expires(TimeSpan expiration);
+        IQueueSpecification Expires(TimeSpan expiration);
 
-    IStreamSpecification Stream();
+        IStreamSpecification Stream();
 
-    IQuorumQueueSpecification Quorum();
+        IQuorumQueueSpecification Quorum();
 
-    IClassicQueueSpecification Classic();
+        IClassicQueueSpecification Classic();
 
-    IQueueSpecification MaxLength(long maxLength);
+        IQueueSpecification MaxLength(long maxLength);
 
-    IQueueSpecification MessageTtl(TimeSpan ttl);
-}
+        IQueueSpecification MessageTtl(TimeSpan ttl);
+    }
 
-public interface IStreamSpecification
-{
-    public IStreamSpecification MaxAge(TimeSpan maxAge);
+    public interface IStreamSpecification
+    {
+        public IStreamSpecification MaxAge(TimeSpan maxAge);
 
-    public IStreamSpecification MaxSegmentSizeBytes(ByteCapacity maxSegmentSize);
+        public IStreamSpecification MaxSegmentSizeBytes(ByteCapacity maxSegmentSize);
 
-    public IStreamSpecification InitialClusterSize(int initialClusterSize);
+        public IStreamSpecification InitialClusterSize(int initialClusterSize);
 
-    public IQueueSpecification Queue();
-}
+        public IQueueSpecification Queue();
+    }
 
-public enum QuorumQueueDeadLetterStrategy
-{
-    // AT_MOST_ONCE("at-most-once"),
-    // AT_LEAST_ONCE("at-least-once");
-    AtMostOnce,
-    AtLeastOnce
-}
+    public enum QuorumQueueDeadLetterStrategy
+    {
+        // AT_MOST_ONCE("at-most-once"),
+        // AT_LEAST_ONCE("at-least-once");
+        AtMostOnce,
+        AtLeastOnce
+    }
 
-public interface IQuorumQueueSpecification
-{
-    IQuorumQueueSpecification DeadLetterStrategy(QuorumQueueDeadLetterStrategy strategy);
+    public interface IQuorumQueueSpecification
+    {
+        IQuorumQueueSpecification DeadLetterStrategy(QuorumQueueDeadLetterStrategy strategy);
 
-    IQuorumQueueSpecification DeliveryLimit(int limit);
+        IQuorumQueueSpecification DeliveryLimit(int limit);
 
-    IQuorumQueueSpecification QuorumInitialGroupSize(int size);
+        IQuorumQueueSpecification QuorumInitialGroupSize(int size);
 
-    IQueueSpecification Queue();
-}
+        IQueueSpecification Queue();
+    }
 
-public enum ClassicQueueMode
-{
-    Default,
-    Lazy
-}
+    public enum ClassicQueueMode
+    {
+        Default,
+        Lazy
+    }
 
-public enum ClassicQueueVersion
-{
-    // V1(1),
-    // V2(2);
-    V1,
-    V2
-}
+    public enum ClassicQueueVersion
+    {
+        // V1(1),
+        // V2(2);
+        V1,
+        V2
+    }
 
-public interface IClassicQueueSpecification
-{
-    // 1 <= maxPriority <= 255
-    IClassicQueueSpecification MaxPriority(int maxPriority);
+    public interface IClassicQueueSpecification
+    {
+        // 1 <= maxPriority <= 255
+        IClassicQueueSpecification MaxPriority(int maxPriority);
 
-    IClassicQueueSpecification Mode(ClassicQueueMode mode);
+        IClassicQueueSpecification Mode(ClassicQueueMode mode);
 
-    IClassicQueueSpecification Version(ClassicQueueVersion version);
+        IClassicQueueSpecification Version(ClassicQueueVersion version);
 
-    IQueueSpecification Queue();
-}
+        IQueueSpecification Queue();
+    }
 
-public interface IExchangeSpecification : IEntitySpecification
-{
-    string Name();
-    IExchangeSpecification Name(string name);
+    public interface IExchangeSpecification : IEntitySpecification
+    {
+        string Name();
+        IExchangeSpecification Name(string name);
 
-    IExchangeSpecification AutoDelete(bool autoDelete);
+        IExchangeSpecification AutoDelete(bool autoDelete);
 
-    bool AutoDelete();
+        bool AutoDelete();
 
-    IExchangeSpecification Type(ExchangeType type);
+        IExchangeSpecification Type(ExchangeType type);
 
-    ExchangeType Type();
+        ExchangeType Type();
 
-    IExchangeSpecification Argument(string key, object value);
-    Dictionary<string, object> Arguments();
+        IExchangeSpecification Argument(string key, object value);
+        Dictionary<string, object> Arguments();
 
-    IExchangeSpecification Arguments(Dictionary<string, object> arguments);
-}
+        IExchangeSpecification Arguments(Dictionary<string, object> arguments);
+    }
 
-public interface IBindingSpecification
-{
-    IBindingSpecification SourceExchange(IExchangeSpecification exchangeSpec);
+    public interface IBindingSpecification
+    {
+        IBindingSpecification SourceExchange(IExchangeSpecification exchangeSpec);
 
-    IBindingSpecification SourceExchange(string exchangeName);
-    string SourceExchangeName();
+        IBindingSpecification SourceExchange(string exchangeName);
+        string SourceExchangeName();
 
-    IBindingSpecification DestinationQueue(IQueueSpecification queueSpec);
-    IBindingSpecification DestinationQueue(string queueName);
-    string DestinationQueueName();
+        IBindingSpecification DestinationQueue(IQueueSpecification queueSpec);
+        IBindingSpecification DestinationQueue(string queueName);
+        string DestinationQueueName();
 
-    IBindingSpecification DestinationExchange(IExchangeSpecification exchangeSpec);
-    IBindingSpecification DestinationExchange(string exchangeName);
-    string DestinationExchangeName();
+        IBindingSpecification DestinationExchange(IExchangeSpecification exchangeSpec);
+        IBindingSpecification DestinationExchange(string exchangeName);
+        string DestinationExchangeName();
 
-    IBindingSpecification Key(string key);
-    string Key();
+        IBindingSpecification Key(string key);
+        string Key();
 
-    IBindingSpecification Argument(string key, object value);
+        IBindingSpecification Argument(string key, object value);
 
-    IBindingSpecification Arguments(Dictionary<string, object> arguments);
-    Dictionary<string, object> Arguments();
+        IBindingSpecification Arguments(Dictionary<string, object> arguments);
+        Dictionary<string, object> Arguments();
 
-    string Path();
+        string Path();
 
-    Task BindAsync();
-    Task UnbindAsync();
+        Task BindAsync();
+        Task UnbindAsync();
+    }
 }

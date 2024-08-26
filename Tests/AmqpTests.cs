@@ -100,7 +100,7 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         Assert.Equal((ulong)messageCount, retrievedQueueInfo0.MessageCount());
 
         long receivedMessageCount = 0;
-        var allMessagesReceivedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> allMessagesReceivedTcs = CreateTaskCompletionSource();
         string? receivedSubject = null;
         var messageIds = new ConcurrentBag<int>();
         async Task MessageHandler(IContext ctx, IMessage msg)
@@ -112,7 +112,7 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
                 await ctx.AcceptAsync();
                 if (Interlocked.Increment(ref receivedMessageCount) == messageCount)
                 {
-                    allMessagesReceivedTcs.SetResult();
+                    allMessagesReceivedTcs.SetResult(true);
                 }
             }
             catch (Exception ex)
@@ -200,7 +200,7 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
 
         const int expectedMessageCount = 2;
         long receivedMessageCount = 0;
-        var allMessagesReceivedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> allMessagesReceivedTcs = CreateTaskCompletionSource();
         async Task MessageHandler(IContext ctx, IMessage msg)
         {
             try
@@ -208,7 +208,7 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
                 await ctx.AcceptAsync();
                 if (Interlocked.Increment(ref receivedMessageCount) == expectedMessageCount)
                 {
-                    allMessagesReceivedTcs.SetResult();
+                    allMessagesReceivedTcs.SetResult(true);
                 }
             }
             catch (Exception ex)
@@ -251,7 +251,7 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         var messageBodies = new ConcurrentBag<string>();
         const int expectedMessageCount = 2;
         long receivedMessageCount = 0;
-        var allMessagesReceivedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> allMessagesReceivedTcs = CreateTaskCompletionSource();
         async Task MessageHandler(IContext ctx, IMessage msg)
         {
             try
@@ -260,7 +260,7 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
                 messageBodies.Add(Encoding.UTF8.GetString((byte[])msg.Body()));
                 if (Interlocked.Increment(ref receivedMessageCount) == expectedMessageCount)
                 {
-                    allMessagesReceivedTcs.SetResult();
+                    allMessagesReceivedTcs.SetResult(true);
                 }
             }
             catch (Exception ex)

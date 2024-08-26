@@ -230,7 +230,11 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
+#if NETFRAMEWORK
+        string[] filters = filter.Split(',');
+#else
         string[] filters = filter.Split(",");
+#endif
 
         IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(QueueType.STREAM);
         await queueSpec.DeclareAsync();
@@ -367,11 +371,11 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         IQueueInfo queueInfo = await queueSpecification.DeclareAsync();
         Assert.Equal(_queueName, queueInfo.Name());
 
-        TaskCompletionSource messageHandledTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> messageHandledTcs = CreateTaskCompletionSource();
         async Task MessageHandler(IContext cxt, IMessage msg)
         {
             await cxt.AcceptAsync();
-            messageHandledTcs.SetResult();
+            messageHandledTcs.SetResult(true);
         }
 
         IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder()
@@ -407,7 +411,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
 
         await PublishAsync(queueSpecification, messageCount);
 
-        TaskCompletionSource receivedGreaterThanSettledTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> receivedGreaterThanSettledTcs = CreateTaskCompletionSource();
         long receivedCount = 0;
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueInfo0.Name())
@@ -420,7 +424,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
                 }
                 else
                 {
-                    receivedGreaterThanSettledTcs.TrySetResult();
+                    receivedGreaterThanSettledTcs.TrySetResult(true);
                 }
             }).BuildAsync();
 
@@ -448,7 +452,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         IQueueSpecification queueSpecification = _management.Queue(_queueName).Exclusive(true);
         IQueueInfo queueInfo = await queueSpecification.DeclareAsync();
 
-        TaskCompletionSource allMessagesReceivedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> allMessagesReceivedTcs = CreateTaskCompletionSource();
         IConsumerBuilder lowPriorityConsumerBuilder = _connection.ConsumerBuilder()
             .Queue(queueSpecification)
             // .Priority(1) TODO
@@ -460,7 +464,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
                     Interlocked.Increment(ref lowPriorityReceivedCount);
                     if (Interlocked.Increment(ref receivedCount) == messageCount)
                     {
-                        allMessagesReceivedTcs.SetResult();
+                        allMessagesReceivedTcs.SetResult(true);
                     }
                 }
                 catch (Exception ex)
@@ -481,7 +485,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
                     Interlocked.Increment(ref highPriorityReceivedCount);
                     if (Interlocked.Increment(ref receivedCount) == messageCount)
                     {
-                        allMessagesReceivedTcs.SetResult();
+                        allMessagesReceivedTcs.SetResult(true);
                     }
                 }
                 catch (Exception ex)

@@ -2,43 +2,47 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-namespace RabbitMQ.AMQP.Client;
+using System.Threading;
+using System.Threading.Tasks;
 
-public enum StreamOffsetSpecification
+namespace RabbitMQ.AMQP.Client
 {
-    First,
-    Last,
-    Next
-}
-
-// TODO IAddressBuilder<IConsumerBuilder>?
-public interface IConsumerBuilder
-{
-    IConsumerBuilder Queue(IQueueSpecification queueSpecification);
-    IConsumerBuilder Queue(string queueName);
-
-    IConsumerBuilder MessageHandler(MessageHandler handler);
-
-    IConsumerBuilder InitialCredits(int initialCredits);
-
-    IStreamOptions Stream();
-
-    Task<IConsumer> BuildAsync(CancellationToken cancellationToken = default);
-
-    public interface IStreamOptions
+    public enum StreamOffsetSpecification
     {
-        IStreamOptions Offset(long offset);
+        First,
+        Last,
+        Next
+    }
 
-        // IStreamOptions offset(Instant timestamp);
+    // TODO IAddressBuilder<IConsumerBuilder>?
+    public interface IConsumerBuilder
+    {
+        IConsumerBuilder Queue(IQueueSpecification queueSpecification);
+        IConsumerBuilder Queue(string queueName);
 
-        IStreamOptions Offset(StreamOffsetSpecification specification);
+        IConsumerBuilder MessageHandler(MessageHandler handler);
 
-        IStreamOptions Offset(string interval);
+        IConsumerBuilder InitialCredits(int initialCredits);
 
-        IStreamOptions FilterValues(string[] values);
+        IStreamOptions Stream();
 
-        IStreamOptions FilterMatchUnfiltered(bool matchUnfiltered);
+        Task<IConsumer> BuildAsync(CancellationToken cancellationToken = default);
 
-        IConsumerBuilder Builder();
+        public interface IStreamOptions
+        {
+            IStreamOptions Offset(long offset);
+
+            // IStreamOptions offset(Instant timestamp);
+
+            IStreamOptions Offset(StreamOffsetSpecification specification);
+
+            IStreamOptions Offset(string interval);
+
+            IStreamOptions FilterValues(string[] values);
+
+            IStreamOptions FilterMatchUnfiltered(bool matchUnfiltered);
+
+            IConsumerBuilder Builder();
+        }
     }
 }

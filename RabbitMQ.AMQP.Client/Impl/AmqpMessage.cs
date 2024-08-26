@@ -2,133 +2,135 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System;
 using Amqp;
 using Amqp.Framing;
 using Amqp.Types;
 
-namespace RabbitMQ.AMQP.Client.Impl;
-
-public class FieldNotSetException : Exception
+namespace RabbitMQ.AMQP.Client.Impl
 {
-}
-
-public class AmqpMessage : IMessage
-{
-    public Message NativeMessage { get; }
-
-    public AmqpMessage()
+    public class FieldNotSetException : Exception
     {
-        NativeMessage = new Message();
     }
 
-
-    public AmqpMessage(object body)
+    public class AmqpMessage : IMessage
     {
-        NativeMessage = new Message(body);
-    }
+        public Message NativeMessage { get; }
 
-    public AmqpMessage(Message nativeMessage)
-    {
-        NativeMessage = nativeMessage;
-    }
-
-    private void ThrowIfPropertiesNotSet()
-    {
-        if (NativeMessage.Properties == null)
+        public AmqpMessage()
         {
-            throw new FieldNotSetException();
+            NativeMessage = new Message();
         }
-    }
-
-    private void EnsureProperties()
-    {
-        NativeMessage.Properties ??= new Properties();
-    }
 
 
-    private void ThrowIfAnnotationsNotSet()
-    {
-        if (NativeMessage.MessageAnnotations == null)
+        public AmqpMessage(object body)
         {
-            throw new FieldNotSetException();
+            NativeMessage = new Message(body);
         }
-    }
 
-    private void EnsureAnnotations()
-    {
-        NativeMessage.MessageAnnotations ??= new MessageAnnotations();
-    }
+        public AmqpMessage(Message nativeMessage)
+        {
+            NativeMessage = nativeMessage;
+        }
 
-    public object Body()
-    {
-        // TODO do we need to do anything with NativeMessage.BodySection?
-        return NativeMessage.Body;
-    }
+        private void ThrowIfPropertiesNotSet()
+        {
+            if (NativeMessage.Properties == null)
+            {
+                throw new FieldNotSetException();
+            }
+        }
 
-    public string MessageId()
-    {
-        ThrowIfPropertiesNotSet();
-        return NativeMessage.Properties.MessageId;
-    }
+        private void EnsureProperties()
+        {
+            NativeMessage.Properties ??= new Properties();
+        }
 
-    public IMessage MessageId(string id)
-    {
-        EnsureProperties();
-        NativeMessage.Properties.MessageId = id;
-        return this;
-    }
 
-    public string CorrelationId()
-    {
-        ThrowIfPropertiesNotSet();
-        return NativeMessage.Properties.CorrelationId;
-    }
+        private void ThrowIfAnnotationsNotSet()
+        {
+            if (NativeMessage.MessageAnnotations == null)
+            {
+                throw new FieldNotSetException();
+            }
+        }
 
-    public IMessage CorrelationId(string id)
-    {
-        EnsureProperties();
-        NativeMessage.Properties.CorrelationId = id;
-        return this;
-    }
+        private void EnsureAnnotations()
+        {
+            NativeMessage.MessageAnnotations ??= new MessageAnnotations();
+        }
 
-    public string ReplyTo()
-    {
-        ThrowIfPropertiesNotSet();
-        return NativeMessage.Properties.ReplyTo;
-    }
+        public object Body()
+        {
+            // TODO do we need to do anything with NativeMessage.BodySection?
+            return NativeMessage.Body;
+        }
 
-    public IMessage ReplyTo(string id)
-    {
-        EnsureProperties();
-        NativeMessage.Properties.ReplyTo = id;
-        return this;
-    }
+        public string MessageId()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.MessageId;
+        }
 
-    public string Subject()
-    {
-        ThrowIfPropertiesNotSet();
-        return NativeMessage.Properties.Subject;
-    }
+        public IMessage MessageId(string id)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.MessageId = id;
+            return this;
+        }
 
-    public IMessage Subject(string subject)
-    {
-        EnsureProperties();
-        NativeMessage.Properties.Subject = subject;
-        return this;
-    }
+        public string CorrelationId()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.CorrelationId;
+        }
 
-    // Annotations
+        public IMessage CorrelationId(string id)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.CorrelationId = id;
+            return this;
+        }
 
-    public IMessage Annotation(string key, object value)
-    {
-        EnsureAnnotations();
-        NativeMessage.MessageAnnotations[new Symbol(key)] = value;
-        return this;
-    }
+        public string ReplyTo()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.ReplyTo;
+        }
 
-    public object Annotation(string key)
-    {
-        ThrowIfAnnotationsNotSet();
-        return NativeMessage.MessageAnnotations[key];
+        public IMessage ReplyTo(string id)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.ReplyTo = id;
+            return this;
+        }
+
+        public string Subject()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.Subject;
+        }
+
+        public IMessage Subject(string subject)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.Subject = subject;
+            return this;
+        }
+
+        // Annotations
+
+        public IMessage Annotation(string key, object value)
+        {
+            EnsureAnnotations();
+            NativeMessage.MessageAnnotations[new Symbol(key)] = value;
+            return this;
+        }
+
+        public object Annotation(string key)
+        {
+            ThrowIfAnnotationsNotSet();
+            return NativeMessage.MessageAnnotations[key];
+        }
     }
 }

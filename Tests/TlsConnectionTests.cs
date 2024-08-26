@@ -136,10 +136,10 @@ public class TlsConnectionTests : IAsyncLifetime
     private static string GetClientCertFile()
     {
         string cwd = Directory.GetCurrentDirectory();
-        string clientCertFile = Path.GetFullPath(Path.Join(cwd, "../../../../.ci/certs/client_localhost.p12"));
+        string clientCertFile = Path.GetFullPath(Path.Combine(cwd, "../../../../.ci/certs/client_localhost.p12"));
         if (false == File.Exists(clientCertFile))
         {
-            clientCertFile = Path.GetFullPath(Path.Join(cwd, "../../../../../.ci/certs/client_localhost.p12"));
+            clientCertFile = Path.GetFullPath(Path.Combine(cwd, "../../../../../.ci/certs/client_localhost.p12"));
         }
         Assert.True(File.Exists(clientCertFile));
         return clientCertFile;

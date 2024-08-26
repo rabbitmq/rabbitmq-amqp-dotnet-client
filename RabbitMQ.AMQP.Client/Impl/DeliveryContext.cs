@@ -2,60 +2,73 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System.Threading.Tasks;
 using Amqp;
 
-namespace RabbitMQ.AMQP.Client.Impl;
-
-public class DeliveryContext(IReceiverLink link, Message message, UnsettledMessageCounter unsettledMessageCounter) : IContext
+namespace RabbitMQ.AMQP.Client.Impl
 {
-    public Task AcceptAsync()
+    public class DeliveryContext : IContext
     {
-        if (link.IsClosed)
+        private readonly IReceiverLink _link;
+        private readonly Message _message;
+        private readonly UnsettledMessageCounter _unsettledMessageCounter;
+
+        public DeliveryContext(IReceiverLink link, Message message, UnsettledMessageCounter unsettledMessageCounter)
         {
-            throw new ConsumerException("Link is closed");
+            _link = link;
+            _message = message;
+            _unsettledMessageCounter = unsettledMessageCounter;
         }
 
-        Task acceptTask = Task.Run(() =>
+        public Task AcceptAsync()
         {
-            link.Accept(message);
-            unsettledMessageCounter.Decrement();
-            message.Dispose();
-        });
+            if (_link.IsClosed)
+            {
+                throw new ConsumerException("Link is closed");
+            }
 
-        return acceptTask;
-    }
+            Task acceptTask = Task.Run(() =>
+            {
+                _link.Accept(_message);
+                _unsettledMessageCounter.Decrement();
+                _message.Dispose();
+            });
 
-    public Task DiscardAsync()
-    {
-        if (link.IsClosed)
-        {
-            throw new ConsumerException("Link is closed");
+            return acceptTask;
         }
 
-        Task rejectTask = Task.Run(() =>
+        public Task DiscardAsync()
         {
-            link.Reject(message);
-            unsettledMessageCounter.Decrement();
-            message.Dispose();
-        });
+            if (_link.IsClosed)
+            {
+                throw new ConsumerException("Link is closed");
+            }
 
-        return rejectTask;
-    }
+            Task rejectTask = Task.Run(() =>
+            {
+                _link.Reject(_message);
+                _unsettledMessageCounter.Decrement();
+                _message.Dispose();
+            });
 
-    public Task RequeueAsync()
-    {
-        if (link.IsClosed)
-        {
-            throw new ConsumerException("Link is closed");
+            return rejectTask;
         }
 
-        Task requeueTask = Task.Run(() =>
+        public Task RequeueAsync()
         {
-            link.Release(message);
-            unsettledMessageCounter.Decrement();
-            message.Dispose();
-        });
+            if (_link.IsClosed)
+            {
+                throw new ConsumerException("Link is closed");
+            }
 
-        return requeueTask;
+            Task requeueTask = Task.Run(() =>
+            {
+                _link.Release(_message);
+                _unsettledMessageCounter.Decrement();
+                _message.Dispose();
+            });
+
+            return requeueTask;
+        }
     }
 }

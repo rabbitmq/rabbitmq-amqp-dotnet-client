@@ -2,27 +2,28 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-namespace RabbitMQ.AMQP.Client;
-
-internal interface ITopologyListener
+namespace RabbitMQ.AMQP.Client
 {
-    void QueueDeclared(IQueueSpecification specification);
+    internal interface ITopologyListener
+    {
+        void QueueDeclared(IQueueSpecification specification);
 
-    void QueueDeleted(string name);
+        void QueueDeleted(string name);
 
-    void ExchangeDeclared(IExchangeSpecification specification);
+        void ExchangeDeclared(IExchangeSpecification specification);
 
-    void ExchangeDeleted(string name);
+        void ExchangeDeleted(string name);
 
-    void BindingDeclared(IBindingSpecification specification);
+        void BindingDeclared(IBindingSpecification specification);
 
-    void BindingDeleted(string path);
+        void BindingDeleted(string path);
 
-    void Clear();
+        void Clear();
 
-    int QueueCount();
+        int QueueCount();
 
-    int ExchangeCount();
+        int ExchangeCount();
 
-    int BindingCount();
+        int BindingCount();
+    }
 }

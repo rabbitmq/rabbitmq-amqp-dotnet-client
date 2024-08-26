@@ -1,10 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <TargetFrameworks>net6.0;net8.0;net472</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('Windows'))">
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+  </PropertyGroup>
+
   <PropertyGroup>
     <NoWarn>$(NoWarn);CA2007</NoWarn>
     <MinVerSkip>true</MinVerSkip>
     <IsTestProject>true</IsTestProject>
-    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <SignAssembly>True</SignAssembly>
   </PropertyGroup>

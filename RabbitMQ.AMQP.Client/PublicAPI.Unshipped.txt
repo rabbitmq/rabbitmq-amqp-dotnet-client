@@ -357,7 +357,7 @@ RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.User(string! user) -> RabbitM
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.VirtualHost(string! virtualHost) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.ConnectionSettings(string! address, RabbitMQ.AMQP.Client.ITlsSettings? tlsSettings = null) -> void
-RabbitMQ.AMQP.Client.Impl.ConnectionSettings.ConnectionSettings(string! scheme, string! host, int port, string? user, string? password, string! virtualHost, string! containerId, RabbitMQ.AMQP.Client.SaslMechanism! saslMechanism, uint maxFrameSize = 0, RabbitMQ.AMQP.Client.ITlsSettings? tlsSettings = null) -> void
+RabbitMQ.AMQP.Client.Impl.ConnectionSettings.ConnectionSettings(string! scheme, string! host, int port, string? user, string? password, string! virtualHost, string! containerId, RabbitMQ.AMQP.Client.SaslMechanism! saslMechanism, RabbitMQ.AMQP.Client.IRecoveryConfiguration! recoveryConfiguration, uint maxFrameSize = 0, RabbitMQ.AMQP.Client.ITlsSettings? tlsSettings = null) -> void
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.ContainerId.get -> string!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Equals(RabbitMQ.AMQP.Client.IConnectionSettings? other) -> bool
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Equals(RabbitMQ.AMQP.Client.Impl.ConnectionSettings! other) -> bool
@@ -367,7 +367,6 @@ RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Password.get -> string?
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Path.get -> string!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Port.get -> int
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Recovery.get -> RabbitMQ.AMQP.Client.IRecoveryConfiguration!
-RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Recovery.init -> void
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.SaslMechanism.get -> RabbitMQ.AMQP.Client.SaslMechanism!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Scheme.get -> string!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.TlsSettings.get -> RabbitMQ.AMQP.Client.ITlsSettings?
@@ -389,7 +388,7 @@ RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Replicas() -> System.Collections.Gene
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Type() -> RabbitMQ.AMQP.Client.QueueType
 RabbitMQ.AMQP.Client.Impl.DefaultStreamOptions
 RabbitMQ.AMQP.Client.Impl.DefaultStreamOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
-RabbitMQ.AMQP.Client.Impl.DefaultStreamOptions.DefaultStreamOptions(RabbitMQ.AMQP.Client.IConsumerBuilder! builder, Amqp.Types.Map! filters) -> void
+RabbitMQ.AMQP.Client.Impl.DefaultStreamOptions.DefaultStreamOptions(RabbitMQ.AMQP.Client.IConsumerBuilder! consumerBuilder, Amqp.Types.Map! filters) -> void
 RabbitMQ.AMQP.Client.Impl.DefaultStreamOptions.FilterMatchUnfiltered(bool matchUnfiltered) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.Impl.DefaultStreamOptions.FilterValues(string![]! values) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.Impl.DefaultStreamOptions.Offset(long offset) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!

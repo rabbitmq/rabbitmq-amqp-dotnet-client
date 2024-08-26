@@ -14,8 +14,11 @@ public class ConnectionValidationTests
     [Fact]
     public void ValidateAddress()
     {
+        IRecoveryConfiguration recoveryConfiguration = RecoveryConfiguration.Create();
+
         ConnectionSettings connectionSettings = new("amqp1", "localhost", 5672, "guest-user",
-            "guest-password", "vhost_1", "connection_name", SaslMechanism.External);
+            "guest-password", "vhost_1", "connection_name", SaslMechanism.External,
+            recoveryConfiguration);
         Assert.Equal("localhost", connectionSettings.Host);
         Assert.Equal(5672, connectionSettings.Port);
         Assert.Equal("guest-user", connectionSettings.User);
@@ -25,12 +28,14 @@ public class ConnectionValidationTests
         Assert.Equal(SaslMechanism.External, connectionSettings.SaslMechanism);
 
         ConnectionSettings second = new("amqp1", "localhost", 5672, "guest-user",
-            "guest-password", "path/", "connection_name", SaslMechanism.External);
+            "guest-password", "path/", "connection_name", SaslMechanism.External,
+            recoveryConfiguration);
 
         Assert.Equal(connectionSettings, second);
 
         ConnectionSettings third = new("amqp2", "localhost", 5672, "guest-user",
-            "guest-password", "path/", "connection_name", SaslMechanism.Plain);
+            "guest-password", "path/", "connection_name", SaslMechanism.Plain,
+            recoveryConfiguration);
 
         Assert.NotEqual(connectionSettings, third);
     }
