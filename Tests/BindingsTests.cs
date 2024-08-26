@@ -12,7 +12,6 @@ namespace Tests;
 
 public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
 {
-    ////////////// ----------------- Bindings TESTS ----------------- //////////////
     [Theory]
     [InlineData("my_source_exchange_!", "my_queue_destination__£$")]
     [InlineData("@@@@@@@!", "~~~~my_queue_destination__;,.£$")]
@@ -98,7 +97,6 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
         await SystemUtils.WaitUntilQueueDeletedAsync(queueSpec);
     }
 
-
     [Theory]
     [InlineData("source_exchange", "destination_exchange", "mykey")]
     [InlineData("是英国数学家", "是英国数学家", "英国")]
@@ -108,8 +106,6 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
         "ήταν Άγγλος μαθηματικός, επιστήμονας", "επι")]
     [InlineData("(~~~!!++@~./.,€€#!!±§##§¶¡€#¢)",
         "~~~!!++@----.", "==`£!-=+")]
-
-
     public async Task SimpleBindingsBetweenExchangeAndExchange(string sourceExchangeName,
         string destinationExchangeName,
         string key)
@@ -201,7 +197,6 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
     // TODO: test with multi-bindings with parameters with list as value
     // The unbinder should be able to unbind the binding with the same arguments
     // The could be a problem when the binding has a list as value
-
     [Theory]
     [InlineData("my_source_exchange_multi_123", "my_destination_789", "myKey")]
     [InlineData("是英国v_", "destination_是英国v_", "μαθηματικός")]

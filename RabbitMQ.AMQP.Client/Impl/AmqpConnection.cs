@@ -548,7 +548,6 @@ internal class Visitor(AmqpManagement management) : IVisitor
         }
     }
 
-
     public async Task VisitExchangesAsync(IEnumerable<ExchangeSpec> exchangeSpec)
     {
         // TODO this could be done in parallel
@@ -567,7 +566,6 @@ internal class Visitor(AmqpManagement management) : IVisitor
             }
         }
     }
-
 
     public async Task VisitBindingsAsync(IEnumerable<BindingSpec> bindingSpec)
     {

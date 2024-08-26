@@ -47,7 +47,6 @@ public class RecordingTopologyListener : ITopologyListener
         }
     }
 
-
     public void QueueDeclared(IQueueSpecification specification)
     {
         _queueSpecifications.TryAdd(specification.Name(), new QueueSpec(specification));

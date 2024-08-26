@@ -10,7 +10,6 @@ public interface ITopologyListener
 
     void ExchangeDeleted(string name);
 
-
     void BindingDeclared(IBindingSpecification specification);
 
     void BindingDeleted(string path);

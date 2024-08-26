@@ -207,7 +207,6 @@ public class AmqpManagement : AbstractLifeCycle, IManagement
         Trace.WriteLine(TraceLevel.Verbose, "ProcessResponses Task closed");
     }
 
-
     private async Task EnsureReceiverLinkAsync()
     {
         if (_receiverLink == null || _receiverLink.IsClosed)
@@ -239,7 +238,6 @@ public class AmqpManagement : AbstractLifeCycle, IManagement
             _receiverLink.SetCredit(100);
         }
     }
-
 
     private Task EnsureSenderLinkAsync()
     {
@@ -493,7 +491,6 @@ public class AmqpManagement : AbstractLifeCycle, IManagement
 
         return info;
     }
-
 
     internal void ChangeStatus(State newState, Error? error)
     {

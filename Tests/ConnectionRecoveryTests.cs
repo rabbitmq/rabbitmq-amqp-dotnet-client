@@ -421,7 +421,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         await connection.CloseAsync();
     }
 
-
     /// <summary>
     /// Test if removed a queue should remove the bindings.
     /// In this case there are two queues, one will be deleted to check if the bindings are removed.
@@ -432,8 +431,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task RemoveAQueueShouldRemoveTheBindings()
     {
-        _testOutputHelper.WriteLine("RemoveAQueueShouldRemoveTheBindings");
-        const string containerId = "remove-queue-should-remove-binding-connection-name";
+        const string containerId = nameof(RemoveAQueueShouldRemoveTheBindings);
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
                 .RecoveryConfiguration(RecoveryConfiguration.Create()
@@ -558,9 +556,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task RemoveAnExchangeBoundToAnotherExchangeShouldRemoveTheBindings()
     {
-        _testOutputHelper.WriteLine("RemoveAnExchangeBoundToAnotherExchangeShouldRemoveTheBindings");
-
-        const string containerId = "remove-exchange-bound-to-another-exchange-should-remove-binding-connection-name";
+        const string containerId = nameof(RemoveAnExchangeBoundToAnotherExchangeShouldRemoveTheBindings);
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
                 .RecoveryConfiguration(RecoveryConfiguration.Create()
@@ -592,8 +588,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         Assert.Equal(10, management.TopologyListener().BindingCount());
 
-
-
         await exSpecDestination.DeleteAsync();
         Assert.Equal(0, management.TopologyListener().BindingCount());
 
@@ -602,12 +596,8 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync("e-remove-exchange-bound-to-another-exchange-should-remove-binding",
             "e-remove-exchange-bound-to-another-exchange-should-remove-binding-destination");
 
-
         Assert.Equal(0, management.TopologyListener().ExchangeCount());
 
         await connection.CloseAsync();
-
-
-
     }
 }
