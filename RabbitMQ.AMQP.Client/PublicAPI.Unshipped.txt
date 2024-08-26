@@ -335,14 +335,14 @@ RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.CurrentAttempt.get -> int
 RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.Delay() -> int
 RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.IsActive() -> bool
 RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.Reset() -> void
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase.ArgsToMap() -> Amqp.Types.Map!
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase.BindingSpecificationBase() -> void
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase._arguments -> System.Collections.Generic.Dictionary<string!, object!>!
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase._destination -> string!
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase._routingKey -> string!
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase._source -> string!
-RabbitMQ.AMQP.Client.Impl.BindingSpecificationBase._toQueue -> bool
+RabbitMQ.AMQP.Client.Impl.BindingSpecification
+RabbitMQ.AMQP.Client.Impl.BindingSpecification.ArgsToMap() -> Amqp.Types.Map!
+RabbitMQ.AMQP.Client.Impl.BindingSpecification.BindingSpecification() -> void
+RabbitMQ.AMQP.Client.Impl.BindingSpecification._arguments -> System.Collections.Generic.Dictionary<string!, object!>!
+RabbitMQ.AMQP.Client.Impl.BindingSpecification._destination -> string!
+RabbitMQ.AMQP.Client.Impl.BindingSpecification._routingKey -> string!
+RabbitMQ.AMQP.Client.Impl.BindingSpecification._source -> string!
+RabbitMQ.AMQP.Client.Impl.BindingSpecification._toQueue -> bool
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.Build() -> RabbitMQ.AMQP.Client.Impl.ConnectionSettings!
 RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.ContainerId(string! containerId) -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!

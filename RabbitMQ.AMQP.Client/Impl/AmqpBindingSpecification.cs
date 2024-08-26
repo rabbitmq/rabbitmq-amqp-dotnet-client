@@ -2,7 +2,7 @@ using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl;
 
-public abstract class BindingSpecificationBase
+public abstract class BindingSpecification
 {
     protected string _source = "";
     protected string _destination = "";
@@ -23,7 +23,7 @@ public abstract class BindingSpecificationBase
     }
 }
 
-public class AmqpBindingSpecification : BindingSpecificationBase, IBindingSpecification
+public class AmqpBindingSpecification : BindingSpecification, IBindingSpecification
 {
     private readonly AmqpManagement _management;
     private readonly ITopologyListener _topologyListener;
