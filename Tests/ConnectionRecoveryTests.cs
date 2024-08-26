@@ -491,7 +491,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
-
     public async Task RemoveAnExchangeShouldRemoveTheBindings()
     {
         _testOutputHelper.WriteLine("RemoveAnExchangeShouldRemoveTheBindings");
@@ -551,6 +550,63 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(0, management.TopologyListener().QueueCount());
 
         await connection.CloseAsync();
+    }
+
+    /// <summary>
+    /// This test is specific to check if the bindings are removed when a destination exchange is removed.
+    /// </summary>
+    [Fact]
+    public async Task RemoveAnExchangeBoundToAnotherExchangeShouldRemoveTheBindings()
+    {
+        _testOutputHelper.WriteLine("RemoveAnExchangeBoundToAnotherExchangeShouldRemoveTheBindings");
+
+        const string containerId = "remove-exchange-bound-to-another-exchange-should-remove-binding-connection-name";
+        var connection = await AmqpConnection.CreateAsync(
+            ConnectionSettingBuilder.Create()
+                .RecoveryConfiguration(RecoveryConfiguration.Create()
+                    .BackOffDelayPolicy(new FakeFastBackOffDelay())
+                    .Topology(true))
+                .ContainerId(containerId)
+                .Build());
+
+        var management = connection.Management();
+
+        var exSpec = management.Exchange().Name("e-remove-exchange-bound-to-another-exchange-should-remove-binding")
+            .Type(ExchangeType.DIRECT);
+
+        await exSpec.DeclareAsync();
+
+        var exSpecDestination = management.Exchange().Name("e-remove-exchange-bound-to-another-exchange-should-remove-binding-destination")
+            .Type(ExchangeType.DIRECT);
+
+        await exSpecDestination.DeclareAsync();
+
+        for (int i = 0; i < 10; i++)
+        {
+            await management.Binding().SourceExchange(exSpec)
+                .DestinationExchange(exSpecDestination).Key($"key_{i}").BindAsync();
+        }
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeExistAsync("e-remove-exchange-bound-to-another-exchange-should-remove-binding",
+            "e-remove-exchange-bound-to-another-exchange-should-remove-binding-destination");
+
+        Assert.Equal(10, management.TopologyListener().BindingCount());
+
+
+
+        await exSpecDestination.DeleteAsync();
+        Assert.Equal(0, management.TopologyListener().BindingCount());
+
+        await exSpec.DeleteAsync();
+
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync("e-remove-exchange-bound-to-another-exchange-should-remove-binding",
+            "e-remove-exchange-bound-to-another-exchange-should-remove-binding-destination");
+
+
+        Assert.Equal(0, management.TopologyListener().ExchangeCount());
+
+        await connection.CloseAsync();
+
 
 
     }

@@ -109,7 +109,7 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
     [InlineData("(~~~!!++@~./.,€€#!!±§##§¶¡€#¢)",
         "~~~!!++@----.", "==`£!-=+")]
 
-    
+
     public async Task SimpleBindingsBetweenExchangeAndExchange(string sourceExchangeName,
         string destinationExchangeName,
         string key)
@@ -154,7 +154,7 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
     [InlineData("B", 10000L, "H", 0.0001)]
     [InlineData("是英国", 10000.32, "W", 3.0001)]
     [InlineData("是英国", "是英国23", "W", 3.0001)]
-    [InlineData("(~~~!!++@----./.,€€#####§¶¡€#¢)","~~~!!++@----", "==`£!-=+", "===£!-=+")]
+    [InlineData("(~~~!!++@----./.,€€#####§¶¡€#¢)", "~~~!!++@----", "==`£!-=+", "===£!-=+")]
     public async Task BindingsBetweenExchangeAndQueuesWithArgumentsDifferentValues(string key1, object value1,
         string key2, object value2)
     {
