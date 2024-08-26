@@ -30,12 +30,12 @@ The client is distributed via [NuGet](https://www.nuget.org/packages/RabbitMQ.AM
 - [x] Recovery publishers on connection lost
 - [x] Recovery consumers on connection lost
 - [x] Implement Environment to manage the connections
-- [ ] Complete the consumer part with `pause` and `unpause`
+- [x] Complete the consumer part with `pause` and `unpause`
 - [ ] Complete the binding/unbinding with the special characters
 - [ ] Complete the queues/exchanges name with the special characters
 - [ ] Implement metrics ( See `System.Diagnostics.DiagnosticSource` [Link](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/metrics-instrumentation) )
-- [ ] Recovery exchanges on connection lost
-- [ ] Recovery bindings on connection lost
+- [x] Recovery exchanges on connection lost
+- [x] Recovery bindings on connection lost
 - [ ] Docker image to test in LRE [not mandatory]
 - [ ] Check the TODO in the code
 
