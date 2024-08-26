@@ -119,15 +119,15 @@ internal class QueueSpec(IQueueSpecification specification)
     internal Dictionary<object, object> Arguments { get; init; } = specification.Arguments();
 }
 
-public class ExchangeSpec(IExchangeSpecification specification)
+internal class ExchangeSpec(IExchangeSpecification specification)
 {
-    public string Name { get; } = specification.Name();
+    internal string Name { get; } = specification.Name();
 
-    public ExchangeType Type { get; } = specification.Type();
+    internal ExchangeType Type { get; } = specification.Type();
 
-    public bool AutoDelete { get; } = specification.AutoDelete();
+    internal bool AutoDelete { get; } = specification.AutoDelete();
 
-    public Dictionary<string, object> Arguments { get; } = specification.Arguments();
+    internal Dictionary<string, object> Arguments { get; } = specification.Arguments();
 }
 
 public class BindingSpec(IBindingSpecification specification)

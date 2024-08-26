@@ -259,7 +259,6 @@ RabbitMQ.AMQP.Client.Impl.AmqpManagement
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Binding() -> RabbitMQ.AMQP.Client.IBindingSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Binding(RabbitMQ.AMQP.Client.Impl.BindingSpec! spec) -> RabbitMQ.AMQP.Client.IBindingSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Exchange() -> RabbitMQ.AMQP.Client.IExchangeSpecification!
-RabbitMQ.AMQP.Client.Impl.AmqpManagement.Exchange(RabbitMQ.AMQP.Client.Impl.ExchangeSpec! spec) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Exchange(string! name) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.GetQueueInfoAsync(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpec, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IQueueInfo!>!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.GetQueueInfoAsync(string! queueName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IQueueInfo!>!
@@ -412,12 +411,6 @@ RabbitMQ.AMQP.Client.Impl.DeliveryContext.AcceptAsync() -> System.Threading.Task
 RabbitMQ.AMQP.Client.Impl.DeliveryContext.DeliveryContext(Amqp.IReceiverLink! link, Amqp.Message! message, RabbitMQ.AMQP.Client.Impl.UnsettledMessageCounter! unsettledMessageCounter) -> void
 RabbitMQ.AMQP.Client.Impl.DeliveryContext.DiscardAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.DeliveryContext.RequeueAsync() -> System.Threading.Tasks.Task!
-RabbitMQ.AMQP.Client.Impl.ExchangeSpec
-RabbitMQ.AMQP.Client.Impl.ExchangeSpec.Arguments.get -> System.Collections.Generic.Dictionary<string!, object!>!
-RabbitMQ.AMQP.Client.Impl.ExchangeSpec.AutoDelete.get -> bool
-RabbitMQ.AMQP.Client.Impl.ExchangeSpec.ExchangeSpec(RabbitMQ.AMQP.Client.IExchangeSpecification! specification) -> void
-RabbitMQ.AMQP.Client.Impl.ExchangeSpec.Name.get -> string!
-RabbitMQ.AMQP.Client.Impl.ExchangeSpec.Type.get -> RabbitMQ.AMQP.Client.ExchangeType
 RabbitMQ.AMQP.Client.Impl.FieldNotSetException
 RabbitMQ.AMQP.Client.Impl.FieldNotSetException.FieldNotSetException() -> void
 RabbitMQ.AMQP.Client.Impl.InvalidCodeException
