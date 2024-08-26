@@ -233,6 +233,11 @@ public static class SystemUtils
         }, retries: 20);
     }
 
+    public static Task DeleteExchangeAsync(string exchangeNameSt)
+    {
+        return s_httpApiClient.DeleteExchangeAsync(exchangeNameSt);
+    }
+
     private static bool InitIsRunningInCI()
     {
         if (bool.TryParse(Environment.GetEnvironmentVariable("CI"), out bool ci))
@@ -252,11 +257,4 @@ public static class SystemUtils
 
         return false;
     }
-
-    public static Task DeleteExchangeAsync(string exchangeNameSt)
-    {
-        return s_httpApiClient.DeleteExchangeAsync(exchangeNameSt);
-    }
-
-
 }

@@ -89,7 +89,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Null(listError[1]);
     }
 
-
     /// <summary>
     /// The unexpected close the status should be correct and error not null.
     /// The connection is closed unexpectedly using HTTP API.
@@ -148,7 +147,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Null(listError[3]);
     }
 
-
     /// <summary>
     /// Test when the connection is closed unexpectedly and the recovery is enabled
     /// but the backoff is not active.
@@ -199,7 +197,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(State.Closed, connection.State);
     }
 
-
     /// <summary>
     /// Test when the connection is closed unexpectedly and the recovery is enabled and the topology-recover  can be:
     /// - Enabled
@@ -247,7 +244,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(0, management.TopologyListener().QueueCount());
     }
 
-
     /// <summary>
     /// Test when the connection is closed unexpectedly and the recovery is enabled and the topology-recover  can be:
     /// - Disabled
@@ -290,7 +286,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         await connection.CloseAsync();
         Assert.Equal(0, management.TopologyListener().QueueCount());
     }
-
 
     [Theory]
     [InlineData(true)]
@@ -345,8 +340,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         await connection.CloseAsync();
     }
 
-    //
-    //
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
