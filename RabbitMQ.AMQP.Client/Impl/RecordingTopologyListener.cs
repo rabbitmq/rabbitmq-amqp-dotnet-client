@@ -85,6 +85,7 @@ public class RecordingTopologyListener : ITopologyListener
     }
 }
 
+// TODO this could probably be made internal
 public class QueueSpec(IQueueSpecification specification)
 {
     public string Name { get; init; } = specification.Name();

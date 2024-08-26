@@ -46,6 +46,9 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
 
         Assert.Contains((State.Open, State.Closing), states);
         Assert.Contains((State.Closing, State.Closed), states);
+
+        await publisher.CloseAsync();
+        publisher.Dispose();
     }
 
 
@@ -68,7 +71,6 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
                 return Task.CompletedTask;
             }).BuildAsync();
 
-
         List<(State, State)> states = [];
         consumer.ChangeState += (_, fromState, toState, _) =>
         {
@@ -86,6 +88,9 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
 
         Assert.Contains((State.Open, State.Closing), states);
         Assert.Contains((State.Closing, State.Closed), states);
+
+        await consumer.CloseAsync();
+        consumer.Dispose();
     }
 
     /// <summary>
@@ -130,6 +135,9 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
         Assert.Contains((State.Reconnecting, State.Open), states);
         Assert.Contains((State.Open, State.Closing), states);
         Assert.Contains((State.Closing, State.Closed), states);
+
+        await publisher.CloseAsync();
+        publisher.Dispose();
     }
 
     /// <summary>
@@ -174,6 +182,9 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
         Assert.Contains((State.Reconnecting, State.Open), states);
         Assert.Contains((State.Open, State.Closing), states);
         Assert.Contains((State.Closing, State.Closed), states);
+
+        await consumer.CloseAsync();
+        consumer.Dispose();
     }
 
     /// <summary>
@@ -187,14 +198,16 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-        IQueueSpecification queueSpec = _management.Queue().Name(_queueName);
-        await queueSpec.DeclareAsync();
+        IQueueSpecification queueSpecification = _management.Queue().Name(_queueName);
+        await queueSpecification.DeclareAsync();
 
-        IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
+        IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpecification).BuildAsync();
 
         long messagesReceived = 0;
 
-        IConsumer consumer = await _connection.ConsumerBuilder().InitialCredits(100).Queue(queueSpec)
+        IConsumer consumer = await _connection.ConsumerBuilder()
+            .InitialCredits(100)
+            .Queue(queueSpecification)
             .MessageHandler(async (context, _) =>
             {
                 Interlocked.Increment(ref messagesReceived);
@@ -209,24 +222,8 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
             }).BuildAsync();
 
         const int publishBatchCount = 10;
-        int messagesConfirmed = 0;
-        var message = new AmqpMessage("Hello World");
-        var publishTasks = new List<Task<PublishResult>>();
-        for (int i = 0; i < publishBatchCount; i++)
-        {
-            publishTasks.Add(publisher.PublishAsync(message));
-        }
 
-        await Task.WhenAll(publishTasks);
-
-        foreach (Task<PublishResult> pt in publishTasks)
-        {
-            PublishResult pr = await pt;
-            Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
-            ++messagesConfirmed;
-        }
-        publishTasks.Clear();
-        Assert.Equal(publishBatchCount, messagesConfirmed);
+        await PublishAsync(queueSpecification, publishBatchCount);
 
         await SystemUtils.WaitUntilFuncAsync(() => messagesReceived == 10);
 
@@ -235,28 +232,17 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
         await SystemUtils.WaitUntilFuncAsync(() => publisher.State == State.Open);
         await SystemUtils.WaitUntilFuncAsync(() => consumer.State == State.Open);
 
-        for (int i = 0; i < publishBatchCount; i++)
-        {
-            publishTasks.Add(publisher.PublishAsync(message));
-        }
-
-        await Task.WhenAll(publishTasks);
-
-        foreach (Task<PublishResult> pt in publishTasks)
-        {
-            PublishResult pr = await pt;
-            Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
-            ++messagesConfirmed;
-        }
-        publishTasks.Clear();
-        Assert.Equal(publishBatchCount * 2, messagesConfirmed);
+        await PublishAsync(queueSpecification, publishBatchCount);
 
         Assert.Equal(State.Open, publisher.State);
 
         await publisher.CloseAsync();
+        publisher.Dispose();
 
         await SystemUtils.WaitUntilFuncAsync(() => Interlocked.Read(ref messagesReceived) == 20);
+
         await consumer.CloseAsync();
+        consumer.Dispose();
 
         Assert.Equal(State.Closed, publisher.State);
         Assert.Equal(State.Closed, consumer.State);

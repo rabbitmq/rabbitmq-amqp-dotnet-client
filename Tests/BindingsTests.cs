@@ -114,7 +114,7 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
         IExchangeSpecification sourceExchangeSpec = _management.Exchange(sourceExchangeName);
         IExchangeSpecification destinationExchangeSpec = _management.Exchange(destinationExchangeName);
 
-        await Task.WhenAll(
+        await WhenAllComplete(
             sourceExchangeSpec.DeclareAsync(),
             destinationExchangeSpec.DeclareAsync()
         );
@@ -207,7 +207,7 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
         IExchangeSpecification exchangeSpec = _management.Exchange(source);
         IQueueSpecification queueSpec = _management.Queue(destination);
 
-        await Task.WhenAll(exchangeSpec.DeclareAsync(), queueSpec.DeclareAsync());
+        await WhenAllComplete(exchangeSpec.DeclareAsync(), queueSpec.DeclareAsync());
 
         // add 10 bindings to have a list of bindings to find
         var bindingSpecs = new List<IBindingSpecification>();
@@ -222,7 +222,7 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
             bindingSpecs.Add(bindingSpec);
             bindingSpecTasks.Add(bindingSpec.BindAsync());
         }
-        await Task.WhenAll(bindingSpecTasks);
+        await WhenAllComplete(bindingSpecTasks);
         bindingSpecTasks.Clear();
 
         var specialBindArgs = new Dictionary<string, object>() { { $"v_8", $"p_8" }, { $"v_1", 1 }, { $"v_r", 1000L }, };
