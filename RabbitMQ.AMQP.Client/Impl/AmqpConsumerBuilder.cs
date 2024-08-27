@@ -24,7 +24,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IConsumerBuilder Queue(IQueueSpecification queueSpec)
         {
-            return Queue(queueSpec.Name());
+            return Queue(queueSpec.QueueName);
         }
 
         public IConsumerBuilder Queue(string queueName)

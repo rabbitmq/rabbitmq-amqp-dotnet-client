@@ -121,11 +121,11 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         internal readonly TimeSpan _tenYears = TimeSpan.FromDays(365 * 10);
 
-        private string? _name;
-        private bool _exclusive = false;
-        private bool _autoDelete = false;
-        private const bool Durable = true;
-        internal readonly Map _arguments = new();
+        private string? _queueName;
+        private bool _isExclusive = false;
+        private bool _isAutoDelete = false;
+        private const bool IsDurable = true;
+        internal readonly Map _queueArguments = new();
 
         public AmqpQueueSpecification(AmqpManagement management)
         {
@@ -133,87 +133,101 @@ namespace RabbitMQ.AMQP.Client.Impl
             _topologyListener = ((IManagementTopology)_management).TopologyListener();
         }
 
-        public IQueueSpecification Name(string name)
+        public IQueueSpecification Name(string queueName)
         {
-            _name = name;
+            _queueName = queueName;
             return this;
         }
 
-        public string Name()
+        public string QueueName
         {
-            return _name ?? "";
-        }
-
-        public IQueueSpecification Exclusive(bool exclusive)
-        {
-            _exclusive = exclusive;
-            return this;
-        }
-
-        public bool Exclusive()
-        {
-            return _exclusive;
-        }
-
-        public bool AutoDelete()
-        {
-            return _autoDelete;
-        }
-
-        public IQueueSpecification AutoDelete(bool autoDelete)
-        {
-            _autoDelete = autoDelete;
-            return this;
-        }
-
-        public IQueueSpecification Arguments(Dictionary<object, object> arguments)
-        {
-            foreach (object key in arguments.Keys)
+            get
             {
-                object value = arguments[key];
-                _arguments[key] = value;
+                return _queueName ?? string.Empty;
+            }
+        }
+
+        public IQueueSpecification Exclusive(bool isExclusive)
+        {
+            _isExclusive = isExclusive;
+            return this;
+        }
+
+        public bool IsExclusive
+        {
+            get
+            {
+                return _isExclusive;
+            }
+        }
+
+        public IQueueSpecification AutoDelete(bool isAutoDelete)
+        {
+            _isAutoDelete = isAutoDelete;
+            return this;
+        }
+
+        public bool IsAutoDelete
+        {
+            get
+            {
+                return _isAutoDelete;
+            }
+        }
+
+        public IQueueSpecification Arguments(Dictionary<object, object> queueArguments)
+        {
+            foreach (object key in queueArguments.Keys)
+            {
+                object value = queueArguments[key];
+                _queueArguments[key] = value;
             }
 
             return this;
         }
 
-        public Dictionary<object, object> Arguments()
+        public Dictionary<object, object> QueueArguments
         {
-            return _arguments;
+            get
+            {
+                return _queueArguments;
+            }
         }
 
-        public IQueueSpecification Type(QueueType type)
+        public IQueueSpecification Type(QueueType queueType)
         {
-            _arguments["x-queue-type"] = type.ToString().ToLower();
+            _queueArguments["x-queue-type"] = queueType.ToString().ToLower();
             return this;
         }
 
-        public QueueType Type()
+        public QueueType QueueType
         {
-            if (!_arguments.ContainsKey("x-queue-type"))
+            get
             {
-                return QueueType.CLASSIC;
+                if (!_queueArguments.ContainsKey("x-queue-type"))
+                {
+                    return QueueType.CLASSIC;
+                }
+                string type = (string)_queueArguments["x-queue-type"];
+                return (QueueType)Enum.Parse(typeof(QueueType), type.ToUpperInvariant());
             }
-
-            string type = (string)_arguments["x-queue-type"];
-            return (QueueType)Enum.Parse(typeof(QueueType), type.ToUpperInvariant());
         }
 
         public IQueueSpecification DeadLetterExchange(string dlx)
         {
-            _arguments["x-dead-letter-exchange"] = dlx;
+            _queueArguments["x-dead-letter-exchange"] = dlx;
             return this;
         }
 
         public IQueueSpecification DeadLetterRoutingKey(string dlrk)
         {
-            _arguments["x-dead-letter-routing-key"] = dlrk;
+            _queueArguments["x-dead-letter-routing-key"] = dlrk;
             return this;
         }
 
         public IQueueSpecification OverflowStrategy(OverFlowStrategy overflow)
         {
-            _arguments["x-overflow"] = overflow switch
+            _queueArguments["x-overflow"] = overflow switch
             {
                 OverFlowStrategy.DropHead => "drop-head",
                 OverFlowStrategy.RejectPublish => "reject-publish",
@@ -226,20 +240,20 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IQueueSpecification MaxLengthBytes(ByteCapacity maxLengthBytes)
         {
             Utils.ValidatePositive("Max length", maxLengthBytes.ToBytes());
-            _arguments["x-max-length-bytes"] = maxLengthBytes.ToBytes();
+            _queueArguments["x-max-length-bytes"] = maxLengthBytes.ToBytes();
             return this;
         }
 
         public IQueueSpecification SingleActiveConsumer(bool singleActiveConsumer)
         {
-            _arguments["x-single-active-consumer"] = singleActiveConsumer;
+            _queueArguments["x-single-active-consumer"] = singleActiveConsumer;
             return this;
         }
 
         public IQueueSpecification Expires(TimeSpan expiration)
         {
             Utils.ValidatePositive("Expiration", (long)expiration.TotalMilliseconds, (long)_tenYears.TotalMilliseconds);
-            _arguments["x-expires"] = (long)expiration.TotalMilliseconds;
+            _queueArguments["x-expires"] = (long)expiration.TotalMilliseconds;
             return this;
         }
 
@@ -264,50 +278,50 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IQueueSpecification MaxLength(long maxLength)
         {
             Utils.ValidatePositive("Max length", maxLength);
-            _arguments["x-max-length"] = maxLength;
+            _queueArguments["x-max-length"] = maxLength;
             return this;
         }
 
         public IQueueSpecification MessageTtl(TimeSpan ttl)
         {
             Utils.ValidateNonNegative("TTL", (long)ttl.TotalMilliseconds, (long)_tenYears.TotalMilliseconds);
-            _arguments["x-message-ttl"] = (long)ttl.TotalMilliseconds;
+            _queueArguments["x-message-ttl"] = (long)ttl.TotalMilliseconds;
             return this;
         }
 
         public async Task<IQueueInfo> DeclareAsync()
         {
-            if (Type() is QueueType.QUORUM or QueueType.STREAM)
+            if (QueueType is QueueType.QUORUM or QueueType.STREAM)
             {
                 // mandatory arguments for quorum queues and streams
                 Exclusive(false).AutoDelete(false);
             }
 
-            if (string.IsNullOrWhiteSpace(_name))
+            if (string.IsNullOrWhiteSpace(_queueName))
             {
                 // If the name is not set, generate a random name
                 // client side generated names are supported by the server
                 // but here we generate a name to make easier to track the queue
                 // and remove it later
-                _name = Utils.GenerateQueueName();
+                _queueName = Utils.GenerateQueueName();
             }
 
             var kv = new Map
-        {
-            { "durable", Durable },
-            { "exclusive", _exclusive },
-            { "auto_delete", _autoDelete },
-            { "arguments", _arguments }
-        };
+            {
+                { "durable", IsDurable },
+                { "exclusive", _isExclusive },
+                { "auto_delete", _isAutoDelete },
+                { "arguments", _queueArguments }
+            };
 
             // TODO: encodePathSegment(queues)
-            if (_name is null)
+            if (_queueName is null)
             {
                 // TODO create "internal bug" exception type?
                 throw new InvalidOperationException("_name is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
 
-            string path = $"/{Consts.Queues}/{Utils.EncodePathSegment(_name)}";
+            string path = $"/{Consts.Queues}/{Utils.EncodePathSegment(_queueName)}";
             string method = AmqpManagement.Put;
             int[] expectedResponseCodes = new int[] { AmqpManagement.Code200, AmqpManagement.Code201, AmqpManagement.Code409 };
             Message response = await _management.RequestAsync(kv, path, method, expectedResponseCodes)
@@ -320,26 +334,26 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public async Task<IQueueInfo> DeleteAsync()
         {
-            if (_name is null)
+            if (_queueName is null)
             {
                 // TODO create "internal bug" exception type?
                 throw new InvalidOperationException("_name is null or empty, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
 
-            if (string.IsNullOrEmpty(_name))
+            if (string.IsNullOrEmpty(_queueName))
             {
                 // TODO create "internal bug" exception type?
                 throw new InvalidOperationException("_name is null or empty, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
 
-            string path = $"/{Consts.Queues}/{Utils.EncodePathSegment(_name)}";
+            string path = $"/{Consts.Queues}/{Utils.EncodePathSegment(_queueName)}";
             string method = AmqpManagement.Delete;
             int[] expectedResponseCodes = new int[] { AmqpManagement.Code200 };
             await _management.RequestAsync(null, path, method, expectedResponseCodes)
                 .ConfigureAwait(false);
 
-            _topologyListener.QueueDeleted(_name);
-            return new DefaultQueueInfo(_name);
+            _topologyListener.QueueDeleted(_queueName);
+            return new DefaultQueueInfo(_queueName);
         }
     }
 
@@ -356,21 +370,21 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             Utils.ValidatePositive("x-max-age", (long)maxAge.TotalMilliseconds,
                 (long)_parent._tenYears.TotalMilliseconds);
-            _parent._arguments["x-max-age"] = $"{maxAge.Seconds}s";
+            _parent._queueArguments["x-max-age"] = $"{maxAge.Seconds}s";
             return this;
         }
 
         public IStreamSpecification MaxSegmentSizeBytes(ByteCapacity maxSegmentSize)
         {
             Utils.ValidatePositive("x-stream-max-segment-size-bytes", maxSegmentSize.ToBytes());
-            _parent._arguments["x-stream-max-segment-size-bytes"] = maxSegmentSize.ToBytes();
+            _parent._queueArguments["x-stream-max-segment-size-bytes"] = maxSegmentSize.ToBytes();
             return this;
         }
 
         public IStreamSpecification InitialClusterSize(int initialClusterSize)
         {
             Utils.ValidatePositive("x-initial-cluster-size", initialClusterSize);
-            _parent._arguments["x-initial-cluster-size"] = initialClusterSize;
+            _parent._queueArguments["x-initial-cluster-size"] = initialClusterSize;
             return this;
         }
 
@@ -391,7 +405,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IQuorumQueueSpecification DeadLetterStrategy(QuorumQueueDeadLetterStrategy strategy)
         {
-            _parent._arguments["x-dead-letter-strategy"] = strategy switch
+            _parent._queueArguments["x-dead-letter-strategy"] = strategy switch
             {
                 QuorumQueueDeadLetterStrategy.AtMostOnce => "at-most-once",
                 QuorumQueueDeadLetterStrategy.AtLeastOnce => "at-least-once",
@@ -403,14 +417,14 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IQuorumQueueSpecification DeliveryLimit(int limit)
         {
             Utils.ValidatePositive("x-max-delivery-limit", limit);
-            _parent._arguments["x-max-delivery-limit"] = limit;
+            _parent._queueArguments["x-max-delivery-limit"] = limit;
             return this;
         }
 
         public IQuorumQueueSpecification QuorumInitialGroupSize(int size)
         {
             Utils.ValidatePositive("x-quorum-initial-group-size", size);
-            _parent._arguments["x-quorum-initial-group-size"] = size;
+            _parent._queueArguments["x-quorum-initial-group-size"] = size;
             return this;
         }
 
@@ -432,13 +446,13 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IClassicQueueSpecification MaxPriority(int maxPriority)
         {
             Utils.ValidatePositive("x-max-priority", maxPriority, 255);
-            _parent._arguments["x-max-priority"] = maxPriority;
+            _parent._queueArguments["x-max-priority"] = maxPriority;
             return this;
         }
 
         public IClassicQueueSpecification Mode(ClassicQueueMode mode)
         {
-            _parent._arguments["x-queue-mode"] = mode switch
+            _parent._queueArguments["x-queue-mode"] = mode switch
             {
                 ClassicQueueMode.Default => "default",
                 ClassicQueueMode.Lazy => "lazy",
@@ -449,7 +463,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IClassicQueueSpecification Version(ClassicQueueVersion version)
         {
-            _parent._arguments["x-queue-version"] = version switch
+            _parent._queueArguments["x-queue-version"] = version switch
             {
                 ClassicQueueVersion.V1 => 1,
                 ClassicQueueVersion.V2 => 2,

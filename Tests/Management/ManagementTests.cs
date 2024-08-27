@@ -204,13 +204,13 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         Assert.NotNull(_management);
 
         IQueueSpecification queueSpecification0 = _management.Queue(_queueName).Type(QueueType.CLASSIC);
-        Dictionary<object, object> queueSpec0Args = queueSpecification0.Arguments();
+        Dictionary<object, object> queueSpec0Args = queueSpecification0.QueueArguments;
         queueSpec0Args.Add("x-max-age", "1000s");
         PreconditionFailedException pex0 = await Assert.ThrowsAsync<PreconditionFailedException>(queueSpecification0.DeclareAsync);
         Assert.Contains("409", pex0.Message);
 
         IQueueSpecification queueSpecification1 = _management.Queue(_queueName).Type(QueueType.QUORUM);
-        Dictionary<object, object> queueSpec1Args = queueSpecification1.Arguments();
+        Dictionary<object, object> queueSpec1Args = queueSpecification1.QueueArguments;
         queueSpec1Args.Add("x-max-age", "1000s");
         PreconditionFailedException pex1 = await Assert.ThrowsAsync<PreconditionFailedException>(queueSpecification1.DeclareAsync);
         Assert.Contains("409", pex1.Message);

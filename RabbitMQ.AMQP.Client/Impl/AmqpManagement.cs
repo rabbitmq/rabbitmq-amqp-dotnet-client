@@ -69,7 +69,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public Task<IQueueInfo> GetQueueInfoAsync(IQueueSpecification queueSpec,
             CancellationToken cancellationToken = default)
         {
-            return GetQueueInfoAsync(queueSpec.Name(), cancellationToken);
+            return GetQueueInfoAsync(queueSpec.QueueName, cancellationToken);
         }
 
         public async Task<IQueueInfo> GetQueueInfoAsync(string queueName,
@@ -88,10 +88,10 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         internal IQueueSpecification Queue(QueueSpec spec)
         {
-            return Queue().Name(spec.Name)
-                .AutoDelete(spec.AutoDelete)
-                .Exclusive(spec.Exclusive)
-                .Arguments(spec.Arguments);
+            return Queue().Name(spec.QueueName)
+                .AutoDelete(spec.IsAutoDelete)
+                .Exclusive(spec.IsExclusive)
+                .Arguments(spec.QueueArguments);
         }
 
         public IExchangeSpecification Exchange()
@@ -107,10 +107,10 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         internal IExchangeSpecification Exchange(ExchangeSpec spec)
         {
-            return Exchange().Name(spec.Name)
-                .AutoDelete(spec.AutoDelete)
-                .Type(spec.Type)
-                .Arguments(spec.Arguments);
+            return Exchange().Name(spec.ExchangeName)
+                .AutoDelete(spec.IsAutoDelete)
+                .Type(spec.ExchangeType)
+                .Arguments(spec.ExchangeArguments);
         }
 
         public IBindingSpecification Binding()
@@ -121,11 +121,11 @@ namespace RabbitMQ.AMQP.Client.Impl
         internal IBindingSpecification Binding(BindingSpec spec)
         {
             return Binding()
-                .SourceExchange(spec.SourceExchange)
-                .DestinationQueue(spec.DestinationQueue)
-                .DestinationExchange(spec.DestinationExchange)
-                .Key(spec.Key)
-                .Arguments(spec.Arguments);
+                .SourceExchange(spec.SourceExchangeName)
+                .DestinationQueue(spec.DestinationQueueName)
+                .DestinationExchange(spec.DestinationExchangeName)
+                .Key(spec.BindingKey)
+                .Arguments(spec.BindingArguments);
         }
 
         ITopologyListener IManagementTopology.TopologyListener()

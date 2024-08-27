@@ -21,7 +21,7 @@ namespace RabbitMQ.AMQP.Client.Impl
     /// It is used to recover the topology of the server after a connection is established in case of a reconnection
     /// Each time am entity is declared or deleted, the listener will record the event
     /// </summary>
-    public class RecordingTopologyListener : ITopologyListener
+    internal class RecordingTopologyListener : ITopologyListener
     {
         private readonly ConcurrentDictionary<string, QueueSpec> _queueSpecifications = new();
 
@@ -33,9 +33,9 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             foreach (var binding in _bindingSpecifications.Values)
             {
-                if (binding.DestinationQueue == queueName)
+                if (binding.DestinationQueueName == queueName)
                 {
-                    _bindingSpecifications.TryRemove(binding.Path, out _);
+                    _bindingSpecifications.TryRemove(binding.BindingPath, out _);
                 }
             }
         }
@@ -44,17 +44,17 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             foreach (var binding in _bindingSpecifications.Values)
             {
-                if (binding.SourceExchange == exchangeName
-                    || binding.DestinationExchange == exchangeName)
+                if (binding.SourceExchangeName == exchangeName
+                    || binding.DestinationExchangeName == exchangeName)
                 {
-                    _bindingSpecifications.TryRemove(binding.Path, out _);
+                    _bindingSpecifications.TryRemove(binding.BindingPath, out _);
                 }
             }
         }
 
         public void QueueDeclared(IQueueSpecification specification)
         {
-            _queueSpecifications.TryAdd(specification.Name(), new QueueSpec(specification));
+            _queueSpecifications.TryAdd(specification.QueueName, new QueueSpec(specification));
         }
 
         public void QueueDeleted(string name)
@@ -65,7 +65,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public void ExchangeDeclared(IExchangeSpecification specification)
         {
-            _exchangeSpecifications.TryAdd(specification.Name(), new ExchangeSpec(specification));
+            _exchangeSpecifications.TryAdd(specification.ExchangeName, new ExchangeSpec(specification));
         }
 
         public void ExchangeDeleted(string name)
@@ -76,7 +76,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public void BindingDeclared(IBindingSpecification specification)
         {
-            _bindingSpecifications.TryAdd(specification.Path(), new BindingSpec(specification));
+            _bindingSpecifications.TryAdd(specification.BindingPath, new BindingSpec(specification));
         }
 
         public void BindingDeleted(string key)
@@ -103,7 +103,6 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public int BindingCount() => _bindingSpecifications.Count;
 
-
         internal async Task Accept(IVisitor visitor)
         {
             await visitor.VisitQueuesAsync(_queueSpecifications.Values).ConfigureAwait(false);
@@ -123,35 +122,35 @@ namespace RabbitMQ.AMQP.Client.Impl
             _queueSpecification = queueSpecification;
         }
 
-        internal string Name
+        internal string QueueName
         {
             get
             {
-                return _queueSpecification.Name();
+                return _queueSpecification.QueueName;
             }
         }
 
-        internal bool Exclusive
+        internal bool IsExclusive
         {
             get
             {
-                return _queueSpecification.Exclusive();
+                return _queueSpecification.IsExclusive;
             }
         }
 
-        internal bool AutoDelete
+        internal bool IsAutoDelete
         {
             get
             {
-                return _queueSpecification.AutoDelete();
+                return _queueSpecification.IsAutoDelete;
             }
         }
 
-        internal Dictionary<object, object> Arguments
+        internal Dictionary<object, object> QueueArguments
         {
             get
             {
-                return _queueSpecification.Arguments();
+                return _queueSpecification.QueueArguments;
             }
         }
     }
@@ -165,35 +164,35 @@ namespace RabbitMQ.AMQP.Client.Impl
             _exchangeSpecification = exchangeSpecification;
         }
 
-        internal string Name
+        internal string ExchangeName
         {
             get
             {
-                return _exchangeSpecification.Name();
+                return _exchangeSpecification.ExchangeName;
             }
         }
 
-        internal ExchangeType Type
+        internal ExchangeType ExchangeType
         {
             get
             {
-                return _exchangeSpecification.Type();
+                return _exchangeSpecification.ExchangeType;
             }
         }
 
-        internal bool AutoDelete
+        internal bool IsAutoDelete
         {
             get
             {
-                return _exchangeSpecification.AutoDelete();
+                return _exchangeSpecification.IsAutoDelete;
             }
         }
 
-        internal Dictionary<string, object> Arguments
+        internal Dictionary<string, object> ExchangeArguments
         {
             get
             {
-                return _exchangeSpecification.Arguments();
+                return _exchangeSpecification.ExchangeArguments;
             }
         }
     }
@@ -207,51 +206,51 @@ namespace RabbitMQ.AMQP.Client.Impl
             _bindingSpecification = bindingSpecification;
         }
 
-        internal string SourceExchange
+        internal string SourceExchangeName
         {
             get
             {
-                return _bindingSpecification.SourceExchangeName();
+                return _bindingSpecification.SourceExchangeName;
             }
         }
 
-        internal string DestinationExchange
+        internal string DestinationExchangeName
         {
             get
             {
-                return _bindingSpecification.DestinationExchangeName();
+                return _bindingSpecification.DestinationExchangeName;
             }
         }
 
-        internal string DestinationQueue
+        internal string DestinationQueueName
         {
             get
             {
-                return _bindingSpecification.DestinationQueueName();
+                return _bindingSpecification.DestinationQueueName;
             }
         }
 
-        internal string Key
+        internal string BindingKey
         {
             get
             {
-                return _bindingSpecification.Key();
+                return _bindingSpecification.BindingKey;
             }
         }
 
-        internal Dictionary<string, object> Arguments
+        internal Dictionary<string, object> BindingArguments
         {
             get
             {
-                return _bindingSpecification.Arguments();
+                return _bindingSpecification.BindingArguments;
             }
         }
 
-        internal string Path
+        internal string BindingPath
         {
             get
             {
-                return _bindingSpecification.Path();
+                return _bindingSpecification.BindingPath;
             }
         }
     }

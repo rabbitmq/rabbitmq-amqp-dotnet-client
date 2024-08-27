@@ -22,7 +22,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private string _name = "";
         private bool _autoDelete;
-        private ExchangeType _type = ExchangeType.DIRECT;
+        private ExchangeType _type = Client.ExchangeType.DIRECT;
         private readonly Map _arguments = new();
 
         public Task DeclareAsync()
@@ -33,12 +33,12 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
 
             var kv = new Map
-        {
-            { "auto_delete", _autoDelete },
-            { "arguments", _arguments },
-            { "type", _type.ToString().ToLower() },
-            { "durable", true }
-        };
+            {
+                { "auto_delete", _autoDelete },
+                { "arguments", _arguments },
+                { "type", _type.ToString().ToLower() },
+                { "durable", true }
+            };
 
             // TODO: encodePathSegment(queues)
             // Message request = await management.Request(kv, $"/{Consts.Exchanges}/{_name}",
@@ -59,15 +59,18 @@ namespace RabbitMQ.AMQP.Client.Impl
             return (Task)_management.RequestAsync(null, path, method, expectedResponseCodes);
         }
 
-        public string Name()
-        {
-            return _name;
-        }
-
         public IExchangeSpecification Name(string name)
         {
             _name = name;
             return this;
+        }
+
+        public string ExchangeName
+        {
+            get
+            {
+                return _name;
+            }
         }
 
         public IExchangeSpecification AutoDelete(bool autoDelete)
@@ -76,7 +79,13 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public bool AutoDelete() => _autoDelete;
+        public bool IsAutoDelete
+        {
+            get
+            {
+                return _autoDelete;
+            }
+        }
 
         public IExchangeSpecification Type(ExchangeType type)
         {
@@ -84,27 +93,19 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public ExchangeType Type() => _type;
-
+        public ExchangeType ExchangeType
+        {
+            get
+            {
+                return _type;
+            }
+        }
 
         public IExchangeSpecification Argument(string key, object value)
         {
             _arguments[key] = value;
             return this;
         }
-
-        public Dictionary<string, object> Arguments()
-        {
-            var result = new Dictionary<string, object>();
-
-            foreach (object key in _arguments.Keys)
-            {
-                object value = _arguments[key];
-                result[key.ToString() ?? throw new InvalidOperationException()] = value;
-            }
-            return result;
-        }
-
 
         public IExchangeSpecification Arguments(Dictionary<string, object> arguments)
         {
@@ -113,8 +114,21 @@ namespace RabbitMQ.AMQP.Client.Impl
                 object value = arguments[key];
                 _arguments[key] = value;
             }
-
             return this;
+        }
+
+        public Dictionary<string, object> ExchangeArguments
+        {
+            get
+            {
+                var result = new Dictionary<string, object>();
+                foreach (object key in _arguments.Keys)
+                {
+                    object value = _arguments[key];
+                    result[key.ToString() ?? throw new InvalidOperationException()] = value;
+                }
+                return result;
+            }
         }
     }
 }
