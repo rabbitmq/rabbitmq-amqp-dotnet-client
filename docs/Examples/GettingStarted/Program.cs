@@ -8,6 +8,7 @@ using RabbitMQ.AMQP.Client.Impl;
 using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
 
+
 Trace.TraceLevel = TraceLevel.Information;
 
 ConsoleTraceListener consoleListener = new();

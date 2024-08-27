@@ -4,6 +4,9 @@ public class ModelException(string message) : Exception(message);
 
 public class PreconditionFailedException(string message) : Exception(message);
 
+/// <summary>
+/// IManagement is the interface that provides the management operations for the AMQP entities
+/// </summary>
 public interface IManagement : ILifeCycle
 {
     IQueueSpecification Queue();
