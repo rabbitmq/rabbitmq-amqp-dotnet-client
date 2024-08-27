@@ -2,29 +2,44 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-namespace RabbitMQ.AMQP.Client;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
-public class ModelException(string message) : Exception(message);
-
-public class PreconditionFailedException(string message) : Exception(message);
-
-public interface IManagement : ILifeCycle
+namespace RabbitMQ.AMQP.Client
 {
-    IQueueSpecification Queue();
-    IQueueSpecification Queue(string name);
+    public class ModelException : Exception
+    {
+        public ModelException(string message) : base(message)
+        {
+        }
+    }
 
-    Task<IQueueInfo> GetQueueInfoAsync(IQueueSpecification queueSpec,
-        CancellationToken cancellationToken = default);
-    Task<IQueueInfo> GetQueueInfoAsync(string queueName,
-        CancellationToken cancellationToken = default);
+    public class PreconditionFailedException : Exception
+    {
+        public PreconditionFailedException(string message) : base(message)
+        {
+        }
+    }
 
-    IExchangeSpecification Exchange();
-    IExchangeSpecification Exchange(string name);
+    public interface IManagement : ILifeCycle
+    {
+        IQueueSpecification Queue();
+        IQueueSpecification Queue(string name);
 
-    IBindingSpecification Binding();
-}
+        Task<IQueueInfo> GetQueueInfoAsync(IQueueSpecification queueSpec,
+            CancellationToken cancellationToken = default);
+        Task<IQueueInfo> GetQueueInfoAsync(string queueName,
+            CancellationToken cancellationToken = default);
 
-internal interface IManagementTopology
-{
-    ITopologyListener TopologyListener();
+        IExchangeSpecification Exchange();
+        IExchangeSpecification Exchange(string name);
+
+        IBindingSpecification Binding();
+    }
+
+    internal interface IManagementTopology
+    {
+        ITopologyListener TopologyListener();
+    }
 }

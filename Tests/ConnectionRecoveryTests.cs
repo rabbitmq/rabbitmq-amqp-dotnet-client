@@ -64,7 +64,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
             ConnectionSettingBuilder.Create().ContainerId(containerId).RecoveryConfiguration(
                 RecoveryConfiguration.Create().Activated(activeRecovery).Topology(false)).Build());
 
-        TaskCompletionSource connectionClosedStateTcs = new TaskCompletionSource();
+        TaskCompletionSource<bool> connectionClosedStateTcs = CreateTaskCompletionSource();
         var listFromStatus = new List<State>();
         var listToStatus = new List<State>();
         var listError = new List<Error?>();
@@ -75,7 +75,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
             listError.Add(error);
             if (to == State.Closed)
             {
-                connectionClosedStateTcs.SetResult();
+                connectionClosedStateTcs.SetResult(true);
             }
         };
 
@@ -111,8 +111,8 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                 RecoveryConfiguration.Create().Activated(true).Topology(false)
                     .BackOffDelayPolicy(new FakeFastBackOffDelay())).Build());
 
-        TaskCompletionSource listErrorCountGreaterThanOrEqualToTwoTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        TaskCompletionSource listErrorCountGreaterThanOrEqualToFourTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> listErrorCountGreaterThanOrEqualToTwoTcs = CreateTaskCompletionSource();
+        TaskCompletionSource<bool> listErrorCountGreaterThanOrEqualToFourTcs = CreateTaskCompletionSource();
 
         var listFromStatus = new List<State>();
         var listToStatus = new List<State>();
@@ -127,11 +127,11 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                 if (listError.Count >= 2)
                 {
                     // Note: must use try since it'll be called again
-                    listErrorCountGreaterThanOrEqualToTwoTcs.TrySetResult();
+                    listErrorCountGreaterThanOrEqualToTwoTcs.TrySetResult(true);
                 }
                 if (listError.Count >= 4)
                 {
-                    listErrorCountGreaterThanOrEqualToFourTcs.SetResult();
+                    listErrorCountGreaterThanOrEqualToFourTcs.SetResult(true);
                 }
             }
             catch (Exception ex)
@@ -182,8 +182,8 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                     new FakeBackOffDelayPolicyDisabled())).Build());
 
         var listFromStatus = new List<State>();
-        TaskCompletionSource listFromStatusCountGreaterOrEqualToTwo = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        TaskCompletionSource listErrorCountGreaterOrEqualToTwo = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> listFromStatusCountGreaterOrEqualToTwo = CreateTaskCompletionSource();
+        TaskCompletionSource<bool> listErrorCountGreaterOrEqualToTwo = CreateTaskCompletionSource();
 
         var listToStatus = new List<State>();
         var listError = new List<Error>();
@@ -197,11 +197,11 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
             }
             if (listFromStatus.Count >= 2)
             {
-                listFromStatusCountGreaterOrEqualToTwo.TrySetResult();
+                listFromStatusCountGreaterOrEqualToTwo.TrySetResult(true);
             }
             if (listError.Count >= 2)
             {
-                listErrorCountGreaterOrEqualToTwo.SetResult();
+                listErrorCountGreaterOrEqualToTwo.SetResult(true);
             }
         };
 
@@ -243,13 +243,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                     .Topology(true))
                 .ContainerId(containerId)
                 .Build());
-        TaskCompletionSource twoRecoveryEventsSeenTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> twoRecoveryEventsSeenTcs = CreateTaskCompletionSource();
         int recoveryEvents = 0;
         connection.ChangeState += (sender, from, to, error) =>
         {
             if (Interlocked.Increment(ref recoveryEvents) == 2)
             {
-                twoRecoveryEventsSeenTcs.SetResult();
+                twoRecoveryEventsSeenTcs.SetResult(true);
             }
         };
         IManagement management = connection.Management();
@@ -289,13 +289,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                     .Topology(false))
                 .ContainerId(containerId)
                 .Build());
-        TaskCompletionSource oneRecoveryEventSeenTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> oneRecoveryEventSeenTcs = CreateTaskCompletionSource();
         int recoveryEvents = 0;
         connection.ChangeState += (sender, from, to, error) =>
         {
             if (Interlocked.Increment(ref recoveryEvents) == 1)
             {
-                oneRecoveryEventSeenTcs.SetResult();
+                oneRecoveryEventSeenTcs.SetResult(true);
             }
         };
         IManagement management = connection.Management();
@@ -318,26 +318,27 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [InlineData(false)]
     public async Task RecoveryTopologyShouldRecoverExchanges(bool topologyEnabled)
     {
-        const string containerId = "exchange-should-recover-connection-name";
-        var connection = await AmqpConnection.CreateAsync(
+        const string exchangeName = "exchange-should-recover";
+        const string containerId = nameof(RecoveryTopologyShouldRecoverExchanges);
+        IConnection connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
                 .RecoveryConfiguration(RecoveryConfiguration.Create()
                     .BackOffDelayPolicy(new FakeFastBackOffDelay())
                     .Topology(topologyEnabled))
                 .ContainerId(containerId)
                 .Build());
-        TaskCompletionSource twoRecoveryEventsSeenTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> twoRecoveryEventsSeenTcs = CreateTaskCompletionSource();
         int recoveryEvents = 0;
         connection.ChangeState += (sender, from, to, error) =>
         {
             if (Interlocked.Increment(ref recoveryEvents) == 2)
             {
-                twoRecoveryEventsSeenTcs.SetResult();
+                twoRecoveryEventsSeenTcs.SetResult(true);
             }
         };
         IManagement management = connection.Management();
         ITopologyListener topologyListener = ((IManagementTopology)management).TopologyListener();
-        IExchangeSpecification exSpec = management.Exchange().Name("exchange-should-recover").AutoDelete(true)
+        IExchangeSpecification exSpec = management.Exchange().Name(exchangeName).AutoDelete(true)
             .Type(ExchangeType.DIRECT);
         await exSpec.DeclareAsync();
         Assert.Equal(1, topologyListener.ExchangeCount());
@@ -345,16 +346,18 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         // Since we cannot reboot the broker for this test we delete the exchange manually to simulate check if  
         // the exchange is recovered.
         await SystemUtils.DeleteExchangeAsync("exchange-should-recover");
+
         await SystemUtils.WaitUntilConnectionIsKilled(containerId);
+
         await twoRecoveryEventsSeenTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
         if (topologyEnabled)
         {
-            await SystemUtils.WaitUntilExchangeExistsAsync("exchange-should-recover");
+            await SystemUtils.WaitUntilExchangeExistsAsync(exchangeName);
         }
         else
         {
-            await SystemUtils.WaitUntilExchangeDeletedAsync("exchange-should-recover");
+            await SystemUtils.WaitUntilExchangeDeletedAsync(exchangeName);
         }
 
         Assert.Equal(1, topologyListener.ExchangeCount());
@@ -364,6 +367,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(0, topologyListener.ExchangeCount());
 
         await connection.CloseAsync();
+        connection.Dispose();
     }
 
     [Theory]
@@ -379,13 +383,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                     .Topology(topologyEnabled))
                 .ContainerId(containerId)
                 .Build());
-        TaskCompletionSource twoRecoveryEventsSeenTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> twoRecoveryEventsSeenTcs = CreateTaskCompletionSource();
         int recoveryEvents = 0;
         connection.ChangeState += (sender, from, to, error) =>
         {
             if (Interlocked.Increment(ref recoveryEvents) == 2)
             {
-                twoRecoveryEventsSeenTcs.SetResult();
+                twoRecoveryEventsSeenTcs.SetResult(true);
             }
         };
         IManagement management = connection.Management();
@@ -620,5 +624,10 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(0, topologyListener.ExchangeCount());
 
         await connection.CloseAsync();
+    }
+
+    private static TaskCompletionSource<bool> CreateTaskCompletionSource()
+    {
+        return new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 }

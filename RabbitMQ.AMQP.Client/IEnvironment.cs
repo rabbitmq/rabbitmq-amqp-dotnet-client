@@ -3,32 +3,34 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 
-namespace RabbitMQ.AMQP.Client;
-
-/// <summary>
-/// Interface to create IConnections and manage them.
-/// </summary>
-public interface IEnvironment
+namespace RabbitMQ.AMQP.Client
 {
     /// <summary>
-    /// Create a new connection with the given connection settings.
+    /// Interface to create IConnections and manage them.
     /// </summary>
-    /// <param name="connectionSettings"></param>
-    /// <returns>IConnection</returns>
-    public Task<IConnection> CreateConnectionAsync(IConnectionSettings connectionSettings);
+    public interface IEnvironment
+    {
+        /// <summary>
+        /// Create a new connection with the given connection settings.
+        /// </summary>
+        /// <param name="connectionSettings"></param>
+        /// <returns>IConnection</returns>
+        public Task<IConnection> CreateConnectionAsync(IConnectionSettings connectionSettings);
 
-    /// <summary>
-    /// Create a new connection with the default connection settings.
-    /// </summary>
-    /// <returns>IConnection</returns>
-    public Task<IConnection> CreateConnectionAsync();
+        /// <summary>
+        /// Create a new connection with the default connection settings.
+        /// </summary>
+        /// <returns>IConnection</returns>
+        public Task<IConnection> CreateConnectionAsync();
 
-    public ReadOnlyCollection<IConnection> GetConnections();
+        public ReadOnlyCollection<IConnection> GetConnections();
 
-    /// <summary>
-    /// Close all connections.
-    /// </summary>
-    /// <returns></returns>
-    Task CloseAsync();
+        /// <summary>
+        /// Close all connections.
+        /// </summary>
+        /// <returns></returns>
+        Task CloseAsync();
+    }
 }

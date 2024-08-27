@@ -2,21 +2,31 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-namespace RabbitMQ.AMQP.Client;
+using System;
+using System.Threading.Tasks;
 
-public class ConsumerException(string message) : Exception(message);
-public delegate Task MessageHandler(IContext context, IMessage message);
-
-public interface IConsumer : ILifeCycle
+namespace RabbitMQ.AMQP.Client
 {
-    void Pause();
-    void Unpause();
-    long UnsettledMessageCount { get; }
-}
+    public class ConsumerException : Exception
+    {
+        public ConsumerException(string message) : base(message)
+        {
+        }
+    }
 
-public interface IContext
-{
-    Task AcceptAsync();
-    Task DiscardAsync();
-    Task RequeueAsync();
+    public delegate Task MessageHandler(IContext context, IMessage message);
+
+    public interface IConsumer : ILifeCycle
+    {
+        void Pause();
+        void Unpause();
+        long UnsettledMessageCount { get; }
+    }
+
+    public interface IContext
+    {
+        Task AcceptAsync();
+        Task DiscardAsync();
+        Task RequeueAsync();
+    }
 }

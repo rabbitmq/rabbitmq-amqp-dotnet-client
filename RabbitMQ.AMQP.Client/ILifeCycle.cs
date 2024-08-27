@@ -2,35 +2,45 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-namespace RabbitMQ.AMQP.Client;
+using System;
+using System.Threading.Tasks;
 
-public enum State
+namespace RabbitMQ.AMQP.Client
 {
-    // Opening,
-    Open,
-    Reconnecting,
-    Closing,
-    Closed,
-}
-
-public class Error(string? errorCode, string? description)
-{
-    public string? Description { get; } = description;
-    public string? ErrorCode { get; } = errorCode;
-
-    public override string ToString()
+    public enum State
     {
-        return $"Code: {ErrorCode} - Description: {Description}";
+        // Opening,
+        Open,
+        Reconnecting,
+        Closing,
+        Closed,
     }
-}
 
-public delegate void LifeCycleCallBack(object sender, State previousState, State currentState, Error? failureCause);
+    public class Error
+    {
+        public Error(string? errorCode, string? description)
+        {
+            ErrorCode = errorCode;
+            Description = description;
+        }
 
-public interface ILifeCycle : IDisposable
-{
-    Task CloseAsync();
+        public string? ErrorCode { get; private set; }
+        public string? Description { get; private set; }
 
-    State State { get; }
+        public override string ToString()
+        {
+            return $"Code: {ErrorCode} - Description: {Description}";
+        }
+    }
 
-    event LifeCycleCallBack ChangeState;
+    public delegate void LifeCycleCallBack(object sender, State previousState, State currentState, Error? failureCause);
+
+    public interface ILifeCycle : IDisposable
+    {
+        Task CloseAsync();
+
+        State State { get; }
+
+        event LifeCycleCallBack ChangeState;
+    }
 }

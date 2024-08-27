@@ -194,6 +194,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
     [Fact]
     public async Task ConsumerGracefulShutdownExample()
     {
+        var r = new Random();
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
@@ -204,7 +205,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
 
         await PublishAsync(queueSpecification, messageCount);
 
-        TaskCompletionSource receivedTwiceInitialCreditsTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> receivedTwiceInitialCreditsTcs = CreateTaskCompletionSource();
         const int initialCredits = 10;
         long receivedCount = 0;
         var unsettledMessages = new ConcurrentBag<IContext>();
@@ -215,9 +216,9 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
             {
                 if (Interlocked.Increment(ref receivedCount) > (initialCredits * 2))
                 {
-                    receivedTwiceInitialCreditsTcs.TrySetResult();
+                    receivedTwiceInitialCreditsTcs.TrySetResult(true);
                 }
-                await Task.Delay(TimeSpan.FromMilliseconds(Random.Shared.Next(1, 10)));
+                await Task.Delay(TimeSpan.FromMilliseconds(r.Next(1, 10)));
                 await ctx.AcceptAsync();
             }).BuildAsync();
 

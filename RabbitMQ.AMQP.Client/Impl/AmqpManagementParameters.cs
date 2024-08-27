@@ -2,59 +2,62 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-namespace RabbitMQ.AMQP.Client.Impl;
+using System;
 
-internal class AmqpManagementParameters
+namespace RabbitMQ.AMQP.Client.Impl
 {
-    private readonly AmqpConnection _amqpConnection;
-
-    private RecordingTopologyListener _topologyListener = null!;
-
-    internal AmqpManagementParameters(AmqpConnection amqpConnection)
+    internal class AmqpManagementParameters
     {
-        _amqpConnection = amqpConnection;
-    }
+        private readonly AmqpConnection _amqpConnection;
 
-    internal AmqpManagementParameters TopologyListener(RecordingTopologyListener topologyListener)
-    {
-        _topologyListener = topologyListener;
-        return this;
-    }
+        private RecordingTopologyListener _topologyListener = null!;
 
-    internal AmqpConnection Connection
-    {
-        get
+        internal AmqpManagementParameters(AmqpConnection amqpConnection)
         {
-            return _amqpConnection;
+            _amqpConnection = amqpConnection;
         }
-    }
 
-    internal Amqp.Connection? NativeConnection
-    {
-        get
+        internal AmqpManagementParameters TopologyListener(RecordingTopologyListener topologyListener)
         {
-            return _amqpConnection.NativeConnection;
+            _topologyListener = topologyListener;
+            return this;
         }
-    }
 
-    internal bool IsNativeConnectionClosed
-    {
-        get
+        internal AmqpConnection Connection
         {
-            if (_amqpConnection.NativeConnection is null)
+            get
             {
-                // TODO create "internal bug" exception type?
-                throw new InvalidOperationException("NativeConnection is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
-            }
-            else
-            {
-                return _amqpConnection.NativeConnection.IsClosed;
+                return _amqpConnection;
             }
         }
-    }
 
-    internal RecordingTopologyListener TopologyListener()
-    {
-        return _topologyListener;
+        internal Amqp.Connection? NativeConnection
+        {
+            get
+            {
+                return _amqpConnection.NativeConnection;
+            }
+        }
+
+        internal bool IsNativeConnectionClosed
+        {
+            get
+            {
+                if (_amqpConnection.NativeConnection is null)
+                {
+                    // TODO create "internal bug" exception type?
+                    throw new InvalidOperationException("NativeConnection is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                }
+                else
+                {
+                    return _amqpConnection.NativeConnection.IsClosed;
+                }
+            }
+        }
+
+        internal RecordingTopologyListener TopologyListener()
+        {
+            return _topologyListener;
+        }
     }
 }

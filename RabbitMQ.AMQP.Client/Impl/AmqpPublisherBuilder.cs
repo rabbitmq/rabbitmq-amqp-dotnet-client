@@ -2,144 +2,154 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-namespace RabbitMQ.AMQP.Client.Impl;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
-public class AddressBuilder : IAddressBuilder<AddressBuilder>
+namespace RabbitMQ.AMQP.Client.Impl
 {
-    private string? _exchange;
-
-    private string? _queue;
-
-    private string? _key;
-
-    public AddressBuilder Exchange(IExchangeSpecification exchangeSpec)
+    public class AddressBuilder : IAddressBuilder<AddressBuilder>
     {
-        return Exchange(exchangeSpec.Name());
-    }
+        private string? _exchange;
 
-    public AddressBuilder Exchange(string? exchange)
-    {
-        _exchange = exchange;
-        return this;
-    }
+        private string? _queue;
 
-    public AddressBuilder Queue(IQueueSpecification queueSpec)
-    {
-        return Queue(queueSpec.Name());
-    }
+        private string? _key;
 
-    public AddressBuilder Queue(string? queue)
-    {
-        _queue = queue;
-        return this;
-    }
-
-    public AddressBuilder Key(string? key)
-    {
-        _key = key;
-        return this;
-    }
-
-    public string Address()
-    {
-        if (_exchange == null && _queue == null)
+        public AddressBuilder Exchange(IExchangeSpecification exchangeSpec)
         {
-            throw new InvalidAddressException("Exchange or Queue must be set");
+            return Exchange(exchangeSpec.Name());
         }
 
-        if (_exchange != null && _queue != null)
+        public AddressBuilder Exchange(string? exchange)
         {
-            throw new InvalidAddressException("Exchange and Queue cannot be set together");
+            _exchange = exchange;
+            return this;
         }
 
-        if (_exchange != null)
+        public AddressBuilder Queue(IQueueSpecification queueSpec)
         {
-            if (string.IsNullOrEmpty(_exchange))
+            return Queue(queueSpec.Name());
+        }
+
+        public AddressBuilder Queue(string? queue)
+        {
+            _queue = queue;
+            return this;
+        }
+
+        public AddressBuilder Key(string? key)
+        {
+            _key = key;
+            return this;
+        }
+
+        public string Address()
+        {
+            if (_exchange == null && _queue == null)
             {
-                throw new InvalidAddressException("Exchange must be set");
+                throw new InvalidAddressException("Exchange or Queue must be set");
             }
 
-            if (!string.IsNullOrEmpty(_key))
+            if (_exchange != null && _queue != null)
             {
-                return $"/{Consts.Exchanges}/{Utils.EncodePathSegment(_exchange)}/{Utils.EncodePathSegment(_key)}";
+                throw new InvalidAddressException("Exchange and Queue cannot be set together");
             }
 
-            return $"/{Consts.Exchanges}/{Utils.EncodePathSegment(_exchange)}";
-        }
+            if (_exchange != null)
+            {
+                if (string.IsNullOrEmpty(_exchange))
+                {
+                    throw new InvalidAddressException("Exchange must be set");
+                }
 
-        if (_queue == null)
+                if (_key != null && false == string.IsNullOrEmpty(_key))
+                {
+                    return $"/{Consts.Exchanges}/{Utils.EncodePathSegment(_exchange)}/{Utils.EncodePathSegment(_key)}";
+                }
+
+                return $"/{Consts.Exchanges}/{Utils.EncodePathSegment(_exchange)}";
+            }
+
+            if (_queue == null)
+            {
+                return "";
+            }
+
+            if (string.IsNullOrEmpty(_queue))
+            {
+                throw new InvalidAddressException("Queue must be set");
+            }
+
+            return $"/{Consts.Queues}/{Utils.EncodePathSegment(_queue)}";
+        }
+    }
+
+    public class AmqpPublisherBuilder : IPublisherBuilder
+    {
+        private readonly AmqpConnection _connection;
+        private string? _exchange;
+        private string? _key;
+        private string? _queue;
+        private TimeSpan _timeout = TimeSpan.FromSeconds(10);
+        private int _maxInFlight = 1000;
+
+        public AmqpPublisherBuilder(AmqpConnection connection)
         {
-            return "";
+            _connection = connection;
         }
 
-        if (string.IsNullOrEmpty(_queue))
+        public IPublisherBuilder Exchange(IExchangeSpecification exchangeSpec)
         {
-            throw new InvalidAddressException("Queue must be set");
+            return Exchange(exchangeSpec.Name());
         }
 
-        return $"/{Consts.Queues}/{Utils.EncodePathSegment(_queue)}";
-    }
-}
+        public IPublisherBuilder Exchange(string exchangeName)
+        {
+            _exchange = exchangeName;
+            return this;
+        }
 
-public class AmqpPublisherBuilder(AmqpConnection connection) : IPublisherBuilder
-{
-    private string? _exchange;
-    private string? _key;
-    private string? _queue;
-    private TimeSpan _timeout = TimeSpan.FromSeconds(10);
-    private int _maxInFlight = 1000;
+        public IPublisherBuilder Queue(IQueueSpecification queueSpec)
+        {
+            return Queue(queueSpec.Name());
+        }
 
+        public IPublisherBuilder Queue(string queueName)
+        {
+            _queue = queueName;
+            return this;
+        }
 
-    public IPublisherBuilder Exchange(IExchangeSpecification exchangeSpec)
-    {
-        return Exchange(exchangeSpec.Name());
-    }
+        public IPublisherBuilder Key(string key)
+        {
+            _key = key;
+            return this;
+        }
 
-    public IPublisherBuilder Exchange(string exchangeName)
-    {
-        _exchange = exchangeName;
-        return this;
-    }
+        public IPublisherBuilder PublishTimeout(TimeSpan timeout)
+        {
+            _timeout = timeout;
+            return this;
+        }
 
-    public IPublisherBuilder Queue(IQueueSpecification queueSpec)
-    {
-        return Queue(queueSpec.Name());
-    }
+        public IPublisherBuilder MaxInflightMessages(int maxInFlight)
+        {
+            _maxInFlight = maxInFlight;
+            return this;
+        }
 
-    public IPublisherBuilder Queue(string queueName)
-    {
-        _queue = queueName;
-        return this;
-    }
+        public async Task<IPublisher> BuildAsync(CancellationToken cancellationToken = default)
+        {
+            string address = new AddressBuilder().Exchange(_exchange).Queue(_queue).Key(_key).Address();
 
-    public IPublisherBuilder Key(string key)
-    {
-        _key = key;
-        return this;
-    }
+            AmqpPublisher publisher = new(_connection, address, _timeout, _maxInFlight);
 
-    public IPublisherBuilder PublishTimeout(TimeSpan timeout)
-    {
-        _timeout = timeout;
-        return this;
-    }
+            // TODO pass cancellationToken
+            await publisher.OpenAsync()
+                .ConfigureAwait(false);
 
-    public IPublisherBuilder MaxInflightMessages(int maxInFlight)
-    {
-        _maxInFlight = maxInFlight;
-        return this;
-    }
-
-    public async Task<IPublisher> BuildAsync(CancellationToken cancellationToken = default)
-    {
-        string address = new AddressBuilder().Exchange(_exchange).Queue(_queue).Key(_key).Address();
-
-        AmqpPublisher publisher = new(connection, address, _timeout, _maxInFlight);
-
-        // TODO pass cancellationToken
-        await publisher.OpenAsync()
-            .ConfigureAwait(false);
-
-        return publisher;
+            return publisher;
+        }
     }
 }

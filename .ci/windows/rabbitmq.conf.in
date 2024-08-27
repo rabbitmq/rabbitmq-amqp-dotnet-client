@@ -1,9 +1,7 @@
 loopback_users = none
 loopback_users.guest = true
 
-log.console = true
-log.console.level = debug
-log.file = /var/log/rabbitmq/rabbitmq.log
+log.console = false
 log.file.level = debug
 log.exchange = false
 
@@ -13,12 +11,12 @@ reverse_dns_lookups = false
 
 deprecated_features.permit.amqp_address_v1 = false
 
-ssl_options.cacertfile = /etc/rabbitmq/certs/ca_certificate.pem
-ssl_options.certfile   = /etc/rabbitmq/certs/server_localhost_certificate.pem
-ssl_options.keyfile    = /etc/rabbitmq/certs/server_localhost_key.pem
+ssl_options.cacertfile = @@CERTS_DIR@@/ca_certificate.pem
+ssl_options.certfile   = @@CERTS_DIR@@/server_localhost_certificate.pem
+ssl_options.keyfile    = @@CERTS_DIR@@/server_localhost_key.pem
 ssl_options.verify     = verify_peer
-ssl_options.password   = grapefruit
-ssl_options.depth      = 1
+ssl_options.password = grapefruit
+ssl_options.depth    = 1
 ssl_options.fail_if_no_peer_cert = false
 
 auth_mechanisms.1 = PLAIN

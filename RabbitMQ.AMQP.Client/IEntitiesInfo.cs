@@ -2,46 +2,49 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-namespace RabbitMQ.AMQP.Client;
+using System.Collections.Generic;
 
-public enum QueueType
+namespace RabbitMQ.AMQP.Client
 {
-    QUORUM,
-    CLASSIC,
-    STREAM
-}
+    public enum QueueType
+    {
+        QUORUM,
+        CLASSIC,
+        STREAM
+    }
 
-public interface IQueueInfo : IEntityInfo
-{
-    // TODO these should be properties, not methods
-    string Name();
+    public interface IQueueInfo : IEntityInfo
+    {
+        // TODO these should be properties, not methods
+        string Name();
 
-    bool Durable();
+        bool Durable();
 
-    bool AutoDelete();
+        bool AutoDelete();
 
-    bool Exclusive();
+        bool Exclusive();
 
-    QueueType Type();
+        QueueType Type();
 
-    // TODO IDictionary
-    Dictionary<string, object> Arguments();
+        // TODO IDictionary
+        Dictionary<string, object> Arguments();
 
-    string Leader();
+        string Leader();
 
-    // TODO IEnumerable? ICollection?
-    List<string> Replicas();
+        // TODO IEnumerable? ICollection?
+        List<string> Replicas();
 
-    ulong MessageCount();
+        ulong MessageCount();
 
-    uint ConsumerCount();
-}
+        uint ConsumerCount();
+    }
 
 
-public enum ExchangeType
-{
-    DIRECT,
-    FANOUT,
-    TOPIC,
-    HEADERS
+    public enum ExchangeType
+    {
+        DIRECT,
+        FANOUT,
+        TOPIC,
+        HEADERS
+    }
 }

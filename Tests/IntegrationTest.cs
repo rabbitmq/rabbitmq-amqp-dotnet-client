@@ -72,40 +72,34 @@ public abstract class IntegrationTest : IAsyncLifetime
 
     public virtual async Task DisposeAsync()
     {
-        if (_management is not null)
+        if (_management is not null && _management.State == State.Open)
         {
-            if (_management.State == State.Open)
+            try
             {
-                try
-                {
-                    IQueueSpecification queueSpecification = _management.Queue(_queueName);
-                    await queueSpecification.DeleteAsync();
-                }
-                catch
-                {
-                }
-
-                try
-                {
-                    IExchangeSpecification exchangeSpecification = _management.Exchange(_exchangeName);
-                    await exchangeSpecification.DeleteAsync();
-                }
-                catch
-                {
-                }
-
-                await _management.CloseAsync();
+                IQueueSpecification queueSpecification = _management.Queue(_queueName);
+                await queueSpecification.DeleteAsync();
             }
+            catch
+            {
+            }
+
+            try
+            {
+                IExchangeSpecification exchangeSpecification = _management.Exchange(_exchangeName);
+                await exchangeSpecification.DeleteAsync();
+            }
+            catch
+            {
+            }
+
+            await _management.CloseAsync();
             Assert.Equal(State.Closed, _management.State);
             _management.Dispose();
         }
 
         if (_connection is not null && _connection.State == State.Open)
         {
-            if (_connection.State == State.Open)
-            {
-                await _connection.CloseAsync();
-            }
+            await _connection.CloseAsync();
             Assert.Equal(State.Closed, _connection.State);
             _connection.Dispose();
         }
@@ -113,14 +107,19 @@ public abstract class IntegrationTest : IAsyncLifetime
 
     protected static string Now => DateTime.UtcNow.ToString("s", CultureInfo.InvariantCulture);
 
-    protected Task WhenTcsCompletes<T>(TaskCompletionSource<T> tcs)
+    protected static TaskCompletionSource<bool> CreateTaskCompletionSource()
     {
-        return WhenTaskCompletes(tcs.Task);
+        return CreateTaskCompletionSource<bool>();
     }
 
-    protected Task WhenTcsCompletes(TaskCompletionSource tcs)
+    protected static TaskCompletionSource<T> CreateTaskCompletionSource<T>()
     {
-        return WhenTaskCompletes(tcs.Task);
+        return new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
+    protected Task<T> WhenTcsCompletes<T>(TaskCompletionSource<T> tcs)
+    {
+        return tcs.Task.WaitAsync(_waitSpan);
     }
 
     protected Task WhenAllComplete(params Task[] tasks)

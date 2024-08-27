@@ -2,47 +2,57 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-namespace RabbitMQ.AMQP.Client;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
-public class PublisherException(string message) : Exception(message);
-
-public enum OutcomeState
+namespace RabbitMQ.AMQP.Client
 {
-    Accepted,
-    Failed,
-}
-
-public class PublishOutcome
-{
-    private readonly OutcomeState _state;
-    private readonly Error? _error;
-
-    public PublishOutcome(OutcomeState state, Error? error)
+    public class PublisherException : Exception
     {
-        _state = state;
-        _error = error;
+        public PublisherException(string message) : base(message)
+        {
+        }
     }
 
-    public OutcomeState State => _state;
-    public Error? Error => _error;
-}
-
-public class PublishResult
-{
-    private IMessage _message;
-    private PublishOutcome _outcome;
-
-    public PublishResult(IMessage message, PublishOutcome outcome)
+    public enum OutcomeState
     {
-        _message = message;
-        _outcome = outcome;
+        Accepted,
+        Failed,
     }
 
-    public IMessage Message => _message;
-    public PublishOutcome Outcome => _outcome;
-}
+    public class PublishOutcome
+    {
+        private readonly OutcomeState _state;
+        private readonly Error? _error;
 
-public interface IPublisher : ILifeCycle
-{
-    Task<PublishResult> PublishAsync(IMessage message, CancellationToken cancellationToken = default);
+        public PublishOutcome(OutcomeState state, Error? error)
+        {
+            _state = state;
+            _error = error;
+        }
+
+        public OutcomeState State => _state;
+        public Error? Error => _error;
+    }
+
+    public class PublishResult
+    {
+        private IMessage _message;
+        private PublishOutcome _outcome;
+
+        public PublishResult(IMessage message, PublishOutcome outcome)
+        {
+            _message = message;
+            _outcome = outcome;
+        }
+
+        public IMessage Message => _message;
+        public PublishOutcome Outcome => _outcome;
+    }
+
+    public interface IPublisher : ILifeCycle
+    {
+        Task<PublishResult> PublishAsync(IMessage message, CancellationToken cancellationToken = default);
+    }
 }

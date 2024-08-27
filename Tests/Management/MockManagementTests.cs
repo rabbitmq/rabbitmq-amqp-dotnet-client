@@ -41,11 +41,11 @@ public class MockManagementTests()
     }
 
     [Fact]
-    public async Task RaiseTaskCanceledException()
+    public async Task RaiseOperationCanceledException()
     {
         var management = new TestAmqpManagementOpen();
         var message = new Message() { Properties = new Properties() { MessageId = "a_random_id", } };
-        await Assert.ThrowsAsync<TaskCanceledException>(async () =>
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
             await management.RequestAsync(message, [200], TimeSpan.FromSeconds(1)));
         await management.CloseAsync();
     }
