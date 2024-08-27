@@ -8,6 +8,6 @@ on:
 
 jobs:
   call-build-test:
-    uses: ./.github/workflows/build-test.yaml
-    # uses: ./.github/workflows/gh-pages.yaml
+    # uses: ./.github/workflows/build-test.yaml
+    uses: ./.github/workflows/gh-pages.yaml
     
