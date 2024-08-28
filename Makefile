@@ -7,7 +7,7 @@ build:
 	dotnet build $(CURDIR)/Build.csproj
 
 test: build
-	dotnet test -c Debug $(CURDIR)/Tests/Tests.csproj --no-build --logger:"console;verbosity=detailed" /p:AltCover=true /p:AltCoverStrongNameKey=$(CURDIR)/rabbit.snk
+	dotnet test -c Debug $(CURDIR)/Tests/Tests.csproj --no-build --logger:"console;verbosity=detailed"
 
 rabbitmq-server-start-arm:
 	 ./.ci/ubuntu/gha-setup.sh start pull arm 
