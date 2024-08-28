@@ -1,7 +1,10 @@
 # Your GitHub workflow file under .github/workflows/
 # Trigger the action on push to main
 on:
-  - workflow_call
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
     
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
