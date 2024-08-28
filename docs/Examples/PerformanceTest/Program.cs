@@ -66,20 +66,18 @@ try
             if (i % 200_000 == 0)
             {
                 DateTime endp = DateTime.Now;
-                Console.WriteLine($"Sending Time: {endp - start} - messages {i}");
+                Console.WriteLine($"[INFO] sending Time: {endp - start} - messages {i}");
             }
 
             var message = new AmqpMessage(new byte[10]);
             PublishResult pr = await publisher.PublishAsync(message);
             if (pr.Outcome.State == OutcomeState.Accepted)
             {
-                if (Interlocked.Increment(ref confirmed) % 200_000 != 0)
+                if (Interlocked.Increment(ref confirmed) % 200_000 == 0)
                 {
-                    return;
+                    DateTime confirmEnd = DateTime.Now;
+                    Console.WriteLine($"[INFO] confirmed Time: {confirmEnd - start} confirmed: {confirmed}");
                 }
-
-                DateTime confirmEnd = DateTime.Now;
-                Console.WriteLine($"Confirmed Time: {confirmEnd - start} {confirmed}");
             }
             else
             {
@@ -101,15 +99,46 @@ catch (Exception e)
 {
     Trace.WriteLine(TraceLevel.Error, $"{e.Message}");
 }
+finally
+{
+    Console.WriteLine("Press any key to delete the queue and close the connection.");
+    Console.ReadKey();
 
-Console.WriteLine("Press any key to delete the queue and close the connection.");
-Console.ReadKey();
+    try
+    {
+        await publisher.CloseAsync();
+        publisher.Dispose();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("[ERROR] unexpected exception while closing publisher: {0}", ex);
+    }
 
-await publisher.CloseAsync();
-publisher.Dispose();
+    try
+    {
+        await consumer.CloseAsync();
+        consumer.Dispose();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("[ERROR] unexpected exception while closing consumer: {0}", ex);
+    }
 
-await consumer.CloseAsync();
-consumer.Dispose();
+    try
+    {
+        await queueSpec.DeleteAsync();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("[ERROR] unexpected exception while deleting queue: {0}", ex);
+    }
 
-await queueSpec.DeleteAsync();
-await environment.CloseAsync();
+    try
+    {
+        await environment.CloseAsync();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("[ERROR] unexpected exception while closing environment: {0}", ex);
+    }
+}
