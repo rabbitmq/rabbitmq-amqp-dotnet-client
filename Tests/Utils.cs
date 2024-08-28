@@ -83,7 +83,7 @@ public static class SystemUtils
 
     public static Task WaitUntilQueueExistsAsync(IQueueSpecification queueSpec)
     {
-        return WaitUntilQueueExistsAsync(queueSpec.Name());
+        return WaitUntilQueueExistsAsync(queueSpec.QueueName);
     }
 
     public static Task WaitUntilQueueExistsAsync(string queueNameStr)
@@ -96,7 +96,7 @@ public static class SystemUtils
 
     public static Task WaitUntilQueueDeletedAsync(IQueueSpecification queueSpec)
     {
-        return WaitUntilQueueDeletedAsync(queueSpec.Name());
+        return WaitUntilQueueDeletedAsync(queueSpec.QueueName);
     }
 
     public static Task WaitUntilQueueDeletedAsync(string queueNameStr)
@@ -109,7 +109,7 @@ public static class SystemUtils
 
     public static Task WaitUntilExchangeExistsAsync(IExchangeSpecification exchangeSpec)
     {
-        return WaitUntilExchangeExistsAsync(exchangeSpec.Name());
+        return WaitUntilExchangeExistsAsync(exchangeSpec.ExchangeName);
     }
 
     public static Task WaitUntilExchangeExistsAsync(string exchangeNameStr)
@@ -122,7 +122,7 @@ public static class SystemUtils
 
     public static Task WaitUntilExchangeDeletedAsync(IExchangeSpecification exchangeSpec)
     {
-        return WaitUntilExchangeDeletedAsync(exchangeSpec.Name());
+        return WaitUntilExchangeDeletedAsync(exchangeSpec.ExchangeName);
     }
 
     public static Task WaitUntilExchangeDeletedAsync(string exchangeNameStr)
@@ -136,7 +136,7 @@ public static class SystemUtils
     public static Task WaitUntilBindingsBetweenExchangeAndQueueExistAsync(
         IExchangeSpecification exchangeSpec, IQueueSpecification queueSpec)
     {
-        return WaitUntilBindingsBetweenExchangeAndQueueExistAsync(exchangeSpec.Name(), queueSpec.Name());
+        return WaitUntilBindingsBetweenExchangeAndQueueExistAsync(exchangeSpec.ExchangeName, queueSpec.QueueName);
     }
 
     public static Task WaitUntilBindingsBetweenExchangeAndQueueExistAsync(string exchangeNameStr, string queueNameStr)
@@ -150,7 +150,7 @@ public static class SystemUtils
     public static Task WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(
         IExchangeSpecification exchangeSpec, IQueueSpecification queueSpec)
     {
-        return WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(exchangeSpec.Name(), queueSpec.Name());
+        return WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(exchangeSpec.ExchangeName, queueSpec.QueueName);
     }
 
     public static Task WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(string exchangeNameStr, string queueNameStr)
@@ -164,7 +164,7 @@ public static class SystemUtils
     public static Task WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(IExchangeSpecification exchangeSpec, IQueueSpecification queueSpec,
         Dictionary<string, object> args)
     {
-        return WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(exchangeSpec.Name(), queueSpec.Name(), args);
+        return WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(exchangeSpec.ExchangeName, queueSpec.QueueName, args);
     }
 
     public static Task WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(string exchangeNameStr, string queueNameStr,
@@ -180,7 +180,7 @@ public static class SystemUtils
     public static Task WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(IExchangeSpecification exchangeSpec, IQueueSpecification queueSpec,
         Dictionary<string, object> args)
     {
-        return WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(exchangeSpec.Name(), queueSpec.Name(), args);
+        return WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(exchangeSpec.ExchangeName, queueSpec.QueueName, args);
     }
 
     public static Task WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(string exchangeNameStr, string queueNameStr,
@@ -195,7 +195,7 @@ public static class SystemUtils
 
     public static Task WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(IExchangeSpecification sourceExchangeSpec, IExchangeSpecification destinationExchangeSpec)
     {
-        return WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(sourceExchangeSpec.Name(), destinationExchangeSpec.Name());
+        return WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(sourceExchangeSpec.ExchangeName, destinationExchangeSpec.ExchangeName);
     }
 
     public static Task WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(string sourceExchangeNameStr, string destinationExchangeNameStr)
@@ -208,7 +208,7 @@ public static class SystemUtils
 
     public static Task WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(IExchangeSpecification sourceExchangeSpec, IExchangeSpecification destinationExchangeSpec)
     {
-        return WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(sourceExchangeSpec.Name(), destinationExchangeSpec.Name());
+        return WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(sourceExchangeSpec.ExchangeName, destinationExchangeSpec.ExchangeName);
     }
 
     public static Task WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(string sourceExchangeNameStr, string destinationExchangeNameStr)
@@ -221,7 +221,7 @@ public static class SystemUtils
 
     public static Task WaitUntilQueueMessageCount(IQueueSpecification queueSpec, long messageCount)
     {
-        return WaitUntilQueueMessageCount(queueSpec.Name(), messageCount);
+        return WaitUntilQueueMessageCount(queueSpec.QueueName, messageCount);
     }
 
     public static Task WaitUntilQueueMessageCount(string queueNameStr, long messageCount)

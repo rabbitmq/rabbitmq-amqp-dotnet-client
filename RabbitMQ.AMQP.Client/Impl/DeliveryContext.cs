@@ -7,7 +7,7 @@ using Amqp;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
-    public class DeliveryContext : IContext
+    internal class DeliveryContext : IContext
     {
         private readonly IReceiverLink _link;
         private readonly Message _message;

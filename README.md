@@ -5,7 +5,7 @@ This library is in early stages of development. It is meant to be used with Rabb
 ## How to Run
 
 - Start the broker with `./.ci/ubuntu/gha-setup.sh start`. Note that this has been tested on Ubuntu 22 with docker.
-- Run the tests with ` dotnet test ./Build.csproj  --logger "console;verbosity=detailed" /p:AltCover=true`
+- Run the tests with ` dotnet test ./Build.csproj  --logger "console;verbosity=detailed"`
 - Stop RabbitMQ with `./.ci/ubuntu/gha-setup.sh stop`
 
 ## Getting Started

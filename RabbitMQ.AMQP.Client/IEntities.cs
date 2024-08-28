@@ -44,20 +44,20 @@ namespace RabbitMQ.AMQP.Client
 
     public interface IQueueSpecification : IEntityInfoSpecification<IQueueInfo>
     {
-        public string Name();
-        IQueueSpecification Name(string name);
+        public string QueueName { get; }
+        IQueueSpecification Name(string queueName);
 
-        public bool Exclusive();
-        IQueueSpecification Exclusive(bool exclusive);
+        public bool IsExclusive { get; }
+        IQueueSpecification Exclusive(bool isExclusive);
 
-        public bool AutoDelete();
-        IQueueSpecification AutoDelete(bool autoDelete);
+        public bool IsAutoDelete { get; }
+        IQueueSpecification AutoDelete(bool isAutoDelete);
 
-        public Dictionary<object, object> Arguments();
-        IQueueSpecification Arguments(Dictionary<object, object> arguments);
+        public Dictionary<object, object> QueueArguments { get; }
+        IQueueSpecification Arguments(Dictionary<object, object> queueArguments);
 
-        public QueueType Type();
-        IQueueSpecification Type(QueueType type);
+        public QueueType QueueType { get; }
+        IQueueSpecification Type(QueueType queueType);
 
         IQueueSpecification DeadLetterExchange(string dlx);
 
@@ -71,15 +71,15 @@ namespace RabbitMQ.AMQP.Client
 
         IQueueSpecification Expires(TimeSpan expiration);
 
+        IQueueSpecification MaxLength(long maxLength);
+
+        IQueueSpecification MessageTtl(TimeSpan ttl);
+
         IStreamSpecification Stream();
 
         IQuorumQueueSpecification Quorum();
 
         IClassicQueueSpecification Classic();
-
-        IQueueSpecification MaxLength(long maxLength);
-
-        IQueueSpecification MessageTtl(TimeSpan ttl);
     }
 
     public interface IStreamSpecification
@@ -140,20 +140,17 @@ namespace RabbitMQ.AMQP.Client
 
     public interface IExchangeSpecification : IEntitySpecification
     {
-        string Name();
-        IExchangeSpecification Name(string name);
+        string ExchangeName { get; }
+        IExchangeSpecification Name(string exchangeName);
 
-        IExchangeSpecification AutoDelete(bool autoDelete);
+        bool IsAutoDelete { get; }
+        IExchangeSpecification AutoDelete(bool isAutoDelete);
 
-        bool AutoDelete();
+        ExchangeType ExchangeType { get; }
+        IExchangeSpecification Type(ExchangeType exchangeType);
 
-        IExchangeSpecification Type(ExchangeType type);
-
-        ExchangeType Type();
-
+        Dictionary<string, object> ExchangeArguments { get; }
         IExchangeSpecification Argument(string key, object value);
-        Dictionary<string, object> Arguments();
-
         IExchangeSpecification Arguments(Dictionary<string, object> arguments);
     }
 
@@ -161,26 +158,25 @@ namespace RabbitMQ.AMQP.Client
     {
         IBindingSpecification SourceExchange(IExchangeSpecification exchangeSpec);
 
+        string SourceExchangeName { get; }
         IBindingSpecification SourceExchange(string exchangeName);
-        string SourceExchangeName();
 
+        string DestinationQueueName { get; }
         IBindingSpecification DestinationQueue(IQueueSpecification queueSpec);
         IBindingSpecification DestinationQueue(string queueName);
-        string DestinationQueueName();
 
+        string DestinationExchangeName { get; }
         IBindingSpecification DestinationExchange(IExchangeSpecification exchangeSpec);
         IBindingSpecification DestinationExchange(string exchangeName);
-        string DestinationExchangeName();
 
-        IBindingSpecification Key(string key);
-        string Key();
+        string BindingKey { get; }
+        IBindingSpecification Key(string bindingKey);
 
+        Dictionary<string, object> BindingArguments { get; }
         IBindingSpecification Argument(string key, object value);
-
         IBindingSpecification Arguments(Dictionary<string, object> arguments);
-        Dictionary<string, object> Arguments();
 
-        string Path();
+        string BindingPath { get; }
 
         Task BindAsync();
         Task UnbindAsync();

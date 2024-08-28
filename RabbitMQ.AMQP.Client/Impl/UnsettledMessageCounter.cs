@@ -6,26 +6,26 @@ using System.Threading;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
-    public class UnsettledMessageCounter
+    internal class UnsettledMessageCounter
     {
         private long _unsettledMessageCount;
 
-        public long Get()
+        internal long Get()
         {
             return Interlocked.Read(ref _unsettledMessageCount);
         }
 
-        public void Increment()
+        internal void Increment()
         {
             Interlocked.Increment(ref _unsettledMessageCount);
         }
 
-        public void Decrement()
+        internal void Decrement()
         {
             Interlocked.Decrement(ref _unsettledMessageCount);
         }
 
-        public void Reset()
+        internal void Reset()
         {
             Interlocked.Exchange(ref _unsettledMessageCount, 0);
         }

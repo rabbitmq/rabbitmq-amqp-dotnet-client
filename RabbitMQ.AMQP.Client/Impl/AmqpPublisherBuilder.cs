@@ -18,7 +18,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public AddressBuilder Exchange(IExchangeSpecification exchangeSpec)
         {
-            return Exchange(exchangeSpec.Name());
+            return Exchange(exchangeSpec.ExchangeName);
         }
 
         public AddressBuilder Exchange(string? exchange)
@@ -29,7 +29,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public AddressBuilder Queue(IQueueSpecification queueSpec)
         {
-            return Queue(queueSpec.Name());
+            return Queue(queueSpec.QueueName);
         }
 
         public AddressBuilder Queue(string? queue)
@@ -101,7 +101,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IPublisherBuilder Exchange(IExchangeSpecification exchangeSpec)
         {
-            return Exchange(exchangeSpec.Name());
+            return Exchange(exchangeSpec.ExchangeName);
         }
 
         public IPublisherBuilder Exchange(string exchangeName)
@@ -112,7 +112,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IPublisherBuilder Queue(IQueueSpecification queueSpec)
         {
-            return Queue(queueSpec.Name());
+            return Queue(queueSpec.QueueName);
         }
 
         public IPublisherBuilder Queue(string queueName)

@@ -548,7 +548,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             // TODO this could be done in parallel
             foreach (QueueSpec spec in queueSpec)
             {
-                Trace.WriteLine(TraceLevel.Information, $"Recovering queue {spec.Name}");
+                Trace.WriteLine(TraceLevel.Information, $"Recovering queue {spec.QueueName}");
                 try
                 {
                     await _management.Queue(spec).DeclareAsync()
@@ -557,7 +557,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 catch (Exception e)
                 {
                     Trace.WriteLine(TraceLevel.Error,
-                        $"Error recovering queue {spec.Name}. Error: {e}. Management Status: {_management}");
+                        $"Error recovering queue {spec.QueueName}. Error: {e}. Management Status: {_management}");
                 }
             }
         }
@@ -567,7 +567,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             // TODO this could be done in parallel
             foreach (ExchangeSpec spec in exchangeSpec)
             {
-                Trace.WriteLine(TraceLevel.Information, $"Recovering exchange {spec.Name}");
+                Trace.WriteLine(TraceLevel.Information, $"Recovering exchange {spec.ExchangeName}");
                 try
                 {
                     await _management.Exchange(spec).DeclareAsync()
@@ -576,7 +576,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 catch (Exception e)
                 {
                     Trace.WriteLine(TraceLevel.Error,
-                        $"Error recovering exchange {spec.Name}. Error: {e}. Management Status: {_management}");
+                        $"Error recovering exchange {spec.ExchangeName}. Error: {e}. Management Status: {_management}");
                 }
             }
         }
@@ -586,7 +586,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             // TODO this could be done in parallel
             foreach (BindingSpec spec in bindingSpec)
             {
-                Trace.WriteLine(TraceLevel.Information, $"Recovering binding {spec.Path}");
+                Trace.WriteLine(TraceLevel.Information, $"Recovering binding {spec.BindingPath}");
                 try
                 {
                     await _management.Binding(spec).BindAsync()
@@ -595,7 +595,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 catch (Exception e)
                 {
                     Trace.WriteLine(TraceLevel.Error,
-                        $"Error recovering binding {spec.Path}. Error: {e}. Management Status: {_management}");
+                        $"Error recovering binding {spec.BindingPath}. Error: {e}. Management Status: {_management}");
                 }
             }
         }

@@ -10,8 +10,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 {
     public abstract class BindingSpecification
     {
-        protected string _source = "";
-        protected string _destination = "";
+        protected string _sourceName = "";
+        protected string _destinationName = "";
         protected string _routingKey = "";
         protected bool _toQueue = true;
         protected Dictionary<string, object> _arguments = new();
@@ -41,21 +41,22 @@ namespace RabbitMQ.AMQP.Client.Impl
             _topologyListener = ((IManagementTopology)_management).TopologyListener();
         }
 
-        public Dictionary<string, object> Arguments()
+        public string BindingPath
         {
-            return _arguments;
+            get
+            {
+                return BindingsTarget();
+            }
         }
-
-        public string Path() => BindingsTarget();
 
         public async Task BindAsync()
         {
             var kv = new Map
         {
-            { "source", _source },
+            { "source", _sourceName },
             { "binding_key", _routingKey },
             { "arguments", ArgsToMap() },
-            { _toQueue ? "destination_queue" : "destination_exchange", _destination }
+            { _toQueue ? "destination_queue" : "destination_exchange", _destinationName }
         };
 
             string path = $"/{Consts.Bindings}";
@@ -78,9 +79,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             if (_arguments.Count == 0)
             {
                 string path =
-                    $"/{Consts.Bindings}/src={Utils.EncodePathSegment(_source)};{($"{destinationCharacter}={Utils.EncodePathSegment(_destination)};key={Utils.EncodePathSegment(_routingKey)};args=")}";
+                    $"/{Consts.Bindings}/src={Utils.EncodePathSegment(_sourceName)};{($"{destinationCharacter}={Utils.EncodePathSegment(_destinationName)};key={Utils.EncodePathSegment(_routingKey)};args=")}";
 
-                _topologyListener.BindingDeleted(Path());
+                _topologyListener.BindingDeleted(BindingPath);
                 await _management.RequestAsync(null, path, method, expectedReturnCodes)
                     .ConfigureAwait(false);
             }
@@ -104,55 +105,76 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IBindingSpecification SourceExchange(IExchangeSpecification exchangeSpec)
         {
-            return SourceExchange(exchangeSpec.Name());
+            return SourceExchange(exchangeSpec.ExchangeName);
         }
 
         public IBindingSpecification SourceExchange(string exchangeName)
         {
             _toQueue = false;
-            _source = exchangeName;
+            _sourceName = exchangeName;
             return this;
         }
 
-        public string SourceExchangeName()
+        public string SourceExchangeName
         {
-            return _source;
+            get
+            {
+                return _sourceName;
+            }
         }
 
         public IBindingSpecification DestinationQueue(IQueueSpecification queueSpec)
         {
-            return DestinationQueue(queueSpec.Name());
+            return DestinationQueue(queueSpec.QueueName);
         }
 
         public IBindingSpecification DestinationQueue(string queueName)
         {
             _toQueue = true;
-            _destination = queueName;
+            _destinationName = queueName;
             return this;
         }
 
-        public string DestinationQueueName() => _destination;
+        public string DestinationQueueName
+        {
+            get
+            {
+                return _destinationName;
+            }
+        }
 
         public IBindingSpecification DestinationExchange(IExchangeSpecification exchangeSpec)
         {
-            return DestinationExchange(exchangeSpec.Name());
+            return DestinationExchange(exchangeSpec.ExchangeName);
         }
 
         public IBindingSpecification DestinationExchange(string exchangeName)
         {
-            _destination = exchangeName;
+            _destinationName = exchangeName;
             return this;
         }
 
-        public string DestinationExchangeName() => _destination;
-
-        public IBindingSpecification Key(string key)
+        public string DestinationExchangeName
         {
-            _routingKey = key;
+            get
+            {
+                return _destinationName;
+            }
+        }
+
+        public IBindingSpecification Key(string bindingKey)
+        {
+            _routingKey = bindingKey;
             return this;
         }
 
-        public string Key() => _routingKey;
+        public string BindingKey
+        {
+            get
+            {
+                return _routingKey;
+            }
+        }
 
         public IBindingSpecification Argument(string key, object value)
         {
@@ -166,15 +188,23 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
+        public Dictionary<string, object> BindingArguments
+        {
+            get
+            {
+                return _arguments;
+            }
+        }
+
         private string BindingsTarget()
         {
             string destinationField = _toQueue ? "dstq" : "dste";
             return "/bindings?src="
-                   + Utils.EncodeHttpParameter(_source)
+                   + Utils.EncodeHttpParameter(_sourceName)
                    + "&"
                    + destinationField
                    + "="
-                   + Utils.EncodeHttpParameter(_destination)
+                   + Utils.EncodeHttpParameter(_destinationName)
                    + "&key="
                    + Utils.EncodeHttpParameter(_routingKey);
         }

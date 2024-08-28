@@ -22,7 +22,7 @@ Write-Host "Done building." -ForegroundColor "Green"
 
 if ($RunTests) {
     Write-Host "Running tests: Build.csproj traversal (all frameworks)" -ForegroundColor "Magenta"
-    dotnet test $build_csproj_file --no-build --logger 'console;verbosity=detailed' '/p:AltCover=true' "/p:AltCoverStrongNameKey=$PSScriptRoot/rabbit.snk"
+    dotnet test $build_csproj_file --no-build --logger 'console;verbosity=detailed'
     if ($LastExitCode -ne 0)
     {
         Write-Host "Error with tests, aborting build." -Foreground "Red"
