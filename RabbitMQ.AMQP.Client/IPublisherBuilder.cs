@@ -12,8 +12,6 @@ namespace RabbitMQ.AMQP.Client
     {
         IPublisherBuilder PublishTimeout(TimeSpan timeout);
 
-        IPublisherBuilder MaxInflightMessages(int maxInFlight);
-
         Task<IPublisher> BuildAsync(CancellationToken cancellationToken = default);
     }
 }

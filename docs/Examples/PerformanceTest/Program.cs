@@ -3,10 +3,18 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System.Diagnostics;
+using PerformanceTest;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
+
+// ---- Configuration ----
+const int total = 5_000_000;
+const int tasksSize = 200;
+bool enableConsumer = true;
+// -----------------------
+
 
 Trace.TraceLevel = TraceLevel.Verbose;
 
@@ -14,7 +22,7 @@ ConsoleTraceListener consoleListener = new();
 Trace.TraceListener = (l, f, a) =>
     consoleListener.WriteLine($"[{DateTime.Now}] [{l}] - {f}");
 
-Trace.WriteLine(TraceLevel.Information, "Starting");
+Trace.WriteLine(TraceLevel.Information, "Starting performance test...");
 const string containerId = "performance-test-connection";
 
 IEnvironment environment = await AmqpEnvironment
@@ -30,63 +38,66 @@ const string queueName = "amqp10-net-perf-test";
 IQueueSpecification queueSpec = management.Queue(queueName).Type(QueueType.QUORUM);
 await queueSpec.DeleteAsync();
 await queueSpec.DeclareAsync();
-Trace.WriteLine(TraceLevel.Information, "Queue Created");
-
-IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).MaxInflightMessages(5000).BuildAsync();
-
-int received = 0;
-DateTime start = DateTime.Now;
+Trace.WriteLine(TraceLevel.Information, $"Queue {queueName} recreated");
+Stats stats = new();
+IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).BuildAsync();
 
 async Task MessageHandler(IContext context, IMessage message)
 {
     await context.AcceptAsync();
+    stats.IncrementConsumed();
+}
 
-    if (Interlocked.Increment(ref received) % 200_000 == 0)
+IConsumer? consumer = null;
+
+if (enableConsumer)
+{
+    consumer = await connection.ConsumerBuilder()
+        .Queue(queueName)
+        .InitialCredits(1000)
+        .MessageHandler(MessageHandler)
+        .BuildAsync();
+}
+
+
+stats.Start();
+_ = Task.Run(async () =>
+{
+    while (stats.IsRunning())
     {
-        DateTime end = DateTime.Now;
-        Console.WriteLine($"Received Time: {end - start} {received}");
+        await Task.Delay(1000);
+        Trace.WriteLine(TraceLevel.Information, $"{stats.Report()}");
     }
-};
+});
 
-IConsumer consumer = await connection.ConsumerBuilder()
-    .Queue(queueName)
-    .InitialCredits(1000)
-    .MessageHandler(MessageHandler)
-    .Stream().Offset(1).Builder().BuildAsync();
+List<Task<PublishResult>> tasks = [];
 
 try
 {
-    int confirmed = 0;
-
-    const int total = 1_000_000;
-    for (int i = 0; i < total; i++)
+    for (int i = 0; i < (total / tasksSize); i++)
     {
         try
         {
-            if (i % 200_000 == 0)
+            for (int j = 0; j < tasksSize; j++)
             {
-                DateTime endp = DateTime.Now;
-                Console.WriteLine($"Sending Time: {endp - start} - messages {i}");
+                var message = new AmqpMessage(new byte[10]);
+                tasks.Add(publisher.PublishAsync(message));
+                stats.IncrementPublished();
             }
 
-            var message = new AmqpMessage(new byte[10]);
-            PublishResult pr = await publisher.PublishAsync(message);
-            if (pr.Outcome.State == OutcomeState.Accepted)
+            foreach (var result in await Task.WhenAll(tasks))
             {
-                if (Interlocked.Increment(ref confirmed) % 200_000 != 0)
+                if (result.Outcome.State == OutcomeState.Accepted)
                 {
-                    return;
+                    stats.IncrementAccepted();
                 }
+                else
+                {
+                    stats.IncrementFailed();
+                }
+            }
 
-                DateTime confirmEnd = DateTime.Now;
-                Console.WriteLine($"Confirmed Time: {confirmEnd - start} {confirmed}");
-            }
-            else
-            {
-                Console.WriteLine(
-                    $"outcome result, state: {pr.Outcome.State}, message_id: " +
-                    $"{message.MessageId()}, error: {pr.Outcome.Error}");
-            }
+            tasks.Clear();
         }
         catch (Exception e)
         {
@@ -94,22 +105,57 @@ try
         }
     }
 
-    DateTime end = DateTime.Now;
-    Console.WriteLine($"Total Sent Time: {end - start}");
+    stats.Stop();
+    await Task.Delay(1000);
+    Trace.WriteLine(TraceLevel.Information, $"Consumer: {enableConsumer} - TaskSize: {tasksSize} - {stats.Report(true)}");
 }
 catch (Exception e)
 {
     Trace.WriteLine(TraceLevel.Error, $"{e.Message}");
 }
+finally
+{
+    Console.WriteLine("Press any key to delete the queue and close the connection.");
+    Console.ReadKey();
 
-Console.WriteLine("Press any key to delete the queue and close the connection.");
-Console.ReadKey();
+    try
+    {
+        await publisher.CloseAsync();
+        publisher.Dispose();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("[ERROR] unexpected exception while closing publisher: {0}", ex);
+    }
 
-await publisher.CloseAsync();
-publisher.Dispose();
+    try
+    {
+        if (consumer != null)
+        {
+            await consumer.CloseAsync();
+            consumer.Dispose();
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("[ERROR] unexpected exception while closing consumer: {0}", ex);
+    }
 
-await consumer.CloseAsync();
-consumer.Dispose();
+    try
+    {
+        await queueSpec.DeleteAsync();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("[ERROR] unexpected exception while deleting queue: {0}", ex);
+    }
 
-await queueSpec.DeleteAsync();
-await environment.CloseAsync();
+    try
+    {
+        await environment.CloseAsync();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("[ERROR] unexpected exception while closing environment: {0}", ex);
+    }
+}

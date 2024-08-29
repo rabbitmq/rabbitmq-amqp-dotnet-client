@@ -17,17 +17,15 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly AmqpConnection _connection;
         private readonly TimeSpan _timeout;
         private readonly string _address;
-        private readonly int _maxInFlight;
         private readonly Guid _id = Guid.NewGuid();
 
         private SenderLink? _senderLink = null;
 
-        public AmqpPublisher(AmqpConnection connection, string address, TimeSpan timeout, int maxInFlight)
+        public AmqpPublisher(AmqpConnection connection, string address, TimeSpan timeout)
         {
             _connection = connection;
             _address = address;
             _timeout = timeout;
-            _maxInFlight = maxInFlight;
 
             if (false == _connection.Publishers.TryAdd(_id, this))
             {
