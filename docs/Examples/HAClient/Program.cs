@@ -57,7 +57,7 @@ IQueueSpecification queueSpec = management.Queue(queueName).Type(QueueType.QUORU
 await queueSpec.DeleteAsync();
 await queueSpec.DeclareAsync();
 
-IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).MaxInflightMessages(2000).BuildAsync();
+IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).BuildAsync();
 
 ManualResetEvent pausePublishing = new(true);
 publisher.ChangeState += (sender, fromState, toState, e) =>

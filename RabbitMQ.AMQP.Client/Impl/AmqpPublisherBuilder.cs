@@ -92,7 +92,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         private string? _key;
         private string? _queue;
         private TimeSpan _timeout = TimeSpan.FromSeconds(10);
-        private int _maxInFlight = 1000;
 
         public AmqpPublisherBuilder(AmqpConnection connection)
         {
@@ -133,17 +132,12 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public IPublisherBuilder MaxInflightMessages(int maxInFlight)
-        {
-            _maxInFlight = maxInFlight;
-            return this;
-        }
 
         public async Task<IPublisher> BuildAsync(CancellationToken cancellationToken = default)
         {
             string address = new AddressBuilder().Exchange(_exchange).Queue(_queue).Key(_key).Address();
 
-            AmqpPublisher publisher = new(_connection, address, _timeout, _maxInFlight);
+            AmqpPublisher publisher = new(_connection, address, _timeout);
 
             // TODO pass cancellationToken
             await publisher.OpenAsync()

@@ -101,7 +101,7 @@ public class Stats
 
         string report = $"Published: {FormatNumberWithDots(PublishedPerSeconds())} msg/s, " +
                         $"Accepted: {FormatNumberWithDots(AcceptedPerSeconds())} msg/s," +
-                        $"Consumed: {FormatNumberWithDots(ConsumedPerSeconds())} msg/s,";
+                        $"Consumed: {FormatNumberWithDots(ConsumedPerSeconds())} msg/s - ";
 
         if (full)
         {

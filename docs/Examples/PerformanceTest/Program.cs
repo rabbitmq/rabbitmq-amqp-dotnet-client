@@ -9,6 +9,13 @@ using RabbitMQ.AMQP.Client.Impl;
 using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
 
+// ---- Configuration ----
+const int total = 5_000_000;
+const int tasksSize = 200;
+bool enableConsumer = true;
+// -----------------------
+
+
 Trace.TraceLevel = TraceLevel.Verbose;
 
 ConsoleTraceListener consoleListener = new();
@@ -32,7 +39,6 @@ IQueueSpecification queueSpec = management.Queue(queueName).Type(QueueType.QUORU
 await queueSpec.DeleteAsync();
 await queueSpec.DeclareAsync();
 Trace.WriteLine(TraceLevel.Information, $"Queue {queueName} recreated");
-
 Stats stats = new();
 IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).BuildAsync();
 
@@ -42,16 +48,16 @@ async Task MessageHandler(IContext context, IMessage message)
     stats.IncrementConsumed();
 }
 
-IConsumer consumer = await connection.ConsumerBuilder()
-    .Queue(queueName)
-    .InitialCredits(1000)
-    .MessageHandler(MessageHandler)
-    .BuildAsync();
+IConsumer? consumer = null;
 
-
-List<Task<PublishResult>> tasks = [];
-const int total = 1_000_000;
-const int tasksSize = 5;
+if (enableConsumer)
+{
+    consumer = await connection.ConsumerBuilder()
+        .Queue(queueName)
+        .InitialCredits(1000)
+        .MessageHandler(MessageHandler)
+        .BuildAsync();
+}
 
 
 stats.Start();
@@ -63,6 +69,8 @@ _ = Task.Run(async () =>
         Trace.WriteLine(TraceLevel.Information, $"{stats.Report()}");
     }
 });
+
+List<Task<PublishResult>> tasks = [];
 
 try
 {
@@ -99,7 +107,7 @@ try
 
     stats.Stop();
     await Task.Delay(1000);
-    Trace.WriteLine(TraceLevel.Information, $"TaskSize: {tasksSize} - {stats.Report(true)}");
+    Trace.WriteLine(TraceLevel.Information, $"Consumer: {enableConsumer} - TaskSize: {tasksSize} - {stats.Report(true)}");
 }
 catch (Exception e)
 {
@@ -120,15 +128,18 @@ finally
         Console.WriteLine("[ERROR] unexpected exception while closing publisher: {0}", ex);
     }
 
-    // try
-    // {
-    //     await consumer.CloseAsync();
-    //     consumer.Dispose();
-    // }
-    // catch (Exception ex)
-    // {
-    //     Console.WriteLine("[ERROR] unexpected exception while closing consumer: {0}", ex);
-    // }
+    try
+    {
+        if (consumer != null)
+        {
+            await consumer.CloseAsync();
+            consumer.Dispose();
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("[ERROR] unexpected exception while closing consumer: {0}", ex);
+    }
 
     try
     {

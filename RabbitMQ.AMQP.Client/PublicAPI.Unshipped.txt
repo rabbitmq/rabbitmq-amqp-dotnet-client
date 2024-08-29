@@ -281,7 +281,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpMessage.Subject(string! subject) -> RabbitMQ.AMQP.
 RabbitMQ.AMQP.Client.Impl.AmqpNotOpenException
 RabbitMQ.AMQP.Client.Impl.AmqpNotOpenException.AmqpNotOpenException(string! message) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpPublisher
-RabbitMQ.AMQP.Client.Impl.AmqpPublisher.AmqpPublisher(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection, string! address, System.TimeSpan timeout, int maxInFlight) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpPublisher.AmqpPublisher(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection, string! address, System.TimeSpan timeout) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpPublisher.PublishAsync(RabbitMQ.AMQP.Client.IMessage! message, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.PublishResult!>!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.AmqpPublisherBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection) -> void
@@ -289,7 +289,6 @@ RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.BuildAsync(System.Threading.Cance
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.Exchange(RabbitMQ.AMQP.Client.IExchangeSpecification! exchangeSpec) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.Exchange(string! exchangeName) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.Key(string! key) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
-RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.MaxInflightMessages(int maxInFlight) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.PublishTimeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.Queue(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpec) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.Queue(string! queueName) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
@@ -425,7 +424,6 @@ RabbitMQ.AMQP.Client.IPublisher
 RabbitMQ.AMQP.Client.IPublisher.PublishAsync(RabbitMQ.AMQP.Client.IMessage! message, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.PublishResult!>!
 RabbitMQ.AMQP.Client.IPublisherBuilder
 RabbitMQ.AMQP.Client.IPublisherBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IPublisher!>!
-RabbitMQ.AMQP.Client.IPublisherBuilder.MaxInflightMessages(int maxInFlight) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.IPublisherBuilder.PublishTimeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.IQueueInfo
 RabbitMQ.AMQP.Client.IQueueInfo.Arguments() -> System.Collections.Generic.Dictionary<string!, object!>!
