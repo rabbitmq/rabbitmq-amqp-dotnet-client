@@ -7,6 +7,24 @@
           "files": [
             "**/*.csproj"
           ]
+        },
+        {
+          "src": "docs/Examples/PerformanceTest",
+          "files": [
+            "**/*.csproj"
+          ]
+        },
+        {
+          "src": "docs/Examples/HAClient",
+          "files": [
+            "**/*.csproj"
+          ]
+        },
+        {
+          "src": "docs/Examples/GettingStarted",
+          "files": [
+            "**/*.csproj"
+          ]
         }
       ],
       "dest": "api"
