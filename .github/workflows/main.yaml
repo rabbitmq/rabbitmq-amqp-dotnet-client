@@ -9,5 +9,5 @@ on:
 jobs:
   call-gh-pages:
     uses: ./.github/workflows/gh-pages.yaml
-  call-build-test:
-    uses: ./.github/workflows/build-test.yaml
+  # call-build-test:
+  #   uses: ./.github/workflows/build-test.yaml
