@@ -58,7 +58,7 @@ IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).Message
         Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.Body()} received");
         await context.AcceptAsync();
     }
-).BuildAsync();
+).BuildAndStartAsync();
 // ------------------------------------------------------------------------------------
 
 const int total = 10;

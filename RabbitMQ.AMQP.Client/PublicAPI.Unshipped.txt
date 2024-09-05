@@ -109,7 +109,7 @@ RabbitMQ.AMQP.Client.IConsumer.Pause() -> void
 RabbitMQ.AMQP.Client.IConsumer.Unpause() -> void
 RabbitMQ.AMQP.Client.IConsumer.UnsettledMessageCount.get -> long
 RabbitMQ.AMQP.Client.IConsumerBuilder
-RabbitMQ.AMQP.Client.IConsumerBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConsumer!>!
+RabbitMQ.AMQP.Client.IConsumerBuilder.BuildAndStartAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConsumer!>!
 RabbitMQ.AMQP.Client.IConsumerBuilder.InitialCredits(int initialCredits) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
@@ -230,7 +230,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpConsumer.Unpause() -> void
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer.UnsettledMessageCount.get -> long
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.AmqpConsumerBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection) -> void
-RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConsumer!>!
+RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.BuildAndStartAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConsumer!>!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.InitialCredits(int initialCredits) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.MessageHandler(RabbitMQ.AMQP.Client.MessageHandler! handler) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.Queue(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpec) -> RabbitMQ.AMQP.Client.IConsumerBuilder!

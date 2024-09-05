@@ -80,7 +80,7 @@ IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).Initial
         Interlocked.Increment(ref messagesReceived);
         return context.AcceptAsync();
     }
-).BuildAsync();
+).BuildAndStartAsync();
 
 consumer.ChangeState += (sender, fromState, toState, e) =>
 {

@@ -33,7 +33,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
                 await context.AcceptAsync();
                 tcs.SetResult(message);
             }
-        ).BuildAsync();
+        ).BuildAndStartAsync();
 
         await WhenTcsCompletes(tcs);
         IMessage receivedMessage = await tcs.Task;
@@ -81,7 +81,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
                         break;
                 }
             }
-        ).BuildAsync();
+        ).BuildAndStartAsync();
 
         await WhenTcsCompletes(tcs);
 
@@ -136,7 +136,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
             consumer = await _connection.ConsumerBuilder()
                 .Queue(queueSpec)
                 .InitialCredits(initialCredits)
-                .MessageHandler(MessageHandler).BuildAsync();
+                .MessageHandler(MessageHandler).BuildAndStartAsync();
 
             await WhenTcsCompletes(tcs);
 
@@ -195,7 +195,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
             .Stream()
             .Offset(offset)
             .Builder()
-            .BuildAsync();
+            .BuildAndStartAsync();
 
         // wait for the consumer to consume all messages
         // we can't use the TaskCompletionSource here because we don't know how many messages will be consumed
@@ -267,7 +267,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
             .FilterValues(filters)
             .FilterMatchUnfiltered(false)
             .Offset(StreamOffsetSpecification.First).Builder()
-            .BuildAsync();
+            .BuildAndStartAsync();
 
         int receivedWithoutFilters = 0;
         IConsumer consumerWithoutFilters = await _connection.ConsumerBuilder()
@@ -280,7 +280,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
             })
             .Stream()
             .Offset(StreamOffsetSpecification.First).Builder()
-            .BuildAsync();
+            .BuildAndStartAsync();
 
         // wait for the consumer to consume all messages
         await Task.Delay(500); // TODO yuck
@@ -326,7 +326,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
             .Stream()
             .Offset(offsetStart)
             .Builder()
-            .BuildAsync();
+            .BuildAndStartAsync();
 
         // wait for the consumer to consume all messages
         // we can't use the TaskCompletionSource here because we don't know how many messages will be consumed
@@ -357,7 +357,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         // TODO these are timeout exceptions under the hood, compare
         // with the Java client
         ConsumerException ex = await Assert.ThrowsAsync<ConsumerException>(
-            () => consumerBuilder.BuildAsync());
+            () => consumerBuilder.BuildAndStartAsync());
         Assert.Contains(doesNotExist, ex.Message);
     }
 
@@ -381,7 +381,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder()
             .Queue(_queueName)
             .MessageHandler(MessageHandler);
-        IConsumer consumer = await consumerBuilder.BuildAsync();
+        IConsumer consumer = await consumerBuilder.BuildAndStartAsync();
 
         await PublishAsync(queueSpecification, 1);
 
@@ -426,7 +426,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
                 {
                     receivedGreaterThanSettledTcs.TrySetResult(true);
                 }
-            }).BuildAsync();
+            }).BuildAndStartAsync();
 
         await WhenTcsCompletes(receivedGreaterThanSettledTcs);
 
@@ -472,7 +472,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
                     allMessagesReceivedTcs.SetException(ex);
                 }
             });
-        IConsumer lowPriorityConsumer = await lowPriorityConsumerBuilder.BuildAsync();
+        IConsumer lowPriorityConsumer = await lowPriorityConsumerBuilder.BuildAndStartAsync();
 
         IConsumerBuilder highPriorityConsumerBuilder = _connection.ConsumerBuilder()
             .Queue(queueSpecification)
@@ -493,7 +493,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
                     allMessagesReceivedTcs.SetException(ex);
                 }
             });
-        IConsumer highPriorityConsumer = await highPriorityConsumerBuilder.BuildAsync();
+        IConsumer highPriorityConsumer = await highPriorityConsumerBuilder.BuildAndStartAsync();
 
         await PublishAsync(queueSpecification, messageCount);
 

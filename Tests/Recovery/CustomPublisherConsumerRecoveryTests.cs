@@ -55,7 +55,7 @@ public class CustomPublisherConsumerRecoveryTests(ITestOutputHelper testOutputHe
                 {
                     // ignored
                 }
-            }).BuildAsync();
+            }).BuildAndStartAsync();
 
         List<(State, State)> statesConsumer = [];
         consumer.ChangeState += (sender, fromState, toState, e) =>
