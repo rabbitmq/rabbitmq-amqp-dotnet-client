@@ -22,6 +22,11 @@ namespace RabbitMQ.AMQP.Client
         }
     }
 
+    /// <summary>
+    /// IManagement interface and is responsible for managing the AMQP resources.
+    /// RabbitMQ uses AMQP end point: "/management" to manage the resources like queues, exchanges, and bindings.
+    /// The management endpoint works like an HTTP RPC endpoint where the client sends a request to the server.
+    /// </summary>
     public interface IManagement : ILifeCycle
     {
         IQueueSpecification Queue();

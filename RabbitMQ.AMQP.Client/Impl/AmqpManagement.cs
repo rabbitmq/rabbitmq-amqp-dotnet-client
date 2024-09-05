@@ -17,9 +17,8 @@ using TraceLevel = Amqp.TraceLevel;
 namespace RabbitMQ.AMQP.Client.Impl
 {
     /// <summary>
-    /// AmqpManagement implements the IManagement interface and is responsible for managing the AMQP resources.
-    /// RabbitMQ uses AMQP end  point: "/management" to manage the resources like queues, exchanges, and bindings.
-    /// The management endpoint works like an HTTP RPC endpoint where the client sends a request to the server
+    /// AmqpManagement implements the IManagement
+    /// See <see cref="IManagement"/> for more information
     /// </summary>
     public class AmqpManagement : AbstractLifeCycle, IManagement, IManagementTopology
     {
@@ -55,23 +54,45 @@ namespace RabbitMQ.AMQP.Client.Impl
             _amqpManagementParameters = amqpManagementParameters;
         }
 
+        /// <summary>
+        /// Create a new queue specification
+        /// See <see cref="IQueueSpecification"/> for more information
+        /// </summary>
+        /// <returns> A builder for IQueueSpecification </returns>
         public IQueueSpecification Queue()
         {
             ThrowIfClosed();
             return new AmqpQueueSpecification(this);
         }
 
+        /// <summary>
+        /// Create a new queue specification with the given name
+        /// See <see cref="IQueueSpecification"/> for more information
+        /// </summary>
+        /// <returns>A builder for IQueueSpecification </returns>
         public IQueueSpecification Queue(string name)
         {
             return Queue().Name(name);
         }
 
+
+        /// <summary>
+        /// Get the queue info for the given queue specification
+        /// See <see cref="IQueueInfo"/> for more information
+        /// </summary>
+        /// <returns> Queue Information</returns>
         public Task<IQueueInfo> GetQueueInfoAsync(IQueueSpecification queueSpec,
             CancellationToken cancellationToken = default)
         {
             return GetQueueInfoAsync(queueSpec.QueueName, cancellationToken);
         }
 
+
+        /// <summary>
+        /// Get the queue info for the given queue name
+        /// See <see cref="IQueueInfo"/> for more information
+        /// </summary>
+        /// <returns> Queue Information</returns>
         public async Task<IQueueInfo> GetQueueInfoAsync(string queueName,
             CancellationToken cancellationToken = default)
         {
@@ -86,6 +107,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return new DefaultQueueInfo((Map)response.Body);
         }
 
+
         internal IQueueSpecification Queue(QueueSpec spec)
         {
             return Queue().Name(spec.QueueName)
@@ -94,12 +116,25 @@ namespace RabbitMQ.AMQP.Client.Impl
                 .Arguments(spec.QueueArguments);
         }
 
+
+        /// <summary>
+        ///  Create a new AMQPExchange specification
+        ///  See <see cref="IExchangeSpecification"/> for more information
+        /// </summary>
+        /// <returns>A builder for IExchangeSpecification</returns>
         public IExchangeSpecification Exchange()
         {
             ThrowIfClosed();
             return new AmqpExchangeSpecification(this);
         }
 
+
+        /// <summary>
+        ///
+        /// Create a new AMQPExchange specification with the given name
+        /// See <see cref="IExchangeSpecification"/> for more information
+        /// </summary>
+        /// <returns> A builder for IExchangeSpecification</returns>
         public IExchangeSpecification Exchange(string name)
         {
             return Exchange().Name(name);
@@ -133,6 +168,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             return _amqpManagementParameters.TopologyListener();
         }
 
+        /// <summary>
+        ///  Open the management session to RabbitMQ
+        /// </summary>
         public override async Task OpenAsync()
         {
             if (State == State.Open)
@@ -195,7 +233,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                             // this is not a problem, it is just a timeout. 
                             // the timeout is set to 60 seconds. 
                             // For the moment I'd trace it at some point we can remove it
-                            Trace.WriteLine(TraceLevel.Verbose, $"Management:Timeout {timeout.Seconds} s.. waiting for message.");
+                            Trace.WriteLine(TraceLevel.Verbose,
+                                $"Management:Timeout {timeout.Seconds} s.. waiting for message.");
                             continue;
                         }
 
@@ -228,9 +267,11 @@ namespace RabbitMQ.AMQP.Client.Impl
                     RcvSettleMode = ReceiverSettleMode.First,
                     Properties = new Fields { { new Symbol("paired"), true } },
                     LinkName = LinkPairName,
-                    Source = new Source() { Address = ManagementNodeAddress, ExpiryPolicy = new Symbol("LINK_DETACH"), },
+                    Source =
+                        new Source() { Address = ManagementNodeAddress, ExpiryPolicy = new Symbol("LINK_DETACH"), },
                     Handle = 1,
-                    Target = new Target() { Address = ManagementNodeAddress, ExpiryPolicy = new Symbol("SESSION_END"), },
+                    Target =
+                        new Target() { Address = ManagementNodeAddress, ExpiryPolicy = new Symbol("SESSION_END"), },
                 };
 
                 var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -334,13 +375,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             var message = new Message(body)
             {
-                Properties = new Properties
-                {
-                    MessageId = id,
-                    To = path,
-                    Subject = method,
-                    ReplyTo = ReplyTo
-                }
+                Properties = new Properties { MessageId = id, To = path, Subject = method, ReplyTo = ReplyTo }
             };
 
             return RequestAsync(message, expectedResponseCodes, timeout, cancellationToken);
@@ -462,7 +497,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             if (_senderLink is null)
             {
                 // TODO create "internal bug" exception type?
-                throw new InvalidOperationException("_senderLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                throw new InvalidOperationException(
+                    "_senderLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
 
             return _senderLink.SendAsync(message, timeout);
