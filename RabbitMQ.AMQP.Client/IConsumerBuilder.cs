@@ -26,7 +26,7 @@ namespace RabbitMQ.AMQP.Client
 
         IStreamOptions Stream();
 
-        Task<IConsumer> BuildAsync(CancellationToken cancellationToken = default);
+        Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default);
 
         public interface IStreamOptions
         {

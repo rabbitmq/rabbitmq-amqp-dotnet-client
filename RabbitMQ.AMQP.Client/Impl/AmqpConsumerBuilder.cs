@@ -50,7 +50,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return new DefaultStreamOptions(this, _filters);
         }
 
-        public async Task<IConsumer> BuildAsync(CancellationToken cancellationToken = default)
+        public async Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default)
         {
             if (_handler is null)
             {

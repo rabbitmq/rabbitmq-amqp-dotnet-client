@@ -122,7 +122,7 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         }
 
         IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder();
-        IConsumer consumer = await consumerBuilder.Queue(_queueName).MessageHandler(MessageHandler).BuildAsync();
+        IConsumer consumer = await consumerBuilder.Queue(_queueName).MessageHandler(MessageHandler).BuildAndStartAsync();
 
         await WhenTaskCompletes(allMessagesReceivedTcs.Task);
         Assert.Equal(messageCount, messageIds.Count);
@@ -218,7 +218,7 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         }
 
         IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder();
-        IConsumer consumer = await consumerBuilder.Queue(_queueName).MessageHandler(MessageHandler).BuildAsync();
+        IConsumer consumer = await consumerBuilder.Queue(_queueName).MessageHandler(MessageHandler).BuildAndStartAsync();
 
         await WhenTaskCompletes(allMessagesReceivedTcs.Task);
 
@@ -270,7 +270,7 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         }
 
         IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder();
-        IConsumer consumer = await consumerBuilder.Queue(queueSpecification).MessageHandler(MessageHandler).BuildAsync();
+        IConsumer consumer = await consumerBuilder.Queue(queueSpecification).MessageHandler(MessageHandler).BuildAndStartAsync();
 
         IPublisherBuilder publisherBuilder = _connection.PublisherBuilder();
         IPublisher publisher = await publisherBuilder.Queue(queueSpecification).BuildAsync();
