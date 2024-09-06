@@ -69,7 +69,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
             .MessageHandler((context, message) =>
             {
                 return Task.CompletedTask;
-            }).BuildAsync();
+            }).BuildAndStartAsync();
 
         List<(State, State)> states = [];
         consumer.ChangeState += (_, fromState, toState, _) =>
@@ -162,7 +162,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
             .MessageHandler((context, message) =>
             {
                 return Task.CompletedTask;
-            }).BuildAsync();
+            }).BuildAndStartAsync();
 
         List<(State, State)> states = [];
         consumer.ChangeState += (_, fromState, toState, _) => { states.Add((fromState, toState)); };
@@ -219,7 +219,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
                 {
                     // ignored
                 }
-            }).BuildAsync();
+            }).BuildAndStartAsync();
 
         const int publishBatchCount = 10;
 
@@ -294,7 +294,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
                 {
                     // ignored
                 }
-            }).BuildAsync();
+            }).BuildAndStartAsync();
 
         List<(State, State)> statesConsumer = [];
         consumer.ChangeState += (_, fromState, toState, _) =>

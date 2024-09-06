@@ -44,7 +44,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
             {
                 messageContexts.Add(ctx);
                 return Task.CompletedTask;
-            }).BuildAsync();
+            }).BuildAndStartAsync();
 
         Task<bool> WaitForMessageContextCountAtLeast(int expectedCount)
         {
@@ -146,7 +146,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
                 {
                     unsettledMessages.Add(ctx);
                 }
-            }).BuildAsync();
+            }).BuildAndStartAsync();
 
         DateTime start = DateTime.Now;
         for (int i = 0; i < 100; i++)
@@ -220,7 +220,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
                 }
                 await Task.Delay(TimeSpan.FromMilliseconds(r.Next(1, 10)));
                 await ctx.AcceptAsync();
-            }).BuildAsync();
+            }).BuildAndStartAsync();
 
         await WhenTcsCompletes(receivedTwiceInitialCreditsTcs);
 

@@ -56,7 +56,7 @@ if (enableConsumer)
         .Queue(queueName)
         .InitialCredits(1000)
         .MessageHandler(MessageHandler)
-        .BuildAsync();
+        .BuildAndStartAsync();
 }
 
 
