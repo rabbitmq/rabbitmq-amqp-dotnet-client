@@ -541,6 +541,7 @@ static RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.Create() -> RabbitMQ.AMQP.Cl
 static RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.Create(int maxAttempt) -> RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy!
 static RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.Create() -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
 static RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.Create() -> RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration!
+static readonly RabbitMQ.AMQP.Client.SaslMechanism.Anonymous -> RabbitMQ.AMQP.Client.SaslMechanism!
 static readonly RabbitMQ.AMQP.Client.SaslMechanism.External -> RabbitMQ.AMQP.Client.SaslMechanism!
 static readonly RabbitMQ.AMQP.Client.SaslMechanism.Plain -> RabbitMQ.AMQP.Client.SaslMechanism!
 virtual RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.Dispose(bool disposing) -> void
