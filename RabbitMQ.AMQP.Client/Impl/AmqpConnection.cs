@@ -264,7 +264,11 @@ namespace RabbitMQ.AMQP.Client.Impl
                     }
                 }
 
-                if (_connectionSettings.SaslMechanism == SaslMechanism.External)
+                if (_connectionSettings.SaslMechanism == SaslMechanism.Anonymous)
+                {
+                    cf.SASL.Profile = SaslProfile.Anonymous;
+                }
+                else if (_connectionSettings.SaslMechanism == SaslMechanism.External)
                 {
                     cf.SASL.Profile = SaslProfile.External;
                 }

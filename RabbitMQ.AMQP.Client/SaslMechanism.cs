@@ -10,6 +10,7 @@ namespace RabbitMQ.AMQP.Client
     {
         public static readonly SaslMechanism Plain = new("PLAIN");
         public static readonly SaslMechanism External = new("EXTERNAL");
+        public static readonly SaslMechanism Anonymous = new("ANONYMOUS");
 
         private readonly string _saslMechanism;
 

@@ -89,7 +89,8 @@ namespace RabbitMQ.AMQP.Client.Impl
         public ConnectionSettingBuilder SaslMechanism(SaslMechanism saslMechanism)
         {
             _saslMechanism = saslMechanism;
-            if (_saslMechanism == Client.SaslMechanism.External)
+            if (_saslMechanism == Client.SaslMechanism.Anonymous ||
+                _saslMechanism == Client.SaslMechanism.External)
             {
                 _user = null;
                 _password = null;
