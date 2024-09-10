@@ -10,11 +10,11 @@ using Xunit.Abstractions;
 
 namespace Tests.ConnectionTests;
 
-public class AnonymousConnectionTests(ITestOutputHelper testOutputHelper)
+public class SaslConnectionTests(ITestOutputHelper testOutputHelper)
     : IntegrationTest(testOutputHelper, setupConnectionAndManagement: false)
 {
     [Fact]
-    public async Task ConnectUsingSaslAnonynmous()
+    public async Task ConnectUsingSaslAnonymous()
     {
         Assert.Null(_connection);
         Assert.Null(_management);
@@ -28,6 +28,30 @@ public class AnonymousConnectionTests(ITestOutputHelper testOutputHelper)
         ConnectionSettings connectionSettings = connectionSettingBuilder.Build();
         _connection = await AmqpConnection.CreateAsync(connectionSettings);
 
-        Assert.True(_connection.State == State.Open);
+        Assert.Equal(State.Open, _connection.State);
+
+        await _connection.CloseAsync();
+        Assert.Equal(State.Closed, _connection.State);
+    }
+
+    [Fact]
+    public async Task ConnectUsingSaslPlain()
+    {
+        Assert.Null(_connection);
+        Assert.Null(_management);
+
+        ConnectionSettingBuilder connectionSettingBuilder = ConnectionSettingBuilder.Create();
+
+        _containerId = $"{_testDisplayName}:{Now}";
+        connectionSettingBuilder.ContainerId(_containerId);
+        connectionSettingBuilder.SaslMechanism(SaslMechanism.Plain);
+
+        ConnectionSettings connectionSettings = connectionSettingBuilder.Build();
+        _connection = await AmqpConnection.CreateAsync(connectionSettings);
+
+        Assert.Equal(State.Open, _connection.State);
+
+        await _connection.CloseAsync();
+        Assert.Equal(State.Closed, _connection.State);
     }
 }
