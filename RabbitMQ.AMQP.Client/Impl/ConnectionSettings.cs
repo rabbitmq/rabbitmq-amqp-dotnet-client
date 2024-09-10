@@ -21,7 +21,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         private string _containerId = "AMQP.NET";
         private string _virtualHost = "/";
         private uint _maxFrameSize = Consts.DefaultMaxFrameSize;
-        private SaslMechanism _saslMechanism = Client.SaslMechanism.Plain;
+        private SaslMechanism _saslMechanism = Client.SaslMechanism.Anonymous;
         private IRecoveryConfiguration _recoveryConfiguration = Impl.RecoveryConfiguration.Create();
 
         private ConnectionSettingBuilder()
