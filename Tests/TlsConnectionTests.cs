@@ -2,13 +2,10 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-using System;
 using System.IO;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-using EasyNetQ.Management.Client;
-using EasyNetQ.Management.Client.Model;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
@@ -16,38 +13,45 @@ using Xunit.Abstractions;
 
 namespace Tests;
 
-public class TlsConnectionTests : IAsyncLifetime
+public class TlsConnectionTests : IntegrationTest
 {
+    private static readonly ushort[] s_ports = [5671, 5681, 5691];
+
     private readonly ITestOutputHelper _output;
-    private readonly Uri _managementUri = new("http://localhost:15672");
-    private readonly ManagementClient _managementClient;
+    private readonly HttpApiClient _httpApiClient = new();
     private readonly bool _isRunningInCI = SystemUtils.IsRunningInCI;
 
-    public TlsConnectionTests(ITestOutputHelper output)
+    private ushort _port = 5671;
+
+    public TlsConnectionTests(ITestOutputHelper output) : base(output,
+        setupConnectionAndManagement: false)
     {
         _output = output;
-        _managementClient = new ManagementClient(_managementUri, "guest", "guest");
     }
 
-    public Task InitializeAsync()
+    public override Task InitializeAsync()
     {
-        return Task.CompletedTask;
+        if (SystemUtils.IsCluster)
+        {
+            _port = s_ports[Utils.RandomNext(0, s_ports.Length)];
+        }
+
+        return base.InitializeAsync();
     }
 
-    public Task DisposeAsync()
+    public override Task DisposeAsync()
     {
-        _managementClient.Dispose();
-        return Task.CompletedTask;
+        _httpApiClient.Dispose();
+        return base.DisposeAsync();
     }
 
     [Fact]
     public async Task ConnectUsingTlsAndUserPassword()
     {
-        ConnectionSettings connectionSettings = ConnectionSettingBuilder.Create()
-            .Host("localhost")
+        ConnectionSettings connectionSettings = _connectionSettingBuilder
             .Scheme("amqps")
+            .Port(_port)
             .Build();
-
         Assert.True(connectionSettings.UseSsl);
         Assert.NotNull(connectionSettings.TlsSettings);
 
@@ -65,7 +69,7 @@ public class TlsConnectionTests : IAsyncLifetime
         }
 
         Assert.Equal("localhost", connectionSettings.Host);
-        Assert.Equal(5671, connectionSettings.Port);
+        Assert.Equal(_port, connectionSettings.Port);
         Assert.Equal("guest", connectionSettings.User);
         Assert.Equal("guest", connectionSettings.Password);
         Assert.Equal("/", connectionSettings.VirtualHost);
@@ -85,10 +89,10 @@ public class TlsConnectionTests : IAsyncLifetime
 
         await CreateUserFromCertSubject(cert);
 
-        ConnectionSettings connectionSettings = ConnectionSettingBuilder.Create()
-            .Host("localhost")
+        ConnectionSettings connectionSettings = _connectionSettingBuilder
             .Scheme("amqps")
             .SaslMechanism(SaslMechanism.External)
+            .Port(_port)
             .Build();
 
         Assert.True(connectionSettings.UseSsl);
@@ -109,7 +113,7 @@ public class TlsConnectionTests : IAsyncLifetime
         }
 
         Assert.Equal("localhost", connectionSettings.Host);
-        Assert.Equal(5671, connectionSettings.Port);
+        Assert.Equal(_port, connectionSettings.Port);
         Assert.Null(connectionSettings.User);
         Assert.Null(connectionSettings.Password);
         Assert.Equal("/", connectionSettings.VirtualHost);
@@ -122,15 +126,10 @@ public class TlsConnectionTests : IAsyncLifetime
         Assert.Equal(State.Closed, connection.State);
     }
 
-    private async Task CreateUserFromCertSubject(X509Certificate cert)
+    private Task CreateUserFromCertSubject(X509Certificate cert)
     {
         string userName = cert.Subject.Trim().Replace(" ", string.Empty);
-
-        var userInfo = new UserInfo(null, null, []);
-        await _managementClient.CreateUserAsync(userName, userInfo);
-
-        var permissionInfo = new PermissionInfo();
-        await _managementClient.CreatePermissionAsync("/", userName, permissionInfo);
+        return _httpApiClient.CreateUserAsync(userName);
     }
 
     private static string GetClientCertFile()

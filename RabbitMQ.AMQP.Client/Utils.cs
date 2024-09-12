@@ -9,7 +9,7 @@ using System.Web;
 using Amqp.Framing;
 using Amqp.Types;
 
-namespace RabbitMQ.AMQP.Client.Impl
+namespace RabbitMQ.AMQP.Client
 {
     internal enum DeliveryMode
     {
