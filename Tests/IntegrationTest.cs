@@ -17,7 +17,7 @@ namespace Tests;
 public abstract class IntegrationTest : IAsyncLifetime
 {
     protected readonly ITestOutputHelper _testOutputHelper;
-    protected readonly string _testDisplayName = nameof(AmqpTests);
+    protected readonly string _testDisplayName = nameof(IntegrationTest);
     protected readonly TimeSpan _waitSpan = TimeSpan.FromSeconds(5);
 
     protected IConnection? _connection;
@@ -27,37 +27,28 @@ public abstract class IntegrationTest : IAsyncLifetime
     protected string _containerId = $"integration-test-{Now}";
 
     private readonly bool _setupConnectionAndManagement;
+    protected readonly ConnectionSettingBuilder _connectionSettingBuilder;
 
     public IntegrationTest(ITestOutputHelper testOutputHelper,
         bool setupConnectionAndManagement = true)
     {
         _testOutputHelper = testOutputHelper;
         _setupConnectionAndManagement = setupConnectionAndManagement;
+
         _queueName = $"{_testDisplayName}-queue-{Now}";
         _exchangeName = $"{_testDisplayName}-exchange-{Now}";
 
-        Type testOutputHelperType = _testOutputHelper.GetType();
-        FieldInfo? testMember = testOutputHelperType.GetField("test", BindingFlags.Instance | BindingFlags.NonPublic);
-        if (testMember is not null)
-        {
-            object? testObj = testMember.GetValue(_testOutputHelper);
-            if (testObj is ITest test)
-            {
-                _testDisplayName = test.DisplayName;
-            }
-        }
+        _testDisplayName = InitTestDisplayName();
+        _containerId = $"{_testDisplayName}:{Now}";
+
+        _connectionSettingBuilder = InitConnectionSettingsBuilder();
     }
 
     public virtual async Task InitializeAsync()
     {
         if (_setupConnectionAndManagement)
         {
-            ConnectionSettingBuilder connectionSettingBuilder = ConnectionSettingBuilder.Create();
-
-            _containerId = $"{_testDisplayName}:{Now}";
-            connectionSettingBuilder.ContainerId(_containerId);
-
-            ConnectionSettings connectionSettings = connectionSettingBuilder.Build();
+            ConnectionSettings connectionSettings = _connectionSettingBuilder.Build();
             _connection = await AmqpConnection.CreateAsync(connectionSettings);
             _management = _connection.Management();
         }
@@ -195,5 +186,45 @@ public abstract class IntegrationTest : IAsyncLifetime
             await publisher.CloseAsync();
             publisher.Dispose();
         }
+    }
+
+    private string InitTestDisplayName()
+    {
+        string rv = _testDisplayName;
+
+        Type testOutputHelperType = _testOutputHelper.GetType();
+        FieldInfo? testMember = testOutputHelperType.GetField("test", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (testMember is not null)
+        {
+            object? testObj = testMember.GetValue(_testOutputHelper);
+            if (testObj is ITest test)
+            {
+                rv = test.DisplayName;
+            }
+        }
+
+        return rv;
+    }
+
+    private ConnectionSettingBuilder InitConnectionSettingsBuilder()
+    {
+        if (string.IsNullOrWhiteSpace(_containerId))
+        {
+            // TODO create "internal bug" exception type?
+            throw new InvalidOperationException("_containerId is null or whitespace," +
+                " report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+        }
+
+        var connectionSettingBuilder = ConnectionSettingBuilder.Create();
+        connectionSettingBuilder.ContainerId(_containerId);
+        connectionSettingBuilder.Host(SystemUtils.RabbitMqHost);
+
+        if (SystemUtils.IsCluster)
+        {
+            // Note: 5672,5673 and 5674 could be returned here
+            connectionSettingBuilder.Port(Utils.RandomNext(5672, 5675));
+        }
+
+        return connectionSettingBuilder;
     }
 }

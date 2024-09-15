@@ -1,0 +1,40 @@
+networks:
+  rabbitnet:
+    name: rabbitnet
+    driver: bridge
+
+services:
+  rmq0:
+    build: rmq
+    hostname: rmq0
+    networks:
+      rabbitnet:
+        aliases:
+          - rmq0.local
+    ports:
+      # HOST:CONTAINER
+      - 15672:15672
+      - 5672:5672
+      - 5671:5671
+  rmq1:
+    build: rmq
+    hostname: rmq1
+    networks:
+      rabbitnet:
+        aliases:
+          - rmq1.local
+    ports:
+      - 15673:15672
+      - 5673:5672
+      - 5681:5671
+  rmq2:
+    build: rmq
+    hostname: rmq2
+    networks:
+      rabbitnet:
+        aliases:
+          - rmq2.local
+    ports:
+      - 15674:15672
+      - 5674:5672
+      - 5691:5671

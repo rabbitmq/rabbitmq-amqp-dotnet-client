@@ -28,7 +28,7 @@ if [[ -d $GITHUB_WORKSPACE ]]
 then
     echo "[INFO] GITHUB_WORKSPACE is set: '$GITHUB_WORKSPACE'"
 else
-    GITHUB_WORKSPACE="$(cd "$script_dir/../.." && pwd)"
+    GITHUB_WORKSPACE="$(cd "$script_dir/../../.." && pwd)"
     echo "[INFO] set GITHUB_WORKSPACE to: '$GITHUB_WORKSPACE'"
 fi
 
@@ -46,6 +46,9 @@ else
     readonly docker_pull_args=''
 fi
 
+declare -r rabbitmq_docker_name="$docker_name_prefix-rabbitmq"
+declare -r toxiproxy_docker_name="$docker_name_prefix-toxiproxy"
+
 if [[ $1 == 'stop' ]]
 then
     docker stop "$rabbitmq_docker_name"
@@ -54,9 +57,6 @@ then
 fi
 
 set -o nounset
-
-declare -r rabbitmq_docker_name="$docker_name_prefix-rabbitmq"
-declare -r toxiproxy_docker_name="$docker_name_prefix-toxiproxy"
 
 function start_toxiproxy
 {
@@ -89,8 +89,8 @@ function start_rabbitmq
         --publish 5672:5672 \
         --publish 15672:15672 \
         --network "$docker_network_name" \
-        --volume "$GITHUB_WORKSPACE/.ci/ubuntu/enabled_plugins:/etc/rabbitmq/enabled_plugins" \
-        --volume "$GITHUB_WORKSPACE/.ci/ubuntu/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro" \
+        --volume "$GITHUB_WORKSPACE/.ci/ubuntu/one-node/enabled_plugins:/etc/rabbitmq/enabled_plugins" \
+        --volume "$GITHUB_WORKSPACE/.ci/ubuntu/one-node/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro" \
         --volume "$GITHUB_WORKSPACE/.ci/certs:/etc/rabbitmq/certs:ro" \
         --volume "$GITHUB_WORKSPACE/.ci/ubuntu/log:/var/log/rabbitmq" \
         "$rabbitmq_image"
