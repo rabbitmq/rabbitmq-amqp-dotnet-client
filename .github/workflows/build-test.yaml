@@ -62,15 +62,18 @@ jobs:
         run: dotnet format ${{ github.workspace }}/rabbitmq-amqp-dotnet-client.sln --no-restore --verify-no-changes
       - name: Start RabbitMQ
         id: start-rabbitmq
-        run: ${{ github.workspace }}/.ci/ubuntu/gha-setup.sh
+        run: ${{ github.workspace }}/.ci/ubuntu/cluster/gha-setup.sh
       - name: Test
         timeout-minutes: 15
         run: dotnet test ${{ github.workspace }}/Build.csproj --no-restore --no-build --logger "console;verbosity=detailed"
       - name: Check for errors in RabbitMQ logs
-        run: ${{ github.workspace}}/.ci/ubuntu/gha-log-check.sh
-      - name: Maybe upload RabbitMQ logs
+        run: ${{ github.workspace}}/.ci/ubuntu/cluster/gha-logs.sh check
+      - name: Collect RabbitMQ logs (on failure)
+        if: failure()
+        run: ${{ github.workspace}}/.ci/ubuntu/cluster/gha-logs.sh
+      - name: Upload RabbitMQ logs (on failure)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: rabbitmq-logs-integration-ubuntu
-          path: ${{ github.workspace }}/.ci/ubuntu/log/
+          path: ${{ github.workspace }}/.ci/ubuntu/cluster/log/

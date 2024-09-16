@@ -37,7 +37,8 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             try
             {
-                TaskCompletionSource<SenderLink> attachCompletedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource<SenderLink> attachCompletedTcs =
+                    new(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 Attach attach = Utils.CreateAttach(_address, DeliveryMode.AtLeastOnce, _id);
 
@@ -82,7 +83,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                 }
                 else if (_senderLink.LinkState != LinkState.Attached)
                 {
-                    throw new PublisherException($"{ToString()} Failed to create sender link. Link state is not attached, error: " +
+                    throw new PublisherException(
+                        $"{ToString()} Failed to create sender link. Link state is not attached, error: " +
                         _senderLink.Error?.ToString() ?? "Unknown error");
                 }
                 else
@@ -116,32 +118,48 @@ namespace RabbitMQ.AMQP.Client.Impl
             if (_senderLink is null)
             {
                 // TODO create "internal bug" exception type?
-                throw new InvalidOperationException("_senderLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                throw new InvalidOperationException(
+                    "_senderLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
 
             try
             {
-                TaskCompletionSource<PublishOutcome> messagePublishedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource<PublishOutcome> messagePublishedTcs =
+                    new(TaskCreationOptions.RunContinuationsAsynchronously);
                 Message nativeMessage = ((AmqpMessage)message).NativeMessage;
 
-                void OutcomeCallback(ILink sender, Message message, Outcome outcome, object state)
+                void OutcomeCallback(ILink sender, Message inMessage, Outcome outcome, object state)
                 {
-                    System.Diagnostics.Debug.Assert(Object.ReferenceEquals(this, state));
-                    System.Diagnostics.Debug.Assert(Object.ReferenceEquals(_senderLink, sender));
+                    System.Diagnostics.Debug.Assert(object.ReferenceEquals(this, state));
+                    System.Diagnostics.Debug.Assert(object.ReferenceEquals(_senderLink, sender));
                     // Note: sometimes `message` is null 🤔
                     // System.Diagnostics.Debug.Assert(Object.ReferenceEquals(nativeMessage, message));
 
-                    // TODO what about other outcomes, like Released?
                     PublishOutcome publishOutcome;
-                    if (outcome is Rejected rejectedOutcome)
+                    switch (outcome)
                     {
-                        OutcomeState publishState = OutcomeState.Failed;
-                        publishOutcome = new PublishOutcome(publishState, Utils.ConvertError(rejectedOutcome.Error));
-                    }
-                    else
-                    {
-                        OutcomeState publishState = OutcomeState.Accepted;
-                        publishOutcome = new PublishOutcome(publishState, null);
+                        case Rejected rejectedOutcome:
+                            {
+                                const OutcomeState publishState = OutcomeState.Rejected;
+                                publishOutcome = new PublishOutcome(publishState, Utils.ConvertError(rejectedOutcome.Error));
+                                break;
+                            }
+                        case Released:
+                            {
+                                const OutcomeState publishState = OutcomeState.Released;
+                                publishOutcome = new PublishOutcome(publishState, null);
+                                break;
+                            }
+                        case Accepted:
+                            {
+                                const OutcomeState publishState = OutcomeState.Accepted;
+                                publishOutcome = new PublishOutcome(publishState, null);
+                                break;
+                            }
+                        default:
+                            {
+                                throw new NotSupportedException();
+                            }
                     }
 
                     messagePublishedTcs.SetResult(publishOutcome);
@@ -163,7 +181,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
             catch (AmqpException ex)
             {
-                var publishOutcome = new PublishOutcome(OutcomeState.Failed, Utils.ConvertError(ex.Error));
+                var publishOutcome = new PublishOutcome(OutcomeState.Rejected, Utils.ConvertError(ex.Error));
                 return new PublishResult(message, publishOutcome);
             }
             catch (Exception e)
@@ -189,7 +207,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
             catch (Exception ex)
             {
-                Trace.WriteLine(TraceLevel.Warning, "Failed to close sender link. The publisher will be closed anyway", ex);
+                Trace.WriteLine(TraceLevel.Warning, "Failed to close sender link. The publisher will be closed anyway",
+                    ex);
             }
 
             _senderLink = null;

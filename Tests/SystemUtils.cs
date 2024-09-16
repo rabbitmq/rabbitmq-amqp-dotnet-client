@@ -13,13 +13,37 @@ namespace Tests;
 
 public static class SystemUtils
 {
+    const string DefaultRabbitMqHost = "localhost";
     private static readonly HttpApiClient s_httpApiClient = new();
+    private static readonly string s_rabbitMqHost = InitRabbitMqHost();
     private static readonly bool s_isRunningInCI = InitIsRunningInCI();
+    private static readonly bool s_isCluster;
+    private static readonly ushort s_clusterSize;
     private static readonly TimeSpan s_initialDelaySpan = TimeSpan.FromMilliseconds(100);
     private static readonly TimeSpan s_shortDelaySpan = TimeSpan.FromMilliseconds(250);
     private static readonly TimeSpan s_delaySpan = TimeSpan.FromMilliseconds(500);
 
+    public static string RabbitMqHost => s_rabbitMqHost;
     public static bool IsRunningInCI => s_isRunningInCI;
+    public static bool IsCluster => s_isCluster;
+    public static ushort ClusterSize => s_clusterSize;
+
+    static SystemUtils()
+    {
+        s_clusterSize = s_httpApiClient.GetClusterSize();
+        s_isCluster = s_clusterSize > 1;
+    }
+
+    public static EasyNetQ.Management.Client.ManagementClient InitManagementClient()
+    {
+        ushort managementUriPort = 15672;
+        if (IsCluster)
+        {
+            managementUriPort = (ushort)Utils.RandomNext(15672, 15675);
+        }
+        Uri managementUri = new($"http://localhost:{managementUriPort}");
+        return new EasyNetQ.Management.Client.ManagementClient(managementUri, "guest", "guest");
+    }
 
     public static async Task WaitUntilFuncAsync(Func<bool> func, ushort retries = 40)
     {
@@ -236,6 +260,19 @@ public static class SystemUtils
     public static Task DeleteExchangeAsync(string exchangeNameSt)
     {
         return s_httpApiClient.DeleteExchangeAsync(exchangeNameSt);
+    }
+
+    private static string InitRabbitMqHost()
+    {
+        string? envRabbitMqHost = Environment.GetEnvironmentVariable("RABBITMQ_HOST");
+        if (false == string.IsNullOrWhiteSpace(envRabbitMqHost))
+        {
+            return envRabbitMqHost;
+        }
+        else
+        {
+            return DefaultRabbitMqHost;
+        }
     }
 
     private static bool InitIsRunningInCI()

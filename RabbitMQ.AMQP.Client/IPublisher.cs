@@ -18,7 +18,8 @@ namespace RabbitMQ.AMQP.Client
     public enum OutcomeState
     {
         Accepted,
-        Failed,
+        Rejected,
+        Released,
     }
 
     public class PublishOutcome

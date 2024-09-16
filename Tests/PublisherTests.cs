@@ -189,7 +189,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         for (int i = 0; i < 100; i++)
         {
             PublishResult nextPublishResult = await publisher.PublishAsync(message);
-            if (OutcomeState.Failed == nextPublishResult.Outcome.State)
+            if (OutcomeState.Rejected == nextPublishResult.Outcome.State)
             {
                 publishOutcome = nextPublishResult.Outcome;
                 break;
@@ -240,7 +240,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         for (int i = 0; i < 100; i++)
         {
             PublishResult nextPublishResult = await publisher.PublishAsync(message);
-            if (OutcomeState.Failed == nextPublishResult.Outcome.State)
+            if (OutcomeState.Rejected == nextPublishResult.Outcome.State)
             {
                 publishOutcome = nextPublishResult.Outcome;
                 break;

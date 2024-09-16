@@ -14,12 +14,29 @@ namespace Tests;
 
 public class HttpApiClient : IDisposable
 {
-    private readonly Uri _managementUri = new("http://localhost:15672");
     private readonly ManagementClient _managementClient;
 
     public HttpApiClient()
     {
-        _managementClient = new ManagementClient(_managementUri, "guest", "guest");
+        _managementClient = SystemUtils.InitManagementClient();
+    }
+
+    public ushort GetClusterSize()
+    {
+        IReadOnlyList<Node> nodes = _managementClient.GetNodes();
+        return (ushort)nodes.Count;
+    }
+
+    /// <summary>
+    /// Creates a user, without password, with full permissions
+    /// </summary>
+    /// <param name="userName">The user name.</param>
+    public async Task CreateUserAsync(string userName)
+    {
+        var userInfo = new UserInfo(null, null, []);
+        await _managementClient.CreateUserAsync(userName, userInfo);
+        var permissionInfo = new PermissionInfo();
+        await _managementClient.CreatePermissionAsync("/", userName, permissionInfo);
     }
 
     public async Task<bool> CheckConnectionAsync(string containerId, bool checkOpened = true)

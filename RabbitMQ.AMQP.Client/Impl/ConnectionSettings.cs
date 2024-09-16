@@ -21,7 +21,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         private string _containerId = "AMQP.NET";
         private string _virtualHost = "/";
         private uint _maxFrameSize = Consts.DefaultMaxFrameSize;
-        private SaslMechanism _saslMechanism = Client.SaslMechanism.Plain;
+        private SaslMechanism _saslMechanism = Client.SaslMechanism.Anonymous;
         private IRecoveryConfiguration _recoveryConfiguration = Impl.RecoveryConfiguration.Create();
 
         private ConnectionSettingBuilder()
@@ -89,7 +89,8 @@ namespace RabbitMQ.AMQP.Client.Impl
         public ConnectionSettingBuilder SaslMechanism(SaslMechanism saslMechanism)
         {
             _saslMechanism = saslMechanism;
-            if (_saslMechanism == Client.SaslMechanism.External)
+            if (_saslMechanism == Client.SaslMechanism.Anonymous ||
+                _saslMechanism == Client.SaslMechanism.External)
             {
                 _user = null;
                 _password = null;

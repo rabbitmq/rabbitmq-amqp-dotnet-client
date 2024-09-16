@@ -5,9 +5,9 @@ Still work in progress suitable for testing in pre-production environments
 
 ## How to Run
 
-- Start the broker with `./.ci/ubuntu/gha-setup.sh start`. Note that this has been tested on Ubuntu 22 with docker.
+- Start the broker with `./.ci/ubuntu/one-node/gha-setup.sh start`. Note that this has been tested on Ubuntu 22 with docker.
 - Run the tests with ` dotnet test ./Build.csproj  --logger "console;verbosity=detailed"`
-- Stop RabbitMQ with `./.ci/ubuntu/gha-setup.sh stop`
+- Stop RabbitMQ with `./.ci/ubuntu/one-node/gha-setup.sh stop`
 
 ## Getting Started
 

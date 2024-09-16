@@ -10,10 +10,10 @@ test: build
 	dotnet test -c Debug $(CURDIR)/Tests/Tests.csproj --no-build --logger:"console;verbosity=detailed"
 
 rabbitmq-server-start-arm:
-	 ./.ci/ubuntu/gha-setup.sh start pull arm 
+	 ./.ci/ubuntu/one-node/gha-setup.sh start pull arm
 
 rabbitmq-server-stop:
-	 ./.ci/ubuntu/gha-setup.sh stop
+	 ./.ci/ubuntu/one-node/gha-setup.sh stop
 
 
 # TODO:

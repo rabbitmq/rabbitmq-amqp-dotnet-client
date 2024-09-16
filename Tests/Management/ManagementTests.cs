@@ -67,7 +67,16 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         Assert.Equal((ulong)0, queueInfo.MessageCount());
         Assert.Equal((uint)0, queueInfo.ConsumerCount());
         Assert.Equal(type, queueInfo.Type());
-        Assert.Single(queueInfo.Replicas());
+
+        if (type == QueueType.CLASSIC)
+        {
+            Assert.Single(queueInfo.Replicas());
+        }
+        else
+        {
+            Assert.Equal(SystemUtils.ClusterSize, queueInfo.Replicas().Count);
+        }
+
         Assert.NotNull(queueInfo.Leader());
         Assert.Equal(queueInfo.Durable(), durable);
         Assert.Equal(queueInfo.AutoDelete(), autoDelete);
