@@ -15,43 +15,54 @@ namespace RabbitMQ.AMQP.Client
         }
     }
 
+    /// <summary>
+    ///  Represents the status of a publish operation.
+    ///  Accepted: The message was accepted for publication.
+    ///  Rejected: The message was rejected by the broker.
+    ///  Released: The message was released by the broker.
+    /// </summary>
     public enum OutcomeState
     {
         Accepted,
         Rejected,
         Released,
     }
+    
+    /// <summary>
+    ///  PublishOutcome represents the outcome of a publish operation.
+    ///  It contains the state of the outcome and an error if the outcome is not successful.
+    /// </summary>
 
     public class PublishOutcome
     {
-        private readonly OutcomeState _state;
-        private readonly Error? _error;
-
         public PublishOutcome(OutcomeState state, Error? error)
         {
-            _state = state;
-            _error = error;
+            State = state;
+            Error = error;
         }
 
-        public OutcomeState State => _state;
-        public Error? Error => _error;
+        public OutcomeState State { get; }
+
+        public Error? Error { get; }
     }
 
     public class PublishResult
     {
-        private IMessage _message;
-        private PublishOutcome _outcome;
-
         public PublishResult(IMessage message, PublishOutcome outcome)
         {
-            _message = message;
-            _outcome = outcome;
+            Message = message;
+            Outcome = outcome;
         }
 
-        public IMessage Message => _message;
-        public PublishOutcome Outcome => _outcome;
+        public IMessage Message { get; }
+
+        public PublishOutcome Outcome { get; }
     }
 
+    /// <summary>
+    ///  Interface for publishing messages to an AMQP broker.
+    ///  Implementations of this interface are expected to be thread-safe.
+    /// </summary>
     public interface IPublisher : ILifeCycle
     {
         Task<PublishResult> PublishAsync(IMessage message, CancellationToken cancellationToken = default);

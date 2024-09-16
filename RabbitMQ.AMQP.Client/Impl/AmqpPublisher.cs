@@ -99,18 +99,18 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-        // TODO: Consider implementing this method with the send method
-        // a way to send a batch of messages
-
-        // protected override async Task<int> ExecuteAsync(SenderLink link)
-        // {
-        //     int batch = this.random.Next(1, this.role.Args.Batch);
-        //     Message[] messages = CreateMessages(this.id, this.total, batch);
-        //     await Task.WhenAll(messages.Select(m => link.SendAsync(m)));
-        //     this.total += batch;
-        //     return batch;
-        // }
-
+       
+        /// <summary>
+        /// Publishes a message to the broker in an asynchronous manner.
+        /// The PublishResult is synchronous. In order to increase the performance
+        /// you can use more tasks to publish messages in parallel
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PublisherException"></exception>
         public async Task<PublishResult> PublishAsync(IMessage message, CancellationToken cancellationToken = default)
         {
             ThrowIfClosed();

@@ -71,10 +71,14 @@ for (int i = 0; i < total; i++)
         case OutcomeState.Accepted:
             Trace.WriteLine(TraceLevel.Information, $"[Publisher] Message: {message.Body()} confirmed");
             break;
+        case OutcomeState.Released:
+            Trace.WriteLine(TraceLevel.Information, $"[Publisher] Message: {message.Body()} Released");
+            break;
+
+
         case OutcomeState.Rejected:
             Trace.WriteLine(TraceLevel.Error,
-                $"outcome result, state: {pr.Outcome.State}, message_id: " +
-                $"{message.MessageId()}, error: {pr.Outcome.Error}");
+                $"[Publisher] Message: {message.Body()} Rejected with error: {pr.Outcome.Error}");
             break;
         default:
             throw new ArgumentOutOfRangeException();
