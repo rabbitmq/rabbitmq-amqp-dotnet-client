@@ -493,7 +493,8 @@ RabbitMQ.AMQP.Client.ModelException
 RabbitMQ.AMQP.Client.ModelException.ModelException(string! message) -> void
 RabbitMQ.AMQP.Client.OutcomeState
 RabbitMQ.AMQP.Client.OutcomeState.Accepted = 0 -> RabbitMQ.AMQP.Client.OutcomeState
-RabbitMQ.AMQP.Client.OutcomeState.Failed = 1 -> RabbitMQ.AMQP.Client.OutcomeState
+RabbitMQ.AMQP.Client.OutcomeState.Rejected = 1 -> RabbitMQ.AMQP.Client.OutcomeState
+RabbitMQ.AMQP.Client.OutcomeState.Released = 2 -> RabbitMQ.AMQP.Client.OutcomeState
 RabbitMQ.AMQP.Client.OverFlowStrategy
 RabbitMQ.AMQP.Client.OverFlowStrategy.DropHead = 0 -> RabbitMQ.AMQP.Client.OverFlowStrategy
 RabbitMQ.AMQP.Client.OverFlowStrategy.RejectPublish = 1 -> RabbitMQ.AMQP.Client.OverFlowStrategy
