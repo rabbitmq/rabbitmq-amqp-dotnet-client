@@ -50,7 +50,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly TaskCompletionSource<bool> _connectionClosedTcs =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        
+
         /// <summary>
         /// Read-only collection of publishers.
         /// See <see cref="IPublisher"/>
@@ -61,7 +61,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return Publishers.Values.ToList().AsReadOnly();
         }
 
-        
+
         /// <summary>
         /// Read-only collection of consumers.
         /// See <see cref="IConsumer"/>
@@ -89,7 +89,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return connection;
         }
 
-        
+
         public IManagement Management()
         {
             return _management;
