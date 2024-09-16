@@ -6,4 +6,4 @@ on:
 
 jobs:
   call-gh-pages:
-    uses: ./.github/workflows/gh-pages.yaml
+    uses: ./.github/workflows/wf_gh-pages.yaml

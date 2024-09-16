@@ -8,4 +8,4 @@ on:
 
 jobs:
   call-build-test:
-    uses: ./.github/workflows/build-test.yaml
+    uses: ./.github/workflows/wf_build-and-test.yaml
