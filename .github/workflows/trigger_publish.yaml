@@ -1,4 +1,4 @@
-name: publish rabbitmq-dotnet-client
+name: Trigger publish the client to nuget
 
 on:
   release:

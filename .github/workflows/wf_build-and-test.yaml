@@ -1,4 +1,4 @@
-name: Test against supported .NET
+name: Workflow test against supported .NET
 
 on:
   - workflow_call

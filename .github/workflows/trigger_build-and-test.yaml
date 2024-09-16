@@ -1,0 +1,11 @@
+name: Trigger build and test  
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  call-build-test:
+    uses: ./.github/workflows/build-test.yaml
