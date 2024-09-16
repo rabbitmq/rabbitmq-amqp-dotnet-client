@@ -18,7 +18,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 {
     /// <summary>
     /// AmqpConnection is the concrete implementation of <see cref="IConnection"/>
-    /// It is a wrapper around the AMQP.Net Lite <see cref="Connection"/> class
+    /// It is a wrapper around the Microsoft AMQP.Net Lite <see cref="Connection"/> class
     /// </summary>
     public class AmqpConnection : AbstractLifeCycle, IConnection
     {
@@ -50,11 +50,23 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly TaskCompletionSource<bool> _connectionClosedTcs =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+
+        /// <summary>
+        /// Read-only collection of publishers.
+        /// See <see cref="IPublisher"/>
+        /// </summary>
+        /// <returns> All the active Publishers </returns>
         public ReadOnlyCollection<IPublisher> GetPublishers()
         {
             return Publishers.Values.ToList().AsReadOnly();
         }
 
+
+        /// <summary>
+        /// Read-only collection of consumers.
+        /// See <see cref="IConsumer"/>
+        /// </summary>
+        /// <returns> All the active Consumers </returns>
         public ReadOnlyCollection<IConsumer> GetConsumers()
         {
             return Consumers.Values.ToList().AsReadOnly();
@@ -76,6 +88,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 .ConfigureAwait(false);
             return connection;
         }
+
 
         public IManagement Management()
         {

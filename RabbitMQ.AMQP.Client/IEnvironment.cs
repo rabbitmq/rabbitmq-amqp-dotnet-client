@@ -25,6 +25,9 @@ namespace RabbitMQ.AMQP.Client
         /// <returns>IConnection</returns>
         public Task<IConnection> CreateConnectionAsync();
 
+        /// <summary>
+        /// Get all connections.
+        /// </summary>
         public ReadOnlyCollection<IConnection> GetConnections();
 
         /// <summary>

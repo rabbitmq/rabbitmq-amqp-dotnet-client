@@ -1,0 +1,63 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "RabbitMQ.AMQP.Client",
+          "files": [
+            "**/*.csproj"
+          ]
+        },
+        {
+          "src": "docs/Examples/PerformanceTest",
+          "files": [
+            "**/*.csproj"
+          ]
+        },
+        {
+          "src": "docs/Examples/HAClient",
+          "files": [
+            "**/*.csproj"
+          ]
+        },
+        {
+          "src": "docs/Examples/GettingStarted",
+          "files": [
+            "**/*.csproj"
+          ]
+        }
+      ],
+      "dest": "api"
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [
+          "**/*.{md,yml}"
+        ],
+        "exclude": [
+          "_site/**"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "images/**"
+        ]
+      }
+    ],
+    "output": "_site",
+    "template": [
+      "default",
+      "modern"
+    ],
+    "globalMetadata": {
+      "_appName": "rabbitmq-amqp10-net",
+      "_appTitle": "rabbitmq-amqp10-net",
+      "_enableSearch": true,
+      "pdf": true
+    }
+  }
+}

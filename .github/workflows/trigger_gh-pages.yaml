@@ -1,0 +1,9 @@
+name: Trigger github pages  
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  call-gh-pages:
+    uses: ./.github/workflows/wf_gh-pages.yaml

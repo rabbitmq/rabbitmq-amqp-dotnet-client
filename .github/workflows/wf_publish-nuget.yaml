@@ -1,4 +1,4 @@
-name: publish-nuget
+name: Workflow publish the client to nuget
 
 on:
   workflow_call:
