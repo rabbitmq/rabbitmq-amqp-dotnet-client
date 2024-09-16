@@ -66,18 +66,18 @@ for (int i = 0; i < total; i++)
 {
     var message = new AmqpMessage($"Hello World_{i}");
     PublishResult pr = await publisher.PublishAsync(message);
-
-    if (pr.Outcome.State == OutcomeState.Accepted)
+    switch (pr.Outcome.State)
     {
-        // The message was accepted by the broker
-        Trace.WriteLine(TraceLevel.Information, $"[Publisher] Message: {message.Body()} confirmed");
-    }
-    else
-    {
-        // The message was not accepted by the broker
-        Trace.WriteLine(TraceLevel.Error,
-            $"outcome result, state: {pr.Outcome.State}, message_id: " +
-            $"{message.MessageId()}, error: {pr.Outcome.Error}");
+        case OutcomeState.Accepted:
+            Trace.WriteLine(TraceLevel.Information, $"[Publisher] Message: {message.Body()} confirmed");
+            break;
+        case OutcomeState.Rejected:
+            Trace.WriteLine(TraceLevel.Error,
+                $"outcome result, state: {pr.Outcome.State}, message_id: " +
+                $"{message.MessageId()}, error: {pr.Outcome.Error}");
+            break;
+        default:
+            throw new ArgumentOutOfRangeException();
     }
 }
 
