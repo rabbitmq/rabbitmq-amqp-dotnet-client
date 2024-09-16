@@ -27,7 +27,7 @@ namespace RabbitMQ.AMQP.Client
         Rejected,
         Released,
     }
-    
+
     /// <summary>
     ///  PublishOutcome represents the outcome of a publish operation.
     ///  It contains the state of the outcome and an error if the outcome is not successful.
