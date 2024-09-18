@@ -52,12 +52,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         public async Task BindAsync()
         {
             var kv = new Map
-        {
-            { "source", _sourceName },
-            { "binding_key", _routingKey },
-            { "arguments", ArgsToMap() },
-            { _toQueue ? "destination_queue" : "destination_exchange", _destinationName }
-        };
+            {
+                { "source", _sourceName },
+                { "binding_key", _routingKey },
+                { "arguments", ArgsToMap() },
+                { _toQueue ? "destination_queue" : "destination_exchange", _destinationName }
+            };
 
             string path = $"/{Consts.Bindings}";
             string method = AmqpManagement.Post;
