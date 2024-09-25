@@ -3,6 +3,7 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace RabbitMQ.AMQP.Client
@@ -27,6 +28,9 @@ namespace RabbitMQ.AMQP.Client
     {
         Task AcceptAsync();
         Task DiscardAsync();
+        Task DiscardAsync(Dictionary<string, object> annotations);
+
         Task RequeueAsync();
+        Task RequeueAsync(Dictionary<string, object> annotations);
     }
 }
