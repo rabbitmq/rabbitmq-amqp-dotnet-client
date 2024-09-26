@@ -183,7 +183,7 @@ namespace RabbitMQ.AMQP.Client
             return true;
         }
 
-        internal static void CheckMessageAnnotations(Dictionary<string, object> annotations)
+        internal static void ValidateMessageAnnotations(Dictionary<string, object> annotations)
         {
             foreach (var kvp in annotations.Where(kvp => !kvp.Key.StartsWith("x-")))
             {

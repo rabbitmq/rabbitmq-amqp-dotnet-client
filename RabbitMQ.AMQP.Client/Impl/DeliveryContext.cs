@@ -58,11 +58,12 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public Task DiscardAsync(Dictionary<string, object> annotations)
         {
-
             if (_link.IsClosed)
             {
                 throw new ConsumerException("Link is closed");
             }
+
+            Utils.ValidateMessageAnnotations(annotations);
 
             Task rejectTask = Task.Run(() =>
             {
@@ -71,14 +72,15 @@ namespace RabbitMQ.AMQP.Client.Impl
                 {
                     messageAnnotations.Add(new Symbol(kvp.Key), kvp.Value);
                 }
+
                 _link.Modify(_message, true, true, messageAnnotations);
                 _unsettledMessageCounter.Decrement();
                 _message.Dispose();
             });
 
             return rejectTask;
-
         }
+
         public Task RequeueAsync()
         {
             if (_link.IsClosed)
@@ -98,12 +100,11 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public Task RequeueAsync(Dictionary<string, object> annotations)
         {
-
             if (_link.IsClosed)
             {
                 throw new ConsumerException("Link is closed");
             }
-
+            Utils.ValidateMessageAnnotations(annotations);
             Task requeueTask = Task.Run(() =>
             {
                 Fields messageAnnotations = new();
@@ -111,13 +112,13 @@ namespace RabbitMQ.AMQP.Client.Impl
                 {
                     messageAnnotations.Add(new Symbol(kvp.Key), kvp.Value);
                 }
+
                 _link.Modify(_message, false, false, messageAnnotations);
                 _unsettledMessageCounter.Decrement();
                 _message.Dispose();
             });
 
             return requeueTask;
-
         }
     }
 }
