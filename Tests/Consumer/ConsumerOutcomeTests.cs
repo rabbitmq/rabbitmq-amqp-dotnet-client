@@ -21,7 +21,7 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
             {
                 { wrongAnnotationKey, annotationValue }
             }));
-        
+
         const string correctAnnotationKey = "x-otp-annotation-key";
         // This should not throw an exception because the annotation key starts with "x-"
         Utils.ValidateMessageAnnotations(new Dictionary<string, object>
