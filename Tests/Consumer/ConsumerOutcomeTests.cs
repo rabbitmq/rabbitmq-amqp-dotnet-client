@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using EasyNetQ.Management.Client.Model;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
 using Xunit.Abstractions;
+using PublishResult = RabbitMQ.AMQP.Client.PublishResult;
+using QueueType = RabbitMQ.AMQP.Client.QueueType;
 
 namespace Tests.Consumer;
 
@@ -28,6 +31,10 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
     }
 
 
+    /// <summary>
+    /// The test verifies that a requeued message with annotations will contain the annotations on redelivery.
+    /// The delivered message should contain the custom annotations and x-delivery-count
+    /// </summary>
     [Fact]
     public async Task RequeuedMessageWithAnnotationShouldContainAnnotationsOnRedelivery()
     {
@@ -83,6 +90,9 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         Assert.Equal(messages[1].Annotation(annotationKey), annotationValue);
         Assert.Equal(messages[1].Annotation(annotationKey1), annotationValue1);
         Assert.NotNull(messages[1].Annotation("x-delivery-count"));
+        HttpApiClient client = new();
+        Queue q = await client.GetQueueAsync(_queueName);
+        Assert.Equal(0, q.Messages);
 
         await consumer.CloseAsync();
     }
@@ -92,8 +102,6 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
     {
         string dlqQueueName = $"dlq_{_queueName}";
         await DeclareDeadLetterTopology(_queueName, dlqQueueName);
-
-
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
@@ -126,6 +134,16 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         IMessage mResult = await tcsDl.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.NotNull(mResult);
         Assert.Equal(mResult.Annotation(annotationKey), annotationValue);
+
+        var client = new HttpApiClient();
+        Queue q = await client.GetQueueAsync(_queueName);
+        Assert.Equal(0, q.Messages);
+
+        Queue q1 = await client.GetQueueAsync(dlqQueueName);
+        Assert.Equal(0, q1.Messages);
+
+
+
         await dlConsumer.CloseAsync();
     }
 

@@ -29,7 +29,7 @@ namespace RabbitMQ.AMQP.Client
         ///<summary>
         /// Accept the message (AMQP 1.0 <code>accepted</code> outcome).
         ///
-        ///This means the message has been processed and the broker can delete it.
+        /// This means the message has been processed and the broker can delete it.
         /// 
         /// </summary>
         Task AcceptAsync();
@@ -50,13 +50,14 @@ namespace RabbitMQ.AMQP.Client
         ///</code>.
         ///This maps to the AMQP 1.0 <code>
         ///modified{delivery-failed = true, undeliverable-here = true}</code> outcome.
-        ///@param annotations message annotations to combine with existing ones
-        ///@see <a
+        /// <param name="annotations"> annotations message annotations to combine with existing ones </param>
+        ///<a
         ///    href="https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-modified">AMQP
         ///    1.0 <code>modified</code> outcome</a>
+        ///
+        /// The annotations can be used only with Quorum queues, see https://www.rabbitmq.com/docs/amqp#modified-outcome
         ///</summary>
         Task DiscardAsync(Dictionary<string, object> annotations);
-
         ///<summary>
         ///Requeue the message (AMQP 1.0 <code>released</code> outcome).
         ///
@@ -78,10 +79,12 @@ namespace RabbitMQ.AMQP.Client
         /// This maps to the AMQP 1.0 <code>
         /// modified{delivery-failed = false, undeliverable-here = false}</code> outcome.
         ///
-        /// @param annotations message annotations to combine with existing ones
-        ///@see <a
+        /// <param name="annotations"> annotations message annotations to combine with existing ones </param>
+        ///<a
         ///     href="https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-modified">AMQP
         ///     1.0 <code>modified</code> outcome</a>
+        ///
+        ///The annotations can be used only with Quorum queues, see https://www.rabbitmq.com/docs/amqp#modified-outcome
         ///</summary>
         Task RequeueAsync(Dictionary<string, object> annotations);
     }
