@@ -21,9 +21,9 @@ function run_docker_compose
 
 if [[ $2 == 'arm' ]]
 then
-    readonly rabbitmq_image="${RABBITMQ_IMAGE:-pivotalrabbitmq/rabbitmq-arm64:main}"
+    readonly rabbitmq_image="${RABBITMQ_IMAGE:-rabbitmq1:4-management}"
 else
-    readonly rabbitmq_image="${RABBITMQ_IMAGE:-pivotalrabbitmq/rabbitmq:main}"
+    readonly rabbitmq_image="${RABBITMQ_IMAGE:-rabbitmq1:4-management}"
 fi
 
 if [[ ! -v GITHUB_ACTIONS ]]

@@ -24,10 +24,67 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
 
         const string correctAnnotationKey = "x-otp-annotation-key";
         // This should not throw an exception because the annotation key starts with "x-"
-        Utils.ValidateMessageAnnotations(new Dictionary<string, object>
-        {
-            { correctAnnotationKey, annotationValue }
-        });
+        Utils.ValidateMessageAnnotations(new Dictionary<string, object> { { correctAnnotationKey, annotationValue } });
+    }
+
+
+    [Fact]
+    public async Task RequeuedMessageWithAnnotationShouldContainAnnotationsOnRedelivery()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+        TaskCompletionSource<bool> tcsRequeue =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        const string annotationKey = "x-opt-annotation-key";
+        const string annotationValue = "annotation-value";
+
+        const string annotationKey1 = "x-opt-annotation1-key";
+        const string annotationValue1 = "annotation1-value";
+
+        int requeueCount = 0;
+
+
+        await _management.Queue().Type(QueueType.QUORUM).Name(_queueName).DeclareAsync();
+        List<IMessage> messages = [];
+        IPublisher publisher = await _connection.PublisherBuilder().Queue(_queueName).BuildAsync();
+        IConsumer consumer = await _connection.ConsumerBuilder().MessageHandler(
+            async (context, message) =>
+            {
+                messages.Add(message);
+                if (requeueCount == 0)
+                {
+                    requeueCount++;
+                    await context.RequeueAsync(new Dictionary<string, object>
+                    {
+                        { annotationKey, annotationValue }, { annotationKey1, annotationValue1 }
+                    });
+                }
+                else
+                {
+                    await context.AcceptAsync();
+                    tcsRequeue.SetResult(true);
+                }
+            }
+        ).Queue(_queueName).BuildAndStartAsync();
+
+        IMessage message = new AmqpMessage($"message");
+        PublishResult pr = await publisher.PublishAsync(message);
+
+        Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
+
+        await tcsRequeue.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(2, messages.Count);
+        Assert.Null(messages[0].Annotation(annotationKey));
+        Assert.Null(messages[0].Annotation(annotationKey1));
+        Assert.Null(messages[0].Annotation("x-delivery-count"));
+
+        Assert.Equal(messages[1].Annotation(annotationKey), annotationValue);
+        Assert.Equal(messages[1].Annotation(annotationKey1), annotationValue1);
+        Assert.NotNull(messages[1].Annotation("x-delivery-count"));
+
+        await consumer.CloseAsync();
     }
 
     [Fact]
@@ -67,7 +124,6 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         }).Queue(dlqQueueName).BuildAndStartAsync();
 
         IMessage mResult = await tcsDl.Task.WaitAsync(TimeSpan.FromSeconds(5));
-
         Assert.NotNull(mResult);
         Assert.Equal(mResult.Annotation(annotationKey), annotationValue);
         await dlConsumer.CloseAsync();

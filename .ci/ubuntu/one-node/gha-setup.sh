@@ -8,12 +8,7 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly script_dir
 echo "[INFO] script_dir: '$script_dir'"
 
-if [[ $3 == 'arm' ]]
-then
-    readonly rabbitmq_image="${RABBITMQ_IMAGE:-pivotalrabbitmq/rabbitmq-arm64:main}"
-else
-    readonly rabbitmq_image="${RABBITMQ_IMAGE:-pivotalrabbitmq/rabbitmq:main}"
-fi
+readonly rabbitmq_image="${RABBITMQ_IMAGE:-rabbitmq:4-management}"
 
 
 readonly docker_name_prefix='rabbitmq-amqp-dotnet-client'

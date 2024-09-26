@@ -62,7 +62,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             {
                 throw new ConsumerException("Link is closed");
             }
-
             Utils.ValidateMessageAnnotations(annotations);
 
             Task rejectTask = Task.Run(() =>
