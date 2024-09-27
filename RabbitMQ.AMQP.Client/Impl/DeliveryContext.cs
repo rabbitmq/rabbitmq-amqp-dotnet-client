@@ -2,8 +2,10 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amqp;
+using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
@@ -54,6 +56,30 @@ namespace RabbitMQ.AMQP.Client.Impl
             return rejectTask;
         }
 
+        public Task DiscardAsync(Dictionary<string, object> annotations)
+        {
+            if (_link.IsClosed)
+            {
+                throw new ConsumerException("Link is closed");
+            }
+            Utils.ValidateMessageAnnotations(annotations);
+
+            Task rejectTask = Task.Run(() =>
+            {
+                Fields messageAnnotations = new();
+                foreach (var kvp in annotations)
+                {
+                    messageAnnotations.Add(new Symbol(kvp.Key), kvp.Value);
+                }
+
+                _link.Modify(_message, true, true, messageAnnotations);
+                _unsettledMessageCounter.Decrement();
+                _message.Dispose();
+            });
+
+            return rejectTask;
+        }
+
         public Task RequeueAsync()
         {
             if (_link.IsClosed)
@@ -64,6 +90,29 @@ namespace RabbitMQ.AMQP.Client.Impl
             Task requeueTask = Task.Run(() =>
             {
                 _link.Release(_message);
+                _unsettledMessageCounter.Decrement();
+                _message.Dispose();
+            });
+
+            return requeueTask;
+        }
+
+        public Task RequeueAsync(Dictionary<string, object> annotations)
+        {
+            if (_link.IsClosed)
+            {
+                throw new ConsumerException("Link is closed");
+            }
+            Utils.ValidateMessageAnnotations(annotations);
+            Task requeueTask = Task.Run(() =>
+            {
+                Fields messageAnnotations = new();
+                foreach (var kvp in annotations)
+                {
+                    messageAnnotations.Add(new Symbol(kvp.Key), kvp.Value);
+                }
+
+                _link.Modify(_message, false, false, messageAnnotations);
                 _unsettledMessageCounter.Decrement();
                 _message.Dispose();
             });

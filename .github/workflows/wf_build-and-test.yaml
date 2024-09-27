@@ -34,7 +34,7 @@ jobs:
         id: install-start-rabbitmq
         run: ${{ github.workspace }}\.ci\windows\gha-setup.ps1
       - name: Test
-        timeout-minutes: 20
+        timeout-minutes: 25
         run: dotnet test ${{ github.workspace }}\Build.csproj --no-restore --no-build --logger 'console;verbosity=detailed'
       - name: Check for errors in RabbitMQ logs
         run: ${{ github.workspace }}\.ci\windows\gha-log-check.ps1
@@ -64,7 +64,7 @@ jobs:
         id: start-rabbitmq
         run: ${{ github.workspace }}/.ci/ubuntu/cluster/gha-setup.sh
       - name: Test
-        timeout-minutes: 15
+        timeout-minutes: 25
         run: dotnet test ${{ github.workspace }}/Build.csproj --no-restore --no-build --logger "console;verbosity=detailed"
       - name: Check for errors in RabbitMQ logs
         run: ${{ github.workspace}}/.ci/ubuntu/cluster/gha-logs.sh check

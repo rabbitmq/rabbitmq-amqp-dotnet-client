@@ -3,6 +3,8 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web;
@@ -177,7 +179,17 @@ namespace RabbitMQ.AMQP.Client
                     return false;
                 }
             }
+
             return true;
+        }
+
+        internal static void ValidateMessageAnnotations(Dictionary<string, object> annotations)
+        {
+            foreach (var kvp in annotations.Where(kvp => !kvp.Key.StartsWith("x-")))
+            {
+                throw new ArgumentException(
+                    $"Message annotation keys must start with 'x-': {kvp.Key}");
+            }
         }
     }
 

@@ -130,7 +130,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public object Annotation(string key)
         {
             ThrowIfAnnotationsNotSet();
-            return NativeMessage.MessageAnnotations[key];
+            return NativeMessage.MessageAnnotations[new Symbol(key)];
         }
     }
 }

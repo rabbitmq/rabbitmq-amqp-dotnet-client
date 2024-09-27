@@ -125,7 +125,9 @@ RabbitMQ.AMQP.Client.IConsumerBuilder.Stream() -> RabbitMQ.AMQP.Client.IConsumer
 RabbitMQ.AMQP.Client.IContext
 RabbitMQ.AMQP.Client.IContext.AcceptAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.IContext.DiscardAsync() -> System.Threading.Tasks.Task!
+RabbitMQ.AMQP.Client.IContext.DiscardAsync(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.IContext.RequeueAsync() -> System.Threading.Tasks.Task!
+RabbitMQ.AMQP.Client.IContext.RequeueAsync(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.IEntityInfo
 RabbitMQ.AMQP.Client.IEntityInfoSpecification<T>
 RabbitMQ.AMQP.Client.IEntityInfoSpecification<T>.DeclareAsync() -> System.Threading.Tasks.Task<T>!
