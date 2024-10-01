@@ -22,7 +22,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public MessageHandler? Handler { get; set; }
         public Action<IConsumerBuilder.ListenerContext>? ListenerContext = null;
     }
-    
+
     /// <summary>
     /// The builder class for create the consumer.
     /// The builder is called by the connection
