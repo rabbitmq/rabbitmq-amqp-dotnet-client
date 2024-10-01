@@ -80,9 +80,9 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
                     }
                 }
             ).Stream().Builder().SubscriptionListener(
-                listenerContext =>
+                ctx =>
                 {
-                    listenerContext.StreamOptions.Offset(5);
+                    ctx.StreamOptions.Offset(5);
                 }
                 ).BuildAndStartAsync();
 

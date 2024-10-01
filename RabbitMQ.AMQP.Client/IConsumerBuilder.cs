@@ -40,14 +40,10 @@ namespace RabbitMQ.AMQP.Client
             IConsumerBuilder Builder();
         }
 
-        public record ListenerContext
+        public record ListenerContext(IStreamOptions StreamOptions)
         {
-            public ListenerContext(IStreamOptions streamOptions)
-            {
-                StreamOptions = streamOptions;
-            }
 
-            public IStreamOptions StreamOptions { get; }
+            public IStreamOptions StreamOptions { get; } = StreamOptions;
         }
     }
 }
