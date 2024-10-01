@@ -10,18 +10,26 @@ using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
+    /// <summary>
+    /// ConsumerConfiguration is a helper class that holds the configuration for the consumer
+    /// </summary>
+    public class ConsumerConfiguration
+    {
+        public AmqpConnection Connection { get; set; } = null!;
+        public string Address { get; set; } = "";
+        public int InitialCredits { get; set; } = 10;
+        public Map Filters { get; set; } = new();
+        public MessageHandler? Handler { get; set; }
+        public Action<IConsumerBuilder.ListenerContext>? ListenerContext = null;
+    }
+
     public class AmqpConsumerBuilder : IConsumerBuilder
     {
-        private readonly AmqpConnection _connection;
-        private string _queue = "";
-        private int _initialCredits = 10;
-        private readonly Map _filters = new();
-        private MessageHandler? _handler;
-        private Action<IConsumerBuilder.ListenerContext>? _listenerContext = null;
+        private readonly ConsumerConfiguration _configuration = new();
 
         public AmqpConsumerBuilder(AmqpConnection connection)
         {
-            _connection = connection;
+            _configuration.Connection = connection;
         }
 
         public IConsumerBuilder Queue(IQueueSpecification queueSpec)
@@ -31,52 +39,45 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IConsumerBuilder Queue(string queueName)
         {
-            _queue = queueName;
+            string address = new AddressBuilder().Queue(queueName).Address();
+            _configuration.Address = address;
             return this;
         }
 
         public IConsumerBuilder MessageHandler(MessageHandler handler)
         {
-            _handler = handler;
+            _configuration.Handler = handler;
             return this;
         }
 
         public IConsumerBuilder InitialCredits(int initialCredits)
         {
-            _initialCredits = initialCredits;
+            _configuration.InitialCredits = initialCredits;
             return this;
         }
 
         public IConsumerBuilder SubscriptionListener(Action<IConsumerBuilder.ListenerContext> context)
         {
-            _listenerContext = context;
+            _configuration.ListenerContext = context;
             return this;
         }
 
 
         public IConsumerBuilder.IStreamOptions Stream()
         {
-            return new DefaultStreamOptions(this, _filters);
+            return new ConsumerBuilderStreamOptions(this, _configuration.Filters);
         }
 
 
         public async Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default)
         {
-            if (_handler is null)
+            if (_configuration.Handler is null)
             {
                 throw new ConsumerException("Message handler is not set");
             }
 
-            string address = new AddressBuilder().Queue(_queue).Address();
 
-            if (_listenerContext is not null)
-            {
-                _filters.Clear();
-
-                _listenerContext(new IConsumerBuilder.ListenerContext(new DefaultStreamOptions(this, _filters)));
-            }
-
-            AmqpConsumer consumer = new(_connection, address, _handler, _initialCredits, _filters);
+            AmqpConsumer consumer = new(_configuration);
 
             // TODO pass cancellationToken
             await consumer.OpenAsync()
@@ -87,15 +88,19 @@ namespace RabbitMQ.AMQP.Client.Impl
     }
 
 
-    public abstract class ListenerStreamOptions : IConsumerBuilder.IStreamOptions
+    /// <summary>
+    /// The base class for the stream options.
+    /// The class set the right filters used to create the consumer
+    /// See also <see cref="ListenerStreamOptions"/> and <see cref="ConsumerBuilderStreamOptions"/>
+    /// </summary>
+    public abstract class StreamOptions : IConsumerBuilder.IStreamOptions
     {
-        protected Map _filters;
+        private readonly Map _filters;
 
-        protected ListenerStreamOptions(Map filters)
+        protected StreamOptions(Map filters)
         {
             _filters = filters;
         }
-
 
         public IConsumerBuilder.IStreamOptions Offset(long offset)
         {
@@ -122,24 +127,48 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IConsumerBuilder.IStreamOptions FilterValues(string[] values)
         {
-            this._filters[new Symbol("rabbitmq:stream-filter")] = values;
+            _filters[new Symbol("rabbitmq:stream-filter")] = values;
             return this;
         }
 
         public IConsumerBuilder.IStreamOptions FilterMatchUnfiltered(bool matchUnfiltered)
         {
-            this._filters[new Symbol("rabbitmq:stream-match-unfiltered")] = matchUnfiltered;
+            _filters[new Symbol("rabbitmq:stream-match-unfiltered")] = matchUnfiltered;
             return this;
         }
 
         public abstract IConsumerBuilder Builder();
     }
 
-    public class DefaultStreamOptions : ListenerStreamOptions, IConsumerBuilder.IStreamOptions
+
+    /// <summary>
+    /// The stream options for the Subscribe Listener event.
+    /// For the user perspective, it is used to set the stream options for the listener
+    /// </summary>
+    public class ListenerStreamOptions : StreamOptions
+    {
+        public ListenerStreamOptions(Map filters) : base(filters)
+        {
+        }
+
+        /// <summary>
+        /// This method is not implemented for the listener stream options
+        /// Since it is not needed for the listener
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public override IConsumerBuilder Builder() => throw new NotImplementedException();
+    }
+
+    /// <summary>
+    /// The class that implements the stream options for the consumer builder
+    /// It is used to set the stream options for the consumer builder
+    /// </summary>
+    public class ConsumerBuilderStreamOptions : StreamOptions
     {
         private readonly IConsumerBuilder _consumerBuilder;
 
-        public DefaultStreamOptions(IConsumerBuilder consumerBuilder, Map filters) : base(filters)
+        public ConsumerBuilderStreamOptions(IConsumerBuilder consumerBuilder, Map filters) : base(filters)
         {
             _consumerBuilder = consumerBuilder;
         }

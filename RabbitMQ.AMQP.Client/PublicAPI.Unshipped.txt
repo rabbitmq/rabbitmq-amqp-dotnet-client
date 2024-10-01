@@ -1,6 +1,6 @@
 #nullable enable
 abstract RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.CloseAsync() -> System.Threading.Tasks.Task!
-abstract RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
+abstract RabbitMQ.AMQP.Client.Impl.StreamOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 const RabbitMQ.AMQP.Client.Impl.Consts.Bindings = "bindings" -> string!
 const RabbitMQ.AMQP.Client.Impl.Consts.DefaultMaxFrameSize = 0 -> uint
 const RabbitMQ.AMQP.Client.Impl.Consts.Exchanges = "exchanges" -> string!
@@ -23,7 +23,8 @@ override RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Equals(object? obj) -> bool
 override RabbitMQ.AMQP.Client.Impl.ConnectionSettings.GetHashCode() -> int
 override RabbitMQ.AMQP.Client.Impl.ConnectionSettings.ToString() -> string!
-override RabbitMQ.AMQP.Client.Impl.DefaultStreamOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
+override RabbitMQ.AMQP.Client.Impl.ConsumerBuilderStreamOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
+override RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 override RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.ToString() -> string!
 override RabbitMQ.AMQP.Client.SaslMechanism.Equals(object? obj) -> bool
 override RabbitMQ.AMQP.Client.SaslMechanism.GetHashCode() -> int
@@ -231,7 +232,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpConnection.Id.set -> void
 RabbitMQ.AMQP.Client.Impl.AmqpConnection.Management() -> RabbitMQ.AMQP.Client.IManagement!
 RabbitMQ.AMQP.Client.Impl.AmqpConnection.PublisherBuilder() -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer
-RabbitMQ.AMQP.Client.Impl.AmqpConsumer.AmqpConsumer(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection, string! address, RabbitMQ.AMQP.Client.MessageHandler! messageHandler, int initialCredits, Amqp.Types.Map! filters) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpConsumer.AmqpConsumer(RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration! configuration) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer.Pause() -> void
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer.Unpause() -> void
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer.UnsettledMessageCount.get -> long
@@ -382,6 +383,21 @@ RabbitMQ.AMQP.Client.Impl.ConnectionSettings.UseSsl.get -> bool
 RabbitMQ.AMQP.Client.Impl.ConnectionSettings.VirtualHost.get -> string!
 RabbitMQ.AMQP.Client.Impl.Consts
 RabbitMQ.AMQP.Client.Impl.Consts.Consts() -> void
+RabbitMQ.AMQP.Client.Impl.ConsumerBuilderStreamOptions
+RabbitMQ.AMQP.Client.Impl.ConsumerBuilderStreamOptions.ConsumerBuilderStreamOptions(RabbitMQ.AMQP.Client.IConsumerBuilder! consumerBuilder, Amqp.Types.Map! filters) -> void
+RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration
+RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration.Address.get -> string!
+RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration.Address.set -> void
+RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration.Connection.get -> RabbitMQ.AMQP.Client.Impl.AmqpConnection!
+RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration.Connection.set -> void
+RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration.ConsumerConfiguration() -> void
+RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration.Filters.get -> Amqp.Types.Map!
+RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration.Filters.set -> void
+RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration.Handler.get -> RabbitMQ.AMQP.Client.MessageHandler?
+RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration.Handler.set -> void
+RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration.InitialCredits.get -> int
+RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration.InitialCredits.set -> void
+RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration.ListenerContext -> System.Action<RabbitMQ.AMQP.Client.IConsumerBuilder.ListenerContext!>?
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Arguments() -> System.Collections.Generic.Dictionary<string!, object!>!
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.AutoDelete() -> bool
@@ -393,20 +409,12 @@ RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.MessageCount() -> ulong
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Name() -> string!
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Replicas() -> System.Collections.Generic.List<string!>!
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Type() -> RabbitMQ.AMQP.Client.QueueType
-RabbitMQ.AMQP.Client.Impl.DefaultStreamOptions
-RabbitMQ.AMQP.Client.Impl.DefaultStreamOptions.DefaultStreamOptions(RabbitMQ.AMQP.Client.IConsumerBuilder! consumerBuilder, Amqp.Types.Map! filters) -> void
 RabbitMQ.AMQP.Client.Impl.FieldNotSetException
 RabbitMQ.AMQP.Client.Impl.FieldNotSetException.FieldNotSetException() -> void
 RabbitMQ.AMQP.Client.Impl.InvalidCodeException
 RabbitMQ.AMQP.Client.Impl.InvalidCodeException.InvalidCodeException(string! message) -> void
 RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions
-RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions.FilterMatchUnfiltered(bool matchUnfiltered) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
-RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions.FilterValues(string![]! values) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions.ListenerStreamOptions(Amqp.Types.Map! filters) -> void
-RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions.Offset(long offset) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
-RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions.Offset(RabbitMQ.AMQP.Client.StreamOffsetSpecification specification) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
-RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions.Offset(string! interval) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
-RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions._filters -> Amqp.Types.Map!
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.Activated(bool activated) -> RabbitMQ.AMQP.Client.IRecoveryConfiguration!
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.BackOffDelayPolicy(RabbitMQ.AMQP.Client.IBackOffDelayPolicy! backOffDelayPolicy) -> RabbitMQ.AMQP.Client.IRecoveryConfiguration!
@@ -414,6 +422,13 @@ RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.GetBackOffDelayPolicy() -> Rabbi
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.IsActivate() -> bool
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.IsTopologyActive() -> bool
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.Topology(bool activated) -> RabbitMQ.AMQP.Client.IRecoveryConfiguration!
+RabbitMQ.AMQP.Client.Impl.StreamOptions
+RabbitMQ.AMQP.Client.Impl.StreamOptions.FilterMatchUnfiltered(bool matchUnfiltered) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
+RabbitMQ.AMQP.Client.Impl.StreamOptions.FilterValues(string![]! values) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
+RabbitMQ.AMQP.Client.Impl.StreamOptions.Offset(long offset) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
+RabbitMQ.AMQP.Client.Impl.StreamOptions.Offset(RabbitMQ.AMQP.Client.StreamOffsetSpecification specification) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
+RabbitMQ.AMQP.Client.Impl.StreamOptions.Offset(string! interval) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
+RabbitMQ.AMQP.Client.Impl.StreamOptions.StreamOptions(Amqp.Types.Map! filters) -> void
 RabbitMQ.AMQP.Client.Impl.TlsSettings
 RabbitMQ.AMQP.Client.Impl.TlsSettings.AcceptablePolicyErrors.get -> System.Net.Security.SslPolicyErrors
 RabbitMQ.AMQP.Client.Impl.TlsSettings.AcceptablePolicyErrors.set -> void
