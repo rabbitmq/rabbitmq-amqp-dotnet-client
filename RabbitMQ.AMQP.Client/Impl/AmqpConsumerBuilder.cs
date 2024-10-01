@@ -127,7 +127,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IConsumerBuilder.IStreamOptions FilterValues(string[] values)
         {
-            _filters[new Symbol("rabbitmq:stream-filter")] = values;
+            _filters[new Symbol("rabbitmq:stream-filter")] = values.ToList();
             return this;
         }
 
