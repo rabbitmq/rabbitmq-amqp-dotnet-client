@@ -2,6 +2,7 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,8 +15,9 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly AmqpConnection _connection;
         private string _queue = "";
         private int _initialCredits = 10;
-        private readonly Map _filters = new Map();
+        private readonly Map _filters = new();
         private MessageHandler? _handler;
+        private Action<IConsumerBuilder.IStreamOptions>? _options = null;
 
         public AmqpConsumerBuilder(AmqpConnection connection)
         {
@@ -45,10 +47,18 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
+        public IConsumerBuilder SubscriptionListener(Action<IConsumerBuilder.IStreamOptions> options)
+        {
+            _options = options;
+            return this;
+        }
+
+
         public IConsumerBuilder.IStreamOptions Stream()
         {
             return new DefaultStreamOptions(this, _filters);
         }
+
 
         public async Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default)
         {
@@ -58,6 +68,12 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
 
             string address = new AddressBuilder().Queue(_queue).Address();
+
+            if (_options is not null)
+            {
+                _filters.Clear();
+                _options(new DefaultStreamOptions(this, _filters));
+            }
 
             AmqpConsumer consumer = new(_connection, address, _handler, _initialCredits, _filters);
 
@@ -69,16 +85,16 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
     }
 
-    public class DefaultStreamOptions : IConsumerBuilder.IStreamOptions
-    {
-        private readonly IConsumerBuilder _consumerBuilder;
-        private readonly Map _filters;
 
-        public DefaultStreamOptions(IConsumerBuilder consumerBuilder, Map filters)
+    public abstract class ListenerStreamOptions : IConsumerBuilder.IStreamOptions
+    {
+        protected Map _filters;
+
+        protected ListenerStreamOptions(Map filters)
         {
-            _consumerBuilder = consumerBuilder;
             _filters = filters;
         }
+
 
         public IConsumerBuilder.IStreamOptions Offset(long offset)
         {
@@ -86,57 +102,51 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        // public IConsumerBuilder.IStreamOptions Offset(Instant timestamp)
-        // {
-        //     notNull(timestamp, "Timestamp offset cannot be null");
-        //     this.offsetSpecification(JSType.Date.from(timestamp));
-        //     return this;
-        // }
-
         public IConsumerBuilder.IStreamOptions Offset(StreamOffsetSpecification specification)
         {
-            // notNull(specification, "Offset specification cannot be null");
             OffsetSpecification(specification.ToString().ToLower());
             return this;
         }
 
         public IConsumerBuilder.IStreamOptions Offset(string interval)
         {
-            // notNull(interval, "Interval offset cannot be null");
-            // if (!Utils.validateMaxAge(interval))
-            // {
-            //     throw new IllegalArgumentException(
-            //         "Invalid value for interval: "
-            //         + interval
-            //         + ". "
-            //         + "Valid examples are: 1Y, 7D, 10m. See https://www.rabbitmq.com/docs/streams#retention.");
-            // }
-
             OffsetSpecification(interval);
             return this;
-        }
-
-        public IConsumerBuilder.IStreamOptions FilterValues(string[] values)
-        {
-            _filters[new Symbol("rabbitmq:stream-filter")] = values.ToList();
-            return this;
-        }
-
-
-        public IConsumerBuilder.IStreamOptions FilterMatchUnfiltered(bool matchUnfiltered)
-        {
-            _filters[new Symbol("rabbitmq:stream-match-unfiltered")] = matchUnfiltered;
-            return this;
-        }
-
-        public IConsumerBuilder Builder()
-        {
-            return _consumerBuilder;
         }
 
         private void OffsetSpecification(object value)
         {
             _filters[new Symbol("rabbitmq:stream-offset-spec")] = value;
+        }
+
+        public IConsumerBuilder.IStreamOptions FilterValues(string[] values)
+        {
+            this._filters[new Symbol("rabbitmq:stream-filter")] = values;
+            return this;
+        }
+
+        public IConsumerBuilder.IStreamOptions FilterMatchUnfiltered(bool matchUnfiltered)
+        {
+            this._filters[new Symbol("rabbitmq:stream-match-unfiltered")] = matchUnfiltered;
+            return this;
+        }
+
+        public abstract IConsumerBuilder Builder();
+    }
+
+    public class DefaultStreamOptions : ListenerStreamOptions, IConsumerBuilder.IStreamOptions
+    {
+        private readonly IConsumerBuilder _consumerBuilder;
+
+        public DefaultStreamOptions(IConsumerBuilder consumerBuilder, Map filters) : base(filters)
+        {
+            _consumerBuilder = consumerBuilder;
+        }
+
+
+        public override IConsumerBuilder Builder()
+        {
+            return _consumerBuilder;
         }
     }
 }
