@@ -94,7 +94,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
     /// Each time the consumer is created the listener will change the offset and must be called to set the new offset
     /// </summary>
     [Fact]
-    public async Task StreamConsumerBuilderShouldStartFromTheListenerConfigurationWhenConnectionIsKiller()
+    public async Task StreamConsumerBuilderShouldStartFromTheListenerConfigurationWhenConnectionIsKilled()
     {
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
