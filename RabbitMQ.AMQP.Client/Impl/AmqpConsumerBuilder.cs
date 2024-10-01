@@ -17,7 +17,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         private int _initialCredits = 10;
         private readonly Map _filters = new();
         private MessageHandler? _handler;
-        private Action<IConsumerBuilder.IStreamOptions>? _options = null;
+        private Action<IConsumerBuilder.ListenerContext>? _listenerContext = null;
 
         public AmqpConsumerBuilder(AmqpConnection connection)
         {
@@ -47,9 +47,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public IConsumerBuilder SubscriptionListener(Action<IConsumerBuilder.IStreamOptions> options)
+        public IConsumerBuilder SubscriptionListener(Action<IConsumerBuilder.ListenerContext> context)
         {
-            _options = options;
+            _listenerContext = context;
             return this;
         }
 
@@ -69,10 +69,11 @@ namespace RabbitMQ.AMQP.Client.Impl
 
             string address = new AddressBuilder().Queue(_queue).Address();
 
-            if (_options is not null)
+            if (_listenerContext is not null)
             {
                 _filters.Clear();
-                _options(new DefaultStreamOptions(this, _filters));
+
+                _listenerContext(new IConsumerBuilder.ListenerContext(new DefaultStreamOptions(this, _filters)));
             }
 
             AmqpConsumer consumer = new(_connection, address, _handler, _initialCredits, _filters);

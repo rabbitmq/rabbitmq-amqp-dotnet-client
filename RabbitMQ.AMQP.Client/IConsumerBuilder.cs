@@ -24,7 +24,7 @@ namespace RabbitMQ.AMQP.Client
         IConsumerBuilder MessageHandler(MessageHandler handler);
 
         IConsumerBuilder InitialCredits(int initialCredits);
-        IConsumerBuilder SubscriptionListener(Action<IStreamOptions> options);
+        IConsumerBuilder SubscriptionListener(Action<ListenerContext> listenerContext);
 
         IStreamOptions Stream();
 
@@ -38,6 +38,16 @@ namespace RabbitMQ.AMQP.Client
             IStreamOptions FilterValues(string[] values);
             IStreamOptions FilterMatchUnfiltered(bool matchUnfiltered);
             IConsumerBuilder Builder();
+        }
+
+        public record ListenerContext
+        {
+            public ListenerContext(IStreamOptions streamOptions)
+            {
+                StreamOptions = streamOptions;
+            }
+
+            public IStreamOptions StreamOptions { get; }
         }
     }
 }

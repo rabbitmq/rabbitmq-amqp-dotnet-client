@@ -15,7 +15,7 @@ namespace Tests.Consumer;
 /// </summary>
 public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
 {
-    
+
     /// <summary>
     /// Given a stream, if the connection is killed the consumer will restart consuming from the beginning
     /// because of Offset(StreamOffsetSpecification.First)
@@ -53,9 +53,9 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
         Assert.Equal(20, totalConsumed);
         await consumer.CloseAsync();
     }
-    
-    
-    
+
+
+
     [Fact]
     public async Task StreamConsumerBuilderShouldStartFromTheListenerConfiguration()
     {
@@ -80,9 +80,9 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
                     }
                 }
             ).Stream().Builder().SubscriptionListener(
-                options =>
+                listenerContext =>
                 {
-                    options.Offset(5);
+                    listenerContext.StreamOptions.Offset(5);
                 }
                 ).BuildAndStartAsync();
 
