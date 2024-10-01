@@ -52,6 +52,9 @@ namespace RabbitMQ.AMQP.Client.Impl
                 // if ListenerContext is null the function will do nothing
                 if (_configuration.ListenerContext != null)
                 {
+                    // all the old configuration is in the filters 
+                    // will be removed and the new filters will be added by the function
+                    // here we create a ListenerStreamOptions
                     _configuration.Filters.Clear();
                     _configuration.ListenerContext(
                         new IConsumerBuilder.ListenerContext(new ListenerStreamOptions(_configuration.Filters)));
