@@ -212,7 +212,6 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         consumer.Dispose();
     }
 
-
     /// <summary>
     /// Test for stream filtering
     /// There are two consumers:

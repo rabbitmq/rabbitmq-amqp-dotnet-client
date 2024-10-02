@@ -99,7 +99,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-
         /// <summary>
         /// Publishes a message to the broker in an asynchronous manner.
         /// The PublishResult is synchronous. In order to increase the performance

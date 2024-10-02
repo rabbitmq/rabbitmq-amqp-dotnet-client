@@ -27,7 +27,6 @@ namespace RabbitMQ.AMQP.Client
         private const int GigabytesMultiplier = 1000 * 1000 * 1000;
         private const long TerabytesMultiplier = 1000L * 1000L * 1000L * 1000L;
 
-
         public static ByteCapacity B(long bytes)
         {
             return new ByteCapacity(bytes);
@@ -52,7 +51,6 @@ namespace RabbitMQ.AMQP.Client
         {
             return new ByteCapacity(terabytes * TerabytesMultiplier);
         }
-
 
         private static readonly Regex s_sizeRegex = new Regex(@"^(\d+)([kKmMgGtTpP]?[bB]?)$", RegexOptions.Compiled);
 
@@ -81,7 +79,6 @@ namespace RabbitMQ.AMQP.Client
         {
             return _bytes;
         }
-
 
         public bool Equals(ByteCapacity? other)
         {

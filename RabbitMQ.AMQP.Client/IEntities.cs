@@ -81,6 +81,8 @@ namespace RabbitMQ.AMQP.Client
         IQuorumQueueSpecification Quorum();
 
         IClassicQueueSpecification Classic();
+
+        Task<ulong> PurgeAsync();
     }
 
     public interface IStreamSpecification

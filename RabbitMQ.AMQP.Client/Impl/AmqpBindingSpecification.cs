@@ -41,13 +41,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             _topologyListener = ((IManagementTopology)_management).TopologyListener();
         }
 
-        public string BindingPath
-        {
-            get
-            {
-                return BindingsTarget();
-            }
-        }
+        public string BindingPath => BindingsTarget();
 
         public async Task BindAsync()
         {
@@ -115,13 +109,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public string SourceExchangeName
-        {
-            get
-            {
-                return _sourceName;
-            }
-        }
+        public string SourceExchangeName => _sourceName;
 
         public IBindingSpecification DestinationQueue(IQueueSpecification queueSpec)
         {
@@ -135,13 +123,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public string DestinationQueueName
-        {
-            get
-            {
-                return _destinationName;
-            }
-        }
+        public string DestinationQueueName => _destinationName;
 
         public IBindingSpecification DestinationExchange(IExchangeSpecification exchangeSpec)
         {
@@ -154,13 +136,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public string DestinationExchangeName
-        {
-            get
-            {
-                return _destinationName;
-            }
-        }
+        public string DestinationExchangeName => _destinationName;
 
         public IBindingSpecification Key(string bindingKey)
         {
@@ -168,13 +144,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public string BindingKey
-        {
-            get
-            {
-                return _routingKey;
-            }
-        }
+        public string BindingKey => _routingKey;
 
         public IBindingSpecification Argument(string key, object value)
         {
@@ -188,13 +158,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public Dictionary<string, object> BindingArguments
-        {
-            get
-            {
-                return _arguments;
-            }
-        }
+        public Dictionary<string, object> BindingArguments => _arguments;
 
         private string BindingsTarget()
         {

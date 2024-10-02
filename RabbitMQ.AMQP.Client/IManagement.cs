@@ -22,6 +22,13 @@ namespace RabbitMQ.AMQP.Client
         }
     }
 
+    public class BadRequestException : Exception
+    {
+        public BadRequestException(string message) : base(message)
+        {
+        }
+    }
+
     /// <summary>
     /// IManagement interface and is responsible for managing the AMQP resources.
     /// RabbitMQ uses AMQP end point: "/management" to manage the resources like queues, exchanges, and bindings.

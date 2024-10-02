@@ -62,7 +62,6 @@ public class EnvironmentTests
         Assert.Single(env.GetConnections());
         Assert.Equal(1, env.GetConnections()[0].Id);
 
-
         string envConnectionName2 = "EnvironmentConnection2_" + Guid.NewGuid().ToString();
         IConnection connection2 = await env.CreateConnectionAsync(
             ConnectionSettingBuilder.Create().ContainerId(envConnectionName2).Build());
@@ -88,11 +87,9 @@ public class EnvironmentTests
         Assert.Single(env.GetConnections());
         await SystemUtils.WaitUntilConnectionIsClosed(envConnectionName2);
 
-
         await connection3.CloseAsync();
         Assert.Equal(State.Closed, connection3.State);
         await SystemUtils.WaitUntilConnectionIsClosed(envConnectionName3);
-
 
         Assert.Empty(env.GetConnections());
         await env.CloseAsync();

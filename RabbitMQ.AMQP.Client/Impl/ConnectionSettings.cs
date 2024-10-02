@@ -348,7 +348,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         private int _attempt = 1;
         private readonly int _maxAttempt = 12;
 
-
         private void ResetAfterMaxAttempt()
         {
             if (_attempt > 5)
@@ -377,7 +376,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
 
         public int CurrentAttempt { get; private set; } = 0;
-
 
         public override string ToString()
         {

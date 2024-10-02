@@ -303,7 +303,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         await management.Queue().Name(queueName).AutoDelete(true).Exclusive(true).DeclareAsync();
         Assert.Equal(1, topologyListener.QueueCount());
 
-
         await SystemUtils.WaitUntilConnectionIsKilled(containerId);
         await oneRecoveryEventSeenTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
@@ -493,7 +492,6 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync("e-remove-a-should-remove-binding",
             "q-remove-a-should-remove-binding-wont-delete");
-
 
         Assert.Equal(20, topologyListener.BindingCount());
         await queueSpec.DeleteAsync();

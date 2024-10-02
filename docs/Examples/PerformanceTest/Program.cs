@@ -15,7 +15,6 @@ const int tasksSize = 200;
 bool enableConsumer = true;
 // -----------------------
 
-
 Trace.TraceLevel = TraceLevel.Verbose;
 
 ConsoleTraceListener consoleListener = new();
@@ -58,7 +57,6 @@ if (enableConsumer)
         .MessageHandler(MessageHandler)
         .BuildAndStartAsync();
 }
-
 
 stats.Start();
 _ = Task.Run(async () =>
