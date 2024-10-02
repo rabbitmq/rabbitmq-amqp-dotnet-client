@@ -53,7 +53,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                 _configuration.ListenerContext?.Invoke(
                     new IConsumerBuilder.ListenerContext(new ListenerStreamOptions(_configuration.Filters)));
 
-
                 Attach attach = Utils.CreateAttach(_configuration.Address, DeliveryMode.AtLeastOnce, _id,
                     _configuration.Filters);
 
@@ -203,10 +202,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-        public long UnsettledMessageCount
-        {
-            get { return _unsettledMessageCounter.Get(); }
-        }
+        public long UnsettledMessageCount => _unsettledMessageCounter.Get();
 
         public void Unpause()
         {

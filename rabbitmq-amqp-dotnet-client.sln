@@ -11,11 +11,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GettingStarted", "docs/Exam
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9A316218-49D6-42B4-A64C-8B52AD8C9E4F}"
 	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.gitignore = .gitignore
 		Build.csproj = Build.csproj
 		build.ps1 = build.ps1
 		Directory.Build.props = Directory.Build.props
 		Directory.Build.targets = Directory.Build.targets
 		Directory.Packages.props = Directory.Packages.props
+		docfx.json = docfx.json
+		Makefile = Makefile
 		README.md = README.md
 	EndProjectSection
 EndProject

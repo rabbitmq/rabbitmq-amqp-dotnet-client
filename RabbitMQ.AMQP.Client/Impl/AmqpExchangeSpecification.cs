@@ -65,13 +65,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public string ExchangeName
-        {
-            get
-            {
-                return _name;
-            }
-        }
+        public string ExchangeName => _name;
 
         public IExchangeSpecification AutoDelete(bool autoDelete)
         {
@@ -79,13 +73,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public bool IsAutoDelete
-        {
-            get
-            {
-                return _autoDelete;
-            }
-        }
+        public bool IsAutoDelete => _autoDelete;
 
         public IExchangeSpecification Type(ExchangeType type)
         {
@@ -93,13 +81,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public ExchangeType ExchangeType
-        {
-            get
-            {
-                return _type;
-            }
-        }
+        public ExchangeType ExchangeType => _type;
 
         public IExchangeSpecification Argument(string key, object value)
         {

@@ -10,6 +10,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public const string Key = "key";
         public const string Queues = "queues";
         public const string Bindings = "bindings";
+        public const string Messages = "messages";
 
         /// <summary>
         /// <code>uint.MinValue</code> means "no limit"

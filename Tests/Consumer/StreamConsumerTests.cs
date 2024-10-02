@@ -53,7 +53,6 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
         await consumer.CloseAsync();
     }
 
-
     /// <summary>
     /// This is a standard case for the stream consumer with SubscriptionListener
     /// The consumer should start from the offset 5 and consume 5 messages

@@ -22,7 +22,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             NativeMessage = new Message();
         }
 
-
         public AmqpMessage(object body)
         {
             NativeMessage = new Message(body);
@@ -45,7 +44,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             NativeMessage.Properties ??= new Properties();
         }
-
 
         private void ThrowIfAnnotationsNotSet()
         {

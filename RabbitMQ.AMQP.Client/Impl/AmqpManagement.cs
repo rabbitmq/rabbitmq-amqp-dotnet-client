@@ -40,6 +40,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         internal const int Code201 = 201;
         internal const int Code204 = 204;
         internal const int Code409 = 409;
+        internal const int Code400 = 400;
         internal const string Put = "PUT";
         internal const string Get = "GET";
         internal const string Post = "POST";
@@ -75,7 +76,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             return Queue().Name(name);
         }
 
-
         /// <summary>
         /// Get the queue info for the given queue specification
         /// See <see cref="IQueueInfo"/> for more information
@@ -86,7 +86,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             return GetQueueInfoAsync(queueSpec.QueueName, cancellationToken);
         }
-
 
         /// <summary>
         /// Get the queue info for the given queue name
@@ -107,7 +106,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             return new DefaultQueueInfo((Map)response.Body);
         }
 
-
         internal IQueueSpecification Queue(QueueSpec spec)
         {
             return Queue().Name(spec.QueueName)
@@ -115,7 +113,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                 .Exclusive(spec.IsExclusive)
                 .Arguments(spec.QueueArguments);
         }
-
 
         /// <summary>
         ///  Create a new AMQPExchange specification
@@ -127,7 +124,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             ThrowIfClosed();
             return new AmqpExchangeSpecification(this);
         }
-
 
         /// <summary>
         ///
@@ -474,6 +470,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             {
                 case Code409:
                     throw new PreconditionFailedException($"{receivedMessage.Body}, response code: {responseCode}");
+                case Code400:
+                    throw new BadRequestException($"{receivedMessage.Body}, response code: {responseCode}");
             }
 
             // Check if the correlationId is the same as the messageId

@@ -5,6 +5,7 @@ const RabbitMQ.AMQP.Client.Impl.Consts.Bindings = "bindings" -> string!
 const RabbitMQ.AMQP.Client.Impl.Consts.DefaultMaxFrameSize = 0 -> uint
 const RabbitMQ.AMQP.Client.Impl.Consts.Exchanges = "exchanges" -> string!
 const RabbitMQ.AMQP.Client.Impl.Consts.Key = "key" -> string!
+const RabbitMQ.AMQP.Client.Impl.Consts.Messages = "messages" -> string!
 const RabbitMQ.AMQP.Client.Impl.Consts.Queues = "queues" -> string!
 override RabbitMQ.AMQP.Client.Error.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.AmqpConnection.CloseAsync() -> System.Threading.Tasks.Task!
@@ -28,6 +29,8 @@ override RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions.Builder() -> RabbitMQ.A
 override RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.ToString() -> string!
 override RabbitMQ.AMQP.Client.SaslMechanism.Equals(object? obj) -> bool
 override RabbitMQ.AMQP.Client.SaslMechanism.GetHashCode() -> int
+RabbitMQ.AMQP.Client.BadRequestException
+RabbitMQ.AMQP.Client.BadRequestException.BadRequestException(string! message) -> void
 RabbitMQ.AMQP.Client.ByteCapacity
 RabbitMQ.AMQP.Client.ByteCapacity.Equals(RabbitMQ.AMQP.Client.ByteCapacity? other) -> bool
 RabbitMQ.AMQP.Client.ByteCapacity.ToBytes() -> long
@@ -319,6 +322,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.MaxLengthBytes(RabbitMQ.AMQP.Cl
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.MessageTtl(System.TimeSpan ttl) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.Name(string! queueName) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.OverflowStrategy(RabbitMQ.AMQP.Client.OverFlowStrategy overflow) -> RabbitMQ.AMQP.Client.IQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.PurgeAsync() -> System.Threading.Tasks.Task<ulong>!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.QueueArguments.get -> System.Collections.Generic.Dictionary<object!, object!>!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.QueueName.get -> string!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.QueueType.get -> RabbitMQ.AMQP.Client.QueueType
@@ -476,6 +480,7 @@ RabbitMQ.AMQP.Client.IQueueSpecification.MaxLengthBytes(RabbitMQ.AMQP.Client.Byt
 RabbitMQ.AMQP.Client.IQueueSpecification.MessageTtl(System.TimeSpan ttl) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IQueueSpecification.Name(string! queueName) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IQueueSpecification.OverflowStrategy(RabbitMQ.AMQP.Client.OverFlowStrategy overflow) -> RabbitMQ.AMQP.Client.IQueueSpecification!
+RabbitMQ.AMQP.Client.IQueueSpecification.PurgeAsync() -> System.Threading.Tasks.Task<ulong>!
 RabbitMQ.AMQP.Client.IQueueSpecification.QueueArguments.get -> System.Collections.Generic.Dictionary<object!, object!>!
 RabbitMQ.AMQP.Client.IQueueSpecification.QueueName.get -> string!
 RabbitMQ.AMQP.Client.IQueueSpecification.QueueType.get -> RabbitMQ.AMQP.Client.QueueType

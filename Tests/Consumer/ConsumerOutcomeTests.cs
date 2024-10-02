@@ -30,7 +30,6 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         Utils.ValidateMessageAnnotations(new Dictionary<string, object> { { correctAnnotationKey, annotationValue } });
     }
 
-
     /// <summary>
     /// The test verifies that a requeued message with annotations will contain the annotations on redelivery.
     /// The delivered message should contain the custom annotations and x-delivery-count
@@ -50,7 +49,6 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         const string annotationValue1 = "annotation1-value";
 
         int requeueCount = 0;
-
 
         await _management.Queue().Type(QueueType.QUORUM).Name(_queueName).DeclareAsync();
         List<IMessage> messages = [];
@@ -142,11 +140,8 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         Queue q1 = await client.GetQueueAsync(dlqQueueName);
         Assert.Equal(0, q1.Messages);
 
-
-
         await dlConsumer.CloseAsync();
     }
-
 
     private async Task DeclareDeadLetterTopology(string queueName, string dlxQueueName)
     {

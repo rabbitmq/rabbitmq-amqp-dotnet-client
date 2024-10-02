@@ -132,7 +132,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-
         public async Task<IPublisher> BuildAsync(CancellationToken cancellationToken = default)
         {
             string address = new AddressBuilder().Exchange(_exchange).Queue(_queue).Key(_key).Address();

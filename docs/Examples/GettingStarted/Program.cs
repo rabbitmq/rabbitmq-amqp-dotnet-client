@@ -24,7 +24,6 @@ IConnection connection = await environment.CreateConnectionAsync();
 
 Trace.WriteLine(TraceLevel.Information, $"Connected to the broker {connection} successfully");
 
-
 // ------------------------------------------------------------------------------------
 // The management object is used to declare/delete queues, exchanges, and bindings
 IManagement management = connection.Management();
@@ -44,7 +43,6 @@ await bindingSpec.BindAsync();
 Trace.WriteLine(TraceLevel.Information,
     $"Queue {queueName} and Exchange {exchangeName} declared and bound with key {routingKey} successfully");
 // ------------------------------------------------------------------------------------
-
 
 // ------------------------------------------------------------------------------------
 // Declare a publisher and a consumer.
@@ -74,7 +72,6 @@ for (int i = 0; i < total; i++)
         case OutcomeState.Released:
             Trace.WriteLine(TraceLevel.Information, $"[Publisher] Message: {message.Body()} Released");
             break;
-
 
         case OutcomeState.Rejected:
             Trace.WriteLine(TraceLevel.Error,
