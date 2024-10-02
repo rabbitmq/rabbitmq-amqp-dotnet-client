@@ -67,6 +67,7 @@ namespace RabbitMQ.AMQP.Client
 
         IQueueSpecification MaxLengthBytes(ByteCapacity maxLengthBytes);
 
+        // TODO: Add more tests for SingleActiveConsumer
         IQueueSpecification SingleActiveConsumer(bool singleActiveConsumer);
 
         IQueueSpecification Expires(TimeSpan expiration);

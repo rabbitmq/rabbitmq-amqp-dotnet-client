@@ -21,28 +21,18 @@ namespace RabbitMQ.AMQP.Client.Impl
             PAUSED,
         }
 
-        private readonly AmqpConnection _connection;
-        private readonly string _address;
-        private readonly MessageHandler _messageHandler;
-        private readonly int _initialCredits;
-        private readonly Map _filters;
         private readonly Guid _id = Guid.NewGuid();
 
         private ReceiverLink? _receiverLink;
 
         private PauseStatus _pauseStatus = PauseStatus.UNPAUSED;
         private readonly UnsettledMessageCounter _unsettledMessageCounter = new();
+        private readonly ConsumerConfiguration _configuration;
 
-        public AmqpConsumer(AmqpConnection connection, string address,
-            MessageHandler messageHandler, int initialCredits, Map filters)
+        public AmqpConsumer(ConsumerConfiguration configuration)
         {
-            _connection = connection;
-            _address = address;
-            _messageHandler = messageHandler;
-            _initialCredits = initialCredits;
-            _filters = filters;
-
-            if (false == _connection.Consumers.TryAdd(_id, this))
+            _configuration = configuration;
+            if (false == _configuration.Connection.Consumers.TryAdd(_id, this))
             {
                 // TODO error?
             }
@@ -52,9 +42,20 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             try
             {
-                TaskCompletionSource<ReceiverLink> attachCompletedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource<ReceiverLink> attachCompletedTcs =
+                    new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-                Attach attach = Utils.CreateAttach(_address, DeliveryMode.AtLeastOnce, _id, _filters);
+                // this is an event to get the filters to the listener context
+                // it _must_ be here because in case of reconnect the original filters could be not valid anymore
+                // so the function must be called every time the consumer is opened normally or by reconnection
+                // if ListenerContext is null the function will do nothing
+                // ListenerContext will override only the filters the selected filters.
+                _configuration.ListenerContext?.Invoke(
+                    new IConsumerBuilder.ListenerContext(new ListenerStreamOptions(_configuration.Filters)));
+
+
+                Attach attach = Utils.CreateAttach(_configuration.Address, DeliveryMode.AtLeastOnce, _id,
+                    _configuration.Filters);
 
                 void onAttached(ILink argLink, Attach argAttach)
                 {
@@ -74,7 +75,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 ReceiverLink? tmpReceiverLink = null;
                 Task receiverLinkTask = Task.Run(async () =>
                 {
-                    Session session = await _connection._nativePubSubSessions.GetOrCreateSessionAsync()
+                    Session session = await _configuration.Connection._nativePubSubSessions.GetOrCreateSessionAsync()
                         .ConfigureAwait(false);
                     tmpReceiverLink = new ReceiverLink(session, _id.ToString(), attach, onAttached);
                 });
@@ -89,7 +90,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                     .ConfigureAwait(false);
 
                 System.Diagnostics.Debug.Assert(tmpReceiverLink != null);
-                System.Diagnostics.Debug.Assert(Object.ReferenceEquals(_receiverLink, tmpReceiverLink));
+                System.Diagnostics.Debug.Assert(object.ReferenceEquals(_receiverLink, tmpReceiverLink));
 
                 if (_receiverLink is null)
                 {
@@ -103,7 +104,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 }
                 else
                 {
-                    _receiverLink.SetCredit(_initialCredits);
+                    _receiverLink.SetCredit(_configuration.InitialCredits);
 
                     // TODO save / cancel task
                     _ = Task.Run(ProcessMessages);
@@ -150,7 +151,10 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                     // TODO catch exceptions thrown by handlers,
                     // then call exception handler?
-                    await _messageHandler(context, amqpMessage).ConfigureAwait(false);
+                    if (_configuration.Handler != null)
+                    {
+                        await _configuration.Handler(context, amqpMessage).ConfigureAwait(false);
+                    }
                 }
             }
             catch (Exception e)
@@ -173,20 +177,24 @@ namespace RabbitMQ.AMQP.Client.Impl
             if (_receiverLink is null)
             {
                 // TODO create "internal bug" exception type?
-                throw new InvalidOperationException("_receiverLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                throw new InvalidOperationException(
+                    "_receiverLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
 
-            if ((int)PauseStatus.UNPAUSED == Interlocked.CompareExchange(ref Unsafe.As<PauseStatus, int>(ref _pauseStatus),
-                (int)PauseStatus.PAUSING, (int)PauseStatus.UNPAUSED))
+            if ((int)PauseStatus.UNPAUSED == Interlocked.CompareExchange(
+                    ref Unsafe.As<PauseStatus, int>(ref _pauseStatus),
+                    (int)PauseStatus.PAUSING, (int)PauseStatus.UNPAUSED))
             {
                 _receiverLink.SetCredit(credit: 0);
 
-                if ((int)PauseStatus.PAUSING != Interlocked.CompareExchange(ref Unsafe.As<PauseStatus, int>(ref _pauseStatus),
-                    (int)PauseStatus.PAUSED, (int)PauseStatus.PAUSING))
+                if ((int)PauseStatus.PAUSING != Interlocked.CompareExchange(
+                        ref Unsafe.As<PauseStatus, int>(ref _pauseStatus),
+                        (int)PauseStatus.PAUSED, (int)PauseStatus.PAUSING))
                 {
                     _pauseStatus = PauseStatus.UNPAUSED;
                     // TODO create "internal bug" exception type?
-                    throw new InvalidOperationException("error transitioning from PAUSING -> PAUSED, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                    throw new InvalidOperationException(
+                        "error transitioning from PAUSING -> PAUSED, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
                 }
             }
             else
@@ -197,10 +205,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public long UnsettledMessageCount
         {
-            get
-            {
-                return _unsettledMessageCounter.Get();
-            }
+            get { return _unsettledMessageCounter.Get(); }
         }
 
         public void Unpause()
@@ -208,13 +213,15 @@ namespace RabbitMQ.AMQP.Client.Impl
             if (_receiverLink is null)
             {
                 // TODO create "internal bug" exception type?
-                throw new InvalidOperationException("_receiverLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                throw new InvalidOperationException(
+                    "_receiverLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
 
-            if ((int)PauseStatus.PAUSED == Interlocked.CompareExchange(ref Unsafe.As<PauseStatus, int>(ref _pauseStatus),
-                (int)PauseStatus.UNPAUSED, (int)PauseStatus.PAUSED))
+            if ((int)PauseStatus.PAUSED == Interlocked.CompareExchange(
+                    ref Unsafe.As<PauseStatus, int>(ref _pauseStatus),
+                    (int)PauseStatus.UNPAUSED, (int)PauseStatus.PAUSED))
             {
-                _receiverLink.SetCredit(credit: _initialCredits);
+                _receiverLink.SetCredit(credit: _configuration.InitialCredits);
             }
             else
             {
@@ -240,19 +247,20 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
             catch (Exception ex)
             {
-                Trace.WriteLine(TraceLevel.Warning, "Failed to close receiver link. The consumer will be closed anyway", ex);
+                Trace.WriteLine(TraceLevel.Warning, "Failed to close receiver link. The consumer will be closed anyway",
+                    ex);
             }
 
             _receiverLink = null;
             OnNewStatus(State.Closed, null);
-            _connection.Consumers.TryRemove(_id, out _);
+            _configuration.Connection.Consumers.TryRemove(_id, out _);
         }
 
         public override string ToString()
         {
-            return $"Consumer{{Address='{_address}', " +
+            return $"Consumer{{Address='{_configuration.Address}', " +
                    $"id={_id}, " +
-                   $"Connection='{_connection}', " +
+                   $"Connection='{_configuration.Connection}', " +
                    $"State='{State}'}}";
         }
     }
