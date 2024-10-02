@@ -142,7 +142,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         internal string ExchangeName => _exchangeSpecification.ExchangeName;
 
-        internal ExchangeType ExchangeType => _exchangeSpecification.ExchangeType;
+        internal string ExchangeType => _exchangeSpecification.ExchangeType;
 
         internal bool IsAutoDelete => _exchangeSpecification.IsAutoDelete;
 
