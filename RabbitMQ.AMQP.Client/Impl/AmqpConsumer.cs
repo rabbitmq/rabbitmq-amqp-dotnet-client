@@ -47,18 +47,11 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 // this is an event to get the filters to the listener context
                 // it _must_ be here because in case of reconnect the original filters could be not valid anymore
-                // so the function must be called every time the consumer is opened
-                // even the user will configure subscription listener
+                // so the function must be called every time the consumer is opened normally or by reconnection
                 // if ListenerContext is null the function will do nothing
-                if (_configuration.ListenerContext != null)
-                {
-                    // all the old configuration is in the filters 
-                    // will be removed and the new filters will be added by the function
-                    // here we create a ListenerStreamOptions
-                    _configuration.Filters.Clear();
-                    _configuration.ListenerContext(
-                        new IConsumerBuilder.ListenerContext(new ListenerStreamOptions(_configuration.Filters)));
-                }
+                // ListenerContext will override only the filters the selected filters.
+                _configuration.ListenerContext?.Invoke(
+                    new IConsumerBuilder.ListenerContext(new ListenerStreamOptions(_configuration.Filters)));
 
 
                 Attach attach = Utils.CreateAttach(_configuration.Address, DeliveryMode.AtLeastOnce, _id,

@@ -27,9 +27,9 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
         Assert.NotNull(_management);
 
         ManualResetEventSlim manualResetEvent = new(false);
-        await _management.Queue(_queueName).Stream().Queue().DeclareAsync();
-
-        await PublishMessages();
+        var q = _management.Queue(_queueName).Stream().Queue();
+        await q.DeclareAsync();
+        await PublishAsync(q, 10);
 
         int totalConsumed = 0;
         IConsumer consumer = await _connection.ConsumerBuilder()
@@ -65,11 +65,13 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
         ManualResetEventSlim manualResetEvent = new(false);
-        await _management.Queue(_queueName).Stream().Queue().DeclareAsync();
-        await PublishMessages();
+        var q = _management.Queue(_queueName).Stream().Queue();
+        await q.DeclareAsync();
+        await PublishAsync(q, 10);
         int totalConsumed = 0;
         IConsumer consumer = await _connection.ConsumerBuilder()
-            .Queue(_queueName).InitialCredits(10).MessageHandler(
+            .Queue(_queueName).Stream().FilterMatchUnfiltered(true).Offset(StreamOffsetSpecification.First).Builder()
+            .InitialCredits(10).MessageHandler(
                 async (context, message) =>
                 {
                     Interlocked.Increment(ref totalConsumed);
@@ -99,8 +101,9 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
         ManualResetEventSlim manualResetEvent = new(false);
-        await _management.Queue(_queueName).Stream().Queue().DeclareAsync();
-        await PublishMessages();
+        var q = _management.Queue(_queueName).Stream().Queue();
+        await q.DeclareAsync();
+        await PublishAsync(q, 10);
         int totalConsumed = 0;
         int startFrom = 2;
         IConsumer consumer = await _connection.ConsumerBuilder()
@@ -139,17 +142,5 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
         manualResetEvent.Wait(TimeSpan.FromSeconds(5));
         Assert.Equal(10, totalConsumed);
         await consumer.CloseAsync();
-    }
-
-    private async Task PublishMessages()
-    {
-        Assert.NotNull(_connection);
-        IPublisher publisher = await _connection.PublisherBuilder().Queue(_queueName).BuildAsync();
-        for (int i = 0; i < 10; i++)
-        {
-            PublishResult pr =
-                await publisher.PublishAsync(new AmqpMessage($"Hello World_{i}").MessageId(i.ToString()));
-            Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
-        }
     }
 }
