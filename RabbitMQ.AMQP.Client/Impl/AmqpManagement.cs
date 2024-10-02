@@ -234,7 +234,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                             // the timeout is set to 60 seconds. 
                             // For the moment I'd trace it at some point we can remove it
                             Trace.WriteLine(TraceLevel.Verbose,
-                                $"Management:Timeout {timeout.Seconds} s.. waiting for message.");
+                                $"{ToString()} - Timeout {timeout.Seconds} s.. waiting for message.");
                             continue;
                         }
 
