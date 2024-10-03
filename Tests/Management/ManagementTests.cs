@@ -296,6 +296,24 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
     }
 
     [Fact]
+    public async Task DeclareAndDeleteExchangeWithStringType()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IExchangeSpecification exchangeSpec = _management.Exchange(_exchangeName).Type("direct");
+        await exchangeSpec.DeclareAsync();
+
+        await _management.Exchange(_exchangeName).Type("direct").DeclareAsync();
+
+        await SystemUtils.WaitUntilExchangeExistsAsync(exchangeSpec);
+
+        await exchangeSpec.DeleteAsync();
+
+        await SystemUtils.WaitUntilExchangeDeletedAsync(exchangeSpec);
+    }
+
+    [Fact]
     public async Task ExchangeWithEmptyNameShouldRaiseAnException()
     {
         Assert.NotNull(_connection);

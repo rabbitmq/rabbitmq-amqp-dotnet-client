@@ -155,10 +155,11 @@ RabbitMQ.AMQP.Client.IExchangeSpecification.Arguments(System.Collections.Generic
 RabbitMQ.AMQP.Client.IExchangeSpecification.AutoDelete(bool isAutoDelete) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.IExchangeSpecification.ExchangeArguments.get -> System.Collections.Generic.Dictionary<string!, object!>!
 RabbitMQ.AMQP.Client.IExchangeSpecification.ExchangeName.get -> string!
-RabbitMQ.AMQP.Client.IExchangeSpecification.ExchangeType.get -> RabbitMQ.AMQP.Client.ExchangeType
+RabbitMQ.AMQP.Client.IExchangeSpecification.ExchangeType.get -> string!
 RabbitMQ.AMQP.Client.IExchangeSpecification.IsAutoDelete.get -> bool
 RabbitMQ.AMQP.Client.IExchangeSpecification.Name(string! exchangeName) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.IExchangeSpecification.Type(RabbitMQ.AMQP.Client.ExchangeType exchangeType) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
+RabbitMQ.AMQP.Client.IExchangeSpecification.Type(string! exchangeType) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.ILifeCycle
 RabbitMQ.AMQP.Client.ILifeCycle.ChangeState -> RabbitMQ.AMQP.Client.LifeCycleCallBack!
 RabbitMQ.AMQP.Client.ILifeCycle.CloseAsync() -> System.Threading.Tasks.Task!
@@ -262,10 +263,11 @@ RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.DeclareAsync() -> System.Thr
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.DeleteAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.ExchangeArguments.get -> System.Collections.Generic.Dictionary<string!, object!>!
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.ExchangeName.get -> string!
-RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.ExchangeType.get -> RabbitMQ.AMQP.Client.ExchangeType
+RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.ExchangeType.get -> string!
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.IsAutoDelete.get -> bool
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.Name(string! name) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
-RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.Type(RabbitMQ.AMQP.Client.ExchangeType type) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.Type(RabbitMQ.AMQP.Client.ExchangeType exchangeType) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.Type(string! exchangeType) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Binding() -> RabbitMQ.AMQP.Client.IBindingSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpManagement.Exchange() -> RabbitMQ.AMQP.Client.IExchangeSpecification!
