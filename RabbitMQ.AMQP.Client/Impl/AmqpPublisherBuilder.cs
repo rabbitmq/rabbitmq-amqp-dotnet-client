@@ -11,9 +11,9 @@ namespace RabbitMQ.AMQP.Client.Impl
     public class AmqpPublisherBuilder : IPublisherBuilder
     {
         private readonly AmqpConnection _connection;
-        private string? _exchange;
-        private string? _key;
-        private string? _queue;
+        private string? _exchange = null;
+        private string? _key = null;
+        private string? _queue = null;
         private TimeSpan _timeout = TimeSpan.FromSeconds(10);
 
         public AmqpPublisherBuilder(AmqpConnection connection)
@@ -55,10 +55,19 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
+        private bool IsAnonymous()
+        {
+            return string.IsNullOrEmpty(_exchange) && string.IsNullOrEmpty(_queue) && string.IsNullOrEmpty(_key);
+        }
+
 
         public async Task<IPublisher> BuildAsync(CancellationToken cancellationToken = default)
         {
-            string address = new AddressBuilder().Exchange(_exchange).Queue(_queue).Key(_key).Address();
+            string? address = null;
+            if (!IsAnonymous())
+            {
+                address = new AddressBuilder().Exchange(_exchange).Queue(_queue).Key(_key).Address();
+            }
 
             AmqpPublisher publisher = new(_connection, address, _timeout);
 

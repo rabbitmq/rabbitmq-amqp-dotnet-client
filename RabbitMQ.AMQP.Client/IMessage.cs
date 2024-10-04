@@ -21,6 +21,9 @@ namespace RabbitMQ.AMQP.Client
         string ReplyTo();
         IMessage ReplyTo(string id);
 
+        string To();
+        IMessage To(string id);
+
         string Subject();
         IMessage Subject(string subject);
 
@@ -28,5 +31,7 @@ namespace RabbitMQ.AMQP.Client
         public IMessage Annotation(string key, object value);
 
         public object Annotation(string key);
+
+        IMessageAddressBuilder ToAddress();
     }
 }

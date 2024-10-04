@@ -1,39 +1,54 @@
+using System;
+
 namespace RabbitMQ.AMQP.Client.Impl
 {
-    public class AddressBuilder : IAddressBuilder<AddressBuilder>
+    public abstract class DefaultAddressBuilder<T> : IAddressBuilder<T>
     {
-        private string? _exchange;
+        private string? _exchange = null;
+        private string? _queue = null;
+        private string? _key = null;
+        protected T? _owner = default;
 
-        private string? _queue;
 
-        private string? _key;
-
-        public AddressBuilder Exchange(IExchangeSpecification exchangeSpec)
+        public T Exchange(IExchangeSpecification exchangeSpec)
         {
             return Exchange(exchangeSpec.ExchangeName);
         }
 
-        public AddressBuilder Exchange(string? exchange)
+
+        public T Exchange(string? exchangeName)
         {
-            _exchange = exchange;
-            return this;
+            _exchange = exchangeName;
+            if (_owner == null)
+            {
+                throw new InvalidOperationException("Owner is null");
+            }
+
+            return _owner;
         }
 
-        public AddressBuilder Queue(IQueueSpecification queueSpec)
+        public T Queue(IQueueSpecification queueSpec) => Queue(queueSpec.QueueName);
+
+        public T Queue(string? queueName)
         {
-            return Queue(queueSpec.QueueName);
+            _queue = queueName;
+            if (_owner == null)
+            {
+                throw new InvalidOperationException("Owner is null");
+            }
+
+            return _owner;
         }
 
-        public AddressBuilder Queue(string? queue)
-        {
-            _queue = queue;
-            return this;
-        }
-
-        public AddressBuilder Key(string? key)
+        public T Key(string? key)
         {
             _key = key;
-            return this;
+            if (_owner == null)
+            {
+                throw new InvalidOperationException("Owner is null");
+            }
+
+            return _owner;
         }
 
         public string Address()
@@ -74,6 +89,31 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
 
             return $"/{Consts.Queues}/{Utils.EncodePathSegment(_queue)}";
+        }
+    }
+
+    public class AddressBuilder : DefaultAddressBuilder<AddressBuilder>
+    {
+        public AddressBuilder()
+        {
+            _owner = this;
+        }
+    }
+
+    public class MessageAddressBuilder : DefaultAddressBuilder<IMessageAddressBuilder>, IMessageAddressBuilder
+    {
+        private readonly IMessage _message;
+
+        public MessageAddressBuilder(IMessage message)
+        {
+            _message = message;
+            _owner = this;
+        }
+
+        public IMessage Build()
+        {
+            _message.To(Address());
+            return _message;
         }
     }
 }

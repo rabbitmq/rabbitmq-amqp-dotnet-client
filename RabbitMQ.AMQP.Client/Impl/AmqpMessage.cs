@@ -13,6 +13,7 @@ namespace RabbitMQ.AMQP.Client.Impl
     {
     }
 
+
     public class AmqpMessage : IMessage
     {
         public Message NativeMessage { get; }
@@ -105,6 +106,19 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
+        public string To()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.To;
+        }
+
+        public IMessage To(string id)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.To = id;
+            return this;
+        }
+
         public string Subject()
         {
             ThrowIfPropertiesNotSet();
@@ -131,6 +145,11 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             ThrowIfAnnotationsNotSet();
             return NativeMessage.MessageAnnotations[new Symbol(key)];
+        }
+
+        public IMessageAddressBuilder ToAddress()
+        {
+            return new MessageAddressBuilder(this);
         }
     }
 }

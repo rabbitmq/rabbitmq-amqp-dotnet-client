@@ -181,6 +181,11 @@ RabbitMQ.AMQP.Client.IMessage.ReplyTo() -> string!
 RabbitMQ.AMQP.Client.IMessage.ReplyTo(string! id) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IMessage.Subject() -> string!
 RabbitMQ.AMQP.Client.IMessage.Subject(string! subject) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.IMessage.To() -> string!
+RabbitMQ.AMQP.Client.IMessage.To(string! id) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.IMessage.ToAddress() -> RabbitMQ.AMQP.Client.IMessageAddressBuilder!
+RabbitMQ.AMQP.Client.IMessageAddressBuilder
+RabbitMQ.AMQP.Client.IMessageAddressBuilder.Build() -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.AbstractLifeCycle() -> void
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.ChangeState -> RabbitMQ.AMQP.Client.LifeCycleCallBack?
@@ -192,13 +197,7 @@ RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle._disposed -> bool
 RabbitMQ.AMQP.Client.Impl.AbstractReconnectLifeCycle
 RabbitMQ.AMQP.Client.Impl.AbstractReconnectLifeCycle.AbstractReconnectLifeCycle() -> void
 RabbitMQ.AMQP.Client.Impl.AddressBuilder
-RabbitMQ.AMQP.Client.Impl.AddressBuilder.Address() -> string!
 RabbitMQ.AMQP.Client.Impl.AddressBuilder.AddressBuilder() -> void
-RabbitMQ.AMQP.Client.Impl.AddressBuilder.Exchange(RabbitMQ.AMQP.Client.IExchangeSpecification! exchangeSpec) -> RabbitMQ.AMQP.Client.Impl.AddressBuilder!
-RabbitMQ.AMQP.Client.Impl.AddressBuilder.Exchange(string? exchange) -> RabbitMQ.AMQP.Client.Impl.AddressBuilder!
-RabbitMQ.AMQP.Client.Impl.AddressBuilder.Key(string? key) -> RabbitMQ.AMQP.Client.Impl.AddressBuilder!
-RabbitMQ.AMQP.Client.Impl.AddressBuilder.Queue(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpec) -> RabbitMQ.AMQP.Client.Impl.AddressBuilder!
-RabbitMQ.AMQP.Client.Impl.AddressBuilder.Queue(string? queue) -> RabbitMQ.AMQP.Client.Impl.AddressBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification
 RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.AmqpBindingSpecification(RabbitMQ.AMQP.Client.Impl.AmqpManagement! management) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpBindingSpecification.Argument(string! key, object! value) -> RabbitMQ.AMQP.Client.IBindingSpecification!
@@ -288,10 +287,13 @@ RabbitMQ.AMQP.Client.Impl.AmqpMessage.ReplyTo() -> string!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.ReplyTo(string! id) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.Subject() -> string!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.Subject(string! subject) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.Impl.AmqpMessage.To() -> string!
+RabbitMQ.AMQP.Client.Impl.AmqpMessage.To(string! id) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.Impl.AmqpMessage.ToAddress() -> RabbitMQ.AMQP.Client.IMessageAddressBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpNotOpenException
 RabbitMQ.AMQP.Client.Impl.AmqpNotOpenException.AmqpNotOpenException(string! message) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpPublisher
-RabbitMQ.AMQP.Client.Impl.AmqpPublisher.AmqpPublisher(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection, string! address, System.TimeSpan timeout) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpPublisher.AmqpPublisher(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection, string? address, System.TimeSpan timeout) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpPublisher.PublishAsync(RabbitMQ.AMQP.Client.IMessage! message, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.PublishResult!>!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.AmqpPublisherBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection) -> void
@@ -403,6 +405,15 @@ RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration.Handler.set -> void
 RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration.InitialCredits.get -> int
 RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration.InitialCredits.set -> void
 RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration.ListenerContext -> System.Action<RabbitMQ.AMQP.Client.IConsumerBuilder.ListenerContext!>?
+RabbitMQ.AMQP.Client.Impl.DefaultAddressBuilder<T>
+RabbitMQ.AMQP.Client.Impl.DefaultAddressBuilder<T>.Address() -> string!
+RabbitMQ.AMQP.Client.Impl.DefaultAddressBuilder<T>.DefaultAddressBuilder() -> void
+RabbitMQ.AMQP.Client.Impl.DefaultAddressBuilder<T>.Exchange(RabbitMQ.AMQP.Client.IExchangeSpecification! exchangeSpec) -> T
+RabbitMQ.AMQP.Client.Impl.DefaultAddressBuilder<T>.Exchange(string? exchangeName) -> T
+RabbitMQ.AMQP.Client.Impl.DefaultAddressBuilder<T>.Key(string? key) -> T
+RabbitMQ.AMQP.Client.Impl.DefaultAddressBuilder<T>.Queue(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpec) -> T
+RabbitMQ.AMQP.Client.Impl.DefaultAddressBuilder<T>.Queue(string? queueName) -> T
+RabbitMQ.AMQP.Client.Impl.DefaultAddressBuilder<T>._owner -> T?
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Arguments() -> System.Collections.Generic.Dictionary<string!, object!>!
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.AutoDelete() -> bool
@@ -420,6 +431,9 @@ RabbitMQ.AMQP.Client.Impl.InvalidCodeException
 RabbitMQ.AMQP.Client.Impl.InvalidCodeException.InvalidCodeException(string! message) -> void
 RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions
 RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions.ListenerStreamOptions(Amqp.Types.Map! filters) -> void
+RabbitMQ.AMQP.Client.Impl.MessageAddressBuilder
+RabbitMQ.AMQP.Client.Impl.MessageAddressBuilder.Build() -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.Impl.MessageAddressBuilder.MessageAddressBuilder(RabbitMQ.AMQP.Client.IMessage! message) -> void
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.Activated(bool activated) -> RabbitMQ.AMQP.Client.IRecoveryConfiguration!
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.BackOffDelayPolicy(RabbitMQ.AMQP.Client.IBackOffDelayPolicy! backOffDelayPolicy) -> RabbitMQ.AMQP.Client.IRecoveryConfiguration!
