@@ -81,6 +81,8 @@ namespace RabbitMQ.AMQP.Client
         IQuorumQueueSpecification Quorum();
 
         IClassicQueueSpecification Classic();
+
+        Task<ulong> PurgeAsync();
     }
 
     public interface IStreamSpecification
@@ -147,8 +149,9 @@ namespace RabbitMQ.AMQP.Client
         bool IsAutoDelete { get; }
         IExchangeSpecification AutoDelete(bool isAutoDelete);
 
-        ExchangeType ExchangeType { get; }
+        string ExchangeType { get; }
         IExchangeSpecification Type(ExchangeType exchangeType);
+        IExchangeSpecification Type(string exchangeType);
 
         Dictionary<string, object> ExchangeArguments { get; }
         IExchangeSpecification Argument(string key, object value);

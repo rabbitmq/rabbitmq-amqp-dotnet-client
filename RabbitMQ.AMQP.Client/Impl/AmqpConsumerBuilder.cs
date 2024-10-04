@@ -66,12 +66,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-
         public IConsumerBuilder.IStreamOptions Stream()
         {
             return new ConsumerBuilderStreamOptions(this, _configuration.Filters);
         }
-
 
         public async Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default)
         {
@@ -79,7 +77,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             {
                 throw new ConsumerException("Message handler is not set");
             }
-
 
             AmqpConsumer consumer = new(_configuration);
 
@@ -90,7 +87,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             return consumer;
         }
     }
-
 
     /// <summary>
     /// The base class for the stream options.
@@ -144,7 +140,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         public abstract IConsumerBuilder Builder();
     }
 
-
     /// <summary>
     /// The stream options for the Subscribe Listener event.
     /// For the user perspective, it is used to set the stream options for the listener
@@ -176,7 +171,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             _consumerBuilder = consumerBuilder;
         }
-
 
         public override IConsumerBuilder Builder()
         {

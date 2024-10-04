@@ -27,7 +27,6 @@ namespace RabbitMQ.AMQP.Client
         string Subject();
         IMessage Subject(string subject);
 
-
         public IMessage Annotation(string key, object value);
 
         public object Annotation(string key);

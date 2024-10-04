@@ -84,7 +84,6 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         Assert.Empty(_connection.GetPublishers());
     }
 
-
     [Fact]
     public async Task ValidatePublishersCount()
     {

@@ -60,7 +60,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             return string.IsNullOrEmpty(_exchange) && string.IsNullOrEmpty(_queue) && string.IsNullOrEmpty(_key);
         }
 
-
         public async Task<IPublisher> BuildAsync(CancellationToken cancellationToken = default)
         {
             string? address = null;

@@ -122,37 +122,13 @@ namespace RabbitMQ.AMQP.Client.Impl
             _queueSpecification = queueSpecification;
         }
 
-        internal string QueueName
-        {
-            get
-            {
-                return _queueSpecification.QueueName;
-            }
-        }
+        internal string QueueName => _queueSpecification.QueueName;
 
-        internal bool IsExclusive
-        {
-            get
-            {
-                return _queueSpecification.IsExclusive;
-            }
-        }
+        internal bool IsExclusive => _queueSpecification.IsExclusive;
 
-        internal bool IsAutoDelete
-        {
-            get
-            {
-                return _queueSpecification.IsAutoDelete;
-            }
-        }
+        internal bool IsAutoDelete => _queueSpecification.IsAutoDelete;
 
-        internal Dictionary<object, object> QueueArguments
-        {
-            get
-            {
-                return _queueSpecification.QueueArguments;
-            }
-        }
+        internal Dictionary<object, object> QueueArguments => _queueSpecification.QueueArguments;
     }
 
     internal class ExchangeSpec
@@ -164,37 +140,13 @@ namespace RabbitMQ.AMQP.Client.Impl
             _exchangeSpecification = exchangeSpecification;
         }
 
-        internal string ExchangeName
-        {
-            get
-            {
-                return _exchangeSpecification.ExchangeName;
-            }
-        }
+        internal string ExchangeName => _exchangeSpecification.ExchangeName;
 
-        internal ExchangeType ExchangeType
-        {
-            get
-            {
-                return _exchangeSpecification.ExchangeType;
-            }
-        }
+        internal string ExchangeType => _exchangeSpecification.ExchangeType;
 
-        internal bool IsAutoDelete
-        {
-            get
-            {
-                return _exchangeSpecification.IsAutoDelete;
-            }
-        }
+        internal bool IsAutoDelete => _exchangeSpecification.IsAutoDelete;
 
-        internal Dictionary<string, object> ExchangeArguments
-        {
-            get
-            {
-                return _exchangeSpecification.ExchangeArguments;
-            }
-        }
+        internal Dictionary<string, object> ExchangeArguments => _exchangeSpecification.ExchangeArguments;
     }
 
     internal class BindingSpec
@@ -206,52 +158,16 @@ namespace RabbitMQ.AMQP.Client.Impl
             _bindingSpecification = bindingSpecification;
         }
 
-        internal string SourceExchangeName
-        {
-            get
-            {
-                return _bindingSpecification.SourceExchangeName;
-            }
-        }
+        internal string SourceExchangeName => _bindingSpecification.SourceExchangeName;
 
-        internal string DestinationExchangeName
-        {
-            get
-            {
-                return _bindingSpecification.DestinationExchangeName;
-            }
-        }
+        internal string DestinationExchangeName => _bindingSpecification.DestinationExchangeName;
 
-        internal string DestinationQueueName
-        {
-            get
-            {
-                return _bindingSpecification.DestinationQueueName;
-            }
-        }
+        internal string DestinationQueueName => _bindingSpecification.DestinationQueueName;
 
-        internal string BindingKey
-        {
-            get
-            {
-                return _bindingSpecification.BindingKey;
-            }
-        }
+        internal string BindingKey => _bindingSpecification.BindingKey;
 
-        internal Dictionary<string, object> BindingArguments
-        {
-            get
-            {
-                return _bindingSpecification.BindingArguments;
-            }
-        }
+        internal Dictionary<string, object> BindingArguments => _bindingSpecification.BindingArguments;
 
-        internal string BindingPath
-        {
-            get
-            {
-                return _bindingSpecification.BindingPath;
-            }
-        }
+        internal string BindingPath => _bindingSpecification.BindingPath;
     }
 }

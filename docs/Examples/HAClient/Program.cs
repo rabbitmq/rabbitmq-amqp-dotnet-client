@@ -20,7 +20,6 @@ long messagesFailed = 0;
 
 const int totalMessagesToSend = 5_000_000;
 
-
 Task printStats = Task.Run(() =>
 {
     while (true)
@@ -33,7 +32,6 @@ Task printStats = Task.Run(() =>
         Thread.Sleep(1000);
     }
 });
-
 
 Trace.WriteLine(TraceLevel.Information, "Starting");
 const string containerId = "HA-Client-Connection";
@@ -73,7 +71,6 @@ publisher.ChangeState += (sender, fromState, toState, e) =>
         pausePublishing.Reset();
     }
 };
-
 
 IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).InitialCredits(100).MessageHandler((context, message) =>
     {

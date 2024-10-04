@@ -51,7 +51,6 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
         publisher.Dispose();
     }
 
-
     /// <summary>
     /// Test the Simple case where the consumer is closed and the status is changed
     /// </summary>

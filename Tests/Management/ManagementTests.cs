@@ -215,18 +215,21 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         IQueueSpecification queueSpecification0 = _management.Queue(_queueName).Type(QueueType.CLASSIC);
         Dictionary<object, object> queueSpec0Args = queueSpecification0.QueueArguments;
         queueSpec0Args.Add("x-max-age", "1000s");
-        PreconditionFailedException pex0 = await Assert.ThrowsAsync<PreconditionFailedException>(queueSpecification0.DeclareAsync);
+        PreconditionFailedException pex0 =
+            await Assert.ThrowsAsync<PreconditionFailedException>(queueSpecification0.DeclareAsync);
         Assert.Contains("409", pex0.Message);
 
         IQueueSpecification queueSpecification1 = _management.Queue(_queueName).Type(QueueType.QUORUM);
         Dictionary<object, object> queueSpec1Args = queueSpecification1.QueueArguments;
         queueSpec1Args.Add("x-max-age", "1000s");
-        PreconditionFailedException pex1 = await Assert.ThrowsAsync<PreconditionFailedException>(queueSpecification1.DeclareAsync);
+        PreconditionFailedException pex1 =
+            await Assert.ThrowsAsync<PreconditionFailedException>(queueSpecification1.DeclareAsync);
         Assert.Contains("409", pex1.Message);
 
         IQueueSpecification queueSpecification2 = _management.Queue(_queueName).Type(QueueType.STREAM);
         queueSpecification2.DeadLetterRoutingKey("not-supported");
-        PreconditionFailedException pex2 = await Assert.ThrowsAsync<PreconditionFailedException>(queueSpecification2.DeclareAsync);
+        PreconditionFailedException pex2 =
+            await Assert.ThrowsAsync<PreconditionFailedException>(queueSpecification2.DeclareAsync);
         Assert.Contains("409", pex2.Message);
     }
 
@@ -293,12 +296,31 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
     }
 
     [Fact]
+    public async Task DeclareAndDeleteExchangeWithStringType()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IExchangeSpecification exchangeSpec = _management.Exchange(_exchangeName).Type("direct");
+        await exchangeSpec.DeclareAsync();
+
+        await _management.Exchange(_exchangeName).Type("direct").DeclareAsync();
+
+        await SystemUtils.WaitUntilExchangeExistsAsync(exchangeSpec);
+
+        await exchangeSpec.DeleteAsync();
+
+        await SystemUtils.WaitUntilExchangeDeletedAsync(exchangeSpec);
+    }
+
+    [Fact]
     public async Task ExchangeWithEmptyNameShouldRaiseAnException()
     {
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => _management.Exchange("").Type(ExchangeType.TOPIC).DeclareAsync());
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _management.Exchange("").Type(ExchangeType.TOPIC).DeclareAsync());
     }
 
     [Fact]
@@ -307,11 +329,13 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-        IExchangeSpecification exchangeSpec0 = _management.Exchange(_exchangeName).AutoDelete(true).Argument("my_key", "my _value");
+        IExchangeSpecification exchangeSpec0 =
+            _management.Exchange(_exchangeName).AutoDelete(true).Argument("my_key", "my _value");
         await exchangeSpec0.DeclareAsync();
 
         // Second re-declare
-        IExchangeSpecification exchangeSpec1 = _management.Exchange(_exchangeName).AutoDelete(true).Argument("my_key", "my _value");
+        IExchangeSpecification exchangeSpec1 =
+            _management.Exchange(_exchangeName).AutoDelete(true).Argument("my_key", "my _value");
         await exchangeSpec1.DeclareAsync();
 
         await SystemUtils.WaitUntilExchangeExistsAsync(exchangeSpec0);
@@ -331,7 +355,8 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
 
         IExchangeSpecification exchangeSpec1 = _management.Exchange(_exchangeName).Type(ExchangeType.FANOUT);
 
-        PreconditionFailedException pfex = await Assert.ThrowsAsync<PreconditionFailedException>(exchangeSpec1.DeclareAsync);
+        PreconditionFailedException pfex =
+            await Assert.ThrowsAsync<PreconditionFailedException>(exchangeSpec1.DeclareAsync);
 
         await exchangeSpec0.DeleteAsync();
         await SystemUtils.WaitUntilExchangeDeletedAsync(exchangeSpec0);
@@ -389,5 +414,35 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         }
 
         queueSpecs.Clear();
+    }
+
+    [Theory]
+    [InlineData(QueueType.QUORUM)]
+    [InlineData(QueueType.CLASSIC)]
+    public async Task PurgeQueueShouldReturnTheCorrectNumberOfMessagesPurged(QueueType queueType)
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(queueType);
+        await queueSpec.DeclareAsync();
+        await PublishAsync(queueSpec, 19);
+        await SystemUtils.WaitUntilQueueMessageCount(_queueName, 19);
+        ulong deleted = await queueSpec.PurgeAsync();
+        Assert.Equal((ulong)19, deleted);
+        await SystemUtils.WaitUntilQueueMessageCount(_queueName, 0);
+    }
+
+    [Fact]
+    public async Task PurgeQueueShouldReturnErrorForStream()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(QueueType.STREAM);
+        await queueSpec.DeclareAsync();
+        await PublishAsync(queueSpec, 19);
+        await SystemUtils.WaitUntilQueueMessageCount(_queueName, 19);
+        await Assert.ThrowsAsync<BadRequestException>(() => queueSpec.PurgeAsync());
     }
 }

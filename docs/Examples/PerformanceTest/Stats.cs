@@ -34,26 +34,13 @@ public class Stats
         return _isRunning;
     }
 
+    public long Consumed => Interlocked.Read(ref _consumed);
 
-    public long Consumed
-    {
-        get => Interlocked.Read(ref _consumed);
-    }
+    public long Published => Interlocked.Read(ref _published);
 
-    public long Published
-    {
-        get => Interlocked.Read(ref _published);
-    }
+    public long Failed => Interlocked.Read(ref _failed);
 
-    public long Failed
-    {
-        get => Interlocked.Read(ref _failed);
-    }
-
-    public long Accepted
-    {
-        get => Interlocked.Read(ref _accepted);
-    }
+    public long Accepted => Interlocked.Read(ref _accepted);
 
     public void IncrementConsumed()
     {
@@ -80,7 +67,6 @@ public class Stats
         return Accepted / (_end - _start).TotalSeconds;
     }
 
-
     public double ConsumedPerSeconds()
     {
         return Consumed / (_end - _start).TotalSeconds;
@@ -90,7 +76,6 @@ public class Stats
     {
         return Published / (_end - _start).TotalSeconds;
     }
-
 
     public string Report(bool full = false)
     {

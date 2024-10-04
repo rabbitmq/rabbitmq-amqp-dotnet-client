@@ -23,21 +23,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        internal AmqpConnection Connection
-        {
-            get
-            {
-                return _amqpConnection;
-            }
-        }
+        internal AmqpConnection Connection => _amqpConnection;
 
-        internal Amqp.Connection? NativeConnection
-        {
-            get
-            {
-                return _amqpConnection.NativeConnection;
-            }
-        }
+        internal Amqp.Connection? NativeConnection => _amqpConnection.NativeConnection;
 
         internal bool IsNativeConnectionClosed
         {

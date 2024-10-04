@@ -40,7 +40,6 @@ namespace RabbitMQ.AMQP.Client
 
         Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default);
 
-
         public interface IStreamOptions
         {
             IStreamOptions Offset(long offset);
@@ -49,7 +48,6 @@ namespace RabbitMQ.AMQP.Client
             IStreamOptions FilterMatchUnfiltered(bool matchUnfiltered);
             IConsumerBuilder Builder();
         }
-
 
         /// <summary>
         ///  ListenerContext is a helper class that holds the contexts for the listener

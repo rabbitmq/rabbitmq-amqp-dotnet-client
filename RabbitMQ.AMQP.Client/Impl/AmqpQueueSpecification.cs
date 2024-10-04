@@ -25,7 +25,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly ulong _messageCount;
         private readonly uint _consumerCount;
 
-
         internal DefaultQueueInfo(string queueName)
         {
             _name = queueName;
@@ -139,13 +138,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public string QueueName
-        {
-            get
-            {
-                return _queueName ?? string.Empty;
-            }
-        }
+        public string QueueName => _queueName ?? string.Empty;
 
         public IQueueSpecification Exclusive(bool isExclusive)
         {
@@ -153,13 +146,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public bool IsExclusive
-        {
-            get
-            {
-                return _isExclusive;
-            }
-        }
+        public bool IsExclusive => _isExclusive;
 
         public IQueueSpecification AutoDelete(bool isAutoDelete)
         {
@@ -167,13 +154,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public bool IsAutoDelete
-        {
-            get
-            {
-                return _isAutoDelete;
-            }
-        }
+        public bool IsAutoDelete => _isAutoDelete;
 
         public IQueueSpecification Arguments(Dictionary<object, object> queueArguments)
         {
@@ -186,13 +167,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public Dictionary<object, object> QueueArguments
-        {
-            get
-            {
-                return _queueArguments;
-            }
-        }
+        public Dictionary<object, object> QueueArguments => _queueArguments;
 
         public IQueueSpecification Type(QueueType queueType)
         {
@@ -208,6 +183,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 {
                     return QueueType.CLASSIC;
                 }
+
                 string type = (string)_queueArguments["x-queue-type"];
                 return (QueueType)Enum.Parse(typeof(QueueType), type.ToUpperInvariant());
             }
@@ -275,6 +251,24 @@ namespace RabbitMQ.AMQP.Client.Impl
             return new AmqpClassicSpecification(this);
         }
 
+        public async Task<ulong> PurgeAsync()
+        {
+            if (_queueName is null)
+            {
+                // TODO create "internal bug" exception type?
+                throw new InvalidOperationException(
+                    "_name is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+            }
+
+            string path = $"/{Consts.Queues}/{Utils.EncodePathSegment(_queueName)}/{Consts.Messages}";
+            string method = AmqpManagement.Delete;
+            int[] expectedResponseCodes = { AmqpManagement.Code200 };
+            Message result = await _management.RequestAsync(null, path, method, expectedResponseCodes)
+                .ConfigureAwait(false);
+            Map kv = (Map)result.Body;
+            return (ulong)kv["message_count"];
+        }
+
         public IQueueSpecification MaxLength(long maxLength)
         {
             Utils.ValidatePositive("Max length", maxLength);
@@ -318,12 +312,14 @@ namespace RabbitMQ.AMQP.Client.Impl
             if (_queueName is null)
             {
                 // TODO create "internal bug" exception type?
-                throw new InvalidOperationException("_name is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                throw new InvalidOperationException(
+                    "_name is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
 
             string path = $"/{Consts.Queues}/{Utils.EncodePathSegment(_queueName)}";
             string method = AmqpManagement.Put;
-            int[] expectedResponseCodes = new int[] { AmqpManagement.Code200, AmqpManagement.Code201, AmqpManagement.Code409 };
+            int[] expectedResponseCodes =
+                new int[] { AmqpManagement.Code200, AmqpManagement.Code201, AmqpManagement.Code409 };
             Message response = await _management.RequestAsync(kv, path, method, expectedResponseCodes)
                 .ConfigureAwait(false);
 
@@ -337,13 +333,15 @@ namespace RabbitMQ.AMQP.Client.Impl
             if (_queueName is null)
             {
                 // TODO create "internal bug" exception type?
-                throw new InvalidOperationException("_name is null or empty, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                throw new InvalidOperationException(
+                    "_name is null or empty, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
 
             if (string.IsNullOrEmpty(_queueName))
             {
                 // TODO create "internal bug" exception type?
-                throw new InvalidOperationException("_name is null or empty, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                throw new InvalidOperationException(
+                    "_name is null or empty, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
 
             string path = $"/{Consts.Queues}/{Utils.EncodePathSegment(_queueName)}";

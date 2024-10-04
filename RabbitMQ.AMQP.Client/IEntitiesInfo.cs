@@ -39,7 +39,6 @@ namespace RabbitMQ.AMQP.Client
         uint ConsumerCount();
     }
 
-
     public enum ExchangeType
     {
         DIRECT,

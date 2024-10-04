@@ -22,7 +22,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private string _name = "";
         private bool _autoDelete;
-        private ExchangeType _type = Client.ExchangeType.DIRECT;
+        private string _exchangeType = Client.ExchangeType.DIRECT.ToString();
         private readonly Map _arguments = new();
 
         public Task DeclareAsync()
@@ -36,7 +36,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             {
                 { "auto_delete", _autoDelete },
                 { "arguments", _arguments },
-                { "type", _type.ToString().ToLower() },
+                { "type", _exchangeType.ToLowerInvariant() },
                 { "durable", true }
             };
 
@@ -65,13 +65,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public string ExchangeName
-        {
-            get
-            {
-                return _name;
-            }
-        }
+        public string ExchangeName => _name;
 
         public IExchangeSpecification AutoDelete(bool autoDelete)
         {
@@ -79,27 +73,21 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public bool IsAutoDelete
-        {
-            get
-            {
-                return _autoDelete;
-            }
-        }
+        public bool IsAutoDelete => _autoDelete;
 
-        public IExchangeSpecification Type(ExchangeType type)
+        public IExchangeSpecification Type(ExchangeType exchangeType)
         {
-            _type = type;
+            _exchangeType = exchangeType.ToString();
             return this;
         }
 
-        public ExchangeType ExchangeType
+        public IExchangeSpecification Type(string exchangeType)
         {
-            get
-            {
-                return _type;
-            }
+            _exchangeType = exchangeType;
+            return this;
         }
+
+        public string ExchangeType => _exchangeType;
 
         public IExchangeSpecification Argument(string key, object value)
         {
