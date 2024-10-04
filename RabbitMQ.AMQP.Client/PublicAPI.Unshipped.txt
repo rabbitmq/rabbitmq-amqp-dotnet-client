@@ -19,6 +19,7 @@ override RabbitMQ.AMQP.Client.Impl.AmqpManagement.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.AmqpPublisher.CloseAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpPublisher.OpenAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpPublisher.ToString() -> string!
+override RabbitMQ.AMQP.Client.Impl.AmqpRpcServer.CloseAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.ConnectionSettings.Equals(object? obj) -> bool
 override RabbitMQ.AMQP.Client.Impl.ConnectionSettings.GetHashCode() -> int
@@ -332,6 +333,10 @@ RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.DeadLetterStrategy(RabbitMQ.AM
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.DeliveryLimit(int limit) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.QuorumInitialGroupSize(int size) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpRpcServer
+RabbitMQ.AMQP.Client.Impl.AmqpRpcServer.AmqpRpcServer(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpRpcServer.Context.get -> RabbitMQ.AMQP.Client.IRpcServer.IContext!
+RabbitMQ.AMQP.Client.Impl.AmqpRpcServer.Handler.get -> RabbitMQ.AMQP.Client.IRpcServer.IHandler!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.AmqpStreamSpecification(RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification! parent) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.InitialClusterSize(int initialClusterSize) -> RabbitMQ.AMQP.Client.IStreamSpecification!
@@ -495,6 +500,18 @@ RabbitMQ.AMQP.Client.IRecoveryConfiguration.GetBackOffDelayPolicy() -> RabbitMQ.
 RabbitMQ.AMQP.Client.IRecoveryConfiguration.IsActivate() -> bool
 RabbitMQ.AMQP.Client.IRecoveryConfiguration.IsTopologyActive() -> bool
 RabbitMQ.AMQP.Client.IRecoveryConfiguration.Topology(bool activated) -> RabbitMQ.AMQP.Client.IRecoveryConfiguration!
+RabbitMQ.AMQP.Client.IRpcServer
+RabbitMQ.AMQP.Client.IRpcServer.Context.get -> RabbitMQ.AMQP.Client.IRpcServer.IContext!
+RabbitMQ.AMQP.Client.IRpcServer.Handler.get -> RabbitMQ.AMQP.Client.IRpcServer.IHandler?
+RabbitMQ.AMQP.Client.IRpcServer.IContext
+RabbitMQ.AMQP.Client.IRpcServer.IContext.Message(object! body) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.IRpcServer.IHandler
+RabbitMQ.AMQP.Client.IRpcServer.IHandler.Handle(RabbitMQ.AMQP.Client.IRpcServer.IContext! ctx, RabbitMQ.AMQP.Client.IMessage! request) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.IRpcServerBuilder
+RabbitMQ.AMQP.Client.IRpcServerBuilder.CorrelationIdExtractor(System.Func<RabbitMQ.AMQP.Client.IMessage!, object!>! correlationIdExtractor) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
+RabbitMQ.AMQP.Client.IRpcServerBuilder.Handler(RabbitMQ.AMQP.Client.IRpcServer.IHandler! handler) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
+RabbitMQ.AMQP.Client.IRpcServerBuilder.RequestQueue(RabbitMQ.AMQP.Client.IQueueSpecification! requestQueue) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
+RabbitMQ.AMQP.Client.IRpcServerBuilder.RequestQueue(string! requestQueue) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.IStreamSpecification
 RabbitMQ.AMQP.Client.IStreamSpecification.InitialClusterSize(int initialClusterSize) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.IStreamSpecification.MaxAge(System.TimeSpan maxAge) -> RabbitMQ.AMQP.Client.IStreamSpecification!
