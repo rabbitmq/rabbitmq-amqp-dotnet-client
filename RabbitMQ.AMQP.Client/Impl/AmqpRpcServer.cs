@@ -23,8 +23,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             public IMessage Message(object body) => throw new System.NotImplementedException();
         }
 
-
-
         public override Task CloseAsync() => throw new System.NotImplementedException();
 
         public IRpcServer.IHandler Handler { get; } = new RpcServerHandler();

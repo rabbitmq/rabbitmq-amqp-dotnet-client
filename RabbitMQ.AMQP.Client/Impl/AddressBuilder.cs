@@ -9,12 +9,10 @@ namespace RabbitMQ.AMQP.Client.Impl
         private string? _key = null;
         protected T? _owner = default;
 
-
         public T Exchange(IExchangeSpecification exchangeSpec)
         {
             return Exchange(exchangeSpec.ExchangeName);
         }
-
 
         public T Exchange(string? exchangeName)
         {

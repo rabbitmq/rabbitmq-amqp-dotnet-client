@@ -15,12 +15,10 @@ namespace RabbitMQ.AMQP.Client
     {
         public IHandler? Handler { get; }
 
-
         public interface IHandler
         {
             IMessage Handle(IContext ctx, IMessage request);
         }
-
 
         public IContext Context { get; }
 

@@ -13,7 +13,6 @@ namespace RabbitMQ.AMQP.Client.Impl
     {
     }
 
-
     public class AmqpMessage : IMessage
     {
         public Message NativeMessage { get; }
