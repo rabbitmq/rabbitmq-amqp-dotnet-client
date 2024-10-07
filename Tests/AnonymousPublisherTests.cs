@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
@@ -46,7 +47,8 @@ namespace Tests
         [Theory]
         [InlineData(OutcomeState.Accepted, "myValidKey")]
         [InlineData(OutcomeState.Released, "myInvalidKey")]
-        public async Task AnonymousPublisherPublishResultAcceptedWhenExchangeExists(OutcomeState outcomeState, string key)
+        public async Task AnonymousPublisherPublishResultAcceptedWhenExchangeExists(OutcomeState outcomeState,
+            string key)
         {
             Assert.NotNull(_connection);
             Assert.NotNull(_management);
@@ -58,6 +60,31 @@ namespace Tests
                 new AmqpMessage("Hello, World!").ToAddress().Exchange(_exchangeName).Key("myValidKey").Build());
             Assert.Equal(outcomeState, pr.Outcome.State);
             await aPublisher.CloseAsync();
+        }
+
+        
+        /// <summary>
+        /// In this test, we are sending a message to a queue that is different from the one defined in the address.
+        /// So we mix anonymous and defined queues.
+        /// The winner is the defined queue. So the 
+        /// </summary>
+        [Fact]
+        public async Task MessageShouldGoToTheDefinedQueueAndNotToTheAddressTo()
+        {
+            Assert.NotNull(_connection);
+            Assert.NotNull(_management);
+            await _management.Queue(_queueName).Quorum().Queue().DeclareAsync();
+            await _management.Queue(_queueName + "2").Quorum().Queue().DeclareAsync();
+
+            IPublisher publisher = await _connection.PublisherBuilder().Queue(_queueName).BuildAsync();
+            PublishResult pr =
+                await publisher.PublishAsync(new AmqpMessage("Hello, World!").ToAddress().Queue(_queueName + "2")
+                    .Build());
+            Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
+            Thread.Sleep(200);
+            await SystemUtils.WaitUntilQueueMessageCount(_queueName, 1);
+            await SystemUtils.WaitUntilQueueMessageCount(_queueName + "2", 0);
+            await _management.Queue(_queueName + "2").Quorum().Queue().DeleteAsync();
         }
     }
 }
