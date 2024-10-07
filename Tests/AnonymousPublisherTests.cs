@@ -44,6 +44,12 @@ namespace Tests
             await aPublisher.CloseAsync();
         }
 
+        /// <summary>
+        /// Test when the exchange exists and the key is valid.
+        /// Released when the key is invalid.
+        /// </summary>
+        /// <param name="outcomeState"></param>
+        /// <param name="key"></param>
         [Theory]
         [InlineData(OutcomeState.Accepted, "myValidKey")]
         [InlineData(OutcomeState.Released, "myInvalidKey")]
@@ -62,7 +68,6 @@ namespace Tests
             await aPublisher.CloseAsync();
         }
 
-        
         /// <summary>
         /// In this test, we are sending a message to a queue that is different from the one defined in the address.
         /// So we mix anonymous and defined queues.
