@@ -50,6 +50,11 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly TaskCompletionSource<bool> _connectionClosedTcs =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+        public IRpcServerBuilder RpcServerBuilder()
+        {
+            return new AmqpRpcServerBuilder(this);
+        }
+
         /// <summary>
         /// Read-only collection of publishers.
         /// See <see cref="IPublisher"/>

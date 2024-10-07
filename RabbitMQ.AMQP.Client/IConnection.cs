@@ -26,6 +26,8 @@ namespace RabbitMQ.AMQP.Client
 
         IConsumerBuilder ConsumerBuilder();
 
+        IRpcServerBuilder RpcServerBuilder();
+
         public ReadOnlyCollection<IPublisher> GetPublishers();
 
         public ReadOnlyCollection<IConsumer> GetConsumers();
