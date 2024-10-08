@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Amqp;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
@@ -12,7 +13,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
     public class AmqpRpcServerBuilder : IRpcServerBuilder
     {
-        RpcConfiguration _configuration = new RpcConfiguration();
+        readonly RpcConfiguration _configuration = new RpcConfiguration();
 
         public AmqpRpcServerBuilder(AmqpConnection connection)
         {
@@ -54,6 +55,19 @@ namespace RabbitMQ.AMQP.Client.Impl
         private IPublisher? _publisher = null;
         private IConsumer? _consumer = null;
 
+        private async Task SendReply(IMessage reply)
+        {
+            if (_publisher != null)
+            {
+                PublishResult pr = await _publisher.PublishAsync(reply).ConfigureAwait(false);
+                if (pr.Outcome.State != OutcomeState.Accepted)
+                {
+                    Trace.WriteLine(TraceLevel.Error, "Failed to send reply");
+                }
+
+            }
+        }
+
         public AmqpRpcServer(RpcConfiguration builder)
         {
             _configuration = builder;
@@ -68,7 +82,19 @@ namespace RabbitMQ.AMQP.Client.Impl
                     await context.AcceptAsync().ConfigureAwait(false);
                     if (_configuration.Handler != null)
                     {
-                        await _configuration.Handler(new RpcServerContext(), request).ConfigureAwait(false);
+                        IMessage reply = await _configuration.Handler(new RpcServerContext(), request)
+                            .ConfigureAwait(false);
+
+                        if (request.ReplyTo() != "")
+                        {
+                            reply.To(request.ReplyTo());
+                        }
+                        else
+                        {
+                            Trace.WriteLine(TraceLevel.Error, "No reply-to address in request");
+                        }
+
+                        await SendReply(reply).ConfigureAwait(false);
                     }
                 })
                 .Queue(_configuration.RequestQueue).BuildAndStartAsync()
@@ -82,6 +108,25 @@ namespace RabbitMQ.AMQP.Client.Impl
             public IMessage Message(object body) => new AmqpMessage(body);
         }
 
-        public override Task CloseAsync() => throw new System.NotImplementedException();
+        public override async Task CloseAsync()
+        {
+            OnNewStatus(State.Closing, null);
+            try
+            {
+                if (_publisher != null)
+                {
+                    await _publisher.CloseAsync().ConfigureAwait(false);
+                }
+
+                if (_consumer != null)
+                {
+                    await _consumer.CloseAsync().ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                OnNewStatus(State.Closed, null);
+            }
+        }
     }
 }
