@@ -41,7 +41,7 @@ namespace Tests.Rpc
             Assert.NotNull(_management);
             List<(State, State)> states = [];
             await _management.Queue(_queueName).Exclusive(true).AutoDelete(true).DeclareAsync();
-            TaskCompletionSource tsc = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<int> tsc = new(TaskCreationOptions.RunContinuationsAsynchronously);
             IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
             {
                 var m = context.Message(request.Body());
@@ -52,12 +52,13 @@ namespace Tests.Rpc
                 states.Add((fromState, toState));
                 if (states.Count == 2)
                 {
-                    tsc.SetResult();
+                    tsc.SetResult(states.Count);
                 }
             };
             Assert.NotNull(rpcServer);
             await rpcServer.CloseAsync();
-            await tsc.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            int count = await tsc.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.Equal(2, count);
             Assert.Equal(State.Open, states[0].Item1);
             Assert.Equal(State.Closing, states[0].Item2);
             Assert.Equal(State.Closing, states[1].Item1);
