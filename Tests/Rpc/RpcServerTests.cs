@@ -111,5 +111,34 @@ namespace Tests.Rpc
             await consumer.CloseAsync();
             await publisher.CloseAsync();
         }
+
+        [Fact]
+        public async Task RpcServerClientPingPong()
+        {
+            Assert.NotNull(_connection);
+            Assert.NotNull(_management);
+            string requestQueue = _queueName;
+            await _management.Queue(requestQueue).Exclusive(true).AutoDelete(true).DeclareAsync();
+            TaskCompletionSource<IMessage> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
+            {
+                var m = context.Message("this_come_from_the_server").MessageId(request.MessageId());
+                return Task.FromResult(m);
+            }).RequestQueue(_queueName).BuildAsync();
+            Assert.NotNull(rpcServer);
+
+            string replyToQueue = $"replyToQueue-{Now}";
+            await _management.Queue(replyToQueue).Exclusive(true).AutoDelete(true).DeclareAsync();
+
+            IRpcClient rpcClient = await _connection.RpcClientBuilder().RequestAddress()
+                .Queue(requestQueue)
+                .RpcClient()
+                .ReplyToQueue(replyToQueue).BuildAsync();
+
+            IMessage message = new AmqpMessage("test").MessageId("that_just_a_id");
+
+            IMessage response = await rpcClient.PublishAsync(message);
+            Assert.Equal("this_come_from_the_server", response.Body());
+        }
     }
 }

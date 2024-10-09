@@ -20,6 +20,8 @@ override RabbitMQ.AMQP.Client.Impl.AmqpManagement.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.AmqpPublisher.CloseAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpPublisher.OpenAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpPublisher.ToString() -> string!
+override RabbitMQ.AMQP.Client.Impl.AmqpRpcClient.CloseAsync() -> System.Threading.Tasks.Task!
+override RabbitMQ.AMQP.Client.Impl.AmqpRpcClient.OpenAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpRpcServer.CloseAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpRpcServer.OpenAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.ToString() -> string!
@@ -98,6 +100,7 @@ RabbitMQ.AMQP.Client.IConnection.Id.get -> long
 RabbitMQ.AMQP.Client.IConnection.Id.set -> void
 RabbitMQ.AMQP.Client.IConnection.Management() -> RabbitMQ.AMQP.Client.IManagement!
 RabbitMQ.AMQP.Client.IConnection.PublisherBuilder() -> RabbitMQ.AMQP.Client.IPublisherBuilder!
+RabbitMQ.AMQP.Client.IConnection.RpcClientBuilder() -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
 RabbitMQ.AMQP.Client.IConnection.RpcServerBuilder() -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.IConnectionSettings
 RabbitMQ.AMQP.Client.IConnectionSettings.ContainerId.get -> string!
@@ -237,6 +240,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpConnection.Id.get -> long
 RabbitMQ.AMQP.Client.Impl.AmqpConnection.Id.set -> void
 RabbitMQ.AMQP.Client.Impl.AmqpConnection.Management() -> RabbitMQ.AMQP.Client.IManagement!
 RabbitMQ.AMQP.Client.Impl.AmqpConnection.PublisherBuilder() -> RabbitMQ.AMQP.Client.IPublisherBuilder!
+RabbitMQ.AMQP.Client.Impl.AmqpConnection.RpcClientBuilder() -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConnection.RpcServerBuilder() -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer.AmqpConsumer(RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration! configuration) -> void
@@ -344,6 +348,15 @@ RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.DeadLetterStrategy(RabbitMQ.AM
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.DeliveryLimit(int limit) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.QuorumInitialGroupSize(int size) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpRpcClient
+RabbitMQ.AMQP.Client.Impl.AmqpRpcClient.AmqpRpcClient(RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration! configuration) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpRpcClient.PublishAsync(RabbitMQ.AMQP.Client.IMessage! message, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IMessage!>!
+RabbitMQ.AMQP.Client.Impl.AmqpRpcClientBuilder
+RabbitMQ.AMQP.Client.Impl.AmqpRpcClientBuilder.AmqpRpcClientBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpRpcClientBuilder.BuildAsync() -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IRpcClient!>!
+RabbitMQ.AMQP.Client.Impl.AmqpRpcClientBuilder.ReplyToQueue(string! replyToQueue) -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
+RabbitMQ.AMQP.Client.Impl.AmqpRpcClientBuilder.RequestAddress() -> RabbitMQ.AMQP.Client.IRpcClientAddressBuilder!
+RabbitMQ.AMQP.Client.Impl.AmqpRpcClientBuilder.Timeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpRpcServer
 RabbitMQ.AMQP.Client.Impl.AmqpRpcServer.AmqpRpcServer(RabbitMQ.AMQP.Client.Impl.RpcConfiguration! builder) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpRpcServerBuilder
@@ -455,6 +468,19 @@ RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.GetBackOffDelayPolicy() -> Rabbi
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.IsActivate() -> bool
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.IsTopologyActive() -> bool
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.Topology(bool activated) -> RabbitMQ.AMQP.Client.IRecoveryConfiguration!
+RabbitMQ.AMQP.Client.Impl.RpcClientAddressBuilder
+RabbitMQ.AMQP.Client.Impl.RpcClientAddressBuilder.RpcClient() -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
+RabbitMQ.AMQP.Client.Impl.RpcClientAddressBuilder.RpcClientAddressBuilder(RabbitMQ.AMQP.Client.Impl.AmqpRpcClientBuilder! builder) -> void
+RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration
+RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.Connection.get -> RabbitMQ.AMQP.Client.Impl.AmqpConnection!
+RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.Connection.set -> void
+RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.ReplyToQueue.get -> string!
+RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.ReplyToQueue.set -> void
+RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.RequestAddress.get -> string!
+RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.RequestAddress.set -> void
+RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.RpcClientConfiguration() -> void
+RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.Timeout.get -> System.TimeSpan
+RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.Timeout.set -> void
 RabbitMQ.AMQP.Client.Impl.RpcConfiguration
 RabbitMQ.AMQP.Client.Impl.RpcConfiguration.Connection.get -> RabbitMQ.AMQP.Client.Impl.AmqpConnection!
 RabbitMQ.AMQP.Client.Impl.RpcConfiguration.Connection.set -> void
@@ -537,6 +563,15 @@ RabbitMQ.AMQP.Client.IRecoveryConfiguration.GetBackOffDelayPolicy() -> RabbitMQ.
 RabbitMQ.AMQP.Client.IRecoveryConfiguration.IsActivate() -> bool
 RabbitMQ.AMQP.Client.IRecoveryConfiguration.IsTopologyActive() -> bool
 RabbitMQ.AMQP.Client.IRecoveryConfiguration.Topology(bool activated) -> RabbitMQ.AMQP.Client.IRecoveryConfiguration!
+RabbitMQ.AMQP.Client.IRpcClient
+RabbitMQ.AMQP.Client.IRpcClient.PublishAsync(RabbitMQ.AMQP.Client.IMessage! message, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IMessage!>!
+RabbitMQ.AMQP.Client.IRpcClientAddressBuilder
+RabbitMQ.AMQP.Client.IRpcClientAddressBuilder.RpcClient() -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
+RabbitMQ.AMQP.Client.IRpcClientBuilder
+RabbitMQ.AMQP.Client.IRpcClientBuilder.BuildAsync() -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IRpcClient!>!
+RabbitMQ.AMQP.Client.IRpcClientBuilder.ReplyToQueue(string! replyToQueue) -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
+RabbitMQ.AMQP.Client.IRpcClientBuilder.RequestAddress() -> RabbitMQ.AMQP.Client.IRpcClientAddressBuilder!
+RabbitMQ.AMQP.Client.IRpcClientBuilder.Timeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
 RabbitMQ.AMQP.Client.IRpcServer
 RabbitMQ.AMQP.Client.IRpcServer.IContext
 RabbitMQ.AMQP.Client.IRpcServer.IContext.Message(object! body) -> RabbitMQ.AMQP.Client.IMessage!

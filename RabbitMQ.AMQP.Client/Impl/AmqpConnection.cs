@@ -55,6 +55,12 @@ namespace RabbitMQ.AMQP.Client.Impl
             return new AmqpRpcServerBuilder(this);
         }
 
+        public IRpcClientBuilder RpcClientBuilder()
+        {
+
+            return new AmqpRpcClientBuilder(this);
+        }
+
         /// <summary>
         /// Read-only collection of publishers.
         /// See <see cref="IPublisher"/>

@@ -114,4 +114,19 @@ namespace RabbitMQ.AMQP.Client.Impl
             return _message;
         }
     }
+
+    public class RpcClientAddressBuilder : DefaultAddressBuilder<IRpcClientAddressBuilder>, IRpcClientAddressBuilder
+    {
+        readonly AmqpRpcClientBuilder _builder;
+        public RpcClientAddressBuilder(AmqpRpcClientBuilder builder)
+        {
+            _builder = builder;
+            _owner = this;
+        }
+
+        public IRpcClientBuilder RpcClient()
+        {
+            return _builder;
+        }
+    }
 }
