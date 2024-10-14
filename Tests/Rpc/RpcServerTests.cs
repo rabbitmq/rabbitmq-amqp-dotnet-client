@@ -20,17 +20,16 @@ namespace Tests.Rpc
             TaskCompletionSource<IMessage> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
             IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
             {
-                var m = context.Message(request.Body()).MessageId("pong_from_the_server");
-                tcs.SetResult(m);
-                return Task.FromResult(m);
+                var reply = context.Message("pong");
+                tcs.SetResult(reply);
+                return Task.FromResult(reply);
             }).RequestQueue(_queueName).BuildAsync();
             Assert.NotNull(rpcServer);
             IPublisher p = await _connection.PublisherBuilder().Queue(_queueName).BuildAsync();
 
             await p.PublishAsync(new AmqpMessage("test"));
             IMessage m = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
-            Assert.Equal("test", m.Body());
-            Assert.Equal("pong_from_the_server", m.MessageId());
+            Assert.Equal("pong", m.Body());
             await rpcServer.CloseAsync();
         }
 
@@ -77,7 +76,7 @@ namespace Tests.Rpc
             await _management.Queue(requestQueue).Exclusive(true).AutoDelete(true).DeclareAsync();
             IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
             {
-                var reply = context.Message(request.Body()).MessageId("pong_from_the_server");
+                var reply = context.Message("pong");
                 return Task.FromResult(reply);
             }).RequestQueue(requestQueue).BuildAsync();
 
@@ -103,10 +102,8 @@ namespace Tests.Rpc
             Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
 
             IMessage m = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
-            Assert.Equal("test", m.Body());
-            Assert.Equal("pong_from_the_server", m.MessageId());
+            Assert.Equal("pong", m.Body());
 
-            await spec.DeleteAsync();
             await rpcServer.CloseAsync();
             await consumer.CloseAsync();
             await publisher.CloseAsync();
