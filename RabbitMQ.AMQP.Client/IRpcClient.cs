@@ -14,9 +14,9 @@ namespace RabbitMQ.AMQP.Client
     {
         IRpcClientAddressBuilder RequestAddress();
         IRpcClientBuilder ReplyToQueue(string replyToQueue);
-        IRpcClientBuilder CorrelationIdExtractor(Func<IMessage, object> correlationIdExtractor);
+        IRpcClientBuilder CorrelationIdExtractor(Func<IMessage, object>? correlationIdExtractor);
 
-        IRpcClientBuilder CorrelationIdSupplier(Func<object> correlationIdSupplier);
+        IRpcClientBuilder CorrelationIdSupplier(Func<object>? correlationIdSupplier);
         IRpcClientBuilder Timeout(TimeSpan timeout);
         Task<IRpcClient> BuildAsync();
     }

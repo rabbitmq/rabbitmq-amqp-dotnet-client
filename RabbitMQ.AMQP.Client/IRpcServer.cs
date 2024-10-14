@@ -9,7 +9,7 @@ namespace RabbitMQ.AMQP.Client
     {
         IRpcServerBuilder RequestQueue(string requestQueue);
         IRpcServerBuilder RequestQueue(IQueueSpecification requestQueue);
-        IRpcServerBuilder CorrelationIdExtractor(Func<IMessage, object> correlationIdExtractor);
+        IRpcServerBuilder CorrelationIdExtractor(Func<IMessage, object>? correlationIdExtractor);
 
         IRpcServerBuilder Handler(RpcHandler handler);
 

@@ -33,7 +33,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public IRpcServerBuilder CorrelationIdExtractor(Func<IMessage, object> correlationIdExtractor)
+        public IRpcServerBuilder CorrelationIdExtractor(Func<IMessage, object>? correlationIdExtractor)
         {
             _configuration.CorrelationIdExtractor = correlationIdExtractor;
             return this;

@@ -41,13 +41,13 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public IRpcClientBuilder CorrelationIdExtractor(Func<IMessage, object> correlationIdExtractor)
+        public IRpcClientBuilder CorrelationIdExtractor(Func<IMessage, object>? correlationIdExtractor)
         {
             _configuration.CorrelationIdExtractor = correlationIdExtractor;
             return this;
         }
 
-        public IRpcClientBuilder CorrelationIdSupplier(Func<object> correlationIdSupplier)
+        public IRpcClientBuilder CorrelationIdSupplier(Func<object>? correlationIdSupplier)
         {
             _configuration.CorrelationIdSupplier = correlationIdSupplier;
             return this;
@@ -97,8 +97,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
 
             return corr;
-
         }
+
         public AmqpRpcClient(RpcClientConfiguration configuration)
         {
             _configuration = configuration;
@@ -106,6 +106,14 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public override async Task OpenAsync()
         {
+            if (string.IsNullOrEmpty(_configuration.ReplyToQueue))
+            {
+                IQueueInfo queueInfo = await _configuration.Connection.Management().Queue().AutoDelete(true)
+                    .Exclusive(true).DeclareAsync()
+                    .ConfigureAwait(false);
+                _configuration.ReplyToQueue = queueInfo.Name();
+            }
+
             _publisher = await _configuration.Connection.PublisherBuilder().BuildAsync().ConfigureAwait(false);
             _consumer = await _configuration.Connection.ConsumerBuilder()
                 .Queue(_configuration.ReplyToQueue)
@@ -146,7 +154,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         public async Task<IMessage> PublishAsync(IMessage message, CancellationToken cancellationToken = default)
         {
             message.MessageId(CorrelationIdSupplier());
-            //TODO: use correlation id to match request and response
             _pendingRequests.Add(message.MessageId(), new TaskCompletionSource<IMessage>());
             if (_publisher != null)
             {

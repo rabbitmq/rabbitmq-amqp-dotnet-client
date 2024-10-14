@@ -112,35 +112,76 @@ namespace Tests.Rpc
             await publisher.CloseAsync();
         }
 
+        /// <summary>
+        /// In this test the client has to create a reply queue since is not provided by the user
+        /// with the ReplyToQueue method
+        /// </summary>
         [Fact]
-        public async Task RpcServerClientPingPong()
+        public async Task RpcServerClientPingPongWithDefault()
         {
             Assert.NotNull(_connection);
             Assert.NotNull(_management);
             string requestQueue = _queueName;
             await _management.Queue(requestQueue).Exclusive(true).AutoDelete(true).DeclareAsync();
-            TaskCompletionSource<IMessage> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
             IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
             {
-                var m = context.Message("this_come_from_the_server");
-                tcs.SetResult(m);
-                return Task.FromResult(m);
+                Assert.Equal("ping", request.Body());
+                var reply = context.Message("pong");
+                return Task.FromResult(reply);
             }).RequestQueue(_queueName).BuildAsync();
             Assert.NotNull(rpcServer);
-
-            string replyToQueue = $"replyToQueue-{Now}";
-            await _management.Queue(replyToQueue).Exclusive(true).AutoDelete(true).DeclareAsync();
 
             IRpcClient rpcClient = await _connection.RpcClientBuilder().RequestAddress()
                 .Queue(requestQueue)
                 .RpcClient()
+                .BuildAsync();
 
-                .ReplyToQueue(replyToQueue).BuildAsync();
-
-            IMessage message = new AmqpMessage("test");
+            IMessage message = new AmqpMessage("ping");
 
             IMessage response = await rpcClient.PublishAsync(message);
-            Assert.Equal("this_come_from_the_server", response.Body());
+            Assert.Equal("pong", response.Body());
+            await rpcClient.CloseAsync();
+            await rpcServer.CloseAsync();
+        }
+
+        /// <summary>
+        /// In this test the client has to use the ReplyToQueue provided by the user
+        /// </summary>
+        [Fact]
+        public async Task RpcServerClientPingPongWithCustomReplyToQueueAndCorrelationIdSupplier()
+        {
+            Assert.NotNull(_connection);
+            Assert.NotNull(_management);
+            string requestQueue = _queueName;
+            await _management.Queue(requestQueue).Exclusive(true).AutoDelete(true).DeclareAsync();
+            IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
+                {
+                    Assert.Equal("ping", request.Body());
+                    var reply = context.Message("pong");
+                    return Task.FromResult(reply);
+                }).RequestQueue(_queueName)
+                .BuildAsync();
+            Assert.NotNull(rpcServer);
+
+            // custom replyTo queue
+            IQueueInfo replyTo =
+                await _management.Queue($"replyTo-{Now}").Exclusive(true).AutoDelete(true).DeclareAsync();
+
+            // custom correlationId supplier
+            const string correlationId = "my-correlation-id";
+
+            IRpcClient rpcClient = await _connection.RpcClientBuilder().RequestAddress()
+                .Queue(requestQueue)
+                .RpcClient()
+                .CorrelationIdSupplier(() => correlationId)
+                .ReplyToQueue(replyTo.Name())
+                .BuildAsync();
+
+            IMessage message = new AmqpMessage("ping");
+
+            IMessage response = await rpcClient.PublishAsync(message);
+            Assert.Equal("pong", response.Body());
+            Assert.Equal(correlationId, response.CorrelationId());
             await rpcClient.CloseAsync();
             await rpcServer.CloseAsync();
         }
