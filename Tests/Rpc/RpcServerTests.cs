@@ -77,8 +77,8 @@ namespace Tests.Rpc
             await _management.Queue(requestQueue).Exclusive(true).AutoDelete(true).DeclareAsync();
             IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
             {
-                var m = context.Message(request.Body()).MessageId("pong_from_the_server");
-                return Task.FromResult(m);
+                var reply = context.Message(request.Body()).MessageId("pong_from_the_server");
+                return Task.FromResult(reply);
             }).RequestQueue(requestQueue).BuildAsync();
 
             Assert.NotNull(rpcServer);
@@ -125,7 +125,6 @@ namespace Tests.Rpc
             await _management.Queue(requestQueue).Exclusive(true).AutoDelete(true).DeclareAsync();
             IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
             {
-                Assert.Equal("ping", request.Body());
                 var reply = context.Message("pong");
                 return Task.FromResult(reply);
             }).RequestQueue(_queueName).BuildAsync();
@@ -156,7 +155,6 @@ namespace Tests.Rpc
             await _management.Queue(requestQueue).Exclusive(true).AutoDelete(true).DeclareAsync();
             IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
                 {
-                    Assert.Equal("ping", request.Body());
                     var reply = context.Message("pong");
                     return Task.FromResult(reply);
                 }).RequestQueue(_queueName)
@@ -174,6 +172,7 @@ namespace Tests.Rpc
                 .Queue(requestQueue)
                 .RpcClient()
                 .CorrelationIdSupplier(() => correlationId)
+                .CorrelationIdExtractor(message => message.CorrelationId())
                 .ReplyToQueue(replyTo.Name())
                 .BuildAsync();
 

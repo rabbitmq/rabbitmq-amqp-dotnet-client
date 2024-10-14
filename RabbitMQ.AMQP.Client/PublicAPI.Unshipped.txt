@@ -362,6 +362,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpRpcClientBuilder.CorrelationIdExtractor(System.Fun
 RabbitMQ.AMQP.Client.Impl.AmqpRpcClientBuilder.CorrelationIdSupplier(System.Func<object!>? correlationIdSupplier) -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpRpcClientBuilder.ReplyToQueue(string! replyToQueue) -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpRpcClientBuilder.RequestAddress() -> RabbitMQ.AMQP.Client.IRpcClientAddressBuilder!
+RabbitMQ.AMQP.Client.Impl.AmqpRpcClientBuilder.RequestPostProcessor(System.Func<RabbitMQ.AMQP.Client.IMessage!, object!, RabbitMQ.AMQP.Client.IMessage!>? requestPostProcessor) -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpRpcClientBuilder.Timeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpRpcServer
 RabbitMQ.AMQP.Client.Impl.AmqpRpcServer.AmqpRpcServer(RabbitMQ.AMQP.Client.Impl.RpcConfiguration! configuration) -> void
@@ -370,6 +371,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpRpcServerBuilder.AmqpRpcServerBuilder(RabbitMQ.AMQ
 RabbitMQ.AMQP.Client.Impl.AmqpRpcServerBuilder.BuildAsync() -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IRpcServer!>!
 RabbitMQ.AMQP.Client.Impl.AmqpRpcServerBuilder.CorrelationIdExtractor(System.Func<RabbitMQ.AMQP.Client.IMessage!, object!>? correlationIdExtractor) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpRpcServerBuilder.Handler(RabbitMQ.AMQP.Client.RpcHandler! handler) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
+RabbitMQ.AMQP.Client.Impl.AmqpRpcServerBuilder.ReplyPostProcessor(System.Func<RabbitMQ.AMQP.Client.IMessage!, object!, RabbitMQ.AMQP.Client.IMessage!>? replyPostProcessor) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpRpcServerBuilder.RequestQueue(RabbitMQ.AMQP.Client.IQueueSpecification! requestQueue) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpRpcServerBuilder.RequestQueue(string! requestQueue) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification
@@ -488,6 +490,8 @@ RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.ReplyToQueue.get -> string!
 RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.ReplyToQueue.set -> void
 RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.RequestAddress.get -> string!
 RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.RequestAddress.set -> void
+RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.RequestPostProcessor.get -> System.Func<RabbitMQ.AMQP.Client.IMessage!, object!, RabbitMQ.AMQP.Client.IMessage!>?
+RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.RequestPostProcessor.set -> void
 RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.RpcClientConfiguration() -> void
 RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.Timeout.get -> System.TimeSpan
 RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration.Timeout.set -> void
@@ -498,6 +502,8 @@ RabbitMQ.AMQP.Client.Impl.RpcConfiguration.CorrelationIdExtractor.get -> System.
 RabbitMQ.AMQP.Client.Impl.RpcConfiguration.CorrelationIdExtractor.set -> void
 RabbitMQ.AMQP.Client.Impl.RpcConfiguration.Handler.get -> RabbitMQ.AMQP.Client.RpcHandler?
 RabbitMQ.AMQP.Client.Impl.RpcConfiguration.Handler.set -> void
+RabbitMQ.AMQP.Client.Impl.RpcConfiguration.ReplyPostProcessor.get -> System.Func<RabbitMQ.AMQP.Client.IMessage!, object!, RabbitMQ.AMQP.Client.IMessage!>?
+RabbitMQ.AMQP.Client.Impl.RpcConfiguration.ReplyPostProcessor.set -> void
 RabbitMQ.AMQP.Client.Impl.RpcConfiguration.RequestQueue.get -> string!
 RabbitMQ.AMQP.Client.Impl.RpcConfiguration.RequestQueue.set -> void
 RabbitMQ.AMQP.Client.Impl.RpcConfiguration.RpcConfiguration() -> void
@@ -585,6 +591,7 @@ RabbitMQ.AMQP.Client.IRpcClientBuilder.CorrelationIdExtractor(System.Func<Rabbit
 RabbitMQ.AMQP.Client.IRpcClientBuilder.CorrelationIdSupplier(System.Func<object!>? correlationIdSupplier) -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
 RabbitMQ.AMQP.Client.IRpcClientBuilder.ReplyToQueue(string! replyToQueue) -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
 RabbitMQ.AMQP.Client.IRpcClientBuilder.RequestAddress() -> RabbitMQ.AMQP.Client.IRpcClientAddressBuilder!
+RabbitMQ.AMQP.Client.IRpcClientBuilder.RequestPostProcessor(System.Func<RabbitMQ.AMQP.Client.IMessage!, object!, RabbitMQ.AMQP.Client.IMessage!>? requestPostProcessor) -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
 RabbitMQ.AMQP.Client.IRpcClientBuilder.Timeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
 RabbitMQ.AMQP.Client.IRpcServer
 RabbitMQ.AMQP.Client.IRpcServer.IContext
@@ -593,6 +600,7 @@ RabbitMQ.AMQP.Client.IRpcServerBuilder
 RabbitMQ.AMQP.Client.IRpcServerBuilder.BuildAsync() -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IRpcServer!>!
 RabbitMQ.AMQP.Client.IRpcServerBuilder.CorrelationIdExtractor(System.Func<RabbitMQ.AMQP.Client.IMessage!, object!>? correlationIdExtractor) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.IRpcServerBuilder.Handler(RabbitMQ.AMQP.Client.RpcHandler! handler) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
+RabbitMQ.AMQP.Client.IRpcServerBuilder.ReplyPostProcessor(System.Func<RabbitMQ.AMQP.Client.IMessage!, object!, RabbitMQ.AMQP.Client.IMessage!>? replyPostProcessor) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.IRpcServerBuilder.RequestQueue(RabbitMQ.AMQP.Client.IQueueSpecification! requestQueue) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.IRpcServerBuilder.RequestQueue(string! requestQueue) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.IStreamSpecification

@@ -10,6 +10,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public RpcHandler? Handler { get; set; }
         public string RequestQueue { get; set; } = "";
         public Func<IMessage, object>? CorrelationIdExtractor { get; set; }
+        public Func<IMessage, object, IMessage>? ReplyPostProcessor { get; set; }
     }
 
     public class AmqpRpcServerBuilder : IRpcServerBuilder
@@ -36,6 +37,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IRpcServerBuilder CorrelationIdExtractor(Func<IMessage, object>? correlationIdExtractor)
         {
             _configuration.CorrelationIdExtractor = correlationIdExtractor;
+            return this;
+        }
+
+        public IRpcServerBuilder ReplyPostProcessor(Func<IMessage, object, IMessage>? replyPostProcessor)
+        {
+            _configuration.ReplyPostProcessor = replyPostProcessor;
             return this;
         }
 
@@ -80,7 +87,11 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
 
             return corr;
+        }
 
+        private IMessage ReplyPostProcessor(IMessage reply, object correlationId)
+        {
+            return _configuration.ReplyPostProcessor != null ? _configuration.ReplyPostProcessor(reply, correlationId) : reply.CorrelationId(correlationId);
         }
 
         public AmqpRpcServer(RpcConfiguration configuration)
@@ -110,8 +121,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                         }
 
                         object correlationId = ExtractCorrelationId(request);
-                        ;
-                        await SendReply(reply.CorrelationId(correlationId)).ConfigureAwait(false);
+                        reply = ReplyPostProcessor(reply, correlationId);
+                        await SendReply(reply).ConfigureAwait(false);
                     }
                 })
                 .Queue(_configuration.RequestQueue).BuildAndStartAsync()

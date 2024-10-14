@@ -16,6 +16,8 @@ namespace RabbitMQ.AMQP.Client.Impl
         public Func<object>? CorrelationIdSupplier { get; set; } = null;
 
         public Func<IMessage, object>? CorrelationIdExtractor { get; set; }
+
+        public Func<IMessage, object, IMessage>? RequestPostProcessor { get; set; }
     }
 
     public class AmqpRpcClientBuilder : IRpcClientBuilder
@@ -44,6 +46,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IRpcClientBuilder CorrelationIdExtractor(Func<IMessage, object>? correlationIdExtractor)
         {
             _configuration.CorrelationIdExtractor = correlationIdExtractor;
+            return this;
+        }
+
+        public IRpcClientBuilder RequestPostProcessor(Func<IMessage, object, IMessage>? requestPostProcessor)
+        {
+            _configuration.RequestPostProcessor = requestPostProcessor;
             return this;
         }
 
@@ -97,6 +105,17 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
 
             return corr;
+        }
+
+        private IMessage PostProcessRequest(IMessage request, object correlationId)
+        {
+            if (_configuration.RequestPostProcessor != null)
+            {
+                return _configuration.RequestPostProcessor(request, correlationId);
+            }
+
+            return request.ReplyTo(new AddressBuilder().Queue(_configuration.ReplyToQueue).Address())
+                .MessageId(correlationId);
         }
 
         public AmqpRpcClient(RpcClientConfiguration configuration)
@@ -153,26 +172,25 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public async Task<IMessage> PublishAsync(IMessage message, CancellationToken cancellationToken = default)
         {
-            message.MessageId(CorrelationIdSupplier());
-            _pendingRequests.Add(message.MessageId(), new TaskCompletionSource<IMessage>());
+            object correlationId = CorrelationIdSupplier();
+            message = PostProcessRequest(message, correlationId);
+            _pendingRequests.Add(correlationId, new TaskCompletionSource<IMessage>());
             if (_publisher != null)
             {
                 PublishResult pr = await _publisher.PublishAsync(
-                    message.ReplyTo(
-                            new AddressBuilder().Queue(_configuration.ReplyToQueue).Address())
-                        .To(_configuration.RequestAddress), cancellationToken).ConfigureAwait(false);
+                    message.To(_configuration.RequestAddress), cancellationToken).ConfigureAwait(false);
 
                 if (pr.Outcome.State != OutcomeState.Accepted)
                 {
-                    _pendingRequests[message.CorrelationId()]
+                    _pendingRequests[correlationId]
                         .SetException(new Exception($"Failed to send request state: {pr.Outcome.State}"));
                 }
             }
 
-            await _pendingRequests[message.MessageId()].Task.WaitAsync(_configuration.Timeout)
+            await _pendingRequests[correlationId].Task.WaitAsync(_configuration.Timeout)
                 .ConfigureAwait(false);
 
-            return await _pendingRequests[message.MessageId()].Task.ConfigureAwait(false);
+            return await _pendingRequests[correlationId].Task.ConfigureAwait(false);
         }
     }
 }
