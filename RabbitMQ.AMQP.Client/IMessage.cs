@@ -12,11 +12,14 @@ namespace RabbitMQ.AMQP.Client
         public object Body();
 
         // properties
-        string MessageId();
         IMessage MessageId(string id);
 
-        string CorrelationId();
+        IMessage MessageId(object id);
+        object MessageId();
+
+        object CorrelationId();
         IMessage CorrelationId(string id);
+        IMessage CorrelationId(object id);
 
         string ReplyTo();
         IMessage ReplyTo(string id);

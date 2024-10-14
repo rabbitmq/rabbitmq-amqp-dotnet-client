@@ -122,7 +122,8 @@ namespace Tests.Rpc
             TaskCompletionSource<IMessage> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
             IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
             {
-                var m = context.Message("this_come_from_the_server").MessageId(request.MessageId());
+                var m = context.Message("this_come_from_the_server");
+                tcs.SetResult(m);
                 return Task.FromResult(m);
             }).RequestQueue(_queueName).BuildAsync();
             Assert.NotNull(rpcServer);
@@ -133,12 +134,15 @@ namespace Tests.Rpc
             IRpcClient rpcClient = await _connection.RpcClientBuilder().RequestAddress()
                 .Queue(requestQueue)
                 .RpcClient()
+
                 .ReplyToQueue(replyToQueue).BuildAsync();
 
-            IMessage message = new AmqpMessage("test").MessageId("that_just_a_id");
+            IMessage message = new AmqpMessage("test");
 
             IMessage response = await rpcClient.PublishAsync(message);
             Assert.Equal("this_come_from_the_server", response.Body());
+            await rpcClient.CloseAsync();
+            await rpcServer.CloseAsync();
         }
     }
 }

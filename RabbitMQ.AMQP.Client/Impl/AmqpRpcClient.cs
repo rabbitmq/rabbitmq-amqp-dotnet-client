@@ -12,13 +12,17 @@ namespace RabbitMQ.AMQP.Client.Impl
         public string ReplyToQueue { get; set; } = "";
         public string RequestAddress { get; set; } = "";
         public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(10);
+
+        public Func<object>? CorrelationIdSupplier { get; set; } = null;
+
+        public Func<IMessage, object>? CorrelationIdExtractor { get; set; }
     }
 
     public class AmqpRpcClientBuilder : IRpcClientBuilder
     {
         private readonly RpcClientAddressBuilder _addressBuilder;
-        private AmqpConnection _connection;
-        private RpcClientConfiguration _configuration = new();
+        private readonly AmqpConnection _connection;
+        private readonly RpcClientConfiguration _configuration = new();
 
         public AmqpRpcClientBuilder(AmqpConnection connection)
         {
@@ -34,6 +38,18 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IRpcClientBuilder ReplyToQueue(string replyToQueue)
         {
             _configuration.ReplyToQueue = replyToQueue;
+            return this;
+        }
+
+        public IRpcClientBuilder CorrelationIdExtractor(Func<IMessage, object> correlationIdExtractor)
+        {
+            _configuration.CorrelationIdExtractor = correlationIdExtractor;
+            return this;
+        }
+
+        public IRpcClientBuilder CorrelationIdSupplier(Func<object> correlationIdSupplier)
+        {
+            _configuration.CorrelationIdSupplier = correlationIdSupplier;
             return this;
         }
 
@@ -58,8 +74,31 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly RpcClientConfiguration _configuration;
         private IConsumer? _consumer = null;
         private IPublisher? _publisher = null;
-        private readonly Dictionary<string, TaskCompletionSource<IMessage>> _pendingRequests = new();
+        private readonly Dictionary<object, TaskCompletionSource<IMessage>> _pendingRequests = new();
+        private readonly string _correlationId = Guid.NewGuid().ToString();
+        private int _nextCorrelationId = 0;
 
+        private object CorrelationIdSupplier()
+        {
+            if (_configuration.CorrelationIdSupplier != null)
+            {
+                return _configuration.CorrelationIdSupplier();
+            }
+
+            return $"{_correlationId}-" + Interlocked.Increment(ref _nextCorrelationId);
+        }
+
+        private object ExtractCorrelationId(IMessage message)
+        {
+            object corr = message.CorrelationId();
+            if (_configuration.CorrelationIdExtractor != null)
+            {
+                corr = _configuration.CorrelationIdExtractor(message);
+            }
+
+            return corr;
+
+        }
         public AmqpRpcClient(RpcClientConfiguration configuration)
         {
             _configuration = configuration;
@@ -73,9 +112,10 @@ namespace RabbitMQ.AMQP.Client.Impl
                 .MessageHandler(async (context, message) =>
                 {
                     await context.AcceptAsync().ConfigureAwait(false);
-                    if (_pendingRequests.ContainsKey(message.MessageId()))
+                    object correlationId = ExtractCorrelationId(message);
+                    if (_pendingRequests.TryGetValue(correlationId, out TaskCompletionSource<IMessage>? request))
                     {
-                        _pendingRequests[message.MessageId()].SetResult(message);
+                        request.SetResult(message);
                     }
                 }).BuildAndStartAsync().ConfigureAwait(false);
 
@@ -105,16 +145,19 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public async Task<IMessage> PublishAsync(IMessage message, CancellationToken cancellationToken = default)
         {
+            message.MessageId(CorrelationIdSupplier());
+            //TODO: use correlation id to match request and response
             _pendingRequests.Add(message.MessageId(), new TaskCompletionSource<IMessage>());
             if (_publisher != null)
             {
                 PublishResult pr = await _publisher.PublishAsync(
-                    message.ReplyTo(new AddressBuilder().Queue(_configuration.ReplyToQueue).Address())
+                    message.ReplyTo(
+                            new AddressBuilder().Queue(_configuration.ReplyToQueue).Address())
                         .To(_configuration.RequestAddress), cancellationToken).ConfigureAwait(false);
 
                 if (pr.Outcome.State != OutcomeState.Accepted)
                 {
-                    _pendingRequests[message.MessageId()]
+                    _pendingRequests[message.CorrelationId()]
                         .SetException(new Exception($"Failed to send request state: {pr.Outcome.State}"));
                 }
             }

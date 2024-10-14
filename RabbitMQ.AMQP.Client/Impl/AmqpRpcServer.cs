@@ -9,6 +9,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public AmqpConnection Connection { get; set; } = null!;
         public RpcHandler? Handler { get; set; }
         public string RequestQueue { get; set; } = "";
+        public Func<IMessage, object>? CorrelationIdExtractor { get; set; }
     }
 
     public class AmqpRpcServerBuilder : IRpcServerBuilder
@@ -32,8 +33,11 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public IRpcServerBuilder CorrelationIdExtractor(Func<IMessage, object> correlationIdExtractor) =>
-            throw new NotImplementedException();
+        public IRpcServerBuilder CorrelationIdExtractor(Func<IMessage, object> correlationIdExtractor)
+        {
+            _configuration.CorrelationIdExtractor = correlationIdExtractor;
+            return this;
+        }
 
         public IRpcServerBuilder Handler(RpcHandler handler)
         {
@@ -64,13 +68,24 @@ namespace RabbitMQ.AMQP.Client.Impl
                 {
                     Trace.WriteLine(TraceLevel.Error, "Failed to send reply");
                 }
-
             }
         }
 
-        public AmqpRpcServer(RpcConfiguration builder)
+        private object ExtractCorrelationId(IMessage message)
         {
-            _configuration = builder;
+            object corr = message.MessageId();
+            if (_configuration.CorrelationIdExtractor != null)
+            {
+                corr = _configuration.CorrelationIdExtractor(message);
+            }
+
+            return corr;
+
+        }
+
+        public AmqpRpcServer(RpcConfiguration configuration)
+        {
+            _configuration = configuration;
         }
 
         public override async Task OpenAsync()
@@ -94,7 +109,9 @@ namespace RabbitMQ.AMQP.Client.Impl
                             Trace.WriteLine(TraceLevel.Error, "No reply-to address in request");
                         }
 
-                        await SendReply(reply).ConfigureAwait(false);
+                        object correlationId = ExtractCorrelationId(request);
+                        ;
+                        await SendReply(reply.CorrelationId(correlationId)).ConfigureAwait(false);
                     }
                 })
                 .Queue(_configuration.RequestQueue).BuildAndStartAsync()

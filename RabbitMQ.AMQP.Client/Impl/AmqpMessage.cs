@@ -64,20 +64,27 @@ namespace RabbitMQ.AMQP.Client.Impl
             return NativeMessage.Body;
         }
 
-        public string MessageId()
+        public object MessageId()
         {
             ThrowIfPropertiesNotSet();
-            return NativeMessage.Properties.MessageId;
+            return NativeMessage.Properties.GetMessageId();
         }
 
         public IMessage MessageId(string id)
         {
             EnsureProperties();
-            NativeMessage.Properties.MessageId = id;
+            NativeMessage.Properties.SetMessageId(id);
             return this;
         }
 
-        public string CorrelationId()
+        public IMessage MessageId(object id)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.SetMessageId(id);
+            return this;
+        }
+
+        public object CorrelationId()
         {
             ThrowIfPropertiesNotSet();
             return NativeMessage.Properties.CorrelationId;
@@ -86,7 +93,14 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IMessage CorrelationId(string id)
         {
             EnsureProperties();
-            NativeMessage.Properties.CorrelationId = id;
+            NativeMessage.Properties.SetCorrelationId(id);
+            return this;
+        }
+
+        public IMessage CorrelationId(object id)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.SetCorrelationId(id);
             return this;
         }
 
