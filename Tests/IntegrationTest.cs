@@ -73,7 +73,7 @@ public abstract class IntegrationTest : IAsyncLifetime
             }
             catch
             {
-                
+
             }
 
             try
