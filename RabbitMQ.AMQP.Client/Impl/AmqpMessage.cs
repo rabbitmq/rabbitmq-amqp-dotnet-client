@@ -64,20 +64,27 @@ namespace RabbitMQ.AMQP.Client.Impl
             return NativeMessage.Body;
         }
 
-        public string MessageId()
+        public object MessageId()
         {
             ThrowIfPropertiesNotSet();
-            return NativeMessage.Properties.MessageId;
+            return NativeMessage.Properties.GetMessageId();
         }
 
         public IMessage MessageId(string id)
         {
             EnsureProperties();
-            NativeMessage.Properties.MessageId = id;
+            NativeMessage.Properties.SetMessageId(id);
             return this;
         }
 
-        public string CorrelationId()
+        public IMessage MessageId(object id)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.SetMessageId(id);
+            return this;
+        }
+
+        public object CorrelationId()
         {
             ThrowIfPropertiesNotSet();
             return NativeMessage.Properties.CorrelationId;
@@ -86,7 +93,14 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IMessage CorrelationId(string id)
         {
             EnsureProperties();
-            NativeMessage.Properties.CorrelationId = id;
+            NativeMessage.Properties.SetCorrelationId(id);
+            return this;
+        }
+
+        public IMessage CorrelationId(object id)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.SetCorrelationId(id);
             return this;
         }
 
@@ -103,6 +117,19 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
+        public string To()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.To;
+        }
+
+        public IMessage To(string id)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.To = id;
+            return this;
+        }
+
         public string Subject()
         {
             ThrowIfPropertiesNotSet();
@@ -114,6 +141,19 @@ namespace RabbitMQ.AMQP.Client.Impl
             EnsureProperties();
             NativeMessage.Properties.Subject = subject;
             return this;
+        }
+
+        public IMessage GroupId(string groupId)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.GroupId = groupId;
+            return this;
+        }
+
+        public string GroupId()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.GroupId;
         }
 
         // Annotations
@@ -129,6 +169,11 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             ThrowIfAnnotationsNotSet();
             return NativeMessage.MessageAnnotations[new Symbol(key)];
+        }
+
+        public IMessageAddressBuilder ToAddress()
+        {
+            return new MessageAddressBuilder(this);
         }
     }
 }

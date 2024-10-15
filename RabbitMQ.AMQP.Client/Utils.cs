@@ -119,7 +119,7 @@ namespace RabbitMQ.AMQP.Client
         //         protonSender.setReceiverSettleMode(ReceiverSettleMode.FIRST);
         //         break;
 
-        internal static Attach CreateAttach(string address,
+        internal static Attach CreateAttach(string? address,
             DeliveryMode deliveryMode, Guid linkId, Map? sourceFilter = null)
         {
             var attach = new Attach

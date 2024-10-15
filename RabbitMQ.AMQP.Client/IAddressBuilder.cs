@@ -23,4 +23,10 @@ namespace RabbitMQ.AMQP.Client
 
         T Key(string key);
     }
+
+    public interface IMessageAddressBuilder : IAddressBuilder<IMessageAddressBuilder>
+    {
+
+        IMessage Build();
+    }
 }

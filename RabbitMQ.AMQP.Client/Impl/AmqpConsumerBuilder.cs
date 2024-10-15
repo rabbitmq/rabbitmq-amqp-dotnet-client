@@ -43,7 +43,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IConsumerBuilder Queue(string queueName)
         {
-            string address = new AddressBuilder().Queue(queueName).Address();
+            string address = AddressBuilderHelper.AddressBuilder().Queue(queueName).Address();
             _configuration.Address = address;
             return this;
         }

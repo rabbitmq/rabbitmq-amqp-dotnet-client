@@ -108,7 +108,7 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
             try
             {
                 receivedSubject = msg.Subject();
-                messageIds.Add(int.Parse(msg.MessageId()));
+                messageIds.Add(int.Parse((string)msg.MessageId()));
                 await ctx.AcceptAsync();
                 if (Interlocked.Increment(ref receivedMessageCount) == messageCount)
                 {

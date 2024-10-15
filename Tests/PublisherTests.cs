@@ -21,11 +21,8 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         Assert.NotNull(_management);
 
         await Assert.ThrowsAsync<InvalidAddressException>(() =>
-            _connection.PublisherBuilder().Queue("does_not_matter").Exchange("i_should_not_stay_here").BuildAsync());
-
-        await Assert.ThrowsAsync<InvalidAddressException>(() => _connection.PublisherBuilder().Exchange("").BuildAsync());
-
-        await Assert.ThrowsAsync<InvalidAddressException>(() => _connection.PublisherBuilder().Queue("").BuildAsync());
+            _connection.PublisherBuilder().Queue("queue_and_exchange_cant_set_together").
+                Exchange("queue_and_exchange_cant_set_together").BuildAsync());
 
         await _connection.CloseAsync();
         Assert.Empty(_connection.GetPublishers());

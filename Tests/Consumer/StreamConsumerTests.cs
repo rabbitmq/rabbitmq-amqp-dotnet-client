@@ -38,7 +38,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
                 {
                     Interlocked.Increment(ref totalConsumed);
                     await context.AcceptAsync();
-                    if (message.MessageId() == "9")
+                    if ((string)message.MessageId() == "9")
                     {
                         manualResetEvent.Set();
                     }
@@ -75,7 +75,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
                 {
                     Interlocked.Increment(ref totalConsumed);
                     await context.AcceptAsync();
-                    if (message.MessageId() == "9")
+                    if ((string)message.MessageId() == "9")
                     {
                         manualResetEvent.Set();
                     }
@@ -111,7 +111,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
                 {
                     Interlocked.Increment(ref totalConsumed);
                     await context.AcceptAsync();
-                    if (message.MessageId() == "9")
+                    if ((string)message.MessageId() == "9")
                     {
                         manualResetEvent.Set();
                     }
