@@ -181,5 +181,77 @@ namespace Tests.Rpc
             await rpcClient.CloseAsync();
             await rpcServer.CloseAsync();
         }
+
+        /// <summary>
+        /// This test combine all the features with the overriding of the request and response post processor
+        /// the correlation id supplier and the extraction of the correlationId.
+        /// Here the client uses the replyTo queue provided by the user and the correlationId supplier
+        /// the field "Subject" is used as correlationId
+        /// The server uses the field "GroupId" as correlationId
+        /// Both use the extraction correlationId to get the correlationId
+        ///
+        /// The fields "Subject" and "GroupId" are used ONLY for test.
+        /// You should not use these fields for this purpose.
+        /// </summary>
+        /// <exception cref="InvalidOperationException"></exception>
+
+        [Fact]
+        public async Task RpcServerClientOverridingTheRequestAndResponsePostProcessor()
+        {
+            Assert.NotNull(_connection);
+            Assert.NotNull(_management);
+            string requestQueue = _queueName;
+            await _management.Queue(requestQueue).Exclusive(true).AutoDelete(true).DeclareAsync();
+            IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
+                {
+                    var reply = context.Message("pong");
+                    return Task.FromResult(reply);
+                }).RequestQueue(_queueName)
+                //come from the client
+                .CorrelationIdExtractor(message => message.Subject())
+                //  replace the correlation id location with GroupId
+                .ReplyPostProcessor((reply, replyCorrelationId) => reply.GroupId(
+                    replyCorrelationId.ToString() ?? throw new InvalidOperationException()))
+                .BuildAsync();
+            Assert.NotNull(rpcServer);
+
+            IQueueInfo replyTo =
+                await _management.Queue($"replyTo-{Now}").Exclusive(true).AutoDelete(true).DeclareAsync();
+
+            // custom correlationId supplier
+            const string correlationId = "my-correlation-id";
+            int correlationIdCounter = 0;
+
+            IRpcClient rpcClient = await _connection.RpcClientBuilder().RequestAddress()
+                .Queue(requestQueue)
+                .RpcClient()
+                .ReplyToQueue(replyTo.Name())
+                // replace the correlation id creation with a custom function
+                .CorrelationIdSupplier(() => $"{correlationId}_{Interlocked.Increment(ref correlationIdCounter)}")
+                // The server will reply with the correlation id in the groupId
+                // This is only for testing. You should not use the groupId for this. 
+                .CorrelationIdExtractor(message => message.GroupId())
+                // The client will use Subject to store the correlation id
+                // this is only for testing. You should not use Subject for this.
+                .RequestPostProcessor((request, requestCorrelationId)
+                    => request.ReplyTo(AddressBuilderHelper.AddressBuilder().Queue(replyTo.Name()).Address())
+                        .Subject(requestCorrelationId.ToString() ?? throw new InvalidOperationException()))
+                .BuildAsync();
+
+            IMessage message = new AmqpMessage("ping");
+
+            int i = 1;
+            while (i < 30)
+            {
+                IMessage response = await rpcClient.PublishAsync(message);
+                Assert.Equal("pong", response.Body());
+                // the server replies with the correlation id in the GroupId field
+                Assert.Equal($"{correlationId}_{i}", response.GroupId());
+                i++;
+            }
+
+            await rpcClient.CloseAsync();
+            await rpcServer.CloseAsync();
+        }
     }
 }

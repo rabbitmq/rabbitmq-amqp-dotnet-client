@@ -98,6 +98,11 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
     }
 
+    public static class AddressBuilderHelper
+    {
+        public static AddressBuilder AddressBuilder() => new();
+    }
+
     public class MessageAddressBuilder : DefaultAddressBuilder<IMessageAddressBuilder>, IMessageAddressBuilder
     {
         private readonly IMessage _message;

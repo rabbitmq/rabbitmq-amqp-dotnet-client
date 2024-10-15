@@ -143,6 +143,19 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
+        public IMessage GroupId(string groupId)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.GroupId = groupId;
+            return this;
+        }
+
+        public string GroupId()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.GroupId;
+        }
+
         // Annotations
 
         public IMessage Annotation(string key, object value)

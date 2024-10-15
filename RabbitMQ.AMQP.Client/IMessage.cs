@@ -29,6 +29,8 @@ namespace RabbitMQ.AMQP.Client
 
         string Subject();
         IMessage Subject(string subject);
+        IMessage GroupId(string groupId);
+        string GroupId();
 
         public IMessage Annotation(string key, object value);
 

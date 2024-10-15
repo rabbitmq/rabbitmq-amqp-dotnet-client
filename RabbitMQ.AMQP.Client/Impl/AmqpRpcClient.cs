@@ -107,14 +107,14 @@ namespace RabbitMQ.AMQP.Client.Impl
             return corr;
         }
 
-        private IMessage PostProcessRequest(IMessage request, object correlationId)
+        private IMessage RequestPostProcess(IMessage request, object correlationId)
         {
             if (_configuration.RequestPostProcessor != null)
             {
                 return _configuration.RequestPostProcessor(request, correlationId);
             }
 
-            return request.ReplyTo(new AddressBuilder().Queue(_configuration.ReplyToQueue).Address())
+            return request.ReplyTo(AddressBuilderHelper.AddressBuilder().Queue(_configuration.ReplyToQueue).Address())
                 .MessageId(correlationId);
         }
 
@@ -173,8 +173,8 @@ namespace RabbitMQ.AMQP.Client.Impl
         public async Task<IMessage> PublishAsync(IMessage message, CancellationToken cancellationToken = default)
         {
             object correlationId = CorrelationIdSupplier();
-            message = PostProcessRequest(message, correlationId);
-            _pendingRequests.Add(correlationId, new TaskCompletionSource<IMessage>());
+            message = RequestPostProcess(message, correlationId);
+            _pendingRequests.Add(correlationId, new TaskCompletionSource<IMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
             if (_publisher != null)
             {
                 PublishResult pr = await _publisher.PublishAsync(
