@@ -44,10 +44,8 @@ internal class FakeFastBackOffDelay : IBackOffDelayPolicy
     public int CurrentAttempt => 1;
 }
 
-public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
+public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
 {
-    private readonly ITestOutputHelper _testOutputHelper = testOutputHelper;
-
     /// <summary>
     /// The normal close the status should be correct and error null
     /// The test records the status change when the connection is closed normally.
@@ -59,12 +57,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [InlineData(false)]
     public async Task NormalCloseTheStatusShouldBeCorrectAndErrorNull(bool activeRecovery)
     {
-        string containerId = Guid.NewGuid().ToString();
+        string localContainerId = $"{_containerId}_normal-close-connection-name";
+
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create().ContainerId(containerId).RecoveryConfiguration(
+            ConnectionSettingBuilder.Create().ContainerId(localContainerId).RecoveryConfiguration(
                 RecoveryConfiguration.Create().Activated(activeRecovery).Topology(false)).Build());
 
-        TaskCompletionSource<bool> connectionClosedStateTcs = CreateTaskCompletionSource();
+        TaskCompletionSource<bool> connectionClosedStateTcs = CreateTaskCompletionSource<bool>();
         var listFromStatus = new List<State>();
         var listToStatus = new List<State>();
         var listError = new List<Error?>();
@@ -105,14 +104,16 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task UnexpectedCloseTheStatusShouldBeCorrectAndErrorNotNull()
     {
-        const string containerId = "unexpected-close-connection-name";
+
+        string localContainerId = $"{_containerId}_unexpected-close-connection-name";
+
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create().ContainerId(containerId).RecoveryConfiguration(
+            ConnectionSettingBuilder.Create().ContainerId(localContainerId).RecoveryConfiguration(
                 RecoveryConfiguration.Create().Activated(true).Topology(false)
                     .BackOffDelayPolicy(new FakeFastBackOffDelay())).Build());
 
-        TaskCompletionSource<bool> listErrorCountGreaterThanOrEqualToTwoTcs = CreateTaskCompletionSource();
-        TaskCompletionSource<bool> listErrorCountGreaterThanOrEqualToFourTcs = CreateTaskCompletionSource();
+        TaskCompletionSource<bool> listErrorCountGreaterThanOrEqualToTwoTcs = CreateTaskCompletionSource<bool>();
+        TaskCompletionSource<bool> listErrorCountGreaterThanOrEqualToFourTcs = CreateTaskCompletionSource<bool>();
 
         var listFromStatus = new List<State>();
         var listToStatus = new List<State>();
@@ -129,6 +130,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                     // Note: must use try since it'll be called again
                     listErrorCountGreaterThanOrEqualToTwoTcs.TrySetResult(true);
                 }
+
                 if (listError.Count >= 4)
                 {
                     listErrorCountGreaterThanOrEqualToFourTcs.SetResult(true);
@@ -142,7 +144,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         };
 
         Assert.Equal(State.Open, connection.State);
-        await SystemUtils.WaitUntilConnectionIsKilled(containerId);
+        await SystemUtils.WaitUntilConnectionIsKilled(localContainerId);
         await listErrorCountGreaterThanOrEqualToTwoTcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.Equal(State.Open, listFromStatus[0]);
@@ -175,15 +177,16 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task OverrideTheBackOffWithBackOffDisabled()
     {
-        string containerId = Guid.NewGuid().ToString();
+
+        string localContainerId = $"{_containerId}_override-backoff-disabled-connection-name";
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create().ContainerId(containerId).RecoveryConfiguration(
+            ConnectionSettingBuilder.Create().ContainerId(localContainerId).RecoveryConfiguration(
                 RecoveryConfiguration.Create().Activated(true).Topology(false).BackOffDelayPolicy(
                     new FakeBackOffDelayPolicyDisabled())).Build());
 
         var listFromStatus = new List<State>();
-        TaskCompletionSource<bool> listFromStatusCountGreaterOrEqualToTwo = CreateTaskCompletionSource();
-        TaskCompletionSource<bool> listErrorCountGreaterOrEqualToTwo = CreateTaskCompletionSource();
+        TaskCompletionSource<bool> listFromStatusCountGreaterOrEqualToTwo = CreateTaskCompletionSource<bool>();
+        TaskCompletionSource<bool> listErrorCountGreaterOrEqualToTwo = CreateTaskCompletionSource<bool>();
 
         var listToStatus = new List<State>();
         var listError = new List<Error>();
@@ -195,10 +198,12 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
             {
                 listError.Add(error);
             }
+
             if (listFromStatus.Count >= 2)
             {
                 listFromStatusCountGreaterOrEqualToTwo.TrySetResult(true);
             }
+
             if (listError.Count >= 2)
             {
                 listErrorCountGreaterOrEqualToTwo.SetResult(true);
@@ -206,7 +211,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         };
 
         Assert.Equal(State.Open, connection.State);
-        await SystemUtils.WaitUntilConnectionIsKilled(containerId);
+        await SystemUtils.WaitUntilConnectionIsKilled(localContainerId);
 
         await listFromStatusCountGreaterOrEqualToTwo.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
@@ -234,16 +239,16 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task RecoveryTopologyShouldRecoverTheTempQueues()
     {
+        string localContainerId = $"{_containerId}_temp-queue-should-recover-connection-name";
         string queueName = $"temp-queue-should-recover-{true}";
-        const string containerId = "temp-queue-should-recover-connection-name";
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
                 .RecoveryConfiguration(RecoveryConfiguration.Create()
                     .BackOffDelayPolicy(new FakeFastBackOffDelay())
                     .Topology(true))
-                .ContainerId(containerId)
+                .ContainerId(localContainerId)
                 .Build());
-        TaskCompletionSource<bool> twoRecoveryEventsSeenTcs = CreateTaskCompletionSource();
+        TaskCompletionSource<bool> twoRecoveryEventsSeenTcs = CreateTaskCompletionSource<bool>();
         int recoveryEvents = 0;
         connection.ChangeState += (sender, from, to, error) =>
         {
@@ -257,7 +262,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         await management.Queue().Name(queueName).AutoDelete(true).Exclusive(true).DeclareAsync();
         Assert.Equal(1, topologyListener.QueueCount());
 
-        await SystemUtils.WaitUntilConnectionIsKilled(containerId);
+        await SystemUtils.WaitUntilConnectionIsKilled(localContainerId);
         await twoRecoveryEventsSeenTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
         await SystemUtils.WaitUntilFuncAsync(() => recoveryEvents == 2);
 
@@ -281,15 +286,15 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     public async Task RecoveryTopologyShouldNotRecoverTheTempQueues()
     {
         string queueName = $"temp-queue-should-recover-{false}";
-        const string containerId = "temp-queue-should-not-recover-connection-name";
+        string localContainerId = $"{_containerId}_temp-queue-should-not-recover-connection-name";
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
                 .RecoveryConfiguration(RecoveryConfiguration.Create()
                     .BackOffDelayPolicy(new FakeFastBackOffDelay())
                     .Topology(false))
-                .ContainerId(containerId)
+                .ContainerId(localContainerId)
                 .Build());
-        TaskCompletionSource<bool> oneRecoveryEventSeenTcs = CreateTaskCompletionSource();
+        TaskCompletionSource<bool> oneRecoveryEventSeenTcs = CreateTaskCompletionSource<bool>();
         int recoveryEvents = 0;
         connection.ChangeState += (sender, from, to, error) =>
         {
@@ -303,7 +308,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         await management.Queue().Name(queueName).AutoDelete(true).Exclusive(true).DeclareAsync();
         Assert.Equal(1, topologyListener.QueueCount());
 
-        await SystemUtils.WaitUntilConnectionIsKilled(containerId);
+        await SystemUtils.WaitUntilConnectionIsKilled(localContainerId);
         await oneRecoveryEventSeenTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
         await SystemUtils.WaitUntilQueueDeletedAsync(queueName);
@@ -318,15 +323,15 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     public async Task RecoveryTopologyShouldRecoverExchanges(bool topologyEnabled)
     {
         const string exchangeName = "exchange-should-recover";
-        const string containerId = nameof(RecoveryTopologyShouldRecoverExchanges);
+        string localContainerId = $"{_containerId}_exchange-should-recover-connection-name";
         IConnection connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
                 .RecoveryConfiguration(RecoveryConfiguration.Create()
                     .BackOffDelayPolicy(new FakeFastBackOffDelay())
                     .Topology(topologyEnabled))
-                .ContainerId(containerId)
+                .ContainerId(localContainerId)
                 .Build());
-        TaskCompletionSource<bool> twoRecoveryEventsSeenTcs = CreateTaskCompletionSource();
+        TaskCompletionSource<bool> twoRecoveryEventsSeenTcs = CreateTaskCompletionSource<bool>();
         int recoveryEvents = 0;
         connection.ChangeState += (sender, from, to, error) =>
         {
@@ -346,7 +351,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         // the exchange is recovered.
         await SystemUtils.DeleteExchangeAsync("exchange-should-recover");
 
-        await SystemUtils.WaitUntilConnectionIsKilled(containerId);
+        await SystemUtils.WaitUntilConnectionIsKilled(localContainerId);
 
         await twoRecoveryEventsSeenTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
@@ -374,15 +379,15 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [InlineData(false)]
     public async Task RecoveryTopologyShouldRecoverBindings(bool topologyEnabled)
     {
-        const string containerId = "binding-should-recover-connection-name";
+        string localContainerId = $"{_containerId}_binding-should-recover-connection-name";
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
                 .RecoveryConfiguration(RecoveryConfiguration.Create()
                     .BackOffDelayPolicy(new FakeFastBackOffDelay())
                     .Topology(topologyEnabled))
-                .ContainerId(containerId)
+                .ContainerId(localContainerId)
                 .Build());
-        TaskCompletionSource<bool> twoRecoveryEventsSeenTcs = CreateTaskCompletionSource();
+        TaskCompletionSource<bool> twoRecoveryEventsSeenTcs = CreateTaskCompletionSource<bool>();
         int recoveryEvents = 0;
         connection.ChangeState += (sender, from, to, error) =>
         {
@@ -410,7 +415,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         await SystemUtils.DeleteExchangeAsync("exchange-should-recover-binding");
 
         // The queue will be deleted due of the auto-delete flag
-        await SystemUtils.WaitUntilConnectionIsKilled(containerId);
+        await SystemUtils.WaitUntilConnectionIsKilled(localContainerId);
         await twoRecoveryEventsSeenTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
         if (topologyEnabled)
@@ -453,13 +458,14 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task RemoveAQueueShouldRemoveTheBindings()
     {
-        const string containerId = nameof(RemoveAQueueShouldRemoveTheBindings);
+        string localContainerId = $"{_containerId}_remove-queue-should-remove-binding-connection-name";
+
         IConnection connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
                 .RecoveryConfiguration(RecoveryConfiguration.Create()
                     .BackOffDelayPolicy(new FakeFastBackOffDelay())
                     .Topology(true))
-                .ContainerId(containerId)
+                .ContainerId(localContainerId)
                 .Build());
 
         IManagement management = connection.Management();
@@ -513,13 +519,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task RemoveAnExchangeShouldRemoveTheBindings()
     {
-        const string containerId = "remove-exchange-should-remove-binding-connection-name";
+        string localContainerId = $"{_containerId}_remove-exchange-should-remove-binding-connection-name";
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
                 .RecoveryConfiguration(RecoveryConfiguration.Create()
                     .BackOffDelayPolicy(new FakeFastBackOffDelay())
                     .Topology(true))
-                .ContainerId(containerId)
+                .ContainerId(localContainerId)
                 .Build());
 
         IManagement management = connection.Management();
@@ -578,13 +584,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public async Task RemoveAnExchangeBoundToAnotherExchangeShouldRemoveTheBindings()
     {
-        const string containerId = nameof(RemoveAnExchangeBoundToAnotherExchangeShouldRemoveTheBindings);
+        string localContainerId = $"{_containerId}_remove-exchange-bound-to-another-exchange-should-remove-binding-connection-name";
         var connection = await AmqpConnection.CreateAsync(
             ConnectionSettingBuilder.Create()
                 .RecoveryConfiguration(RecoveryConfiguration.Create()
                     .BackOffDelayPolicy(new FakeFastBackOffDelay())
                     .Topology(true))
-                .ContainerId(containerId)
+                .ContainerId(localContainerId)
                 .Build());
 
         IManagement management = connection.Management();
@@ -595,7 +601,8 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         await exSpec.DeclareAsync();
 
-        var exSpecDestination = management.Exchange().Name("e-remove-exchange-bound-to-another-exchange-should-remove-binding-destination")
+        var exSpecDestination = management.Exchange()
+            .Name("e-remove-exchange-bound-to-another-exchange-should-remove-binding-destination")
             .Type(ExchangeType.DIRECT);
 
         await exSpecDestination.DeclareAsync();
@@ -606,7 +613,8 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                 .DestinationExchange(exSpecDestination).Key($"key_{i}").BindAsync();
         }
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeExistAsync("e-remove-exchange-bound-to-another-exchange-should-remove-binding",
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(
+            "e-remove-exchange-bound-to-another-exchange-should-remove-binding",
             "e-remove-exchange-bound-to-another-exchange-should-remove-binding-destination");
 
         Assert.Equal(10, topologyListener.BindingCount());
@@ -616,16 +624,12 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         await exSpec.DeleteAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync("e-remove-exchange-bound-to-another-exchange-should-remove-binding",
+        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(
+            "e-remove-exchange-bound-to-another-exchange-should-remove-binding",
             "e-remove-exchange-bound-to-another-exchange-should-remove-binding-destination");
 
         Assert.Equal(0, topologyListener.ExchangeCount());
 
         await connection.CloseAsync();
-    }
-
-    private static TaskCompletionSource<bool> CreateTaskCompletionSource()
-    {
-        return new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 }

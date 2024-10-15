@@ -95,7 +95,9 @@ public static class SystemUtils
     public static async Task WaitUntilConnectionIsKilled(string containerId)
     {
         await WaitUntilConnectionIsOpen(containerId);
-        await WaitUntilAsync(async () => await s_httpApiClient.KillConnectionAsync(containerId) == 1);
+        await WaitUntilAsync(async () =>
+
+            await s_httpApiClient.KillConnectionAsync(containerId) == 1);
     }
 
     public static async Task WaitUntilConnectionIsKilledAndOpen(string containerId)
