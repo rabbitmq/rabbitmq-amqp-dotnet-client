@@ -11,7 +11,7 @@ namespace Tests.Rpc
 {
     public class RpcServerTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
     {
-        [Fact (Skip = "ci fail")]
+        [Fact(Skip = "ci fail")]
         public async Task MockRpcServerPingPong()
         {
             Assert.NotNull(_connection);
@@ -33,7 +33,7 @@ namespace Tests.Rpc
             await rpcServer.CloseAsync();
         }
 
-        [Fact (Skip = "ci fail")]
+        [Fact(Skip = "ci fail")]
         public async Task RpcServerValidateStateChange()
         {
             Assert.NotNull(_connection);
@@ -67,7 +67,7 @@ namespace Tests.Rpc
         /// <summary>
         /// Simulate RPC communication with a publisher
         /// </summary>
-        [Fact (Skip = "ci fail")]
+        [Fact(Skip = "ci fail")]
         public async Task SimulateRpcCommunicationWithAPublisherShouldSuccess()
         {
             Assert.NotNull(_connection);
@@ -113,7 +113,7 @@ namespace Tests.Rpc
         /// In this test the client has to create a reply queue since is not provided by the user
         /// with the ReplyToQueue method
         /// </summary>
-        [Fact (Skip = "ci fail")]
+        [Fact(Skip = "ci fail")]
         public async Task RpcServerClientPingPongWithDefault()
         {
             Assert.NotNull(_connection);
@@ -143,7 +143,7 @@ namespace Tests.Rpc
         /// <summary>
         /// In this test the client has to use the ReplyToQueue provided by the user
         /// </summary>
-        [Fact (Skip = "ci fail")]
+        [Fact(Skip = "ci fail")]
         public async Task RpcServerClientPingPongWithCustomReplyToQueueAndCorrelationIdSupplier()
         {
             Assert.NotNull(_connection);
@@ -195,7 +195,7 @@ namespace Tests.Rpc
         /// </summary>
         /// <exception cref="InvalidOperationException"></exception>
 
-        [Fact (Skip = "ci fail")]
+        [Fact(Skip = "ci fail")]
         public async Task RpcServerClientOverridingTheRequestAndResponsePostProcessor()
         {
             Assert.NotNull(_connection);
