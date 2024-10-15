@@ -27,6 +27,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerformanceTest", "docs/Exa
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HAClient", "docs/Examples/HAClient/HAClient.csproj", "{E2FBE920-8DAB-4B52-87AF-B781BF715A5A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rpc", "docs\Examples\Rpc\Rpc.csproj", "{59CB2F07-4A5A-4871-8C97-02EC21C68D6B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +55,10 @@ Global
 		{E2FBE920-8DAB-4B52-87AF-B781BF715A5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E2FBE920-8DAB-4B52-87AF-B781BF715A5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E2FBE920-8DAB-4B52-87AF-B781BF715A5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{59CB2F07-4A5A-4871-8C97-02EC21C68D6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{59CB2F07-4A5A-4871-8C97-02EC21C68D6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{59CB2F07-4A5A-4871-8C97-02EC21C68D6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{59CB2F07-4A5A-4871-8C97-02EC21C68D6B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

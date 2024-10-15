@@ -3,6 +3,7 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Collections.Generic;
 using Amqp;
 using Amqp.Framing;
 using Amqp.Types;
@@ -56,6 +57,19 @@ namespace RabbitMQ.AMQP.Client.Impl
         private void EnsureAnnotations()
         {
             NativeMessage.MessageAnnotations ??= new MessageAnnotations();
+        }
+
+        private void ThrowIfApplicationPropertiesNotSet()
+        {
+            if (NativeMessage.ApplicationProperties == null)
+            {
+                throw new FieldNotSetException();
+            }
+        }
+
+        private void EnsureApplicationProperties()
+        {
+            NativeMessage.ApplicationProperties ??= new ApplicationProperties();
         }
 
         public object Body()
@@ -154,6 +168,25 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             ThrowIfPropertiesNotSet();
             return NativeMessage.Properties.GroupId;
+        }
+
+        public IMessage ApplicationProperty(string key, object value)
+        {
+            EnsureApplicationProperties();
+            NativeMessage.ApplicationProperties[key] = value;
+            return this;
+        }
+
+        public object ApplicationProperty(string key)
+        {
+            ThrowIfApplicationPropertiesNotSet();
+            return NativeMessage.ApplicationProperties[key];
+        }
+
+        public IDictionary<object, object> ApplicationProperties()
+        {
+            ThrowIfApplicationPropertiesNotSet();
+            return NativeMessage.ApplicationProperties.Map;
         }
 
         // Annotations

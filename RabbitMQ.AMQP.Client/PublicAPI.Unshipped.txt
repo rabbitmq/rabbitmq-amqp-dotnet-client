@@ -181,6 +181,9 @@ RabbitMQ.AMQP.Client.IManagement.Queue(string! name) -> RabbitMQ.AMQP.Client.IQu
 RabbitMQ.AMQP.Client.IMessage
 RabbitMQ.AMQP.Client.IMessage.Annotation(string! key) -> object!
 RabbitMQ.AMQP.Client.IMessage.Annotation(string! key, object! value) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.IMessage.ApplicationProperties() -> System.Collections.Generic.IDictionary<object!, object!>!
+RabbitMQ.AMQP.Client.IMessage.ApplicationProperty(string! key) -> object!
+RabbitMQ.AMQP.Client.IMessage.ApplicationProperty(string! key, object! value) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IMessage.Body() -> object!
 RabbitMQ.AMQP.Client.IMessage.CorrelationId() -> object!
 RabbitMQ.AMQP.Client.IMessage.CorrelationId(object! id) -> RabbitMQ.AMQP.Client.IMessage!
@@ -294,6 +297,9 @@ RabbitMQ.AMQP.Client.Impl.AmqpMessage.AmqpMessage(Amqp.Message! nativeMessage) -
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.AmqpMessage(object! body) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.Annotation(string! key) -> object!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.Annotation(string! key, object! value) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.Impl.AmqpMessage.ApplicationProperties() -> System.Collections.Generic.IDictionary<object!, object!>!
+RabbitMQ.AMQP.Client.Impl.AmqpMessage.ApplicationProperty(string! key) -> object!
+RabbitMQ.AMQP.Client.Impl.AmqpMessage.ApplicationProperty(string! key, object! value) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.Body() -> object!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.CorrelationId() -> object!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.CorrelationId(object! id) -> RabbitMQ.AMQP.Client.IMessage!

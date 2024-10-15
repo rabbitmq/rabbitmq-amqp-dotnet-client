@@ -13,9 +13,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         public Func<IMessage, object, IMessage>? ReplyPostProcessor { get; set; }
     }
 
+    /// <summary>
+    ///  AmqpRpcServerBuilder is a builder for creating an AMQP RPC server.
+    /// </summary>
     public class AmqpRpcServerBuilder : IRpcServerBuilder
     {
-        readonly RpcConfiguration _configuration = new RpcConfiguration();
+        readonly RpcConfiguration _configuration = new();
 
         public AmqpRpcServerBuilder(AmqpConnection connection)
         {
@@ -60,6 +63,10 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
     }
 
+    /// <summary>
+    /// AmqpRpcServer implements the <see cref="IRpcServer"/> interface.
+    /// With the RpcClient you can create an RPC communication over AMQP 1.0.
+    /// </summary>
     public class AmqpRpcServer : AbstractLifeCycle, IRpcServer
     {
         private readonly RpcConfiguration _configuration;

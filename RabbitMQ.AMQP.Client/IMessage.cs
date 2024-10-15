@@ -2,6 +2,8 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System.Collections.Generic;
+
 namespace RabbitMQ.AMQP.Client
 {
     public interface IMessage
@@ -32,6 +34,15 @@ namespace RabbitMQ.AMQP.Client
         IMessage GroupId(string groupId);
         string GroupId();
 
+        // Application properties
+
+        public IMessage ApplicationProperty(string key, object value);
+
+        public object ApplicationProperty(string key);
+
+        public IDictionary<object, object> ApplicationProperties();
+
+        // Message annotations
         public IMessage Annotation(string key, object value);
 
         public object Annotation(string key);
