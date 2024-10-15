@@ -44,9 +44,8 @@ internal class FakeFastBackOffDelay : IBackOffDelayPolicy
     public int CurrentAttempt => 1;
 }
 
-public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
+public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
 {
-    private readonly ITestOutputHelper _testOutputHelper = testOutputHelper;
 
     /// <summary>
     /// The normal close the status should be correct and error null
@@ -622,10 +621,5 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(0, topologyListener.ExchangeCount());
 
         await connection.CloseAsync();
-    }
-
-    private static TaskCompletionSource<bool> CreateTaskCompletionSource()
-    {
-        return new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 }

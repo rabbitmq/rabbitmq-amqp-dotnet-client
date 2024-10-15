@@ -34,13 +34,13 @@ public abstract class IntegrationTest : IAsyncLifetime
     {
         _testOutputHelper = testOutputHelper;
         _setupConnectionAndManagement = setupConnectionAndManagement;
-
         _queueName = $"{_testDisplayName}-queue-{Now}";
         _exchangeName = $"{_testDisplayName}-exchange-{Now}";
 
         _testDisplayName = InitTestDisplayName();
         _containerId = $"{_testDisplayName}:{Now}";
 
+        testOutputHelper.WriteLine($"Running test: {_testDisplayName}");
         _connectionSettingBuilder = InitConnectionSettingsBuilder();
     }
 
@@ -63,6 +63,7 @@ public abstract class IntegrationTest : IAsyncLifetime
 
     public virtual async Task DisposeAsync()
     {
+        _testOutputHelper.WriteLine($"Disposing test: {_testDisplayName}");
         if (_management is not null && _management.State == State.Open)
         {
             try
@@ -72,6 +73,7 @@ public abstract class IntegrationTest : IAsyncLifetime
             }
             catch
             {
+                
             }
 
             try
