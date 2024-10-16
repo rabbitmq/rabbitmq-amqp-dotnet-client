@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using System.Web;
 using Amqp.Framing;
 using Amqp.Types;
@@ -26,8 +27,7 @@ namespace RabbitMQ.AMQP.Client
 #if NET6_0_OR_GREATER
         private static readonly Random s_random = Random.Shared;
 #else
-        [ThreadStatic]
-        private static Random? s_random;
+        [ThreadStatic] private static Random? s_random;
 #endif
 
         internal static int RandomNext(int minValue, int maxValue)
@@ -190,6 +190,33 @@ namespace RabbitMQ.AMQP.Client
                 throw new ArgumentException(
                     $"Message annotation keys must start with 'x-': {kvp.Key}");
             }
+        }
+
+        /// <summary>
+        /// This function is used to wait until a condition is met.
+        /// with a backoff strategy. Useful for waiting on a condition during a reconnection for example
+        /// </summary>
+        /// <param name="func">The function to test</param>
+        /// <param name="callBack">Call back to check what's happening</param>
+        /// <param name="retries">Number of retries</param>
+        public static async Task WaitWithBackOffUntilFuncAsync(
+            Func<Task<bool>> func, Action<bool, TimeSpan> callBack, ushort retries = 10)
+        {
+            TimeSpan backOffTimeSpan = TimeSpan.FromSeconds(5);
+
+            while (false == await func().ConfigureAwait(false))
+            {
+                callBack(false, backOffTimeSpan);
+                await Task.Delay(backOffTimeSpan).ConfigureAwait(false);
+                backOffTimeSpan = TimeSpan.FromSeconds(backOffTimeSpan.TotalSeconds * 2);
+
+                --retries;
+                if (retries == 0)
+                {
+                    throw new TimeoutException("Timeout waiting for condition to be met");
+                }
+            }
+            callBack(true, backOffTimeSpan);
         }
     }
 

@@ -16,7 +16,9 @@ Trace.WriteLine(TraceLevel.Information, "Starting the example...");
 const string containerId = "rpc-example-connection";
 
 IEnvironment environment = await AmqpEnvironment.CreateAsync(
-    ConnectionSettingBuilder.Create().ContainerId(containerId).Build()).ConfigureAwait(false);
+    ConnectionSettingBuilder.Create().ContainerId(containerId)
+        .RecoveryConfiguration(RecoveryConfiguration.Create().Topology(true))
+        .Build()).ConfigureAwait(false);
 
 IConnection connection = await environment.CreateConnectionAsync().ConfigureAwait(false);
 Trace.WriteLine(TraceLevel.Information, $"Connected to the broker {connection} successfully");
@@ -28,7 +30,7 @@ IManagement management = connection.Management();
 IQueueSpecification queueSpec = management.Queue(rpcQueue).Type(QueueType.QUORUM);
 await queueSpec.DeclareAsync().ConfigureAwait(false);
 
-const int messagesToSend = 10;
+const int messagesToSend = 10_000_000;
 TaskCompletionSource<bool> tcs = new();
 int messagesReceived = 0;
 IRpcServer rpcServer = await connection.RpcServerBuilder().RequestQueue(rpcQueue).Handler(
@@ -55,10 +57,18 @@ IRpcClient rpcClient = await connection.RpcClientBuilder().RequestAddress().Queu
 
 for (int i = 0; i < messagesToSend; i++)
 {
-    IMessage reply = await rpcClient.PublishAsync(
-        new AmqpMessage($"ping_{DateTime.Now}")).ConfigureAwait(false);
-    Trace.WriteLine(TraceLevel.Information, $"[Client] Reply received: {reply.Body()}");
-    Thread.Sleep(500);
+    try
+    {
+        IMessage reply = await rpcClient.PublishAsync(
+            new AmqpMessage($"ping_{DateTime.Now}")).ConfigureAwait(false);
+        Trace.WriteLine(TraceLevel.Information, $"[Client] Reply received: {reply.Body()}");
+        Thread.Sleep(500);
+    }
+    catch (Exception e)
+    {
+        Trace.WriteLine(TraceLevel.Error, $"[Client] PublishAsync Error: {e.Message}");
+        Thread.Sleep(500);
+    }
 }
 
 await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false);

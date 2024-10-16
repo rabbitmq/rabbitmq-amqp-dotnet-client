@@ -38,9 +38,15 @@ namespace RabbitMQ.AMQP.Client.Impl
             return _addressBuilder;
         }
 
-        public IRpcClientBuilder ReplyToQueue(string replyToQueue)
+        public IRpcClientBuilder ReplyToQueue(string replyToQueueName)
         {
-            _configuration.ReplyToQueue = replyToQueue;
+            _configuration.ReplyToQueue = replyToQueueName;
+            return this;
+        }
+
+        public IRpcClientBuilder ReplyToQueue(IQueueSpecification replyToQueue)
+        {
+            _configuration.ReplyToQueue = replyToQueue.QueueName;
             return this;
         }
 

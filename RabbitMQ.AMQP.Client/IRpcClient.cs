@@ -13,7 +13,9 @@ namespace RabbitMQ.AMQP.Client
     public interface IRpcClientBuilder
     {
         IRpcClientAddressBuilder RequestAddress();
-        IRpcClientBuilder ReplyToQueue(string replyToQueue);
+        IRpcClientBuilder ReplyToQueue(string replyToQueueName);
+
+        IRpcClientBuilder ReplyToQueue(IQueueSpecification replyToQueue);
         IRpcClientBuilder CorrelationIdExtractor(Func<IMessage, object>? correlationIdExtractor);
 
         IRpcClientBuilder RequestPostProcessor(Func<IMessage, object, IMessage>? requestPostProcessor);

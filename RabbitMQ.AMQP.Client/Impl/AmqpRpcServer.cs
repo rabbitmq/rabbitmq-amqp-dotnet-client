@@ -98,7 +98,9 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private IMessage ReplyPostProcessor(IMessage reply, object correlationId)
         {
-            return _configuration.ReplyPostProcessor != null ? _configuration.ReplyPostProcessor(reply, correlationId) : reply.CorrelationId(correlationId);
+            return _configuration.ReplyPostProcessor != null
+                ? _configuration.ReplyPostProcessor(reply, correlationId)
+                : reply.CorrelationId(correlationId);
         }
 
         public AmqpRpcServer(RpcConfiguration configuration)
@@ -124,12 +126,32 @@ namespace RabbitMQ.AMQP.Client.Impl
                         }
                         else
                         {
-                            Trace.WriteLine(TraceLevel.Error, "No reply-to address in request");
+                            Trace.WriteLine(TraceLevel.Error, "[RPC server] No reply-to address in request");
                         }
 
                         object correlationId = ExtractCorrelationId(request);
                         reply = ReplyPostProcessor(reply, correlationId);
-                        await SendReply(reply).ConfigureAwait(false);
+                        await Utils.WaitWithBackOffUntilFuncAsync(async () =>
+                            {
+                                try
+                                {
+                                    await SendReply(reply).ConfigureAwait(false);
+                                    return true;
+                                }
+                                catch (Exception e)
+                                {
+                                    Trace.WriteLine(TraceLevel.Error,
+                                        $"[RPC server] Failed to send reply: {e.Message}");
+                                    return false;
+                                }
+                            },
+                            (success, span) =>
+                            {
+                                if (!success)
+                                {
+                                    Trace.WriteLine(TraceLevel.Error, $"Failed to send reply, retrying in {span}");
+                                }
+                            }, 3).ConfigureAwait(false);
                     }
                 })
                 .Queue(_configuration.RequestQueue).BuildAndStartAsync()
