@@ -318,5 +318,41 @@ namespace Tests.Rpc
             await rpcServer.CloseAsync();
             await rpcClient.CloseAsync();
         }
+
+        /// <summary>
+        /// The RPC client `PublishAsync` should raise a timeout exception if the server does not reply within the timeout
+        /// </summary>
+        [Fact]
+        public async Task RpcClientShouldRaiseTimeoutError()
+        {
+            Assert.NotNull(_connection);
+            Assert.NotNull(_management);
+            string requestQueue = _queueName;
+            await _management.Queue(requestQueue).Exclusive(true).AutoDelete(true).DeclareAsync();
+            IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
+            {
+                var reply = context.Message("pong");
+                object millisecondsToWait = request.ApplicationProperty("wait");
+                Thread.Sleep(TimeSpan.FromMilliseconds((int)millisecondsToWait));
+                return Task.FromResult(reply);
+            }).RequestQueue(_queueName).BuildAsync();
+            Assert.NotNull(rpcServer);
+
+            IRpcClient rpcClient = await _connection.RpcClientBuilder().RequestAddress()
+                .Queue(requestQueue)
+                .RpcClient()
+                .Timeout(TimeSpan.FromMilliseconds(300))
+                .BuildAsync();
+
+            IMessage reply = await rpcClient.PublishAsync(
+                new AmqpMessage("ping").ApplicationProperty("wait", 1));
+            Assert.Equal("pong", reply.Body());
+
+            await Assert.ThrowsAsync<TimeoutException>(() => rpcClient.PublishAsync(
+                new AmqpMessage("ping").ApplicationProperty("wait", 700)));
+
+            await rpcClient.CloseAsync();
+            await rpcServer.CloseAsync();
+        }
     }
 }

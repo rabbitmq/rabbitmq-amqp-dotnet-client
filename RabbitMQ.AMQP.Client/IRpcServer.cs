@@ -3,8 +3,12 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.AMQP.Client
 {
-    public delegate Task<IMessage> RpcHandler(IRpcServer.IContext context, IMessage request);
 
+    /// <summary>
+    /// IRpcServerBuilder is the interface for creating an RPC server.
+    /// The RPC server consumes requests from a queue and sends replies to a reply queue.
+    /// See also <seealso cref="IRpcServer"/>  and <seealso cref="IRpcClientBuilder"/>
+    /// </summary>
     public interface IRpcServerBuilder
     {
         /// <summary>
@@ -45,9 +49,25 @@ namespace RabbitMQ.AMQP.Client
         /// <returns></returns>
         IRpcServerBuilder Handler(RpcHandler handler);
 
+        /// <summary>
+        /// Build and return the RPC server.
+        /// </summary>
+        /// <returns></returns>
         Task<IRpcServer> BuildAsync();
     }
 
+    /// <summary>
+    /// Event handler for handling RPC requests.
+    /// </summary>
+    public delegate Task<IMessage> RpcHandler(IRpcServer.IContext context, IMessage request);
+
+    /// <summary>
+    /// IRpcServer interface for creating an RPC server.
+    /// The RPC is simulated by sending a request message and receiving a reply message.
+    /// Where the client sends the queue where wants to receive the reply.
+    /// RPC client ---> request queue ---> RPC server ---> reply queue ---> RPC client
+    /// See also <seealso cref="IRpcClient"/>
+    /// </summary>
     public interface IRpcServer : ILifeCycle
     {
 

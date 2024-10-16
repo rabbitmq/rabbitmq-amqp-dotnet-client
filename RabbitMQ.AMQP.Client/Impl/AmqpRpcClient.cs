@@ -188,12 +188,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-        /// <summary>
-        /// PublishAsync sends a request message to the server and blocks the thread until the response is received.
-        /// </summary>
-        /// <param name="message"> The request message</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns></returns>
         public async Task<IMessage> PublishAsync(IMessage message, CancellationToken cancellationToken = default)
         {
             await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);

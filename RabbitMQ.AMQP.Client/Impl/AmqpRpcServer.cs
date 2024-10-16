@@ -151,7 +151,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                                 {
                                     Trace.WriteLine(TraceLevel.Error, $"Failed to send reply, retrying in {span}");
                                 }
-                            }, 3).ConfigureAwait(false);
+                            }, 5).ConfigureAwait(false);
                     }
                 })
                 .Queue(_configuration.RequestQueue).BuildAndStartAsync()
