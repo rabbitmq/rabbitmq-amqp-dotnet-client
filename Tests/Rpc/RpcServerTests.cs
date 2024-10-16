@@ -186,15 +186,9 @@ namespace Tests.Rpc
         /// This test combine all the features with the overriding of the request and response post processor
         /// the correlation id supplier and the extraction of the correlationId.
         /// Here the client uses the replyTo queue provided by the user and the correlationId supplier
-        /// the field "Subject" is used as correlationId
-        /// The server uses the field "GroupId" as correlationId
-        /// Both use the extraction correlationId to get the correlationId
         ///
-        /// The fields "Subject" and "GroupId" are used ONLY for test.
-        /// You should not use these fields for this purpose.
         /// </summary>
         /// <exception cref="InvalidOperationException"></exception>
-
         [Fact]
         public async Task RpcServerClientOverridingTheRequestAndResponsePostProcessor()
         {
@@ -208,9 +202,9 @@ namespace Tests.Rpc
                     return Task.FromResult(reply);
                 }).RequestQueue(_queueName)
                 //come from the client
-                .CorrelationIdExtractor(message => message.Subject())
-                //  replace the correlation id location with GroupId
-                .ReplyPostProcessor((reply, replyCorrelationId) => reply.GroupId(
+                .CorrelationIdExtractor(message => message.ApplicationProperty("correlationId"))
+                //  replace the correlation id location with Application properties
+                .ReplyPostProcessor((reply, replyCorrelationId) => reply.ApplicationProperty("correlationId",
                     replyCorrelationId.ToString() ?? throw new InvalidOperationException()))
                 .BuildAsync();
             Assert.NotNull(rpcServer);
@@ -228,14 +222,13 @@ namespace Tests.Rpc
                 .ReplyToQueue(replyTo.Name())
                 // replace the correlation id creation with a custom function
                 .CorrelationIdSupplier(() => $"{correlationId}_{Interlocked.Increment(ref correlationIdCounter)}")
-                // The server will reply with the correlation id in the groupId
-                // This is only for testing. You should not use the groupId for this. 
-                .CorrelationIdExtractor(message => message.GroupId())
-                // The client will use Subject to store the correlation id
-                // this is only for testing. You should not use Subject for this.
+                // The server will reply with the correlation id in application properties
+                .CorrelationIdExtractor(message => message.ApplicationProperty("correlationId"))
+                // The client will use application properties to set the correlation id
                 .RequestPostProcessor((request, requestCorrelationId)
                     => request.ReplyTo(AddressBuilderHelper.AddressBuilder().Queue(replyTo.Name()).Address())
-                        .Subject(requestCorrelationId.ToString() ?? throw new InvalidOperationException()))
+                        .ApplicationProperty("correlationId",
+                            requestCorrelationId.ToString() ?? throw new InvalidOperationException()))
                 .BuildAsync();
 
             IMessage message = new AmqpMessage("ping");
@@ -245,13 +238,85 @@ namespace Tests.Rpc
             {
                 IMessage response = await rpcClient.PublishAsync(message);
                 Assert.Equal("pong", response.Body());
-                // the server replies with the correlation id in the GroupId field
-                Assert.Equal($"{correlationId}_{i}", response.GroupId());
+                // the server replies with the correlation id in the application properties
+                Assert.Equal($"{correlationId}_{i}", response.ApplicationProperty("correlationId"));
+                Assert.Equal($"{correlationId}_{i}", response.ApplicationProperties()["correlationId"]);
+                Assert.Single(response.ApplicationProperties());
                 i++;
             }
 
             await rpcClient.CloseAsync();
             await rpcServer.CloseAsync();
+        }
+
+        [Fact]
+        public async Task RpcClientMultiThreadShouldBeSafe()
+        {
+            Assert.NotNull(_connection);
+            Assert.NotNull(_management);
+
+            string requestQueue = _queueName;
+
+            await _management.Queue(requestQueue).Exclusive(true).AutoDelete(true).DeclareAsync();
+            const int messagesToSend = 99;
+            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            List<IMessage> messagesReceived = [];
+            IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
+            {
+                try
+                {
+                    var reply = context.Message("pong");
+                    messagesReceived.Add(request);
+                    return Task.FromResult(reply);
+                }
+                finally
+                {
+                    if (messagesReceived.Count == messagesToSend)
+                    {
+                        tcs.SetResult(true);
+                    }
+                }
+            }).RequestQueue(requestQueue).BuildAsync();
+
+            Assert.NotNull(rpcServer);
+
+            IRpcClient rpcClient = await _connection.RpcClientBuilder().RequestAddress()
+                .Queue(requestQueue)
+                .RpcClient()
+                .BuildAsync();
+
+            List<Task> tasks = [];
+
+            // we simulate a multi-thread environment
+            // where multiple threads send messages to the server
+            // and the server replies to each message in a consistent way
+            for (int i = 0; i < messagesToSend; i++)
+            {
+                int i1 = i;
+                tasks.Add(Task.Run(async () =>
+                {
+                    IMessage message = new AmqpMessage("ping").ApplicationProperty("id", i1);
+                    IMessage response = await rpcClient.PublishAsync(message);
+                    Assert.Equal("pong", response.Body());
+                }));
+            }
+
+            await Task.WhenAll(tasks);
+
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+            Assert.Equal(messagesToSend, messagesReceived.Count);
+
+            // we don't care about the order of the messages
+            // the important thing is that all the messages are received
+            // and the id is the same as the one sent
+            for (int i = 0; i < messagesToSend; i++)
+            {
+                Assert.Contains(messagesReceived, m => m.ApplicationProperty("id").Equals(i));
+            }
+
+            await rpcServer.CloseAsync();
+            await rpcClient.CloseAsync();
         }
     }
 }

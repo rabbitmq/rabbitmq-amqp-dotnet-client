@@ -41,6 +41,7 @@ public static class SystemUtils
         {
             managementUriPort = (ushort)Utils.RandomNext(15672, 15675);
         }
+
         Uri managementUri = new($"http://localhost:{managementUriPort}");
         return new EasyNetQ.Management.Client.ManagementClient(managementUri, "guest", "guest");
     }
@@ -96,7 +97,6 @@ public static class SystemUtils
     {
         await WaitUntilConnectionIsOpen(containerId);
         await WaitUntilAsync(async () =>
-
             await s_httpApiClient.KillConnectionAsync(containerId) == 1);
     }
 
@@ -114,10 +114,7 @@ public static class SystemUtils
 
     public static Task WaitUntilQueueExistsAsync(string queueNameStr)
     {
-        return WaitUntilAsync(() =>
-        {
-            return s_httpApiClient.CheckQueueAsync(queueNameStr, checkExisting: true);
-        });
+        return WaitUntilAsync(() => { return s_httpApiClient.CheckQueueAsync(queueNameStr, checkExisting: true); });
     }
 
     public static Task WaitUntilQueueDeletedAsync(IQueueSpecification queueSpec)
@@ -127,10 +124,7 @@ public static class SystemUtils
 
     public static Task WaitUntilQueueDeletedAsync(string queueNameStr)
     {
-        return WaitUntilAsync(() =>
-        {
-            return s_httpApiClient.CheckQueueAsync(queueNameStr, checkExisting: false);
-        });
+        return WaitUntilAsync(() => { return s_httpApiClient.CheckQueueAsync(queueNameStr, checkExisting: false); });
     }
 
     public static Task WaitUntilExchangeExistsAsync(IExchangeSpecification exchangeSpec)
@@ -169,7 +163,8 @@ public static class SystemUtils
     {
         return WaitUntilAsync(() =>
         {
-            return s_httpApiClient.CheckBindingsBetweenExchangeAndQueueAsync(exchangeNameStr, queueNameStr, checkExisting: true);
+            return s_httpApiClient.CheckBindingsBetweenExchangeAndQueueAsync(exchangeNameStr, queueNameStr,
+                checkExisting: true);
         });
     }
 
@@ -179,21 +174,26 @@ public static class SystemUtils
         return WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(exchangeSpec.ExchangeName, queueSpec.QueueName);
     }
 
-    public static Task WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(string exchangeNameStr, string queueNameStr)
+    public static Task WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(string exchangeNameStr,
+        string queueNameStr)
     {
         return WaitUntilAsync(() =>
         {
-            return s_httpApiClient.CheckBindingsBetweenExchangeAndQueueAsync(exchangeNameStr, queueNameStr, checkExisting: false);
+            return s_httpApiClient.CheckBindingsBetweenExchangeAndQueueAsync(exchangeNameStr, queueNameStr,
+                checkExisting: false);
         });
     }
 
-    public static Task WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(IExchangeSpecification exchangeSpec, IQueueSpecification queueSpec,
+    public static Task WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(IExchangeSpecification exchangeSpec,
+        IQueueSpecification queueSpec,
         Dictionary<string, object> args)
     {
-        return WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(exchangeSpec.ExchangeName, queueSpec.QueueName, args);
+        return WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(exchangeSpec.ExchangeName,
+            queueSpec.QueueName, args);
     }
 
-    public static Task WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(string exchangeNameStr, string queueNameStr,
+    public static Task WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(string exchangeNameStr,
+        string queueNameStr,
         Dictionary<string, object> args)
     {
         return WaitUntilAsync(() =>
@@ -203,13 +203,16 @@ public static class SystemUtils
         });
     }
 
-    public static Task WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(IExchangeSpecification exchangeSpec, IQueueSpecification queueSpec,
+    public static Task WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(
+        IExchangeSpecification exchangeSpec, IQueueSpecification queueSpec,
         Dictionary<string, object> args)
     {
-        return WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(exchangeSpec.ExchangeName, queueSpec.QueueName, args);
+        return WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(exchangeSpec.ExchangeName,
+            queueSpec.QueueName, args);
     }
 
-    public static Task WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(string exchangeNameStr, string queueNameStr,
+    public static Task WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(string exchangeNameStr,
+        string queueNameStr,
         Dictionary<string, object> args)
     {
         return WaitUntilAsync(() =>
@@ -219,29 +222,37 @@ public static class SystemUtils
         });
     }
 
-    public static Task WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(IExchangeSpecification sourceExchangeSpec, IExchangeSpecification destinationExchangeSpec)
+    public static Task WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(IExchangeSpecification sourceExchangeSpec,
+        IExchangeSpecification destinationExchangeSpec)
     {
-        return WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(sourceExchangeSpec.ExchangeName, destinationExchangeSpec.ExchangeName);
+        return WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(sourceExchangeSpec.ExchangeName,
+            destinationExchangeSpec.ExchangeName);
     }
 
-    public static Task WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(string sourceExchangeNameStr, string destinationExchangeNameStr)
+    public static Task WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(string sourceExchangeNameStr,
+        string destinationExchangeNameStr)
     {
         return WaitUntilAsync(() =>
         {
-            return s_httpApiClient.CheckBindingsBetweenExchangeAndExchangeAsync(sourceExchangeNameStr, destinationExchangeNameStr, checkExisting: true);
+            return s_httpApiClient.CheckBindingsBetweenExchangeAndExchangeAsync(sourceExchangeNameStr,
+                destinationExchangeNameStr, checkExisting: true);
         });
     }
 
-    public static Task WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(IExchangeSpecification sourceExchangeSpec, IExchangeSpecification destinationExchangeSpec)
+    public static Task WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(
+        IExchangeSpecification sourceExchangeSpec, IExchangeSpecification destinationExchangeSpec)
     {
-        return WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(sourceExchangeSpec.ExchangeName, destinationExchangeSpec.ExchangeName);
+        return WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(sourceExchangeSpec.ExchangeName,
+            destinationExchangeSpec.ExchangeName);
     }
 
-    public static Task WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(string sourceExchangeNameStr, string destinationExchangeNameStr)
+    public static Task WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(string sourceExchangeNameStr,
+        string destinationExchangeNameStr)
     {
         return WaitUntilAsync(() =>
         {
-            return s_httpApiClient.CheckBindingsBetweenExchangeAndExchangeAsync(sourceExchangeNameStr, destinationExchangeNameStr, checkExisting: false);
+            return s_httpApiClient.CheckBindingsBetweenExchangeAndExchangeAsync(sourceExchangeNameStr,
+                destinationExchangeNameStr, checkExisting: false);
         });
     }
 

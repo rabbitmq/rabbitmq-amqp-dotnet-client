@@ -13,9 +13,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         public Func<IMessage, object, IMessage>? ReplyPostProcessor { get; set; }
     }
 
+    /// <summary>
+    ///  AmqpRpcServerBuilder is a builder for creating an AMQP RPC server.
+    /// </summary>
     public class AmqpRpcServerBuilder : IRpcServerBuilder
     {
-        readonly RpcConfiguration _configuration = new RpcConfiguration();
+        readonly RpcConfiguration _configuration = new();
 
         public AmqpRpcServerBuilder(AmqpConnection connection)
         {
@@ -60,6 +63,10 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
     }
 
+    /// <summary>
+    /// AmqpRpcServer implements the <see cref="IRpcServer"/> interface.
+    /// With the RpcClient you can create an RPC communication over AMQP 1.0.
+    /// </summary>
     public class AmqpRpcServer : AbstractLifeCycle, IRpcServer
     {
         private readonly RpcConfiguration _configuration;
@@ -91,7 +98,9 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private IMessage ReplyPostProcessor(IMessage reply, object correlationId)
         {
-            return _configuration.ReplyPostProcessor != null ? _configuration.ReplyPostProcessor(reply, correlationId) : reply.CorrelationId(correlationId);
+            return _configuration.ReplyPostProcessor != null
+                ? _configuration.ReplyPostProcessor(reply, correlationId)
+                : reply.CorrelationId(correlationId);
         }
 
         public AmqpRpcServer(RpcConfiguration configuration)
@@ -117,12 +126,32 @@ namespace RabbitMQ.AMQP.Client.Impl
                         }
                         else
                         {
-                            Trace.WriteLine(TraceLevel.Error, "No reply-to address in request");
+                            Trace.WriteLine(TraceLevel.Error, "[RPC server] No reply-to address in request");
                         }
 
                         object correlationId = ExtractCorrelationId(request);
                         reply = ReplyPostProcessor(reply, correlationId);
-                        await SendReply(reply).ConfigureAwait(false);
+                        await Utils.WaitWithBackOffUntilFuncAsync(async () =>
+                            {
+                                try
+                                {
+                                    await SendReply(reply).ConfigureAwait(false);
+                                    return true;
+                                }
+                                catch (Exception e)
+                                {
+                                    Trace.WriteLine(TraceLevel.Error,
+                                        $"[RPC server] Failed to send reply: {e.Message}");
+                                    return false;
+                                }
+                            },
+                            (success, span) =>
+                            {
+                                if (!success)
+                                {
+                                    Trace.WriteLine(TraceLevel.Error, $"Failed to send reply, retrying in {span}");
+                                }
+                            }, 3).ConfigureAwait(false);
                     }
                 })
                 .Queue(_configuration.RequestQueue).BuildAndStartAsync()

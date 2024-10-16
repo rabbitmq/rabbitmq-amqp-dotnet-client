@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,9 +38,15 @@ namespace RabbitMQ.AMQP.Client.Impl
             return _addressBuilder;
         }
 
-        public IRpcClientBuilder ReplyToQueue(string replyToQueue)
+        public IRpcClientBuilder ReplyToQueue(string replyToQueueName)
         {
-            _configuration.ReplyToQueue = replyToQueue;
+            _configuration.ReplyToQueue = replyToQueueName;
+            return this;
+        }
+
+        public IRpcClientBuilder ReplyToQueue(IQueueSpecification replyToQueue)
+        {
+            _configuration.ReplyToQueue = replyToQueue.QueueName;
             return this;
         }
 
@@ -77,13 +84,24 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
     }
 
+    /// <summary>
+    /// AmqpRpcClient is an implementation of <see cref="IRpcClient"/>.
+    /// It is a wrapper around <see cref="IPublisher"/> and <see cref="IConsumer"/> to create an RPC client over AMQP 1.0.
+    /// even the PublishAsync is async the RPClient blocks the thread until the response is received.
+    /// within the timeout.
+    ///
+    ///  The PublishAsync is thread-safe and can be called from multiple threads.
+    ///
+    /// See also the server side <see cref="IRpcServer"/>.
+    /// </summary>
     public class AmqpRpcClient : AbstractLifeCycle, IRpcClient
     {
         private readonly RpcClientConfiguration _configuration;
         private IConsumer? _consumer = null;
         private IPublisher? _publisher = null;
-        private readonly Dictionary<object, TaskCompletionSource<IMessage>> _pendingRequests = new();
+        private readonly ConcurrentDictionary<object, TaskCompletionSource<IMessage>> _pendingRequests = new();
         private readonly string _correlationId = Guid.NewGuid().ToString();
+        private readonly SemaphoreSlim _semaphore = new(1, 1);
         private int _nextCorrelationId = 0;
 
         private object CorrelationIdSupplier()
@@ -170,27 +188,42 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        /// <summary>
+        /// PublishAsync sends a request message to the server and blocks the thread until the response is received.
+        /// </summary>
+        /// <param name="message"> The request message</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns></returns>
         public async Task<IMessage> PublishAsync(IMessage message, CancellationToken cancellationToken = default)
         {
-            object correlationId = CorrelationIdSupplier();
-            message = RequestPostProcess(message, correlationId);
-            _pendingRequests.Add(correlationId, new TaskCompletionSource<IMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
-            if (_publisher != null)
+            await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
             {
-                PublishResult pr = await _publisher.PublishAsync(
-                    message.To(_configuration.RequestAddress), cancellationToken).ConfigureAwait(false);
-
-                if (pr.Outcome.State != OutcomeState.Accepted)
+                object correlationId = CorrelationIdSupplier();
+                message = RequestPostProcess(message, correlationId);
+                _pendingRequests.TryAdd(correlationId,
+                    new TaskCompletionSource<IMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
+                if (_publisher != null)
                 {
-                    _pendingRequests[correlationId]
-                        .SetException(new Exception($"Failed to send request state: {pr.Outcome.State}"));
+                    PublishResult pr = await _publisher.PublishAsync(
+                        message.To(_configuration.RequestAddress), cancellationToken).ConfigureAwait(false);
+
+                    if (pr.Outcome.State != OutcomeState.Accepted)
+                    {
+                        _pendingRequests[correlationId]
+                            .SetException(new Exception($"Failed to send request state: {pr.Outcome.State}"));
+                    }
                 }
+
+                await _pendingRequests[correlationId].Task.WaitAsync(_configuration.Timeout)
+                    .ConfigureAwait(false);
+
+                return await _pendingRequests[correlationId].Task.ConfigureAwait(false);
             }
-
-            await _pendingRequests[correlationId].Task.WaitAsync(_configuration.Timeout)
-                .ConfigureAwait(false);
-
-            return await _pendingRequests[correlationId].Task.ConfigureAwait(false);
+            finally
+            {
+                _semaphore.Release();
+            }
         }
     }
 }
