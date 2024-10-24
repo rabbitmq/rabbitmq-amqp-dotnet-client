@@ -267,7 +267,7 @@ public static class SystemUtils
         {
             Queue queue = await s_httpApiClient.GetQueueAsync(queueNameStr);
             return messageCount == queue.MessagesReady;
-        }, retries: 20);
+        }, retries: 30);
     }
 
     public static Task DeleteExchangeAsync(string exchangeNameSt)

@@ -3,7 +3,6 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Amqp;
 using Amqp.Types;
 
@@ -22,90 +21,97 @@ namespace RabbitMQ.AMQP.Client.Impl
             _unsettledMessageCounter = unsettledMessageCounter;
         }
 
-        public Task AcceptAsync()
+        public void Accept()
         {
-            if (_link.IsClosed)
+            try
             {
-                throw new ConsumerException("Link is closed");
-            }
+                if (_link.IsClosed)
+                {
+                    throw new ConsumerException("Link is closed");
+                }
 
-            Task acceptTask = Task.Run(() =>
-            {
                 _link.Accept(_message);
                 _unsettledMessageCounter.Decrement();
+            }
+            finally
+            {
                 _message.Dispose();
-            });
-
-            return acceptTask;
+            }
         }
 
-        public Task DiscardAsync()
+        public void Discard()
         {
-            if (_link.IsClosed)
+            try
             {
-                throw new ConsumerException("Link is closed");
-            }
+                if (_link.IsClosed)
+                {
+                    throw new ConsumerException("Link is closed");
+                }
 
-            Task rejectTask = Task.Run(() =>
-            {
                 _link.Reject(_message);
                 _unsettledMessageCounter.Decrement();
+            }
+            finally
+            {
                 _message.Dispose();
-            });
-
-            return rejectTask;
+            }
         }
 
-        public Task DiscardAsync(Dictionary<string, object> annotations)
+        public void Discard(Dictionary<string, object> annotations)
         {
-            if (_link.IsClosed)
+            try
             {
-                throw new ConsumerException("Link is closed");
-            }
-            Utils.ValidateMessageAnnotations(annotations);
+                if (_link.IsClosed)
+                {
+                    throw new ConsumerException("Link is closed");
+                }
 
-            Task rejectTask = Task.Run(() =>
-            {
+                Utils.ValidateMessageAnnotations(annotations);
+
                 Fields messageAnnotations = new();
-                foreach (var kvp in annotations)
+                foreach (KeyValuePair<string, object> kvp in annotations)
                 {
                     messageAnnotations.Add(new Symbol(kvp.Key), kvp.Value);
                 }
 
                 _link.Modify(_message, true, true, messageAnnotations);
                 _unsettledMessageCounter.Decrement();
+            }
+            finally
+            {
                 _message.Dispose();
-            });
-
-            return rejectTask;
+            }
         }
 
-        public Task RequeueAsync()
+        public void Requeue()
         {
-            if (_link.IsClosed)
+            try
             {
-                throw new ConsumerException("Link is closed");
-            }
+                if (_link.IsClosed)
+                {
+                    throw new ConsumerException("Link is closed");
+                }
 
-            Task requeueTask = Task.Run(() =>
-            {
                 _link.Release(_message);
                 _unsettledMessageCounter.Decrement();
+            }
+            finally
+            {
                 _message.Dispose();
-            });
-
-            return requeueTask;
+            }
         }
 
-        public Task RequeueAsync(Dictionary<string, object> annotations)
+        public void Requeue(Dictionary<string, object> annotations)
         {
-            if (_link.IsClosed)
+            try
             {
-                throw new ConsumerException("Link is closed");
-            }
-            Utils.ValidateMessageAnnotations(annotations);
-            Task requeueTask = Task.Run(() =>
-            {
+                if (_link.IsClosed)
+                {
+                    throw new ConsumerException("Link is closed");
+                }
+
+                Utils.ValidateMessageAnnotations(annotations);
+
                 Fields messageAnnotations = new();
                 foreach (var kvp in annotations)
                 {
@@ -114,10 +120,11 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 _link.Modify(_message, false, false, messageAnnotations);
                 _unsettledMessageCounter.Decrement();
+            }
+            finally
+            {
                 _message.Dispose();
-            });
-
-            return requeueTask;
+            }
         }
     }
 }

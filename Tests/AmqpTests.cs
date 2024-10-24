@@ -92,7 +92,12 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         IQueueInfo declaredQueueInfo = await queueSpecification.DeclareAsync();
         Assert.Equal(_queueName, declaredQueueInfo.Name());
 
-        await PublishWithSubjectAsync(queueSpecification, messageCount, subject: subject);
+        void ml(ulong idx, IMessage msg)
+        {
+            msg.MessageId(idx);
+            msg.Subject(subject);
+        }
+        await PublishAsync(queueSpecification, messageCount, ml);
 
         IQueueInfo retrievedQueueInfo0 = await _management.GetQueueInfoAsync(_queueName);
         Assert.Equal(_queueName, retrievedQueueInfo0.Name());
@@ -102,14 +107,14 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         long receivedMessageCount = 0;
         TaskCompletionSource<bool> allMessagesReceivedTcs = CreateTaskCompletionSource();
         string? receivedSubject = null;
-        var messageIds = new ConcurrentBag<int>();
-        async Task MessageHandler(IContext ctx, IMessage msg)
+        var messageIds = new ConcurrentBag<ulong>();
+        Task MessageHandler(IContext ctx, IMessage msg)
         {
             try
             {
                 receivedSubject = msg.Subject();
-                messageIds.Add(int.Parse((string)msg.MessageId()));
-                await ctx.AcceptAsync();
+                messageIds.Add((ulong)msg.MessageId());
+                ctx.Accept();
                 if (Interlocked.Increment(ref receivedMessageCount) == messageCount)
                 {
                     allMessagesReceivedTcs.SetResult(true);
@@ -119,6 +124,7 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
             {
                 allMessagesReceivedTcs.SetException(ex);
             }
+            return Task.CompletedTask;
         }
 
         IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder();
@@ -201,11 +207,11 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         const int expectedMessageCount = 2;
         long receivedMessageCount = 0;
         TaskCompletionSource<bool> allMessagesReceivedTcs = CreateTaskCompletionSource();
-        async Task MessageHandler(IContext ctx, IMessage msg)
+        Task MessageHandler(IContext ctx, IMessage msg)
         {
             try
             {
-                await ctx.AcceptAsync();
+                ctx.Accept();
                 if (Interlocked.Increment(ref receivedMessageCount) == expectedMessageCount)
                 {
                     allMessagesReceivedTcs.SetResult(true);
@@ -215,6 +221,7 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
             {
                 allMessagesReceivedTcs.SetException(ex);
             }
+            return Task.CompletedTask;
         }
 
         IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder();
@@ -252,11 +259,11 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         const int expectedMessageCount = 2;
         long receivedMessageCount = 0;
         TaskCompletionSource<bool> allMessagesReceivedTcs = CreateTaskCompletionSource();
-        async Task MessageHandler(IContext ctx, IMessage msg)
+        Task MessageHandler(IContext ctx, IMessage msg)
         {
             try
             {
-                await ctx.AcceptAsync();
+                ctx.Accept();
                 messageBodies.Add(Encoding.UTF8.GetString((byte[])msg.Body()));
                 if (Interlocked.Increment(ref receivedMessageCount) == expectedMessageCount)
                 {
@@ -267,6 +274,7 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
             {
                 allMessagesReceivedTcs.SetException(ex);
             }
+            return Task.CompletedTask;
         }
 
         IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder();

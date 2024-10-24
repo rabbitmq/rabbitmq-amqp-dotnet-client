@@ -59,6 +59,7 @@ namespace RabbitMQ.AMQP.Client
     /// <summary>
     /// Event handler for handling RPC requests.
     /// </summary>
+    // TODO cancellation token
     public delegate Task<IMessage> RpcHandler(IRpcServer.IContext context, IMessage request);
 
     /// <summary>

@@ -19,6 +19,7 @@
   <ItemGroup>
     <PackageReference Include="EasyNetQ.Management.Client" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Semver" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
     <PackageReference Include="Xunit.SkippableFact" />

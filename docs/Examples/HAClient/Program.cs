@@ -3,6 +3,7 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System.Diagnostics;
+using DotNext.Threading;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Trace = Amqp.Trace;
@@ -57,7 +58,7 @@ await queueSpec.DeclareAsync();
 
 IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).BuildAsync();
 
-ManualResetEvent pausePublishing = new(true);
+AsyncManualResetEvent pausePublishing = new(true);
 publisher.ChangeState += (sender, fromState, toState, e) =>
 {
     Trace.WriteLine(TraceLevel.Information, $"Publisher State Changed, from {fromState} to {toState}");
@@ -75,7 +76,8 @@ publisher.ChangeState += (sender, fromState, toState, e) =>
 IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).InitialCredits(100).MessageHandler((context, message) =>
     {
         Interlocked.Increment(ref messagesReceived);
-        return context.AcceptAsync();
+        context.Accept();
+        return Task.CompletedTask;
     }
 ).BuildAndStartAsync();
 
@@ -88,7 +90,10 @@ for (int i = 0; i < totalMessagesToSend; i++)
 {
     try
     {
-        pausePublishing.WaitOne();
+        // TODO
+        // Use a cancellation token for a timeout and for
+        // CTRL-C handling
+        await pausePublishing.WaitAsync();
         var message = new AmqpMessage($"Hello World_{i}");
         PublishResult pr = await publisher.PublishAsync(message);
         if (pr.Outcome.State == OutcomeState.Accepted)
@@ -105,6 +110,9 @@ for (int i = 0; i < totalMessagesToSend; i++)
         Trace.WriteLine(TraceLevel.Error, $"Failed to publish message, {e.Message}");
         Interlocked.Increment(ref messagesFailed);
         await Task.Delay(500).ConfigureAwait(false);
+    }
+    finally
+    {
     }
 }
 

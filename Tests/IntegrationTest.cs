@@ -6,9 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
+using Semver;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -16,6 +19,12 @@ namespace Tests;
 
 public abstract class IntegrationTest : IAsyncLifetime
 {
+#if NET6_0_OR_GREATER
+    private static readonly Random s_random = Random.Shared;
+#else
+    [ThreadStatic] private static Random? s_random;
+#endif
+
     protected readonly ITestOutputHelper _testOutputHelper;
     protected readonly string _testDisplayName = nameof(IntegrationTest);
     protected readonly TimeSpan _waitSpan = TimeSpan.FromSeconds(5);
@@ -29,6 +38,9 @@ public abstract class IntegrationTest : IAsyncLifetime
     private readonly bool _setupConnectionAndManagement;
     protected readonly ConnectionSettingBuilder _connectionSettingBuilder;
 
+    private static readonly SemVersion s_rmq4_1_0 = new SemVersion(4, 1, 0);
+    protected SemVersion _rabbitmqVersion = new(1, 0, 0);
+
     public IntegrationTest(ITestOutputHelper testOutputHelper,
         bool setupConnectionAndManagement = true)
     {
@@ -40,7 +52,8 @@ public abstract class IntegrationTest : IAsyncLifetime
         _testDisplayName = InitTestDisplayName();
         _containerId = $"{_testDisplayName}:{Now}";
 
-        testOutputHelper.WriteLine($"Running test: {_testDisplayName}");
+        // TODO only if verbose
+        // testOutputHelper.WriteLine($"Running test: {_testDisplayName}");
         _connectionSettingBuilder = InitConnectionSettingsBuilder();
     }
 
@@ -51,6 +64,7 @@ public abstract class IntegrationTest : IAsyncLifetime
             ConnectionSettings connectionSettings = _connectionSettingBuilder.Build();
             _connection = await AmqpConnection.CreateAsync(connectionSettings);
             _management = _connection.Management();
+            _rabbitmqVersion = SemVersion.Parse((string)_connection.Properties["version"]);
         }
 
         /*
@@ -63,7 +77,8 @@ public abstract class IntegrationTest : IAsyncLifetime
 
     public virtual async Task DisposeAsync()
     {
-        _testOutputHelper.WriteLine($"Disposing test: {_testDisplayName}");
+        // TODO only if verbose
+        // _testOutputHelper.WriteLine($"Disposing test: {_testDisplayName}");
         if (_management is not null && _management.State == State.Open)
         {
             try
@@ -98,6 +113,24 @@ public abstract class IntegrationTest : IAsyncLifetime
         }
     }
 
+    protected static Random S_Random
+    {
+        get
+        {
+#if NET6_0_OR_GREATER
+            return s_random;
+#else
+            s_random ??= new Random();
+            return s_random;
+#endif
+        }
+    }
+
+    protected void SkipIfNotRabbitMQ_4_1_0()
+    {
+        Skip.If(_rabbitmqVersion.WithoutPrereleaseOrMetadata().ComparePrecedenceTo(s_rmq4_1_0) < 0, "At least RabbitMQ 4.1.0 required");
+    }
+
     protected static string Now => DateTime.UtcNow.ToString("s", CultureInfo.InvariantCulture);
 
     protected static TaskCompletionSource<bool> CreateTaskCompletionSource()
@@ -130,25 +163,29 @@ public abstract class IntegrationTest : IAsyncLifetime
         return task.WaitAsync(_waitSpan);
     }
 
-    protected Task PublishAsync(IQueueSpecification queueSpecification, int numberOfMessages)
+    protected async Task WaitUntilStable(Func<int> getValue)
     {
-        return DoPublishAsync(queueSpecification, numberOfMessages);
+        const int iterations = 20;
+        int iteration = 0;
+        int val0 = int.MinValue;
+        int val1 = int.MaxValue;
+        do
+        {
+            await Task.Delay(250);
+            val0 = getValue();
+            await Task.Delay(250);
+            val1 = getValue();
+            iteration++;
+        } while (val0 != val1 && iteration < iterations);
+
+        if (iteration == iterations)
+        {
+            Assert.Fail("value did not stabilize as expected");
+        }
     }
 
-    protected Task PublishWithFilterAsync(IQueueSpecification queueSpecification, int numberOfMessages,
-        string streamFilter)
-    {
-        return DoPublishAsync(queueSpecification, numberOfMessages, null, streamFilter);
-    }
-
-    protected Task PublishWithSubjectAsync(IQueueSpecification queueSpecification, int numberOfMessages,
-        string subject)
-    {
-        return DoPublishAsync(queueSpecification, numberOfMessages, subject, null);
-    }
-
-    private async Task DoPublishAsync(IQueueSpecification queueSpecification, int numberOfMessages,
-        string? subject = null, string? streamFilter = null)
+    protected async Task PublishAsync(IQueueSpecification queueSpecification, ulong messageCount,
+        Action<ulong, IMessage>? messageLogic = null)
     {
         Assert.NotNull(_connection);
 
@@ -157,19 +194,16 @@ public abstract class IntegrationTest : IAsyncLifetime
         try
         {
             var publishTasks = new List<Task<PublishResult>>();
-            for (int i = 0; i < numberOfMessages; i++)
+            for (ulong i = 0; i < messageCount; i++)
             {
-                IMessage message = new AmqpMessage($"message_{i}");
-                message.MessageId(i.ToString());
-
-                if (subject != null)
+                var message = new AmqpMessage($"message_{i}");
+                if (messageLogic is null)
                 {
-                    message.Subject(subject);
+                    message.MessageId(i.ToString());
                 }
-
-                if (streamFilter != null)
+                else
                 {
-                    message.Annotation("x-stream-filter-value", streamFilter);
+                    messageLogic(i, message);
                 }
 
                 publishTasks.Add(publisher.PublishAsync(message));
@@ -188,6 +222,79 @@ public abstract class IntegrationTest : IAsyncLifetime
             await publisher.CloseAsync();
             publisher.Dispose();
         }
+    }
+
+    protected async Task<IEnumerable<IMessage>> ConsumeAsync(ulong expectedMessageCount,
+        Action<IConsumerBuilder.IStreamFilterOptions> streamFilterOptionsLogic)
+    {
+        Assert.NotNull(_connection);
+
+        TaskCompletionSource<bool> allMessagesConsumedTcs = CreateTaskCompletionSource();
+        int receivedMessageCount = 0;
+
+        var messages = new List<IMessage>();
+        SemaphoreSlim messagesSemaphore = new(1, 1);
+        async Task MessageHandler(IContext cxt, IMessage msg)
+        {
+            await messagesSemaphore.WaitAsync();
+            try
+            {
+                messages.Add(msg);
+                receivedMessageCount++;
+                if (receivedMessageCount == (int)expectedMessageCount)
+                {
+                    allMessagesConsumedTcs.SetResult(true);
+                }
+                cxt.Accept();
+            }
+            catch (Exception ex)
+            {
+                allMessagesConsumedTcs.SetException(ex);
+            }
+            finally
+            {
+                messagesSemaphore.Release();
+            }
+        }
+
+        IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder().Queue(_queueName).MessageHandler(MessageHandler);
+        streamFilterOptionsLogic(consumerBuilder.Stream().Offset(StreamOffsetSpecification.First).Filter());
+
+        using (IConsumer consumer = await consumerBuilder.BuildAndStartAsync())
+        {
+            await WhenTcsCompletes(allMessagesConsumedTcs);
+            await consumer.CloseAsync();
+        }
+
+        return messages;
+    }
+
+    protected static byte[] RandomBytes(uint length = 128)
+    {
+        byte[] buffer = new byte[length];
+        S_Random.NextBytes(buffer);
+        return buffer;
+    }
+
+    protected static int RandomNext(int minValue = 0, int maxValue = 1024)
+    {
+        return S_Random.Next(minValue, maxValue);
+    }
+
+    protected static string RandomString(uint length = 128)
+    {
+        const string str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_";
+        int strLen = str.Length;
+
+        StringBuilder sb = new((int)length);
+
+        int idx;
+        for (int i = 0; i < length; i++)
+        {
+            idx = RandomNext(0, strLen);
+            sb.Append(str[idx]);
+        }
+        return sb.ToString();
     }
 
     private string InitTestDisplayName()

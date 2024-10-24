@@ -19,7 +19,7 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         const string wrongAnnotationKey = "missing-the-start-x-annotation-key";
         const string annotationValue = "annotation-value";
         // This should throw an exception because the annotation key does not start with "x-"
-        Assert.Throws<ArgumentException>(() =>
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
             Utils.ValidateMessageAnnotations(new Dictionary<string, object>
             {
                 { wrongAnnotationKey, annotationValue }
@@ -54,22 +54,23 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         List<IMessage> messages = [];
         IPublisher publisher = await _connection.PublisherBuilder().Queue(_queueName).BuildAsync();
         IConsumer consumer = await _connection.ConsumerBuilder().MessageHandler(
-            async (context, message) =>
+            (context, message) =>
             {
                 messages.Add(message);
                 if (requeueCount == 0)
                 {
                     requeueCount++;
-                    await context.RequeueAsync(new Dictionary<string, object>
+                    context.Requeue(new Dictionary<string, object>
                     {
                         { annotationKey, annotationValue }, { annotationKey1, annotationValue1 }
                     });
                 }
                 else
                 {
-                    await context.AcceptAsync();
+                    context.Accept();
                     tcsRequeue.SetResult(true);
                 }
+                return Task.CompletedTask;
             }
         ).Queue(_queueName).BuildAndStartAsync();
 
@@ -109,10 +110,11 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         IPublisher publisher = await _connection.PublisherBuilder().Queue(_queueName).BuildAsync();
         IConsumer consumer = await _connection.ConsumerBuilder().MessageHandler(
-            async (context, _) =>
+            (context, _) =>
             {
-                await context.DiscardAsync(new Dictionary<string, object> { { annotationKey, annotationValue } });
+                context.Discard(new Dictionary<string, object> { { annotationKey, annotationValue } });
                 tcs.SetResult(true);
+                return Task.CompletedTask;
             }
         ).Queue(_queueName).BuildAndStartAsync();
 
@@ -123,11 +125,14 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         await consumer.CloseAsync();
         TaskCompletionSource<IMessage> tcsDl =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
-        IConsumer dlConsumer = await _connection.ConsumerBuilder().MessageHandler(async (context, message1) =>
-        {
-            await context.AcceptAsync();
-            tcsDl.SetResult(message1);
-        }).Queue(dlqQueueName).BuildAndStartAsync();
+        IConsumer dlConsumer = await _connection.ConsumerBuilder()
+            .MessageHandler((context, message1) =>
+            {
+                context.Accept();
+                tcsDl.SetResult(message1);
+                return Task.CompletedTask;
+            })
+            .Queue(dlqQueueName).BuildAndStartAsync();
 
         IMessage mResult = await tcsDl.Task.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.NotNull(mResult);

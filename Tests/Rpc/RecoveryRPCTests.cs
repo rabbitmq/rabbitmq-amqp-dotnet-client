@@ -57,13 +57,13 @@ namespace Tests.Rpc
                 catch (Exception e)
                 {
                     testOutputHelper.WriteLine($"Error sending message: {e.Message}");
-                    Thread.Sleep(700);
+                    await Task.Delay(700);
                 }
 
                 if (i % 25 == 0)
                 {
                     await SystemUtils.WaitUntilConnectionIsKilled(containerId);
-                    Thread.Sleep(500);
+                    await Task.Delay(500);
                     await SystemUtils.WaitUntilQueueExistsAsync(clientReplyQueue.QueueName);
                 }
             }

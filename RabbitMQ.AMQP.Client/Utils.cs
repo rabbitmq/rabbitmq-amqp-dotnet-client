@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,7 +29,7 @@ namespace RabbitMQ.AMQP.Client
         [ThreadStatic] private static Random? s_random;
 #endif
 
-        internal static int RandomNext(int minValue, int maxValue)
+        internal static int RandomNext(int minValue = 0, int maxValue = 1024)
         {
 #if NET6_0_OR_GREATER
             return s_random.Next(minValue, maxValue);
@@ -185,10 +184,17 @@ namespace RabbitMQ.AMQP.Client
 
         internal static void ValidateMessageAnnotations(Dictionary<string, object> annotations)
         {
-            foreach (var kvp in annotations.Where(kvp => !kvp.Key.StartsWith("x-")))
+            foreach (KeyValuePair<string, object> kvp in annotations)
             {
-                throw new ArgumentException(
-                    $"Message annotation keys must start with 'x-': {kvp.Key}");
+                ValidateMessageAnnotationKey(kvp.Key);
+            }
+        }
+
+        internal static void ValidateMessageAnnotationKey(string key)
+        {
+            if (false == key.StartsWith("x-"))
+            {
+                throw new ArgumentOutOfRangeException($"Message annotation key must start with 'x-': {key}");
             }
         }
 

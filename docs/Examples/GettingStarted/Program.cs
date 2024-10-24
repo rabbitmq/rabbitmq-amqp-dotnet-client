@@ -51,10 +51,11 @@ IPublisher publisher = await connection.PublisherBuilder().Exchange(exchangeName
     .BuildAsync();
 
 IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).MessageHandler(
-    async (context, message) =>
+    (context, message) =>
     {
         Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.Body()} received");
-        await context.AcceptAsync();
+        context.Accept();
+        return Task.CompletedTask;
     }
 ).BuildAndStartAsync();
 // ------------------------------------------------------------------------------------

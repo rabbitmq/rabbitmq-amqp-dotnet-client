@@ -45,16 +45,17 @@ public class CustomPublisherConsumerRecoveryTests(ITestOutputHelper testOutputHe
         IConsumer consumer = await _connection.ConsumerBuilder()
             .InitialCredits(100)
             .Queue(queueSpec)
-            .MessageHandler(async (context, message) =>
+            .MessageHandler((context, message) =>
             {
                 try
                 {
-                    await context.AcceptAsync();
+                    context.Accept();
                 }
                 catch (Exception)
                 {
                     // ignored
                 }
+                return Task.CompletedTask;
             }).BuildAndStartAsync();
 
         List<(State, State)> statesConsumer = [];

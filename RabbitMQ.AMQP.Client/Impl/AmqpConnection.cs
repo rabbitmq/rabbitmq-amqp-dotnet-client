@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,14 +37,61 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly IConnectionSettings _connectionSettings;
         internal readonly AmqpSessionManagement _nativePubSubSessions;
 
+        private readonly Dictionary<string, object> _connectionProperties = new();
+
         /// <summary>
-        /// Publishers contains all the publishers created by the connection.
+        /// _publishersDict contains all the publishers created by the connection.
         /// Each connection can have multiple publishers.
-        /// They key is the publisher Id ( a Guid)  
+        /// They key is the publisher Id (a Guid)
         /// See <see cref="AmqpPublisher"/>
         /// </summary>
-        internal ConcurrentDictionary<Guid, IPublisher> Publishers { get; } = new();
-        internal ConcurrentDictionary<Guid, IConsumer> Consumers { get; } = new();
+        private readonly ConcurrentDictionary<Guid, IPublisher> _publishersDict = new();
+
+        /// <summary>
+        /// _consumersDict contains all the publishers created by the connection.
+        /// Each connection can have multiple consumers.
+        /// They key is the consumers Id (a Guid)
+        /// See <see cref="AmqpConsumer"/>
+        /// </summary>
+        private readonly ConcurrentDictionary<Guid, IConsumer> _consumersDict = new();
+
+        // TODO this couples AmqpConnection with AmqpPublisher, yuck
+        internal void AddPublisher(Guid id, IPublisher consumer)
+        {
+            if (false == _publishersDict.TryAdd(id, consumer))
+            {
+                // TODO create "internal bug" exception type?
+                throw new InvalidOperationException("could not add publisher, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+            }
+        }
+
+        internal void RemovePublisher(Guid id)
+        {
+            if (false == _publishersDict.TryRemove(id, out _))
+            {
+                // TODO create "internal bug" exception type?
+                throw new InvalidOperationException("could not remove publisher, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+            }
+        }
+
+        // TODO this couples AmqpConnection with AmqpConsumer, yuck
+        internal void AddConsumer(Guid id, IConsumer consumer)
+        {
+            if (false == _consumersDict.TryAdd(id, consumer))
+            {
+                // TODO create "internal bug" exception type?
+                throw new InvalidOperationException("could not add consumer, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+            }
+        }
+
+        internal void RemoveConsumer(Guid id)
+        {
+            if (false == _consumersDict.TryRemove(id, out _))
+            {
+                // TODO create "internal bug" exception type?
+                throw new InvalidOperationException("could not remove consumer, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+            }
+        }
 
         private readonly TaskCompletionSource<bool> _connectionClosedTcs =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -66,20 +112,22 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// See <see cref="IPublisher"/>
         /// </summary>
         /// <returns> All the active Publishers </returns>
-        public ReadOnlyCollection<IPublisher> GetPublishers()
-        {
-            return Publishers.Values.ToList().AsReadOnly();
-        }
+        public IEnumerable<IPublisher> Publishers
+            => _publishersDict.Values.ToArray();
 
         /// <summary>
         /// Read-only collection of consumers.
         /// See <see cref="IConsumer"/>
         /// </summary>
         /// <returns> All the active Consumers </returns>
-        public ReadOnlyCollection<IConsumer> GetConsumers()
-        {
-            return Consumers.Values.ToList().AsReadOnly();
-        }
+        public IEnumerable<IConsumer> Consumers
+            => _consumersDict.Values.ToArray();
+
+        /// <summary>
+        /// Read-only dictionary of connection properties.
+        /// </summary>
+        /// <returns><see cref="IReadOnlyDictionary{TKey, TValue}"/> of connection properties</returns>
+        public IReadOnlyDictionary<string, object> Properties => _connectionProperties;
 
         public long Id { get; set; }
         /// <summary>
@@ -197,8 +245,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         // TODO cancellation token, parallel?
         private async Task CloseAllPublishersAsync()
         {
-            var cloned = new List<IPublisher>(Publishers.Values);
-            foreach (IPublisher publisher in cloned)
+            foreach (IPublisher publisher in Publishers)
             {
                 await publisher.CloseAsync()
                     .ConfigureAwait(false);
@@ -208,8 +255,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         // TODO cancellation token, parallel?
         private async Task CloseAllConsumersAsync()
         {
-            var cloned = new List<IConsumer>(Consumers.Values);
-            foreach (IConsumer consumer in cloned)
+            foreach (IConsumer consumer in Consumers)
             {
                 await consumer.CloseAsync()
                     .ConfigureAwait(false);
@@ -226,7 +272,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private async Task OpenConnectionAsync(CancellationToken cancellationToken)
         {
-            await _semaphoreOpen.WaitAsync()
+            await _semaphoreOpen.WaitAsync(cancellationToken)
                 .ConfigureAwait(false);
             try
             {
@@ -288,8 +334,9 @@ namespace RabbitMQ.AMQP.Client.Impl
                     cf.SASL.Profile = SaslProfile.External;
                 }
 
-                void OnOpened(Amqp.IConnection connection, Open open1)
+                void OnOpened(Amqp.IConnection connection, Open openOnOpened)
                 {
+                    CopyProperties(openOnOpened.Properties);
                     Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is open");
                     OnNewStatus(State.Open, null);
                 }
@@ -506,7 +553,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private void ChangePublishersStatus(State state, Error? error)
         {
-            foreach (IPublisher publisher1 in Publishers.Values)
+            foreach (IPublisher publisher1 in Publishers)
             {
                 var publisher = (AmqpPublisher)publisher1;
                 publisher.ChangeStatus(state, error);
@@ -515,7 +562,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private void ChangeConsumersStatus(State state, Error? error)
         {
-            foreach (IConsumer consumer1 in Consumers.Values)
+            foreach (IConsumer consumer1 in Consumers)
             {
                 var consumer = (AmqpConsumer)consumer1;
                 consumer.ChangeStatus(state, error);
@@ -533,7 +580,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         private async Task ReconnectPublishersAsync()
         {
             // TODO this could be done in parallel
-            foreach (IPublisher publisher1 in Publishers.Values)
+            foreach (IPublisher publisher1 in Publishers)
             {
                 var publisher = (AmqpPublisher)publisher1;
                 await publisher.ReconnectAsync()
@@ -544,11 +591,25 @@ namespace RabbitMQ.AMQP.Client.Impl
         private async Task ReconnectConsumersAsync()
         {
             // TODO this could be done in parallel
-            foreach (IConsumer consumer1 in Consumers.Values)
+            foreach (IConsumer consumer1 in Consumers)
             {
                 var consumer = (AmqpConsumer)consumer1;
                 await consumer.ReconnectAsync()
                     .ConfigureAwait(false);
+            }
+        }
+
+        private void CopyProperties(Fields properties)
+        {
+            foreach (KeyValuePair<object, object> kvp in properties)
+            {
+                string key = (Symbol)kvp.Key;
+                string value = string.Empty;
+                if (kvp.Value is not null)
+                {
+                    value = (string)kvp.Value;
+                }
+                _connectionProperties[key] = value;
             }
         }
     }

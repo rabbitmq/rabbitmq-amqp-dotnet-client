@@ -28,10 +28,11 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         TaskCompletionSource<IMessage> tcs = new();
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueSpec)
-            .MessageHandler(async (context, message) =>
+            .MessageHandler((context, message) =>
             {
-                await context.AcceptAsync();
+                context.Accept();
                 tcs.SetResult(message);
+                return Task.CompletedTask;
             }
         ).BuildAndStartAsync();
 
@@ -64,7 +65,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         int consumed = 0;
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueSpecification)
-            .MessageHandler(async (context, message) =>
+            .MessageHandler((context, message) =>
             {
                 Assert.Equal("message_0", message.Body());
                 Interlocked.Increment(ref consumed);
@@ -73,13 +74,14 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
                     case 1:
                         // first time requeue the message
                         // it must consume again
-                        await context.RequeueAsync();
+                        context.Requeue();
                         break;
                     case 2:
-                        await context.AcceptAsync();
+                        context.Accept();
                         tcs.SetResult(consumed);
                         break;
                 }
+                return Task.CompletedTask;
             }
         ).BuildAndStartAsync();
 
@@ -112,7 +114,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
             TaskCompletionSource<List<IMessage>> tcs = new();
             int messagesConsumedCount = 0;
             List<IMessage> receivedMessages = new();
-            async Task MessageHandler(IContext cxt, IMessage msg)
+            Task MessageHandler(IContext cxt, IMessage msg)
             {
                 receivedMessages.Add(msg);
 
@@ -120,17 +122,19 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
 
                 if (messagesConsumedCount % 2 == 0)
                 {
-                    await cxt.DiscardAsync();
+                    cxt.Discard();
                 }
                 else
                 {
-                    await cxt.AcceptAsync();
+                    cxt.Accept();
                 }
 
                 if (messagesConsumedCount == publishCount)
                 {
                     tcs.SetResult(receivedMessages);
                 }
+
+                return Task.CompletedTask;
             }
 
             consumer = await _connection.ConsumerBuilder()
@@ -218,30 +222,33 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
     /// - one with a filter that should receive only the messages with the filter
     /// - one without filter that should receive all messages
     /// </summary>
-    /// <param name="filter"></param>
+    /// <param name="argStreamFilterValues"></param>
     /// <param name="expected"></param>
     [Theory]
     [InlineData("pizza,beer,pasta,wine", 4)]
     [InlineData("pizza,beer", 2)]
     [InlineData("pizza", 1)]
-    public async Task ConsumerWithStreamFilterShouldReceiveOnlyPartOfTheMessages(string filter, int expected)
+    public async Task ConsumerWithStreamFilterShouldReceiveOnlyPartOfTheMessages(
+        string argStreamFilterValues, int expected)
     {
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-#if NETFRAMEWORK
-        string[] filters = filter.Split(',');
-#else
-        string[] filters = filter.Split(",");
-#endif
+        string[] streamFilterValues = argStreamFilterValues.Split(',');
 
         IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(QueueType.STREAM);
         await queueSpec.DeclareAsync();
 
         var publishTasks = new List<Task>();
-        foreach (string se in filters)
+        foreach (string sfv in streamFilterValues)
         {
-            publishTasks.Add(PublishWithFilterAsync(queueSpec, 1, streamFilter: se));
+            void ml(ulong idx, IMessage msg)
+            {
+                msg.MessageId(idx);
+                msg.Annotation("x-stream-filter-value", sfv);
+            }
+            publishTasks.Add(PublishAsync(queueSpec, 1, ml));
+
         }
         await WhenAllComplete(publishTasks);
         publishTasks.Clear();
@@ -260,10 +267,11 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
             .MessageHandler((context, message) =>
             {
                 receivedMessages.Add(message);
-                return context.AcceptAsync();
+                context.Accept();
+                return Task.CompletedTask;
             })
             .Stream()
-            .FilterValues(filters)
+            .FilterValues(streamFilterValues)
             .FilterMatchUnfiltered(false)
             .Offset(StreamOffsetSpecification.First).Builder()
             .BuildAndStartAsync();
@@ -275,7 +283,8 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
             .MessageHandler((context, message) =>
             {
                 Interlocked.Increment(ref receivedWithoutFilters);
-                return context.AcceptAsync();
+                context.Accept();
+                return Task.CompletedTask;
             })
             .Stream()
             .Offset(StreamOffsetSpecification.First).Builder()
@@ -285,7 +294,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         await Task.Delay(500); // TODO yuck
 
         Assert.Equal(expected, receivedMessages.Count);
-        Assert.Equal(filters.Length + 10, receivedWithoutFilters);
+        Assert.Equal(streamFilterValues.Length + 10, receivedWithoutFilters);
 
         await consumer.CloseAsync();
         consumer.Dispose();
@@ -371,10 +380,11 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         Assert.Equal(_queueName, queueInfo.Name());
 
         TaskCompletionSource<bool> messageHandledTcs = CreateTaskCompletionSource();
-        async Task MessageHandler(IContext cxt, IMessage msg)
+        Task MessageHandler(IContext cxt, IMessage msg)
         {
-            await cxt.AcceptAsync();
+            cxt.Accept();
             messageHandledTcs.SetResult(true);
+            return Task.CompletedTask;
         }
 
         IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder()
@@ -400,7 +410,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-        int messageCount = 100;
+        const int messageCount = 100;
         int initialCredits = messageCount / 10;
         int settledCount = initialCredits * 2;
 
@@ -415,16 +425,17 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueInfo0.Name())
             .InitialCredits(initialCredits)
-            .MessageHandler(async (IContext ctx, IMessage msg) =>
+            .MessageHandler((IContext ctx, IMessage msg) =>
             {
                 if (Interlocked.Increment(ref receivedCount) <= settledCount)
                 {
-                    await ctx.AcceptAsync();
+                    ctx.Accept();
                 }
                 else
                 {
                     receivedGreaterThanSettledTcs.TrySetResult(true);
                 }
+                return Task.CompletedTask;
             }).BuildAndStartAsync();
 
         await WhenTcsCompletes(receivedGreaterThanSettledTcs);
@@ -455,11 +466,11 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         IConsumerBuilder lowPriorityConsumerBuilder = _connection.ConsumerBuilder()
             .Queue(queueSpecification)
             // .Priority(1) TODO
-            .MessageHandler(async (IContext cxt, IMessage msg) =>
+            .MessageHandler((IContext cxt, IMessage msg) =>
             {
                 try
                 {
-                    await cxt.AcceptAsync();
+                    cxt.Accept();
                     Interlocked.Increment(ref lowPriorityReceivedCount);
                     if (Interlocked.Increment(ref receivedCount) == messageCount)
                     {
@@ -470,17 +481,18 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
                 {
                     allMessagesReceivedTcs.SetException(ex);
                 }
+                return Task.CompletedTask;
             });
         IConsumer lowPriorityConsumer = await lowPriorityConsumerBuilder.BuildAndStartAsync();
 
         IConsumerBuilder highPriorityConsumerBuilder = _connection.ConsumerBuilder()
             .Queue(queueSpecification)
             // .Priority(5) TODO
-            .MessageHandler(async (IContext cxt, IMessage msg) =>
+            .MessageHandler((IContext cxt, IMessage msg) =>
             {
                 try
                 {
-                    await cxt.AcceptAsync();
+                    cxt.Accept();
                     Interlocked.Increment(ref highPriorityReceivedCount);
                     if (Interlocked.Increment(ref receivedCount) == messageCount)
                     {
@@ -491,6 +503,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
                 {
                     allMessagesReceivedTcs.SetException(ex);
                 }
+                return Task.CompletedTask;
             });
         IConsumer highPriorityConsumer = await highPriorityConsumerBuilder.BuildAndStartAsync();
 
