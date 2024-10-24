@@ -1,4 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿#pragma warning disable CA2007 // Consider calling ConfigureAwait on the awaited task
 
 using System.Diagnostics;
 using RabbitMQ.AMQP.Client;
@@ -34,13 +34,13 @@ const int messagesToSend = 10_000_000;
 TaskCompletionSource<bool> tcs = new();
 int messagesReceived = 0;
 IRpcServer rpcServer = await connection.RpcServerBuilder().RequestQueue(rpcQueue).Handler(
-    async (context, message) =>
+    (context, message) =>
     {
         try
         {
             Trace.WriteLine(TraceLevel.Information, $"[Server] Message received: {message.Body()} ");
-            var reply = context.Message($"pong_{DateTime.Now}");
-            return await Task.FromResult(reply).ConfigureAwait(false);
+            IMessage reply = context.Message($"pong_{DateTime.Now}");
+            return Task.FromResult(reply);
         }
         finally
         {
@@ -50,7 +50,7 @@ IRpcServer rpcServer = await connection.RpcServerBuilder().RequestQueue(rpcQueue
             }
         }
     }
-).BuildAsync().ConfigureAwait(false);
+).BuildAsync();
 
 IRpcClient rpcClient = await connection.RpcClientBuilder().RequestAddress().Queue(rpcQueue).RpcClient().BuildAsync()
     .ConfigureAwait(false);
@@ -62,12 +62,14 @@ for (int i = 0; i < messagesToSend; i++)
         IMessage reply = await rpcClient.PublishAsync(
             new AmqpMessage($"ping_{DateTime.Now}")).ConfigureAwait(false);
         Trace.WriteLine(TraceLevel.Information, $"[Client] Reply received: {reply.Body()}");
-        Thread.Sleep(500);
     }
     catch (Exception e)
     {
         Trace.WriteLine(TraceLevel.Error, $"[Client] PublishAsync Error: {e.Message}");
-        Thread.Sleep(500);
+    }
+    finally
+    {
+        await Task.Delay(500);
     }
 }
 

@@ -207,17 +207,18 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
         IConsumer consumer = await _connection.ConsumerBuilder()
             .InitialCredits(100)
             .Queue(queueSpecification)
-            .MessageHandler(async (context, _) =>
+            .MessageHandler((context, _) =>
             {
                 Interlocked.Increment(ref messagesReceived);
                 try
                 {
-                    await context.AcceptAsync();
+                    context.Accept();
                 }
                 catch (Exception)
                 {
                     // ignored
                 }
+                return Task.CompletedTask;
             }).BuildAndStartAsync();
 
         const int publishBatchCount = 10;
@@ -283,16 +284,17 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
         IConsumer consumer = await _connection.ConsumerBuilder()
             .InitialCredits(100)
             .Queue(queueSpec)
-            .MessageHandler(async (context, _) =>
+            .MessageHandler((context, _) =>
             {
                 try
                 {
-                    await context.AcceptAsync();
+                    context.Accept();
                 }
                 catch (Exception)
                 {
                     // ignored
                 }
+                return Task.CompletedTask;
             }).BuildAndStartAsync();
 
         List<(State, State)> statesConsumer = [];

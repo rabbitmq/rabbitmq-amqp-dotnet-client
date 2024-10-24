@@ -41,10 +41,11 @@ Trace.WriteLine(TraceLevel.Information, $"Queue {queueName} recreated");
 Stats stats = new();
 IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).BuildAsync();
 
-async Task MessageHandler(IContext context, IMessage message)
+Task MessageHandler(IContext context, IMessage message)
 {
-    await context.AcceptAsync();
+    context.Accept();
     stats.IncrementConsumed();
+    return Task.CompletedTask;
 }
 
 IConsumer? consumer = null;

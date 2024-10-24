@@ -8,7 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amqp;
 using Amqp.Framing;
-using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
@@ -21,6 +20,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             PAUSED,
         }
 
+        private readonly AmqpConnection _amqpConnection;
         private readonly Guid _id = Guid.NewGuid();
 
         private ReceiverLink? _receiverLink;
@@ -29,13 +29,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly UnsettledMessageCounter _unsettledMessageCounter = new();
         private readonly ConsumerConfiguration _configuration;
 
-        public AmqpConsumer(ConsumerConfiguration configuration)
+        internal AmqpConsumer(AmqpConnection amqpConnection, ConsumerConfiguration configuration)
         {
+            _amqpConnection = amqpConnection;
             _configuration = configuration;
-            if (false == _configuration.Connection.Consumers.TryAdd(_id, this))
-            {
-                // TODO error?
-            }
+
+            _amqpConnection.AddConsumer(_id, this);
         }
 
         public override async Task OpenAsync()
@@ -50,8 +49,12 @@ namespace RabbitMQ.AMQP.Client.Impl
                 // so the function must be called every time the consumer is opened normally or by reconnection
                 // if ListenerContext is null the function will do nothing
                 // ListenerContext will override only the filters the selected filters.
-                _configuration.ListenerContext?.Invoke(
-                    new IConsumerBuilder.ListenerContext(new ListenerStreamOptions(_configuration.Filters)));
+                if (_configuration.ListenerContext is not null)
+                {
+                    var listenerStreamOptions = new ListenerStreamOptions(_configuration.Filters, _amqpConnection.AreFilterExpressionsSupported);
+                    var listenerContext = new IConsumerBuilder.ListenerContext(listenerStreamOptions);
+                    _configuration.ListenerContext(listenerContext);
+                }
 
                 Attach attach = Utils.CreateAttach(_configuration.Address, DeliveryMode.AtLeastOnce, _id,
                     _configuration.Filters);
@@ -74,7 +77,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 ReceiverLink? tmpReceiverLink = null;
                 Task receiverLinkTask = Task.Run(async () =>
                 {
-                    Session session = await _configuration.Connection._nativePubSubSessions.GetOrCreateSessionAsync()
+                    Session session = await _amqpConnection._nativePubSubSessions.GetOrCreateSessionAsync()
                         .ConfigureAwait(false);
                     tmpReceiverLink = new ReceiverLink(session, _id.ToString(), attach, onAttached);
                 });
@@ -108,6 +111,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                     // TODO save / cancel task
                     _ = Task.Run(ProcessMessages);
 
+                    // TODO cancellation token
                     await base.OpenAsync()
                         .ConfigureAwait(false);
                 }
@@ -249,14 +253,14 @@ namespace RabbitMQ.AMQP.Client.Impl
 
             _receiverLink = null;
             OnNewStatus(State.Closed, null);
-            _configuration.Connection.Consumers.TryRemove(_id, out _);
+            _amqpConnection.RemoveConsumer(_id);
         }
 
         public override string ToString()
         {
             return $"Consumer{{Address='{_configuration.Address}', " +
                    $"id={_id}, " +
-                   $"Connection='{_configuration.Connection}', " +
+                   $"Connection='{_amqpConnection}', " +
                    $"State='{State}'}}";
         }
     }
