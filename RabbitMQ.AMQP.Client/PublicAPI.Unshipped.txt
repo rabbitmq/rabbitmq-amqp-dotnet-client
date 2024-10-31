@@ -320,10 +320,10 @@ RabbitMQ.AMQP.Client.Impl.AmqpMessage.ToAddress() -> RabbitMQ.AMQP.Client.IMessa
 RabbitMQ.AMQP.Client.Impl.AmqpNotOpenException
 RabbitMQ.AMQP.Client.Impl.AmqpNotOpenException.AmqpNotOpenException(string! message) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpPublisher
-RabbitMQ.AMQP.Client.Impl.AmqpPublisher.AmqpPublisher(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection, string? address, System.TimeSpan timeout) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpPublisher.AmqpPublisher(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection, string? address, RabbitMQ.AMQP.Client.Impl.IMetricsReporter! metricsReporter, System.TimeSpan timeout) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpPublisher.PublishAsync(RabbitMQ.AMQP.Client.IMessage! message, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.PublishResult!>!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder
-RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.AmqpPublisherBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.AmqpPublisherBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection, RabbitMQ.AMQP.Client.Impl.IMetricsReporter! metricsReporter) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IPublisher!>!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.Exchange(RabbitMQ.AMQP.Client.IExchangeSpecification! exchangeSpec) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.Exchange(string! exchangeName) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
@@ -474,6 +474,14 @@ RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Replicas() -> System.Collections.Gene
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Type() -> RabbitMQ.AMQP.Client.QueueType
 RabbitMQ.AMQP.Client.Impl.FieldNotSetException
 RabbitMQ.AMQP.Client.Impl.FieldNotSetException.FieldNotSetException() -> void
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter.PublisherContext
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter.PublisherContext.Destination.get -> string?
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter.PublisherContext.PublisherContext(string? destination, string! serverAddress, int serverPort) -> void
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter.PublisherContext.ServerAddress.get -> string!
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter.PublisherContext.ServerPort.get -> int
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter.ReportMessageSendFailure(RabbitMQ.AMQP.Client.Impl.IMetricsReporter.PublisherContext! context, Amqp.AmqpException! amqpException) -> void
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter.ReportMessageSendSuccess(RabbitMQ.AMQP.Client.Impl.IMetricsReporter.PublisherContext! context) -> void
 RabbitMQ.AMQP.Client.Impl.InvalidCodeException
 RabbitMQ.AMQP.Client.Impl.InvalidCodeException.InvalidCodeException(string! message) -> void
 RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions
@@ -684,7 +692,7 @@ static RabbitMQ.AMQP.Client.ByteCapacity.Kb(long megabytes) -> RabbitMQ.AMQP.Cli
 static RabbitMQ.AMQP.Client.ByteCapacity.Mb(long megabytes) -> RabbitMQ.AMQP.Client.ByteCapacity!
 static RabbitMQ.AMQP.Client.ByteCapacity.Tb(long terabytes) -> RabbitMQ.AMQP.Client.ByteCapacity!
 static RabbitMQ.AMQP.Client.Impl.AddressBuilderHelper.AddressBuilder() -> RabbitMQ.AMQP.Client.Impl.AddressBuilder!
-static RabbitMQ.AMQP.Client.Impl.AmqpConnection.CreateAsync(RabbitMQ.AMQP.Client.IConnectionSettings! connectionSettings) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
+static RabbitMQ.AMQP.Client.Impl.AmqpConnection.CreateAsync(RabbitMQ.AMQP.Client.IConnectionSettings! connectionSettings, RabbitMQ.AMQP.Client.Impl.IMetricsReporter? metricsReporter = null) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
 static RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.CreateAsync(RabbitMQ.AMQP.Client.IConnectionSettings! connectionSettings) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IEnvironment!>!
 static RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.Create() -> RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy!
 static RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.Create(int maxAttempt) -> RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy!

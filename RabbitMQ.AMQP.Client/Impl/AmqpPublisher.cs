@@ -17,14 +17,17 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly AmqpConnection _connection;
         private readonly TimeSpan _timeout;
         private readonly string? _address;
+        private readonly IMetricsReporter _metricsReporter;
         private readonly Guid _id = Guid.NewGuid();
 
         private SenderLink? _senderLink = null;
 
-        public AmqpPublisher(AmqpConnection connection, string? address, TimeSpan timeout)
+        public AmqpPublisher(AmqpConnection connection, string? address, IMetricsReporter metricsReporter,
+            TimeSpan timeout)
         {
             _connection = connection;
             _address = address;
+            _metricsReporter = metricsReporter;
             _timeout = timeout;
 
             if (false == _connection.Publishers.TryAdd(_id, this))
@@ -121,6 +124,9 @@ namespace RabbitMQ.AMQP.Client.Impl
                     "_senderLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
 
+            IMetricsReporter.PublisherContext context =
+                new(_address, _connection._connectionSettings.Host,
+                    _connection._connectionSettings.Port);
             try
             {
                 TaskCompletionSource<PublishOutcome> messagePublishedTcs =
@@ -140,7 +146,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                         case Rejected rejectedOutcome:
                             {
                                 const OutcomeState publishState = OutcomeState.Rejected;
-                                publishOutcome = new PublishOutcome(publishState, Utils.ConvertError(rejectedOutcome.Error));
+                                publishOutcome = new PublishOutcome(publishState,
+                                    Utils.ConvertError(rejectedOutcome.Error));
                                 break;
                             }
                         case Released:
@@ -175,11 +182,12 @@ namespace RabbitMQ.AMQP.Client.Impl
                 // PublishOutcome publishOutcome = await messagePublishedTcs.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken)
                 PublishOutcome publishOutcome = await messagePublishedTcs.Task.WaitAsync(TimeSpan.FromSeconds(5))
                     .ConfigureAwait(false);
-
+                _metricsReporter.ReportMessageSendSuccess(context);
                 return new PublishResult(message, publishOutcome);
             }
             catch (AmqpException ex)
             {
+                _metricsReporter.ReportMessageSendFailure(context, ex);
                 var publishOutcome = new PublishOutcome(OutcomeState.Rejected, Utils.ConvertError(ex.Error));
                 return new PublishResult(message, publishOutcome);
             }
