@@ -251,7 +251,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpConnection.PublisherBuilder() -> RabbitMQ.AMQP.Cli
 RabbitMQ.AMQP.Client.Impl.AmqpConnection.RpcClientBuilder() -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConnection.RpcServerBuilder() -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer
-RabbitMQ.AMQP.Client.Impl.AmqpConsumer.AmqpConsumer(RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration! configuration) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpConsumer.AmqpConsumer(RabbitMQ.AMQP.Client.Impl.ConsumerConfiguration! configuration, RabbitMQ.AMQP.Client.Impl.IMetricsReporter! metricsReporter) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer.Pause() -> void
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer.Unpause() -> void
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer.UnsettledMessageCount.get -> long
@@ -323,7 +323,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpPublisher
 RabbitMQ.AMQP.Client.Impl.AmqpPublisher.AmqpPublisher(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection, string? address, RabbitMQ.AMQP.Client.Impl.IMetricsReporter! metricsReporter, System.TimeSpan timeout) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpPublisher.PublishAsync(RabbitMQ.AMQP.Client.IMessage! message, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.PublishResult!>!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder
-RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.AmqpPublisherBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection, RabbitMQ.AMQP.Client.Impl.IMetricsReporter! metricsReporter) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.AmqpPublisherBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IPublisher!>!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.Exchange(RabbitMQ.AMQP.Client.IExchangeSpecification! exchangeSpec) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.Exchange(string! exchangeName) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
@@ -475,13 +475,20 @@ RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Type() -> RabbitMQ.AMQP.Client.QueueT
 RabbitMQ.AMQP.Client.Impl.FieldNotSetException
 RabbitMQ.AMQP.Client.Impl.FieldNotSetException.FieldNotSetException() -> void
 RabbitMQ.AMQP.Client.Impl.IMetricsReporter
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter.ConsumerContext
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter.ConsumerContext.ConsumerContext(string? destination, string! serverAddress, int serverPort) -> void
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter.ConsumerContext.Destination.get -> string?
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter.ConsumerContext.ServerAddress.get -> string!
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter.ConsumerContext.ServerPort.get -> int
 RabbitMQ.AMQP.Client.Impl.IMetricsReporter.PublisherContext
 RabbitMQ.AMQP.Client.Impl.IMetricsReporter.PublisherContext.Destination.get -> string?
 RabbitMQ.AMQP.Client.Impl.IMetricsReporter.PublisherContext.PublisherContext(string? destination, string! serverAddress, int serverPort) -> void
 RabbitMQ.AMQP.Client.Impl.IMetricsReporter.PublisherContext.ServerAddress.get -> string!
 RabbitMQ.AMQP.Client.Impl.IMetricsReporter.PublisherContext.ServerPort.get -> int
-RabbitMQ.AMQP.Client.Impl.IMetricsReporter.ReportMessageSendFailure(RabbitMQ.AMQP.Client.Impl.IMetricsReporter.PublisherContext! context, Amqp.AmqpException! amqpException) -> void
-RabbitMQ.AMQP.Client.Impl.IMetricsReporter.ReportMessageSendSuccess(RabbitMQ.AMQP.Client.Impl.IMetricsReporter.PublisherContext! context) -> void
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter.ReportMessageDeliverFailure(RabbitMQ.AMQP.Client.Impl.IMetricsReporter.ConsumerContext! consumerContext, long startTimestamp, System.Exception! exception) -> void
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter.ReportMessageDeliverSuccess(RabbitMQ.AMQP.Client.Impl.IMetricsReporter.ConsumerContext! context, long startTimestamp) -> void
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter.ReportMessageSendFailure(RabbitMQ.AMQP.Client.Impl.IMetricsReporter.PublisherContext! context, long startTimestamp, Amqp.AmqpException! amqpException) -> void
+RabbitMQ.AMQP.Client.Impl.IMetricsReporter.ReportMessageSendSuccess(RabbitMQ.AMQP.Client.Impl.IMetricsReporter.PublisherContext! context, long startTimestamp) -> void
 RabbitMQ.AMQP.Client.Impl.InvalidCodeException
 RabbitMQ.AMQP.Client.Impl.InvalidCodeException.InvalidCodeException(string! message) -> void
 RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions

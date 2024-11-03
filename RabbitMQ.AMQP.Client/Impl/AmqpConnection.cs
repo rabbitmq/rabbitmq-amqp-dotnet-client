@@ -34,9 +34,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private readonly AmqpManagement _management;
         private readonly RecordingTopologyListener _recordingTopologyListener = new();
-
-        private readonly IMetricsReporter _metricsReporter;
-
+        
         internal readonly IConnectionSettings _connectionSettings;
         internal readonly AmqpSessionManagement _nativePubSubSessions;
 
@@ -98,7 +96,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             IMetricsReporter? metricsReporter = null)
         {
             metricsReporter ??= new NoOpMetricsReporter();
-            var connection = new AmqpConnection(connectionSettings, metricsReporter);
+            var connection = new AmqpConnection(connectionSettings);
             await connection.OpenAsync()
                 .ConfigureAwait(false);
             return connection;
@@ -127,7 +125,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IPublisherBuilder PublisherBuilder()
         {
             ThrowIfClosed();
-            var publisherBuilder = new AmqpPublisherBuilder(this, _metricsReporter);
+            var publisherBuilder = new AmqpPublisherBuilder(this);
             return publisherBuilder;
         }
 
@@ -223,10 +221,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-        private AmqpConnection(IConnectionSettings connectionSettings, IMetricsReporter metricsReporter)
+        private AmqpConnection(IConnectionSettings connectionSettings)
         {
             _connectionSettings = connectionSettings;
-            _metricsReporter = metricsReporter;
             _nativePubSubSessions = new AmqpSessionManagement(this, 1);
             _management =
                 new AmqpManagement(new AmqpManagementParameters(this).TopologyListener(_recordingTopologyListener));

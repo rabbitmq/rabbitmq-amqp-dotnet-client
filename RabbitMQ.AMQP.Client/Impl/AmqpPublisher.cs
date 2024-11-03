@@ -3,6 +3,7 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Amqp;
@@ -127,6 +128,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             IMetricsReporter.PublisherContext context =
                 new(_address, _connection._connectionSettings.Host,
                     _connection._connectionSettings.Port);
+            long startTimestamp = Stopwatch.GetTimestamp();
             try
             {
                 TaskCompletionSource<PublishOutcome> messagePublishedTcs =
@@ -182,12 +184,12 @@ namespace RabbitMQ.AMQP.Client.Impl
                 // PublishOutcome publishOutcome = await messagePublishedTcs.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken)
                 PublishOutcome publishOutcome = await messagePublishedTcs.Task.WaitAsync(TimeSpan.FromSeconds(5))
                     .ConfigureAwait(false);
-                _metricsReporter.ReportMessageSendSuccess(context);
+                _metricsReporter.ReportMessageSendSuccess(context, startTimestamp);
                 return new PublishResult(message, publishOutcome);
             }
             catch (AmqpException ex)
             {
-                _metricsReporter.ReportMessageSendFailure(context, ex);
+                _metricsReporter.ReportMessageSendFailure(context, startTimestamp, ex);
                 var publishOutcome = new PublishOutcome(OutcomeState.Rejected, Utils.ConvertError(ex.Error));
                 return new PublishResult(message, publishOutcome);
             }

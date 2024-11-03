@@ -3,12 +3,15 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Amqp;
 using Amqp.Framing;
 using Amqp.Types;
+using Trace = Amqp.Trace;
+using TraceLevel = Amqp.TraceLevel;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
@@ -28,10 +31,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         private PauseStatus _pauseStatus = PauseStatus.UNPAUSED;
         private readonly UnsettledMessageCounter _unsettledMessageCounter = new();
         private readonly ConsumerConfiguration _configuration;
+        private readonly IMetricsReporter _metricsReporter;
 
-        public AmqpConsumer(ConsumerConfiguration configuration)
+        public AmqpConsumer(ConsumerConfiguration configuration, IMetricsReporter metricsReporter)
         {
             _configuration = configuration;
+            _metricsReporter = metricsReporter;
             if (false == _configuration.Connection.Consumers.TryAdd(_id, this))
             {
                 // TODO error?
@@ -120,6 +125,11 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private async Task ProcessMessages()
         {
+            IMetricsReporter.ConsumerContext consumerContext = new(_configuration.Address,
+                _configuration.Connection._connectionSettings.Host,
+                _configuration.Connection._connectionSettings.Port);
+
+            long startTimestamp = 0;
             try
             {
                 if (_receiverLink is null)
@@ -130,6 +140,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 while (_receiverLink is { LinkState: LinkState.Attached })
                 {
+                    startTimestamp = Stopwatch.GetTimestamp();
                     // TODO the timeout waiting for messages should be configurable
                     TimeSpan timeout = TimeSpan.FromSeconds(60);
                     Message? nativeMessage = await _receiverLink.ReceiveAsync(timeout).ConfigureAwait(false);
@@ -154,6 +165,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                     {
                         await _configuration.Handler(context, amqpMessage).ConfigureAwait(false);
                     }
+
+                    _metricsReporter.ReportMessageDeliverSuccess(consumerContext, startTimestamp);
                 }
             }
             catch (Exception e)
@@ -163,6 +176,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                     return;
                 }
 
+                _metricsReporter.ReportMessageDeliverFailure(consumerContext, startTimestamp, e);
                 Trace.WriteLine(TraceLevel.Error, $"{ToString()} Failed to process messages, {e}");
                 // TODO this is where a Listener should get a closed event
                 // See the ConsumerShouldBeClosedWhenQueueIsDeleted test
