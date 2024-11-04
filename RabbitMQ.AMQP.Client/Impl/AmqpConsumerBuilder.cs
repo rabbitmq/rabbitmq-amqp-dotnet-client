@@ -30,9 +30,11 @@ namespace RabbitMQ.AMQP.Client.Impl
     public class AmqpConsumerBuilder : IConsumerBuilder
     {
         private readonly ConsumerConfiguration _configuration = new();
+        private readonly IMetricsReporter _metricsReporter;
 
-        public AmqpConsumerBuilder(AmqpConnection connection)
+        public AmqpConsumerBuilder(AmqpConnection connection, IMetricsReporter metricsReporter)
         {
+            _metricsReporter = metricsReporter;
             _configuration.Connection = connection;
         }
 
@@ -77,13 +79,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             {
                 throw new ConsumerException("Message handler is not set");
             }
-#if NET6_0_OR_GREATER
-            IMetricsReporter metricsReporter = new MetricsReporter();
-#else
-            IMetricsReporter metricsReporter = new NoOpMetricsReporter();
-#endif
 
-            AmqpConsumer consumer = new(_configuration, metricsReporter);
+            AmqpConsumer consumer = new(_configuration, _metricsReporter);
 
             // TODO pass cancellationToken
             await consumer.OpenAsync()

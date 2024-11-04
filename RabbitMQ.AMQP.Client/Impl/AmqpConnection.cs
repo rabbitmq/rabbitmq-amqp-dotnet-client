@@ -36,8 +36,9 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly RecordingTopologyListener _recordingTopologyListener = new();
 
         internal readonly IConnectionSettings _connectionSettings;
+        private readonly IMetricsReporter _metricsReporter;
         internal readonly AmqpSessionManagement _nativePubSubSessions;
-
+ 
         /// <summary>
         /// Publishers contains all the publishers created by the connection.
         /// Each connection can have multiple publishers.
@@ -93,10 +94,9 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// <param name="metricsReporter"></param>
         /// <returns></returns>
         public static async Task<IConnection> CreateAsync(IConnectionSettings connectionSettings,
-            IMetricsReporter? metricsReporter = null)
+            IMetricsReporter? metricsReporter = default)
         {
-            metricsReporter ??= new NoOpMetricsReporter();
-            var connection = new AmqpConnection(connectionSettings);
+            var connection = new AmqpConnection(connectionSettings, metricsReporter ?? new NoOpMetricsReporter());
             await connection.OpenAsync()
                 .ConfigureAwait(false);
             return connection;
@@ -109,7 +109,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IConsumerBuilder ConsumerBuilder()
         {
-            return new AmqpConsumerBuilder(this);
+            return new AmqpConsumerBuilder(this, _metricsReporter);
         }
 
         // TODO cancellation token
@@ -125,7 +125,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IPublisherBuilder PublisherBuilder()
         {
             ThrowIfClosed();
-            var publisherBuilder = new AmqpPublisherBuilder(this);
+            var publisherBuilder = new AmqpPublisherBuilder(this, _metricsReporter);
             return publisherBuilder;
         }
 
@@ -221,9 +221,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-        private AmqpConnection(IConnectionSettings connectionSettings)
+        private AmqpConnection(IConnectionSettings connectionSettings, IMetricsReporter metricsReporter)
         {
             _connectionSettings = connectionSettings;
+            _metricsReporter = metricsReporter;
             _nativePubSubSessions = new AmqpSessionManagement(this, 1);
             _management =
                 new AmqpManagement(new AmqpManagementParameters(this).TopologyListener(_recordingTopologyListener));

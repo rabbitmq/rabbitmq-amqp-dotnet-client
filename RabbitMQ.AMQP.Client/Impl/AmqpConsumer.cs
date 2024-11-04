@@ -154,19 +154,20 @@ namespace RabbitMQ.AMQP.Client.Impl
                         continue;
                     }
 
+                    _metricsReporter.ReportMessageDeliverSuccess(consumerContext, startTimestamp);
                     _unsettledMessageCounter.Increment();
 
                     IContext context = new DeliveryContext(_receiverLink, nativeMessage, _unsettledMessageCounter);
                     var amqpMessage = new AmqpMessage(nativeMessage);
-
+                    
                     // TODO catch exceptions thrown by handlers,
                     // then call exception handler?
+                    
                     if (_configuration.Handler != null)
                     {
                         await _configuration.Handler(context, amqpMessage).ConfigureAwait(false);
                     }
 
-                    _metricsReporter.ReportMessageDeliverSuccess(consumerContext, startTimestamp);
                 }
             }
             catch (Exception e)
@@ -175,8 +176,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 {
                     return;
                 }
-
-                _metricsReporter.ReportMessageDeliverFailure(consumerContext, startTimestamp, e);
+                
                 Trace.WriteLine(TraceLevel.Error, $"{ToString()} Failed to process messages, {e}");
                 // TODO this is where a Listener should get a closed event
                 // See the ConsumerShouldBeClosedWhenQueueIsDeleted test

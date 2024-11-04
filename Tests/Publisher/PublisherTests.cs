@@ -10,7 +10,7 @@ using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Tests;
+namespace Tests.Publisher;
 
 public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
 {

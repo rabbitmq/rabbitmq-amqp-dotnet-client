@@ -17,10 +17,5 @@ namespace RabbitMQ.AMQP.Client.Impl
         public void ReportMessageDeliverSuccess(IMetricsReporter.ConsumerContext context, long startTimestamp)
         {
         }
-
-        public void ReportMessageDeliverFailure(IMetricsReporter.ConsumerContext consumerContext, long startTimestamp,
-            Exception exception)
-        {
-        }
     }
 }

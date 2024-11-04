@@ -15,10 +15,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         private string? _key = null;
         private string? _queue = null;
         private TimeSpan _timeout = TimeSpan.FromSeconds(10);
+        private readonly IMetricsReporter _metricsReporter;
 
-        public AmqpPublisherBuilder(AmqpConnection connection)
+        public AmqpPublisherBuilder(AmqpConnection connection, IMetricsReporter metricsReporter)
         {
             _connection = connection;
+            _metricsReporter = metricsReporter;
         }
 
         public IPublisherBuilder Exchange(IExchangeSpecification exchangeSpec)
@@ -67,12 +69,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             {
                 address = AddressBuilderHelper.AddressBuilder().Exchange(_exchange).Queue(_queue).Key(_key).Address();
             }
-#if NET6_0_OR_GREATER
-            IMetricsReporter metricsReporter = new MetricsReporter();
-#else
-            IMetricsReporter metricsReporter = new NoOpMetricsReporter();
-#endif
-            AmqpPublisher publisher = new(_connection, address, metricsReporter, _timeout);
+            
+            AmqpPublisher publisher = new(_connection, address, _metricsReporter, _timeout);
 
             // TODO pass cancellationToken
             await publisher.OpenAsync()

@@ -12,23 +12,27 @@ namespace RabbitMQ.AMQP.Client.Impl
 {
     public class AmqpEnvironment : IEnvironment
     {
-        private IConnectionSettings? ConnectionSettings { get; }
+        private IConnectionSettings ConnectionSettings { get; }
         private long _sequentialId = 0;
         private readonly ConcurrentDictionary<long, IConnection> _connections = new();
+        private readonly IMetricsReporter? _metricsReporter;
 
-        private AmqpEnvironment(IConnectionSettings connectionSettings)
+        private AmqpEnvironment(IConnectionSettings connectionSettings, IMetricsReporter? metricsReporter)
         {
             ConnectionSettings = connectionSettings;
+            _metricsReporter = metricsReporter;
         }
 
-        public static Task<IEnvironment> CreateAsync(IConnectionSettings connectionSettings)
+        public static Task<IEnvironment> CreateAsync(IConnectionSettings connectionSettings,
+            IMetricsReporter? metricsReporter = default)
         {
-            return Task.FromResult<IEnvironment>(new AmqpEnvironment(connectionSettings));
+            return Task.FromResult<IEnvironment>(new AmqpEnvironment(connectionSettings,
+                metricsReporter ?? new NoOpMetricsReporter()));
         }
 
         public async Task<IConnection> CreateConnectionAsync(IConnectionSettings connectionSettings)
         {
-            IConnection c = await AmqpConnection.CreateAsync(connectionSettings).ConfigureAwait(false);
+            IConnection c = await AmqpConnection.CreateAsync(connectionSettings,_metricsReporter).ConfigureAwait(false);
             c.Id = Interlocked.Increment(ref _sequentialId);
             _connections.TryAdd(c.Id, c);
             c.ChangeState += (sender, previousState, currentState, failureCause) =>

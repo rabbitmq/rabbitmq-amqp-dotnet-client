@@ -4,9 +4,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
@@ -21,7 +23,12 @@ public abstract class IntegrationTest : IAsyncLifetime
     protected readonly TimeSpan _waitSpan = TimeSpan.FromSeconds(5);
 
     protected IConnection? _connection;
+    protected ConnectionSettings? _connectionSettings;
     protected IManagement? _management;
+    protected IMetricsReporter? _metricsReporter;
+#if NET8_0_OR_GREATER
+          protected IMeterFactory?  _meterFactory;
+#endif
     protected string _queueName;
     protected string _exchangeName;
     protected string _containerId = $"integration-test-{Now}";
@@ -29,6 +36,7 @@ public abstract class IntegrationTest : IAsyncLifetime
     private readonly bool _setupConnectionAndManagement;
     protected readonly ConnectionSettingBuilder _connectionSettingBuilder;
 
+    
     public IntegrationTest(ITestOutputHelper testOutputHelper,
         bool setupConnectionAndManagement = true)
     {
@@ -48,8 +56,16 @@ public abstract class IntegrationTest : IAsyncLifetime
     {
         if (_setupConnectionAndManagement)
         {
-            ConnectionSettings connectionSettings = _connectionSettingBuilder.Build();
-            _connection = await AmqpConnection.CreateAsync(connectionSettings);
+#if NET8_0_OR_GREATER
+            var serviceProvider = new ServiceCollection()
+                .AddMetrics()
+                .AddSingleton<IMetricsReporter,MetricsReporter>()
+                .BuildServiceProvider();
+            _metricsReporter = serviceProvider.GetRequiredService<IMetricsReporter>();
+            _meterFactory = serviceProvider.GetRequiredService<IMeterFactory>();
+#endif
+            _connectionSettings = _connectionSettingBuilder.Build();
+            _connection = await AmqpConnection.CreateAsync(_connectionSettings,_metricsReporter);
             _management = _connection.Management();
         }
 
@@ -73,7 +89,6 @@ public abstract class IntegrationTest : IAsyncLifetime
             }
             catch
             {
-
             }
 
             try
@@ -214,7 +229,7 @@ public abstract class IntegrationTest : IAsyncLifetime
         {
             // TODO create "internal bug" exception type?
             throw new InvalidOperationException("_containerId is null or whitespace," +
-                " report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                                                " report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
         }
 
         var connectionSettingBuilder = ConnectionSettingBuilder.Create();
