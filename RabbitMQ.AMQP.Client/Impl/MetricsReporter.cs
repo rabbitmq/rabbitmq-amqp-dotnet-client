@@ -9,8 +9,8 @@ using Amqp;
 namespace RabbitMQ.AMQP.Client.Impl
 {
 #if NET6_0_OR_GREATER
-// .NET docs on metric instrumentation: https://learn.microsoft.com/en-us/dotnet/core/diagnostics/metrics-instrumentation
-// OpenTelemetry semantic conventions for messaging metric: https://opentelemetry.io/docs/specs/semconv/messaging/messaging-metrics
+    // .NET docs on metric instrumentation: https://learn.microsoft.com/en-us/dotnet/core/diagnostics/metrics-instrumentation
+    // OpenTelemetry semantic conventions for messaging metric: https://opentelemetry.io/docs/specs/semconv/messaging/messaging-metrics
     internal sealed class MetricsReporter : IMetricsReporter
     {
         const string Version = "0.1.0";
@@ -75,7 +75,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                 "Duration of processing operation. ");
         }
 
-
         public void ReportMessageSendSuccess(IMetricsReporter.PublisherContext context, long startTimestamp)
         {
             var serverAddress = new KeyValuePair<string, object?>(ServerAddress, context.ServerAddress);
@@ -96,7 +95,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                     _messagingOperationSystemTag, _sendOperationType, _publishOperationName);
             }
         }
-
 
         public void ReportMessageSendFailure(IMetricsReporter.PublisherContext context, long startTimestamp,
             AmqpException amqpException)

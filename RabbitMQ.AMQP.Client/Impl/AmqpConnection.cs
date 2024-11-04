@@ -34,7 +34,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private readonly AmqpManagement _management;
         private readonly RecordingTopologyListener _recordingTopologyListener = new();
-        
+
         internal readonly IConnectionSettings _connectionSettings;
         internal readonly AmqpSessionManagement _nativePubSubSessions;
 

@@ -22,7 +22,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             public string ServerAddress { get; }
             public int ServerPort { get; }
         }
-        
+
         sealed class PublisherContext
         {
             public PublisherContext(string? destination, string serverAddress, int serverPort)
