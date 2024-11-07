@@ -114,7 +114,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
             _consumer = await _configuration.Connection.ConsumerBuilder().MessageHandler(async (context, request) =>
                 {
-                    await context.AcceptAsync().ConfigureAwait(false);
+                    context.Accept();
                     if (_configuration.Handler != null)
                     {
                         IMessage reply = await _configuration.Handler(new RpcServerContext(), request)

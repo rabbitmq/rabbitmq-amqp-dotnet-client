@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
@@ -100,7 +98,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         private IConsumer? _consumer = null;
         private IPublisher? _publisher = null;
         private readonly ConcurrentDictionary<object, TaskCompletionSource<IMessage>> _pendingRequests = new();
-        private readonly string _correlationId = Guid.NewGuid().ToString();
+        private readonly Guid _correlationId = Guid.NewGuid();
         private readonly SemaphoreSlim _semaphore = new(1, 1);
         private int _nextCorrelationId = 0;
 
@@ -154,14 +152,15 @@ namespace RabbitMQ.AMQP.Client.Impl
             _publisher = await _configuration.Connection.PublisherBuilder().BuildAsync().ConfigureAwait(false);
             _consumer = await _configuration.Connection.ConsumerBuilder()
                 .Queue(_configuration.ReplyToQueue)
-                .MessageHandler(async (context, message) =>
+                .MessageHandler((context, message) =>
                 {
-                    await context.AcceptAsync().ConfigureAwait(false);
+                    context.Accept();
                     object correlationId = ExtractCorrelationId(message);
                     if (_pendingRequests.TryGetValue(correlationId, out TaskCompletionSource<IMessage>? request))
                     {
                         request.SetResult(message);
                     }
+                    return Task.CompletedTask;
                 }).BuildAndStartAsync().ConfigureAwait(false);
 
             await base.OpenAsync().ConfigureAwait(false);

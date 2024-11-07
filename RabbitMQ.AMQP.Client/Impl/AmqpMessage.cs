@@ -3,6 +3,7 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Amqp;
 using Amqp.Framing;
@@ -31,6 +32,255 @@ namespace RabbitMQ.AMQP.Client.Impl
         public AmqpMessage(Message nativeMessage)
         {
             NativeMessage = nativeMessage;
+        }
+
+        public object MessageId()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.GetMessageId();
+        }
+
+        public IMessage MessageId(object id)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.SetMessageId(id);
+            return this;
+        }
+
+        public byte[] UserId()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.UserId;
+        }
+
+        public IMessage UserId(byte[] userId)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.UserId = userId;
+            return this;
+        }
+
+        public string To()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.To;
+        }
+
+        public IMessage To(string id)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.To = id;
+            return this;
+        }
+
+        public string Subject()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.Subject;
+        }
+
+        public IMessage Subject(string subject)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.Subject = subject;
+            return this;
+        }
+
+        public string ReplyTo()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.ReplyTo;
+        }
+
+        public IMessage ReplyTo(string id)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.ReplyTo = id;
+            return this;
+        }
+
+        public object CorrelationId()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.GetCorrelationId();
+        }
+
+        public IMessage CorrelationId(object id)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.SetCorrelationId(id);
+            return this;
+        }
+
+        public string ContentType()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.ContentType;
+        }
+
+        public IMessage ContentType(string contentType)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.ContentType = contentType;
+            return this;
+        }
+
+        public string ContentEncoding()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.ContentEncoding;
+        }
+
+        public IMessage ContentEncoding(string contentEncoding)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.ContentEncoding = contentEncoding;
+            return this;
+        }
+
+        public DateTime AbsoluteExpiryTime()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.AbsoluteExpiryTime;
+        }
+
+        public IMessage AbsoluteExpiryTime(DateTime absoluteExpiryTime)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.AbsoluteExpiryTime = absoluteExpiryTime;
+            return this;
+        }
+
+        public DateTime CreationTime()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.CreationTime;
+        }
+
+        public IMessage CreationTime(DateTime creationTime)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.CreationTime = creationTime;
+            return this;
+        }
+
+        public string GroupId()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.GroupId;
+        }
+
+        public IMessage GroupId(string groupId)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.GroupId = groupId;
+            return this;
+        }
+
+        public uint GroupSequence()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.GroupSequence;
+        }
+
+        public IMessage GroupSequence(uint groupSequence)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.GroupSequence = groupSequence;
+            return this;
+        }
+
+        public string ReplyToGroupId()
+        {
+            ThrowIfPropertiesNotSet();
+            return NativeMessage.Properties.ReplyToGroupId;
+        }
+
+        public IMessage ReplyToGroupId(string replyToGroupId)
+        {
+            EnsureProperties();
+            NativeMessage.Properties.ReplyToGroupId = replyToGroupId;
+            return this;
+        }
+
+        public IMessage Property(string key, object value)
+        {
+            EnsureApplicationProperties();
+            NativeMessage.ApplicationProperties[key] = value;
+            return this;
+        }
+
+        public IMessage PropertySymbol(string key, string value)
+        {
+            EnsureApplicationProperties();
+            NativeMessage.ApplicationProperties[key] = new Symbol(value);
+            return this;
+        }
+
+        public object Property(string key)
+        {
+            ThrowIfApplicationPropertiesNotSet();
+            return NativeMessage.ApplicationProperties[key];
+        }
+
+        public IDictionary<object, object> Properties()
+        {
+            ThrowIfApplicationPropertiesNotSet();
+            return NativeMessage.ApplicationProperties.Map;
+        }
+
+        // Annotations
+        public IMessage Annotation(string key, object value)
+        {
+            EnsureAnnotations();
+            Utils.ValidateMessageAnnotationKey(key);
+            NativeMessage.MessageAnnotations[new Symbol(key)] = value;
+            return this;
+        }
+
+        public object Annotation(string key)
+        {
+            ThrowIfAnnotationsNotSet();
+            Utils.ValidateMessageAnnotationKey(key);
+            return NativeMessage.MessageAnnotations[new Symbol(key)];
+        }
+
+        public object Body()
+        {
+            return NativeMessage.Body;
+        }
+
+        public IMessage Body(object body)
+        {
+            RestrictedDescribed bodySection;
+            if (body is byte[] byteArray)
+            {
+                bodySection = new Data
+                {
+                    Binary = byteArray
+                };
+            }
+            else if (body is IList list)
+            {
+                bodySection = new AmqpSequence
+                {
+                    List = list
+                };
+            }
+            else
+            {
+                bodySection = new AmqpValue
+                {
+                    Value = body
+                };
+            }
+            NativeMessage.BodySection = bodySection;
+            return this;
+        }
+
+        public IMessageAddressBuilder ToAddress()
+        {
+            return new MessageAddressBuilder(this);
         }
 
         private void ThrowIfPropertiesNotSet()
@@ -70,143 +320,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         private void EnsureApplicationProperties()
         {
             NativeMessage.ApplicationProperties ??= new ApplicationProperties();
-        }
-
-        public object Body()
-        {
-            // TODO do we need to do anything with NativeMessage.BodySection?
-            return NativeMessage.Body;
-        }
-
-        public object MessageId()
-        {
-            ThrowIfPropertiesNotSet();
-            return NativeMessage.Properties.GetMessageId();
-        }
-
-        public IMessage MessageId(string id)
-        {
-            EnsureProperties();
-            NativeMessage.Properties.SetMessageId(id);
-            return this;
-        }
-
-        public IMessage MessageId(object id)
-        {
-            EnsureProperties();
-            NativeMessage.Properties.SetMessageId(id);
-            return this;
-        }
-
-        public object CorrelationId()
-        {
-            ThrowIfPropertiesNotSet();
-            return NativeMessage.Properties.CorrelationId;
-        }
-
-        public IMessage CorrelationId(string id)
-        {
-            EnsureProperties();
-            NativeMessage.Properties.SetCorrelationId(id);
-            return this;
-        }
-
-        public IMessage CorrelationId(object id)
-        {
-            EnsureProperties();
-            NativeMessage.Properties.SetCorrelationId(id);
-            return this;
-        }
-
-        public string ReplyTo()
-        {
-            ThrowIfPropertiesNotSet();
-            return NativeMessage.Properties.ReplyTo;
-        }
-
-        public IMessage ReplyTo(string id)
-        {
-            EnsureProperties();
-            NativeMessage.Properties.ReplyTo = id;
-            return this;
-        }
-
-        public string To()
-        {
-            ThrowIfPropertiesNotSet();
-            return NativeMessage.Properties.To;
-        }
-
-        public IMessage To(string id)
-        {
-            EnsureProperties();
-            NativeMessage.Properties.To = id;
-            return this;
-        }
-
-        public string Subject()
-        {
-            ThrowIfPropertiesNotSet();
-            return NativeMessage.Properties.Subject;
-        }
-
-        public IMessage Subject(string subject)
-        {
-            EnsureProperties();
-            NativeMessage.Properties.Subject = subject;
-            return this;
-        }
-
-        public IMessage GroupId(string groupId)
-        {
-            EnsureProperties();
-            NativeMessage.Properties.GroupId = groupId;
-            return this;
-        }
-
-        public string GroupId()
-        {
-            ThrowIfPropertiesNotSet();
-            return NativeMessage.Properties.GroupId;
-        }
-
-        public IMessage ApplicationProperty(string key, object value)
-        {
-            EnsureApplicationProperties();
-            NativeMessage.ApplicationProperties[key] = value;
-            return this;
-        }
-
-        public object ApplicationProperty(string key)
-        {
-            ThrowIfApplicationPropertiesNotSet();
-            return NativeMessage.ApplicationProperties[key];
-        }
-
-        public IDictionary<object, object> ApplicationProperties()
-        {
-            ThrowIfApplicationPropertiesNotSet();
-            return NativeMessage.ApplicationProperties.Map;
-        }
-
-        // Annotations
-
-        public IMessage Annotation(string key, object value)
-        {
-            EnsureAnnotations();
-            NativeMessage.MessageAnnotations[new Symbol(key)] = value;
-            return this;
-        }
-
-        public object Annotation(string key)
-        {
-            ThrowIfAnnotationsNotSet();
-            return NativeMessage.MessageAnnotations[new Symbol(key)];
-        }
-
-        public IMessageAddressBuilder ToAddress()
-        {
-            return new MessageAddressBuilder(this);
         }
     }
 }

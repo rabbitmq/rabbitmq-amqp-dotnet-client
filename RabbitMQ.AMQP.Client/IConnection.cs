@@ -3,7 +3,7 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 
 namespace RabbitMQ.AMQP.Client
 {
@@ -30,9 +30,11 @@ namespace RabbitMQ.AMQP.Client
 
         IRpcClientBuilder RpcClientBuilder();
 
-        public ReadOnlyCollection<IPublisher> GetPublishers();
+        public IReadOnlyDictionary<string, object> Properties { get; }
 
-        public ReadOnlyCollection<IConsumer> GetConsumers();
+        public IEnumerable<IPublisher> Publishers { get; }
+
+        public IEnumerable<IConsumer> Consumers { get; }
 
         public long Id { get; set; }
     }

@@ -87,10 +87,11 @@ namespace Tests.Rpc
             TaskCompletionSource<IMessage> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
             IConsumer consumer = await _connection.ConsumerBuilder().Queue(queueReplyTo).MessageHandler(
-                async (context, message) =>
+                (context, message) =>
                 {
-                    await context.AcceptAsync();
+                    context.Accept();
                     tcs.SetResult(message);
+                    return Task.CompletedTask;
                 }).BuildAndStartAsync();
 
             IPublisher publisher = await _connection.PublisherBuilder().Queue(requestQueue).BuildAsync();
@@ -202,9 +203,9 @@ namespace Tests.Rpc
                     return Task.FromResult(reply);
                 }).RequestQueue(_queueName)
                 //come from the client
-                .CorrelationIdExtractor(message => message.ApplicationProperty("correlationId"))
+                .CorrelationIdExtractor(message => message.Property("correlationId"))
                 //  replace the correlation id location with Application properties
-                .ReplyPostProcessor((reply, replyCorrelationId) => reply.ApplicationProperty("correlationId",
+                .ReplyPostProcessor((reply, replyCorrelationId) => reply.Property("correlationId",
                     replyCorrelationId.ToString() ?? throw new InvalidOperationException()))
                 .BuildAsync();
             Assert.NotNull(rpcServer);
@@ -223,11 +224,11 @@ namespace Tests.Rpc
                 // replace the correlation id creation with a custom function
                 .CorrelationIdSupplier(() => $"{correlationId}_{Interlocked.Increment(ref correlationIdCounter)}")
                 // The server will reply with the correlation id in application properties
-                .CorrelationIdExtractor(message => message.ApplicationProperty("correlationId"))
+                .CorrelationIdExtractor(message => message.Property("correlationId"))
                 // The client will use application properties to set the correlation id
                 .RequestPostProcessor((request, requestCorrelationId)
                     => request.ReplyTo(AddressBuilderHelper.AddressBuilder().Queue(replyTo.Name()).Address())
-                        .ApplicationProperty("correlationId",
+                        .Property("correlationId",
                             requestCorrelationId.ToString() ?? throw new InvalidOperationException()))
                 .BuildAsync();
 
@@ -239,9 +240,9 @@ namespace Tests.Rpc
                 IMessage response = await rpcClient.PublishAsync(message);
                 Assert.Equal("pong", response.Body());
                 // the server replies with the correlation id in the application properties
-                Assert.Equal($"{correlationId}_{i}", response.ApplicationProperty("correlationId"));
-                Assert.Equal($"{correlationId}_{i}", response.ApplicationProperties()["correlationId"]);
-                Assert.Single(response.ApplicationProperties());
+                Assert.Equal($"{correlationId}_{i}", response.Property("correlationId"));
+                Assert.Equal($"{correlationId}_{i}", response.Properties()["correlationId"]);
+                Assert.Single(response.Properties());
                 i++;
             }
 
@@ -295,7 +296,7 @@ namespace Tests.Rpc
                 int i1 = i;
                 tasks.Add(Task.Run(async () =>
                 {
-                    IMessage message = new AmqpMessage("ping").ApplicationProperty("id", i1);
+                    IMessage message = new AmqpMessage("ping").Property("id", i1);
                     IMessage response = await rpcClient.PublishAsync(message);
                     Assert.Equal("pong", response.Body());
                 }));
@@ -312,7 +313,7 @@ namespace Tests.Rpc
             // and the id is the same as the one sent
             for (int i = 0; i < messagesToSend; i++)
             {
-                Assert.Contains(messagesReceived, m => m.ApplicationProperty("id").Equals(i));
+                Assert.Contains(messagesReceived, m => m.Property("id").Equals(i));
             }
 
             await rpcServer.CloseAsync();
@@ -329,12 +330,12 @@ namespace Tests.Rpc
             Assert.NotNull(_management);
             string requestQueue = _queueName;
             await _management.Queue(requestQueue).Exclusive(true).AutoDelete(true).DeclareAsync();
-            IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
+            IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler(async (context, request) =>
             {
-                var reply = context.Message("pong");
-                object millisecondsToWait = request.ApplicationProperty("wait");
-                Thread.Sleep(TimeSpan.FromMilliseconds((int)millisecondsToWait));
-                return Task.FromResult(reply);
+                IMessage reply = context.Message("pong");
+                object millisecondsToWait = request.Property("wait");
+                await Task.Delay(TimeSpan.FromMilliseconds((int)millisecondsToWait));
+                return reply;
             }).RequestQueue(_queueName).BuildAsync();
             Assert.NotNull(rpcServer);
 
@@ -345,11 +346,11 @@ namespace Tests.Rpc
                 .BuildAsync();
 
             IMessage reply = await rpcClient.PublishAsync(
-                new AmqpMessage("ping").ApplicationProperty("wait", 1));
+                new AmqpMessage("ping").Property("wait", 1));
             Assert.Equal("pong", reply.Body());
 
             await Assert.ThrowsAsync<TimeoutException>(() => rpcClient.PublishAsync(
-                new AmqpMessage("ping").ApplicationProperty("wait", 700)));
+                new AmqpMessage("ping").Property("wait", 700)));
 
             await rpcClient.CloseAsync();
             await rpcServer.CloseAsync();

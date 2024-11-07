@@ -33,7 +33,7 @@ public class ConnectionTests(ITestOutputHelper testOutputHelper) : IntegrationTe
 
         await queueSpec.DeleteAsync();
         await _connection.CloseAsync();
-        Assert.Empty(_connection.GetPublishers());
+        Assert.Empty(_connection.Publishers);
 
         await Assert.ThrowsAsync<AmqpNotOpenException>(() =>
             _connection.PublisherBuilder().Queue("ThrowAmqpClosedExceptionWhenItemIsClosed").BuildAsync());

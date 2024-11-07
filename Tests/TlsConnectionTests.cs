@@ -66,6 +66,7 @@ public class TlsConnectionTests : IntegrationTest
         else
         {
             connectionSettings.TlsSettings.AcceptablePolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors;
+            connectionSettings.TlsSettings.RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => true;
         }
 
         Assert.Equal("localhost", connectionSettings.Host);
@@ -110,6 +111,7 @@ public class TlsConnectionTests : IntegrationTest
         else
         {
             connectionSettings.TlsSettings.AcceptablePolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors;
+            connectionSettings.TlsSettings.RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => true;
         }
 
         Assert.Equal("localhost", connectionSettings.Host);

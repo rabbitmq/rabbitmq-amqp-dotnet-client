@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DotNext.Threading" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../../../RabbitMQ.AMQP.Client/RabbitMQ.AMQP.Client.csproj" />
   </ItemGroup>
 
