@@ -46,7 +46,6 @@ public class ConsumerMetricsTests(ITestOutputHelper testOutputHelper) : Integrat
 
         await WhenTcsCompletes(tcs);
 
-
         var consumedMessagesMeasurements = messageConsumedCollector.GetMeasurementSnapshot();
         Assert.NotEmpty(consumedMessagesMeasurements);
         Assert.Equal(1, consumedMessagesMeasurements[0].Value);

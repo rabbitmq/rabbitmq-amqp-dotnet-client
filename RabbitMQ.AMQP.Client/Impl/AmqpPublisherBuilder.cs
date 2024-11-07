@@ -69,7 +69,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             {
                 address = AddressBuilderHelper.AddressBuilder().Exchange(_exchange).Queue(_queue).Key(_key).Address();
             }
-            
+
             AmqpPublisher publisher = new(_connection, address, _metricsReporter, _timeout);
 
             // TODO pass cancellationToken

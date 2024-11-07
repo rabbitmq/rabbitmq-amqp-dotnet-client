@@ -32,7 +32,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public async Task<IConnection> CreateConnectionAsync(IConnectionSettings connectionSettings)
         {
-            IConnection c = await AmqpConnection.CreateAsync(connectionSettings,_metricsReporter).ConfigureAwait(false);
+            IConnection c = await AmqpConnection.CreateAsync(connectionSettings, _metricsReporter).ConfigureAwait(false);
             c.Id = Interlocked.Increment(ref _sequentialId);
             _connections.TryAdd(c.Id, c);
             c.ChangeState += (sender, previousState, currentState, failureCause) =>

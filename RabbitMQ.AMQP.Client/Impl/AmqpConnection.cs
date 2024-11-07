@@ -38,7 +38,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         internal readonly IConnectionSettings _connectionSettings;
         private readonly IMetricsReporter _metricsReporter;
         internal readonly AmqpSessionManagement _nativePubSubSessions;
- 
+
         /// <summary>
         /// Publishers contains all the publishers created by the connection.
         /// Each connection can have multiple publishers.

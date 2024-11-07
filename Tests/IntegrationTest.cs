@@ -36,7 +36,6 @@ public abstract class IntegrationTest : IAsyncLifetime
     private readonly bool _setupConnectionAndManagement;
     protected readonly ConnectionSettingBuilder _connectionSettingBuilder;
 
-    
     public IntegrationTest(ITestOutputHelper testOutputHelper,
         bool setupConnectionAndManagement = true)
     {
@@ -65,7 +64,7 @@ public abstract class IntegrationTest : IAsyncLifetime
             _meterFactory = serviceProvider.GetRequiredService<IMeterFactory>();
 #endif
             _connectionSettings = _connectionSettingBuilder.Build();
-            _connection = await AmqpConnection.CreateAsync(_connectionSettings,_metricsReporter);
+            _connection = await AmqpConnection.CreateAsync(_connectionSettings, _metricsReporter);
             _management = _connection.Management();
         }
 
