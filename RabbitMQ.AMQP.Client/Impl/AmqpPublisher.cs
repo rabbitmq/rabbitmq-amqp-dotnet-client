@@ -38,7 +38,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 Attach attach = Utils.CreateAttach(_address, DeliveryMode.AtLeastOnce, _id);
 
-                void onAttached(ILink argLink, Attach argAttach)
+                void OnAttached(ILink argLink, Attach argAttach)
                 {
                     if (argLink is SenderLink link)
                     {
@@ -53,25 +53,19 @@ namespace RabbitMQ.AMQP.Client.Impl
                     }
                 }
 
-                SenderLink? tmpSenderLink = null;
-                Task senderLinkTask = Task.Run(async () =>
-                {
-                    Session session = await _connection._nativePubSubSessions.GetOrCreateSessionAsync()
-                        .ConfigureAwait(false);
-                    tmpSenderLink = new SenderLink(session, _id.ToString(), attach, onAttached);
-                });
+                Session session = await _connection._nativePubSubSessions.GetOrCreateSessionAsync()
+                    .ConfigureAwait(false);
+                var tmpSenderLink = new SenderLink(session, _id.ToString(), attach, OnAttached);
 
                 // TODO configurable timeout
-                TimeSpan waitSpan = TimeSpan.FromSeconds(5);
-
+                var waitSpan = TimeSpan.FromSeconds(5);
                 _senderLink = await attachCompletedTcs.Task.WaitAsync(waitSpan)
                     .ConfigureAwait(false);
 
-                await senderLinkTask.WaitAsync(waitSpan)
-                    .ConfigureAwait(false);
-
-                System.Diagnostics.Debug.Assert(tmpSenderLink != null);
-                System.Diagnostics.Debug.Assert(Object.ReferenceEquals(_senderLink, tmpSenderLink));
+                if (false == Object.ReferenceEquals(_senderLink, tmpSenderLink))
+                {
+                    // TODO log this case?
+                }
 
                 if (_senderLink is null)
                 {
@@ -125,10 +119,13 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 void OutcomeCallback(ILink sender, Message inMessage, Outcome outcome, object state)
                 {
-                    System.Diagnostics.Debug.Assert(object.ReferenceEquals(this, state));
-                    System.Diagnostics.Debug.Assert(object.ReferenceEquals(_senderLink, sender));
                     // Note: sometimes `message` is null 🤔
-                    // System.Diagnostics.Debug.Assert(Object.ReferenceEquals(nativeMessage, message));
+                    System.Diagnostics.Debug.Assert(Object.ReferenceEquals(this, state));
+
+                    if (false == Object.ReferenceEquals(_senderLink, sender))
+                    {
+                        // TODO log this case?
+                    }
 
                     PublishOutcome publishOutcome;
                     switch (outcome)

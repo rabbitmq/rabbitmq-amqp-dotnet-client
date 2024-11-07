@@ -59,7 +59,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 Attach attach = Utils.CreateAttach(_configuration.Address, DeliveryMode.AtLeastOnce, _id,
                     _configuration.Filters);
 
-                void onAttached(ILink argLink, Attach argAttach)
+                void OnAttached(ILink argLink, Attach argAttach)
                 {
                     if (argLink is ReceiverLink link)
                     {
@@ -69,30 +69,25 @@ namespace RabbitMQ.AMQP.Client.Impl
                     {
                         // TODO create "internal bug" exception type?
                         var ex = new InvalidOperationException(
-                            "invalid link in onAttached, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                            "invalid link in OnAttached, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
                         attachCompletedTcs.SetException(ex);
                     }
                 }
 
-                ReceiverLink? tmpReceiverLink = null;
-                Task receiverLinkTask = Task.Run(async () =>
-                {
-                    Session session = await _amqpConnection._nativePubSubSessions.GetOrCreateSessionAsync()
-                        .ConfigureAwait(false);
-                    tmpReceiverLink = new ReceiverLink(session, _id.ToString(), attach, onAttached);
-                });
+                Session session = await _amqpConnection._nativePubSubSessions.GetOrCreateSessionAsync()
+                    .ConfigureAwait(false);
+
+                var tmpReceiverLink = new ReceiverLink(session, _id.ToString(), attach, OnAttached);
 
                 // TODO configurable timeout
-                TimeSpan waitSpan = TimeSpan.FromSeconds(5);
-
+                var waitSpan = TimeSpan.FromSeconds(5);
                 _receiverLink = await attachCompletedTcs.Task.WaitAsync(waitSpan)
                     .ConfigureAwait(false);
 
-                await receiverLinkTask.WaitAsync(waitSpan)
-                    .ConfigureAwait(false);
-
-                System.Diagnostics.Debug.Assert(tmpReceiverLink != null);
-                System.Diagnostics.Debug.Assert(object.ReferenceEquals(_receiverLink, tmpReceiverLink));
+                if (false == Object.ReferenceEquals(_receiverLink, tmpReceiverLink))
+                {
+                    // TODO log this case?
+                }
 
                 if (_receiverLink is null)
                 {

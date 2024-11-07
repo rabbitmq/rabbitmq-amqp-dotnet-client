@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -270,16 +269,30 @@ namespace RabbitMQ.AMQP.Client.Impl
                         new Target() { Address = ManagementNodeAddress, ExpiryPolicy = new Symbol("SESSION_END"), },
                 };
 
-                var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                _receiverLink = new ReceiverLink(
+                var tcs = new TaskCompletionSource<ReceiverLink>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var tmpReceiverLink = new ReceiverLink(
                     _managementSession, LinkPairName, receiveAttach, (ILink link, Attach attach) =>
                     {
-                        Debug.Assert(Object.ReferenceEquals(_receiverLink, link));
-                        tcs.SetResult(true);
+                        if (link is ReceiverLink receiverLink)
+                        {
+                            tcs.SetResult(receiverLink);
+                        }
+                        else
+                        {
+                            // TODO create "internal bug" exception type?
+                            var ex = new InvalidOperationException(
+                                "invalid link in OnAttached, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                            tcs.SetException(ex);
+                        }
                     });
 
-                await tcs.Task
+                _receiverLink = await tcs.Task
                     .ConfigureAwait(false);
+
+                if (false == Object.ReferenceEquals(_receiverLink, tmpReceiverLink))
+                {
+                    // TODO log this case?
+                }
 
                 // TODO
                 // using a credit of 1 can result in AmqpExceptions in ProcessResponses
@@ -287,7 +300,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-        private Task EnsureSenderLinkAsync()
+        private async Task EnsureSenderLinkAsync()
         {
             if (_senderLink == null || _senderLink.IsClosed)
             {
@@ -315,18 +328,30 @@ namespace RabbitMQ.AMQP.Client.Impl
                     },
                 };
 
-                var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                _senderLink = new SenderLink(
+                var tcs = new TaskCompletionSource<SenderLink>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var tmpSenderLink = new SenderLink(
                     _managementSession, LinkPairName, senderAttach, (ILink link, Attach attach) =>
                     {
-                        Debug.Assert(Object.ReferenceEquals(_senderLink, link));
-                        tcs.SetResult(true);
+                        if (link is SenderLink senderLink)
+                        {
+                            tcs.SetResult(senderLink);
+                        }
+                        else
+                        {
+                            // TODO create "internal bug" exception type?
+                            var ex = new InvalidOperationException(
+                                "invalid link in OnAttached, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                            tcs.SetException(ex);
+                        }
                     });
-                return tcs.Task;
-            }
-            else
-            {
-                return Task.CompletedTask;
+
+                _senderLink = await tcs.Task
+                    .ConfigureAwait(false);
+
+                if (false == Object.ReferenceEquals(_senderLink, tmpSenderLink))
+                {
+                    // TODO log this case?
+                }
             }
         }
 

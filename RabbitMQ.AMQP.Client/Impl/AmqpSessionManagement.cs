@@ -41,8 +41,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                 }
 
                 rv = new Session(_amqpConnection.NativeConnection, GetDefaultBegin(), OnBegin);
+                // TODO cancellation token
                 ISession awaitedSession = await sessionBeginTcs.Task.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
-                System.Diagnostics.Debug.Assert(Object.ReferenceEquals(rv, awaitedSession));
                 _sessions.Add(rv);
             }
 
