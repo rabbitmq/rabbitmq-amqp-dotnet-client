@@ -8,7 +8,7 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly script_dir
 echo "[INFO] script_dir: '$script_dir'"
 
-readonly rabbitmq_image="${RABBITMQ_IMAGE:-rabbitmq:4-management}"
+readonly rabbitmq_image="${RABBITMQ_IMAGE:-rabbitmq:4.0.2-management}"
 
 
 readonly docker_name_prefix='rabbitmq-amqp-dotnet-client'
