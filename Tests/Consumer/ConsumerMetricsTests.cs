@@ -37,10 +37,11 @@ public class ConsumerMetricsTests(ITestOutputHelper testOutputHelper) : Integrat
         TaskCompletionSource<IMessage> tcs = new();
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueSpec)
-            .MessageHandler(async (context, message) =>
+            .MessageHandler((context, message) =>
                 {
-                    await context.AcceptAsync();
+                    context.Accept();
                     tcs.SetResult(message);
+                    return Task.CompletedTask;
                 }
             ).BuildAndStartAsync();
 
