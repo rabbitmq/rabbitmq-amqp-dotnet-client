@@ -15,6 +15,7 @@ namespace RabbitMQ.AMQP.Client
         }
     }
 
+    // TODO cancellation token
     public delegate Task MessageHandler(IContext context, IMessage message);
 
     public interface IConsumer : ILifeCycle
@@ -32,14 +33,14 @@ namespace RabbitMQ.AMQP.Client
         /// This means the message has been processed and the broker can delete it.
         /// 
         /// </summary>
-        Task AcceptAsync();
+        void Accept();
 
         ///<summary>
         /// Discard the message (AMQP 1.0 <code>rejected</code> outcome).
         ///This means the message cannot be processed because it is invalid, the broker can drop it
         /// or dead-letter it if it is configured.
         ///</summary>
-        Task DiscardAsync();
+        void Discard();
 
         ///<summary>
         ///Discard the message with annotations to combine with the existing message annotations.
@@ -57,7 +58,8 @@ namespace RabbitMQ.AMQP.Client
         ///
         /// The annotations can be used only with Quorum queues, see https://www.rabbitmq.com/docs/amqp#modified-outcome
         ///</summary>
-        Task DiscardAsync(Dictionary<string, object> annotations);
+        void Discard(Dictionary<string, object> annotations);
+
         ///<summary>
         ///Requeue the message (AMQP 1.0 <code>released</code> outcome).
         ///
@@ -65,7 +67,7 @@ namespace RabbitMQ.AMQP.Client
         /// to the same or a different consumer.
         ///
         /// </summary>
-        Task RequeueAsync();
+        void Requeue();
 
         ///<summary>
         ///Requeue the message with annotations to combine with the existing message annotations.
@@ -86,6 +88,6 @@ namespace RabbitMQ.AMQP.Client
         ///
         ///The annotations can be used only with Quorum queues, see https://www.rabbitmq.com/docs/amqp#modified-outcome
         ///</summary>
-        Task RequeueAsync(Dictionary<string, object> annotations);
+        void Requeue(Dictionary<string, object> annotations);
     }
 }

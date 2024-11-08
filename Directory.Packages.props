@@ -5,8 +5,10 @@
   <ItemGroup>
     <!-- RabbitMQ.Amqp.Client -->
     <PackageVersion Include="AMQPNetLite.Core" Version="2.4.11" />
-    <PackageVersion Include="Microsoft.Extensions.Diagnostics.Testing" Version="8.10.0" />
+    <!-- HAClient -->
+    <PackageVersion Include="DotNext.Threading" Version="5.15.0" />
     <!-- Tests -->
+    <PackageVersion Include="Microsoft.Extensions.Diagnostics.Testing" Version="8.10.0" />
     <PackageVersion Include="xunit" Version="2.9.0" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageVersion Include="Xunit.SkippableFact" Version="1.4.13" />

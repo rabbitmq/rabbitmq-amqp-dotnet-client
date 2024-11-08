@@ -30,11 +30,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             _address = address;
             _metricsReporter = metricsReporter;
             _timeout = timeout;
-
-            if (false == _connection.Publishers.TryAdd(_id, this))
-            {
-                // TODO error?
-            }
+            _connection.AddPublisher(_id, this);
         }
 
         public override async Task OpenAsync()
@@ -222,7 +218,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
             _senderLink = null;
             OnNewStatus(State.Closed, null);
-            _connection.Publishers.TryRemove(_id, out _);
+            _connection.RemovePublisher(_id);
         }
 
         public override string ToString()

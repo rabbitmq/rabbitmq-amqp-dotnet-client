@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,7 +29,7 @@ namespace RabbitMQ.AMQP.Client
         [ThreadStatic] private static Random? s_random;
 #endif
 
-        internal static int RandomNext(int minValue, int maxValue)
+        internal static int RandomNext(int minValue = 0, int maxValue = 1024)
         {
 #if NET6_0_OR_GREATER
             return s_random.Next(minValue, maxValue);
@@ -109,16 +108,6 @@ namespace RabbitMQ.AMQP.Client
             }
         }
 
-        // switch (options.deliveryMode()) {
-        //     case AT_MOST_ONCE:
-        //         protonSender.setSenderSettleMode(SenderSettleMode.SETTLED);
-        //         protonSender.setReceiverSettleMode(ReceiverSettleMode.FIRST);
-        //         break;
-        //     case AT_LEAST_ONCE:
-        //         protonSender.setSenderSettleMode(SenderSettleMode.UNSETTLED);
-        //         protonSender.setReceiverSettleMode(ReceiverSettleMode.FIRST);
-        //         break;
-
         internal static Attach CreateAttach(string? address,
             DeliveryMode deliveryMode, Guid linkId, Map? sourceFilter = null)
         {
@@ -185,10 +174,17 @@ namespace RabbitMQ.AMQP.Client
 
         internal static void ValidateMessageAnnotations(Dictionary<string, object> annotations)
         {
-            foreach (var kvp in annotations.Where(kvp => !kvp.Key.StartsWith("x-")))
+            foreach (KeyValuePair<string, object> kvp in annotations)
             {
-                throw new ArgumentException(
-                    $"Message annotation keys must start with 'x-': {kvp.Key}");
+                ValidateMessageAnnotationKey(kvp.Key);
+            }
+        }
+
+        internal static void ValidateMessageAnnotationKey(string key)
+        {
+            if (false == key.StartsWith("x-"))
+            {
+                throw new ArgumentOutOfRangeException($"Message annotation key must start with 'x-': {key}");
             }
         }
 
@@ -199,7 +195,7 @@ namespace RabbitMQ.AMQP.Client
         /// <param name="func">The function to test</param>
         /// <param name="callBack">Call back to check what's happening</param>
         /// <param name="retries">Number of retries</param>
-        public static async Task WaitWithBackOffUntilFuncAsync(
+        internal static async Task WaitWithBackOffUntilFuncAsync(
             Func<Task<bool>> func, Action<bool, TimeSpan> callBack, ushort retries = 10)
         {
             TimeSpan backOffTimeSpan = TimeSpan.FromSeconds(5);
@@ -217,6 +213,69 @@ namespace RabbitMQ.AMQP.Client
                 }
             }
             callBack(true, backOffTimeSpan);
+        }
+
+        internal static bool SupportsFilterExpressions(string brokerVersion)
+        {
+            return Is4_1_OrMore(brokerVersion);
+        }
+
+        internal static bool Is4_0_OrMore(string brokerVersion)
+        {
+            return VersionCompare(CurrentVersion(brokerVersion), "4.0.0") >= 0;
+        }
+
+        internal static bool Is4_1_OrMore(string brokerVersion)
+        {
+            return VersionCompare(CurrentVersion(brokerVersion), "4.1.0") >= 0;
+        }
+
+        private static string CurrentVersion(string currentVersion)
+        {
+            // versions built from source: 3.7.0+rc.1.4.gedc5d96
+            if (currentVersion.Contains("+"))
+            {
+                currentVersion = currentVersion.Substring(0, currentVersion.IndexOf("+"));
+            }
+            // alpha (snapshot) versions: 3.7.0~alpha.449-1
+            if (currentVersion.Contains("~"))
+            {
+                currentVersion = currentVersion.Substring(0, currentVersion.IndexOf("~"));
+            }
+            // alpha (snapshot) versions: 3.7.1-alpha.40
+            if (currentVersion.Contains("-"))
+            {
+                currentVersion = currentVersion.Substring(0, currentVersion.IndexOf("-"));
+            }
+            return currentVersion;
+        }
+
+        /// <summary>
+        /// https://stackoverflow.com/questions/6701948/efficient-way-to-compare-version-strings-in-java
+        /// </summary>
+        private static int VersionCompare(string str1, string str2)
+        {
+            string[] vals1 = str1.Split('.');
+            string[] vals2 = str2.Split('.');
+            int i = 0;
+
+            // set index to first non-equal ordinal or length of shortest version string
+            while (i < vals1.Length && i < vals2.Length && vals1[i].Equals(vals2[i]))
+            {
+                i++;
+            }
+
+            // compare first non-equal ordinal number
+            if (i < vals1.Length && i < vals2.Length)
+            {
+                int val1 = int.Parse(vals1[i]);
+                int val2 = int.Parse(vals2[i]);
+                return val1.CompareTo(val2);
+            }
+
+            // the strings are equal or one string is a substring of the other
+            // e.g. "1.2.3" = "1.2.3" or "1.2.3" < "1.2.3.4"
+            return vals1.Length.CompareTo(vals2.Length);
         }
     }
 

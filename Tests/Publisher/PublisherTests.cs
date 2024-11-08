@@ -3,6 +3,7 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
@@ -25,7 +26,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
                 Exchange("queue_and_exchange_cant_set_together").BuildAsync());
 
         await _connection.CloseAsync();
-        Assert.Empty(_connection.GetPublishers());
+        Assert.Empty(_connection.Publishers);
     }
 
     [Fact]
@@ -74,11 +75,11 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
 
         await SystemUtils.WaitUntilQueueMessageCount(queueSpecification, 1);
 
-        Assert.Single(_connection.GetPublishers());
+        Assert.Single(_connection.Publishers);
         await publisher.CloseAsync();
         publisher.Dispose();
 
-        Assert.Empty(_connection.GetPublishers());
+        Assert.Empty(_connection.Publishers);
     }
 
     [Fact]
@@ -96,17 +97,18 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
 
             PublishResult pr = await publisher.PublishAsync(new AmqpMessage("Hello wold!"));
             Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
-            Assert.Equal(i, _connection.GetPublishers().Count);
+            Assert.Equal(i, _connection.Publishers.ToList().Count);
         }
 
-        foreach (IPublisher publisher in _connection.GetPublishers())
+        foreach (IPublisher publisher in _connection.Publishers)
         {
             await publisher.CloseAsync();
             publisher.Dispose();
         }
 
+        await queueSpec.DeleteAsync();
         await _connection.CloseAsync();
-        Assert.Empty(_connection.GetPublishers());
+        Assert.Empty(_connection.Publishers);
     }
 
     [Fact]
@@ -135,12 +137,12 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
 
         await SystemUtils.WaitUntilQueueMessageCount(queueToSend1, 1);
 
-        Assert.Single(_connection.GetPublishers());
+        Assert.Single(_connection.Publishers);
 
         await publisher.CloseAsync();
         publisher.Dispose();
 
-        Assert.Empty(_connection.GetPublishers());
+        Assert.Empty(_connection.Publishers);
 
         await bindingSpec.UnbindAsync();
     }

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using EasyNetQ.Management.Client.Model;
@@ -72,10 +71,9 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
 
         consumer.Pause();
 
-        var acceptTasks = new List<Task>();
         foreach (IContext ctx in messageContexts)
         {
-            acceptTasks.Add(ctx.AcceptAsync());
+            ctx.Accept();
         }
 
         async Task<bool> MessagesUnacknowledgedIsZero()
@@ -84,9 +82,6 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
             return apiQueue.MessagesUnacknowledged == 0;
         }
         await SystemUtils.WaitUntilAsync(MessagesUnacknowledgedIsZero);
-
-        await WhenAllComplete(acceptTasks);
-        acceptTasks.Clear();
 
         Assert.Equal(initialCredits, messageContexts.Count);
         Assert.Equal((uint)0, consumer.UnsettledMessageCount);
@@ -110,11 +105,8 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
 
         foreach (IContext ctx in messageContexts)
         {
-            acceptTasks.Add(ctx.AcceptAsync());
+            ctx.Accept();
         }
-
-        await WhenAllComplete(acceptTasks);
-        acceptTasks.Clear();
     }
 
     [Fact]
@@ -136,16 +128,17 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueInfo.Name())
             .InitialCredits(initialCredits)
-            .MessageHandler(async (IContext ctx, IMessage msg) =>
+            .MessageHandler((IContext ctx, IMessage msg) =>
             {
                 if (Interlocked.Increment(ref receivedCount) < initialCredits)
                 {
-                    await ctx.AcceptAsync();
+                    ctx.Accept();
                 }
                 else
                 {
                     unsettledMessages.Add(ctx);
                 }
+                return Task.CompletedTask;
             }).BuildAndStartAsync();
 
         DateTime start = DateTime.Now;
@@ -173,13 +166,10 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
 
         long receivedCountAfterPause = Interlocked.Read(ref receivedCount);
 
-        var acceptTasks = new List<Task>();
         foreach (IContext cxt in unsettledMessages)
         {
-            acceptTasks.Add(cxt.AcceptAsync());
+            cxt.Accept();
         }
-
-        await WhenAllComplete(acceptTasks);
 
         await consumer.CloseAsync();
         consumer.Dispose();
@@ -219,7 +209,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
                     receivedTwiceInitialCreditsTcs.TrySetResult(true);
                 }
                 await Task.Delay(TimeSpan.FromMilliseconds(r.Next(1, 10)));
-                await ctx.AcceptAsync();
+                ctx.Accept();
             }).BuildAndStartAsync();
 
         await WhenTcsCompletes(receivedTwiceInitialCreditsTcs);
