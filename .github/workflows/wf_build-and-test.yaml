@@ -48,12 +48,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup dotnet
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: |
-            6.0.x
-            8.0.x
       - name: Build (Debug)
         run: dotnet build ${{ github.workspace }}/Build.csproj
       - name: Verify
