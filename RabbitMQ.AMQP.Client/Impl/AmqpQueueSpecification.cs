@@ -93,7 +93,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return _leader;
         }
 
-        public List<string> Replicas()
+        public List<string> Members()
         {
             return _replicas;
         }

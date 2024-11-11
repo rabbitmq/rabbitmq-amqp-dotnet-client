@@ -70,11 +70,11 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
 
         if (type == QueueType.CLASSIC)
         {
-            Assert.Single(queueInfo.Replicas());
+            Assert.Single(queueInfo.Members());
         }
         else
         {
-            Assert.Equal(SystemUtils.ClusterSize, queueInfo.Replicas().Count);
+            Assert.Equal(SystemUtils.ClusterSize, queueInfo.Members().Count);
         }
 
         Assert.NotNull(queueInfo.Leader());

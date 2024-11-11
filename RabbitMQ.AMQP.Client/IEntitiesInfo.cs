@@ -32,7 +32,7 @@ namespace RabbitMQ.AMQP.Client
         string Leader();
 
         // TODO IEnumerable? ICollection?
-        List<string> Replicas();
+        List<string> Members();
 
         ulong MessageCount();
 
