@@ -610,9 +610,9 @@ RabbitMQ.AMQP.Client.IQueueInfo.ConsumerCount() -> uint
 RabbitMQ.AMQP.Client.IQueueInfo.Durable() -> bool
 RabbitMQ.AMQP.Client.IQueueInfo.Exclusive() -> bool
 RabbitMQ.AMQP.Client.IQueueInfo.Leader() -> string!
+RabbitMQ.AMQP.Client.IQueueInfo.Members() -> System.Collections.Generic.List<string!>!
 RabbitMQ.AMQP.Client.IQueueInfo.MessageCount() -> ulong
 RabbitMQ.AMQP.Client.IQueueInfo.Name() -> string!
-RabbitMQ.AMQP.Client.IQueueInfo.Replicas() -> System.Collections.Generic.List<string!>!
 RabbitMQ.AMQP.Client.IQueueInfo.Type() -> RabbitMQ.AMQP.Client.QueueType
 RabbitMQ.AMQP.Client.IQueueSpecification
 RabbitMQ.AMQP.Client.IQueueSpecification.Arguments(System.Collections.Generic.Dictionary<object!, object!>! queueArguments) -> RabbitMQ.AMQP.Client.IQueueSpecification!
