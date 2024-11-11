@@ -12,7 +12,8 @@ using Xunit.Abstractions;
 
 namespace Tests.Recovery;
 
-public class CustomPublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper, false)
+public class CustomPublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper)
+    : IntegrationTest(testOutputHelper, setupConnectionAndManagement: false)
 {
     /// <summary>
     /// The consumer and the publisher should not restart if the recovery is disabled

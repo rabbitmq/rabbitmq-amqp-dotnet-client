@@ -11,12 +11,14 @@ using Xunit.Sdk;
 
 namespace Tests;
 
+// TODO this could be merged into IntegrationTest
 public static class SystemUtils
 {
     const string DefaultRabbitMqHost = "localhost";
     private static readonly HttpApiClient s_httpApiClient = new();
     private static readonly string s_rabbitMqHost = InitRabbitMqHost();
     private static readonly bool s_isRunningInCI = InitIsRunningInCI();
+    private static readonly bool s_isVerbose = InitIsVerbose();
     private static readonly bool s_isCluster;
     private static readonly ushort s_clusterSize;
     private static readonly TimeSpan s_initialDelaySpan = TimeSpan.FromMilliseconds(100);
@@ -25,6 +27,7 @@ public static class SystemUtils
 
     public static string RabbitMqHost => s_rabbitMqHost;
     public static bool IsRunningInCI => s_isRunningInCI;
+    public static bool IsVerbose => s_isVerbose;
     public static bool IsCluster => s_isCluster;
     public static ushort ClusterSize => s_clusterSize;
 
@@ -303,6 +306,16 @@ public static class SystemUtils
             {
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    private static bool InitIsVerbose()
+    {
+        if (bool.TryParse(Environment.GetEnvironmentVariable("RABBITMQ_CLIENT_TESTS_VERBOSE"), out bool isVerbose))
+        {
+            return isVerbose;
         }
 
         return false;

@@ -11,6 +11,7 @@ InternalTrace*
 *.lock.json
 nunit-agent*
 *.pyc
+test-diag.log
 test-output.log
 TestResults.xml
 TestResult.xml
@@ -24,6 +25,7 @@ gensrc/
 .ionide/
 NuGet/
 tmp/
+diag/
 .vscode/
 
 #################
