@@ -504,9 +504,9 @@ RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.ConsumerCount() -> uint
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Durable() -> bool
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Exclusive() -> bool
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Leader() -> string!
+RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Members() -> System.Collections.Generic.List<string!>!
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.MessageCount() -> ulong
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Name() -> string!
-RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Replicas() -> System.Collections.Generic.List<string!>!
 RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Type() -> RabbitMQ.AMQP.Client.QueueType
 RabbitMQ.AMQP.Client.Impl.FieldNotSetException
 RabbitMQ.AMQP.Client.Impl.FieldNotSetException.FieldNotSetException() -> void
