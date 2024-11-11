@@ -50,14 +50,14 @@ namespace RabbitMQ.AMQP.Client.Impl
             return c;
         }
 
-        public async Task<IConnection> CreateConnectionAsync()
+        public Task<IConnection> CreateConnectionAsync()
         {
-            if (ConnectionSettings != null)
+            if (ConnectionSettings is null)
             {
-                return await CreateConnectionAsync(ConnectionSettings).ConfigureAwait(false);
+                throw new ConnectionException("Connection settings are not set");
             }
 
-            throw new ConnectionException("Connection settings are not set");
+            return CreateConnectionAsync(ConnectionSettings);
         }
 
         public ReadOnlyCollection<IConnection> GetConnections() =>

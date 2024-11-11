@@ -47,7 +47,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 case State.Closing:
                     throw new AmqpNotOpenException("Resource is closing");
                 case State.Reconnecting:
-                    throw new AmqpNotOpenException("Resource is Reconnecting");
+                    throw new AmqpNotOpenException("Resource is reconnecting");
                 case State.Open:
                     break;
                 default:

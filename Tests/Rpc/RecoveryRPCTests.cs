@@ -1,3 +1,7 @@
+// This source code is dual-licensed under the Apache License, version
+// 2.0, and the Mozilla Public License, version 2.0.
+// Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,10 +13,14 @@ using Xunit.Abstractions;
 namespace Tests.Rpc
 {
     public class RecoveryRpcTests(ITestOutputHelper testOutputHelper)
+        : IntegrationTest(testOutputHelper, setupConnectionAndManagement: false)
     {
         [Fact]
         public async Task RpcServerAndClientShouldRecoverAfterKillConnection()
         {
+            Assert.Null(_connection);
+            Assert.Null(_management);
+
             string containerId = $"rpc-server-client-recovery-{DateTime.Now}";
             IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create()
                 .ContainerId(containerId).RecoveryConfiguration(RecoveryConfiguration.Create().Topology(true)).Build());
@@ -25,11 +33,11 @@ namespace Tests.Rpc
             int messagesReceived = 0;
             IRpcServer rpcServer = await connection.RpcServerBuilder()
                 .RequestQueue(rpcRequestQueueName)
-                .Handler(async (context, message) =>
+                .Handler((context, message) =>
                 {
                     Interlocked.Increment(ref messagesReceived);
                     var reply = context.Message("pong");
-                    return await Task.FromResult(reply);
+                    return Task.FromResult(reply);
                 })
                 .BuildAsync();
 
@@ -54,9 +62,13 @@ namespace Tests.Rpc
                     messagesConfirmed++;
                     Assert.Equal("pong", response.Body());
                 }
+                catch (AmqpNotOpenException)
+                {
+                    await Task.Delay(700);
+                }
                 catch (Exception e)
                 {
-                    testOutputHelper.WriteLine($"Error sending message: {e.Message}");
+                    _testOutputHelper.WriteLine($"[ERROR] unexpected exception while sending message: {e.Message}");
                     await Task.Delay(700);
                 }
 

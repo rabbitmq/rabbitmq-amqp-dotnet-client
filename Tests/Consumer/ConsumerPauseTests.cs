@@ -13,11 +13,15 @@ using Xunit.Abstractions;
 
 namespace Tests.Consumer;
 
-public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper), IDisposable
+public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
 {
     private readonly HttpApiClient _httpApiClient = new();
 
-    public void Dispose() => _httpApiClient.Dispose();
+    public override Task DisposeAsync()
+    {
+        _httpApiClient.Dispose();
+        return base.DisposeAsync();
+    }
 
     [Fact]
     public async Task PauseShouldStopMessageArrivalUnpauseShouldResumeIt()

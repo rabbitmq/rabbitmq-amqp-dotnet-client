@@ -51,14 +51,18 @@ public abstract class IntegrationTest : IAsyncLifetime
     {
         _testOutputHelper = testOutputHelper;
         _setupConnectionAndManagement = setupConnectionAndManagement;
-        _queueName = $"{_testDisplayName}-queue-{Now}";
-        _exchangeName = $"{_testDisplayName}-exchange-{Now}";
 
         _testDisplayName = InitTestDisplayName();
+
+        _queueName = $"{_testDisplayName}-queue-{Now}";
+        _exchangeName = $"{_testDisplayName}-exchange-{Now}";
         _containerId = $"{_testDisplayName}:{Now}";
 
-        // TODO only if verbose
-        // testOutputHelper.WriteLine($"Running test: {_testDisplayName}");
+        if (SystemUtils.IsVerbose)
+        {
+            _testOutputHelper.WriteLine("{0} [DEBUG] [START] {1}", DateTime.Now, _testDisplayName);
+        }
+
         _connectionSettingBuilder = InitConnectionSettingsBuilder();
     }
 
@@ -93,8 +97,11 @@ public abstract class IntegrationTest : IAsyncLifetime
 
     public virtual async Task DisposeAsync()
     {
-        // TODO only if verbose
-        // _testOutputHelper.WriteLine($"Disposing test: {_testDisplayName}");
+        if (SystemUtils.IsVerbose)
+        {
+            _testOutputHelper.WriteLine("{0} [DEBUG] [START DISPOSE] {1}", DateTime.Now, _testDisplayName);
+        }
+
         if (_management is not null && _management.State == State.Open)
         {
             try
@@ -125,6 +132,11 @@ public abstract class IntegrationTest : IAsyncLifetime
             await _connection.CloseAsync();
             Assert.Equal(State.Closed, _connection.State);
             _connection.Dispose();
+        }
+
+        if (SystemUtils.IsVerbose)
+        {
+            _testOutputHelper.WriteLine("{0} [DEBUG] [END DISPOSE] {1}", DateTime.Now, _testDisplayName);
         }
     }
 

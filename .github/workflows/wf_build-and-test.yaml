@@ -35,9 +35,16 @@ jobs:
         run: ${{ github.workspace }}\.ci\windows\gha-setup.ps1
       - name: Test
         timeout-minutes: 25
+        # --diag ${{ github.workspace}}\diag
         run: dotnet test ${{ github.workspace }}\Build.csproj --no-restore --no-build --logger 'console;verbosity=detailed'
       - name: Check for errors in RabbitMQ logs
         run: ${{ github.workspace }}\.ci\windows\gha-log-check.ps1
+      # - name: Upload dotnet test diag logs (on failure)
+      #   if: failure()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: dotnet-test-diag-win32
+      #     path: ${{ github.workspace }}/diag/
       - name: Maybe upload RabbitMQ logs
         if: failure()
         uses: actions/upload-artifact@v4
@@ -48,12 +55,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup dotnet
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: |
-            6.0.x
-            8.0.x
       - name: Build (Debug)
         run: dotnet build ${{ github.workspace }}/Build.csproj
       - name: Verify
@@ -63,12 +64,19 @@ jobs:
         run: ${{ github.workspace }}/.ci/ubuntu/cluster/gha-setup.sh
       - name: Test
         timeout-minutes: 25
+        # --diag ${{ github.workspace}}/diag
         run: dotnet test ${{ github.workspace }}/Build.csproj --no-restore --no-build --logger "console;verbosity=detailed"
       - name: Check for errors in RabbitMQ logs
         run: ${{ github.workspace}}/.ci/ubuntu/cluster/gha-logs.sh check
       - name: Collect RabbitMQ logs (on failure)
         if: failure()
         run: ${{ github.workspace}}/.ci/ubuntu/cluster/gha-logs.sh
+      # - name: Upload dotnet test diag logs (on failure)
+      #   if: failure()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: dotnet-test-diag-ubuntu
+      #     path: ${{ github.workspace }}/diag/
       - name: Upload RabbitMQ logs (on failure)
         if: failure()
         uses: actions/upload-artifact@v4
