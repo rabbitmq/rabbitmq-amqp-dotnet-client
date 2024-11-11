@@ -82,7 +82,7 @@ public class PublisherMetricsTests(ITestOutputHelper testOutputHelper) : Integra
             new(_meterFactory, "RabbitMQ.Amqp", "messaging.client.sent.messages");
         MetricCollector<double> clientSendDurationCollector =
             new(_meterFactory, "RabbitMQ.Amqp", "messaging.client.operation.duration");
-        
+
         IMessage message = new AmqpMessage(Encoding.ASCII.GetBytes("hello"));
 
         IExchangeSpecification exchangeSpecification = _management.Exchange(_exchangeName).Type(ExchangeType.FANOUT);

@@ -35,7 +35,7 @@ public abstract class IntegrationTest : IAsyncLifetime
     protected IManagement? _management;
     protected IMetricsReporter? _metricsReporter;
 #if NET8_0_OR_GREATER
-          protected IMeterFactory?  _meterFactory;
+    protected IMeterFactory? _meterFactory;
 #endif
     protected string _queueName;
     protected string _exchangeName;
@@ -73,7 +73,7 @@ public abstract class IntegrationTest : IAsyncLifetime
 #if NET8_0_OR_GREATER
             var serviceProvider = new ServiceCollection()
                 .AddMetrics()
-                .AddSingleton<IMetricsReporter,MetricsReporter>()
+                .AddSingleton<IMetricsReporter, MetricsReporter>()
                 .BuildServiceProvider();
             _metricsReporter = serviceProvider.GetRequiredService<IMetricsReporter>();
             _meterFactory = serviceProvider.GetRequiredService<IMeterFactory>();
