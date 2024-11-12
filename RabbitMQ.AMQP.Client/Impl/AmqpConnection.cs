@@ -35,7 +35,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly RecordingTopologyListener _recordingTopologyListener = new();
 
         internal readonly IConnectionSettings _connectionSettings;
-        private readonly IMetricsReporter _metricsReporter;
+        private readonly IMetricsReporter? _metricsReporter;
         internal readonly AmqpSessionManagement _nativePubSubSessions;
 
         private readonly Dictionary<string, object> _connectionProperties = new();
@@ -145,7 +145,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public static async Task<IConnection> CreateAsync(IConnectionSettings connectionSettings,
             IMetricsReporter? metricsReporter = default)
         {
-            var connection = new AmqpConnection(connectionSettings, metricsReporter ?? new NoOpMetricsReporter());
+            var connection = new AmqpConnection(connectionSettings, metricsReporter);
             await connection.OpenAsync()
                 .ConfigureAwait(false);
             return connection;
@@ -270,7 +270,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-        private AmqpConnection(IConnectionSettings connectionSettings, IMetricsReporter metricsReporter)
+        private AmqpConnection(IConnectionSettings connectionSettings, IMetricsReporter? metricsReporter)
         {
             _connectionSettings = connectionSettings;
             _metricsReporter = metricsReporter;

@@ -31,13 +31,13 @@ namespace RabbitMQ.AMQP.Client.Impl
     public class AmqpConsumerBuilder : IConsumerBuilder
     {
         private readonly ConsumerConfiguration _configuration = new();
-        private readonly IMetricsReporter _metricsReporter;
         private readonly AmqpConnection _amqpConnection;
+        private readonly IMetricsReporter? _metricsReporter;
 
-        public AmqpConsumerBuilder(AmqpConnection connection, IMetricsReporter metricsReporter)
+        public AmqpConsumerBuilder(AmqpConnection connection, IMetricsReporter? metricsReporter)
         {
-            _metricsReporter = metricsReporter;
             _amqpConnection = connection;
+            _metricsReporter = metricsReporter;
         }
 
         public IConsumerBuilder Queue(IQueueSpecification queueSpec)

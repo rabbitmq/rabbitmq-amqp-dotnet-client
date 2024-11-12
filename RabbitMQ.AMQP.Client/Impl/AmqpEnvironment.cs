@@ -23,11 +23,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             _metricsReporter = metricsReporter;
         }
 
-        public static Task<IEnvironment> CreateAsync(IConnectionSettings connectionSettings,
-            IMetricsReporter? metricsReporter = default)
+        public static IEnvironment Create(IConnectionSettings connectionSettings, IMetricsReporter? metricsReporter = default)
         {
-            return Task.FromResult<IEnvironment>(new AmqpEnvironment(connectionSettings,
-                metricsReporter ?? new NoOpMetricsReporter()));
+            return new AmqpEnvironment(connectionSettings, metricsReporter);
         }
 
         public async Task<IConnection> CreateConnectionAsync(IConnectionSettings connectionSettings)

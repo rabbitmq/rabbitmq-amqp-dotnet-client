@@ -16,20 +16,17 @@ namespace RabbitMQ.AMQP.Client.Impl
     public class AmqpPublisher : AbstractReconnectLifeCycle, IPublisher
     {
         private readonly AmqpConnection _connection;
-        private readonly TimeSpan _timeout;
         private readonly string? _address;
-        private readonly IMetricsReporter _metricsReporter;
+        private readonly IMetricsReporter? _metricsReporter;
         private readonly Guid _id = Guid.NewGuid();
 
         private SenderLink? _senderLink = null;
 
-        public AmqpPublisher(AmqpConnection connection, string? address, IMetricsReporter metricsReporter,
-            TimeSpan timeout)
+        public AmqpPublisher(AmqpConnection connection, string? address, IMetricsReporter? metricsReporter)
         {
             _connection = connection;
             _address = address;
             _metricsReporter = metricsReporter;
-            _timeout = timeout;
             _connection.AddPublisher(_id, this);
         }
 
@@ -180,14 +177,14 @@ namespace RabbitMQ.AMQP.Client.Impl
                     .ConfigureAwait(false);
 
                 stopwatch.Stop();
-                _metricsReporter.ReportMessageSendSuccess(context, stopwatch.Elapsed);
+                _metricsReporter?.ReportMessageSendSuccess(context, stopwatch.Elapsed);
 
                 return new PublishResult(message, publishOutcome);
             }
             catch (AmqpException ex)
             {
                 stopwatch.Stop();
-                _metricsReporter.ReportMessageSendFailure(context, stopwatch.Elapsed, ex);
+                _metricsReporter?.ReportMessageSendFailure(context, stopwatch.Elapsed, ex);
                 var publishOutcome = new PublishOutcome(OutcomeState.Rejected, Utils.ConvertError(ex.Error));
                 return new PublishResult(message, publishOutcome);
             }

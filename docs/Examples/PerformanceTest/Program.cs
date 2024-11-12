@@ -24,8 +24,7 @@ Trace.TraceListener = (l, f, a) =>
 Trace.WriteLine(TraceLevel.Information, "Starting performance test...");
 const string containerId = "performance-test-connection";
 
-IEnvironment environment = await AmqpEnvironment
-    .CreateAsync(ConnectionSettingBuilder.Create().ContainerId(containerId).Build()).ConfigureAwait(false);
+IEnvironment environment = AmqpEnvironment.Create(ConnectionSettingBuilder.Create().ContainerId(containerId).Build());
 
 IConnection connection = await environment.CreateConnectionAsync().ConfigureAwait(false);
 

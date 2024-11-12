@@ -37,8 +37,7 @@ Task printStats = Task.Run(() =>
 Trace.WriteLine(TraceLevel.Information, "Starting");
 const string containerId = "HA-Client-Connection";
 
-IEnvironment environment = await AmqpEnvironment
-    .CreateAsync(ConnectionSettingBuilder.Create().ContainerId(containerId).Build()).ConfigureAwait(false);
+IEnvironment environment = AmqpEnvironment.Create(ConnectionSettingBuilder.Create().ContainerId(containerId).Build());
 
 IConnection connection = await environment.CreateConnectionAsync().ConfigureAwait(false);
 

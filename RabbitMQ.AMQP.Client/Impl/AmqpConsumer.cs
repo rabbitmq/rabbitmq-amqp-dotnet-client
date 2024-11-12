@@ -31,9 +31,9 @@ namespace RabbitMQ.AMQP.Client.Impl
         private PauseStatus _pauseStatus = PauseStatus.UNPAUSED;
         private readonly UnsettledMessageCounter _unsettledMessageCounter = new();
         private readonly ConsumerConfiguration _configuration;
-        private readonly IMetricsReporter _metricsReporter;
+        private readonly IMetricsReporter? _metricsReporter;
 
-        internal AmqpConsumer(AmqpConnection amqpConnection, ConsumerConfiguration configuration, IMetricsReporter metricsReporter)
+        internal AmqpConsumer(AmqpConnection amqpConnection, ConsumerConfiguration configuration, IMetricsReporter? metricsReporter)
         {
             _amqpConnection = amqpConnection;
             _configuration = configuration;
@@ -156,7 +156,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                     }
 
                     stopwatch.Stop();
-                    _metricsReporter.ReportMessageDeliverSuccess(consumerContext, stopwatch.Elapsed);
+                    _metricsReporter?.ReportMessageDeliverSuccess(consumerContext, stopwatch.Elapsed);
                     _unsettledMessageCounter.Increment();
 
                     IContext context = new DeliveryContext(_receiverLink, nativeMessage, _unsettledMessageCounter);
