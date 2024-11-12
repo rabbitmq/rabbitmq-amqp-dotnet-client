@@ -135,10 +135,15 @@ namespace RabbitMQ.AMQP.Client.Impl
                     return;
                 }
 
-                Stopwatch stopwatch = new();
+                Stopwatch? stopwatch = null;
+                if (_metricsReporter is not null)
+                {
+                    stopwatch = new();
+                }
+
                 while (_receiverLink is { LinkState: LinkState.Attached })
                 {
-                    stopwatch.Restart();
+                    stopwatch?.Restart();
 
                     // TODO the timeout waiting for messages should be configurable
                     TimeSpan timeout = TimeSpan.FromSeconds(60);
@@ -155,8 +160,12 @@ namespace RabbitMQ.AMQP.Client.Impl
                         continue;
                     }
 
-                    stopwatch.Stop();
-                    _metricsReporter?.ReportMessageDeliverSuccess(consumerContext, stopwatch.Elapsed);
+                    if (_metricsReporter is not null && stopwatch is not null)
+                    {
+                        stopwatch.Stop();
+                        _metricsReporter.ReportMessageDeliverSuccess(consumerContext, stopwatch.Elapsed);
+                    }
+
                     _unsettledMessageCounter.Increment();
 
                     IContext context = new DeliveryContext(_receiverLink, nativeMessage, _unsettledMessageCounter);

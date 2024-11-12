@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Net.Security;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
@@ -55,6 +56,10 @@ public class TlsConnectionTests : IntegrationTest
         Assert.True(connectionSettings.UseSsl);
         Assert.NotNull(connectionSettings.TlsSettings);
 
+#if NETFRAMEWORK
+        connectionSettings.TlsSettings.Protocols = SslProtocols.Tls12;
+#endif
+
         if (_isRunningInCI)
         {
             /*
@@ -98,7 +103,12 @@ public class TlsConnectionTests : IntegrationTest
 
         Assert.True(connectionSettings.UseSsl);
         Assert.NotNull(connectionSettings.TlsSettings);
+
         connectionSettings.TlsSettings.ClientCertificates.Add(cert);
+#if NETFRAMEWORK
+        connectionSettings.TlsSettings.Protocols = SslProtocols.Tls12;
+#endif
+
 
         if (_isRunningInCI)
         {

@@ -115,8 +115,14 @@ namespace RabbitMQ.AMQP.Client.Impl
             IMetricsReporter.PublisherContext context =
                 new(_address, _connection._connectionSettings.Host,
                     _connection._connectionSettings.Port);
-            Stopwatch stopwatch = new();
-            stopwatch.Start();
+
+            Stopwatch? stopwatch = null;
+            if (_metricsReporter is not null)
+            {
+                stopwatch = new();
+                stopwatch.Start();
+            }
+
             try
             {
                 TaskCompletionSource<PublishOutcome> messagePublishedTcs =
@@ -176,15 +182,21 @@ namespace RabbitMQ.AMQP.Client.Impl
                 PublishOutcome publishOutcome = await messagePublishedTcs.Task.WaitAsync(TimeSpan.FromSeconds(5))
                     .ConfigureAwait(false);
 
-                stopwatch.Stop();
-                _metricsReporter?.ReportMessageSendSuccess(context, stopwatch.Elapsed);
+                if (_metricsReporter is not null && stopwatch is not null)
+                {
+                    stopwatch.Stop();
+                    _metricsReporter.ReportMessageSendSuccess(context, stopwatch.Elapsed);
+                }
 
                 return new PublishResult(message, publishOutcome);
             }
             catch (AmqpException ex)
             {
-                stopwatch.Stop();
-                _metricsReporter?.ReportMessageSendFailure(context, stopwatch.Elapsed, ex);
+                if (_metricsReporter is not null && stopwatch is not null)
+                {
+                    stopwatch.Stop();
+                    _metricsReporter?.ReportMessageSendFailure(context, stopwatch.Elapsed, ex);
+                }
                 var publishOutcome = new PublishOutcome(OutcomeState.Rejected, Utils.ConvertError(ex.Error));
                 return new PublishResult(message, publishOutcome);
             }
