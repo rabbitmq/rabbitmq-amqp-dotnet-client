@@ -248,9 +248,9 @@ RabbitMQ.AMQP.Client.IMetricsReporter.PublisherContext.Destination.get -> string
 RabbitMQ.AMQP.Client.IMetricsReporter.PublisherContext.PublisherContext(string? destination, string! serverAddress, int serverPort) -> void
 RabbitMQ.AMQP.Client.IMetricsReporter.PublisherContext.ServerAddress.get -> string!
 RabbitMQ.AMQP.Client.IMetricsReporter.PublisherContext.ServerPort.get -> int
-RabbitMQ.AMQP.Client.IMetricsReporter.ReportMessageDeliverSuccess(RabbitMQ.AMQP.Client.IMetricsReporter.ConsumerContext! context, long startTimestamp) -> void
-RabbitMQ.AMQP.Client.IMetricsReporter.ReportMessageSendFailure(RabbitMQ.AMQP.Client.IMetricsReporter.PublisherContext! context, long startTimestamp, Amqp.AmqpException! amqpException) -> void
-RabbitMQ.AMQP.Client.IMetricsReporter.ReportMessageSendSuccess(RabbitMQ.AMQP.Client.IMetricsReporter.PublisherContext! context, long startTimestamp) -> void
+RabbitMQ.AMQP.Client.IMetricsReporter.ReportMessageDeliverSuccess(RabbitMQ.AMQP.Client.IMetricsReporter.ConsumerContext! context, System.TimeSpan elapsed) -> void
+RabbitMQ.AMQP.Client.IMetricsReporter.ReportMessageSendFailure(RabbitMQ.AMQP.Client.IMetricsReporter.PublisherContext! context, System.TimeSpan elapsed, Amqp.AmqpException! amqpException) -> void
+RabbitMQ.AMQP.Client.IMetricsReporter.ReportMessageSendSuccess(RabbitMQ.AMQP.Client.IMetricsReporter.PublisherContext! context, System.TimeSpan elapsed) -> void
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.AbstractLifeCycle() -> void
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.ChangeState -> RabbitMQ.AMQP.Client.LifeCycleCallBack?

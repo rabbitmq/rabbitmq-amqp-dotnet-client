@@ -127,7 +127,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                 _amqpConnection._connectionSettings.Host,
                 _amqpConnection._connectionSettings.Port);
 
-            long startTimestamp = 0;
             try
             {
                 if (_receiverLink is null)
@@ -136,12 +135,16 @@ namespace RabbitMQ.AMQP.Client.Impl
                     return;
                 }
 
+                Stopwatch stopwatch = new();
                 while (_receiverLink is { LinkState: LinkState.Attached })
                 {
-                    startTimestamp = Stopwatch.GetTimestamp();
+                    stopwatch.Restart();
+
                     // TODO the timeout waiting for messages should be configurable
                     TimeSpan timeout = TimeSpan.FromSeconds(60);
-                    Message? nativeMessage = await _receiverLink.ReceiveAsync(timeout).ConfigureAwait(false);
+                    Message? nativeMessage = await _receiverLink.ReceiveAsync(timeout)
+                        .ConfigureAwait(false);
+
                     if (nativeMessage is null)
                     {
                         // this is not a problem, it is just a timeout. 
@@ -152,7 +155,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                         continue;
                     }
 
-                    _metricsReporter.ReportMessageDeliverSuccess(consumerContext, startTimestamp);
+                    stopwatch.Stop();
+                    _metricsReporter.ReportMessageDeliverSuccess(consumerContext, stopwatch.Elapsed);
                     _unsettledMessageCounter.Increment();
 
                     IContext context = new DeliveryContext(_receiverLink, nativeMessage, _unsettledMessageCounter);
@@ -163,7 +167,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                     if (_configuration.Handler != null)
                     {
-                        await _configuration.Handler(context, amqpMessage).ConfigureAwait(false);
+                        await _configuration.Handler(context, amqpMessage)
+                            .ConfigureAwait(false);
                     }
 
                 }

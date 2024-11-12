@@ -1,7 +1,9 @@
-#if NET8_0_OR_GREATER
+// This source code is dual-licensed under the Apache License, version
+// 2.0, and the Mozilla Public License, version 2.0.
+// Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using Amqp;
 
@@ -72,7 +74,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 "Duration of processing operation. ");
         }
 
-        public void ReportMessageSendSuccess(IMetricsReporter.PublisherContext context, long startTimestamp)
+        public void ReportMessageSendSuccess(IMetricsReporter.PublisherContext context, TimeSpan elapsed)
         {
             var serverAddress = new KeyValuePair<string, object?>(ServerAddress, context.ServerAddress);
             var serverPort = new KeyValuePair<string, object?>(ServerPort, context.ServerPort);
@@ -80,15 +82,15 @@ namespace RabbitMQ.AMQP.Client.Impl
 
             _messagingClientSentMessages.Add(1, serverAddress, serverPort, destination, _messagingOperationSystemTag,
                 _sendOperationType, _publishOperationName);
-            if (startTimestamp > 0)
+
+            if (elapsed != default)
             {
-                var duration = Stopwatch.GetElapsedTime(startTimestamp);
-                _messagingClientOperationDuration.Record(duration.TotalSeconds, serverAddress, serverPort, destination,
+                _messagingClientOperationDuration.Record(elapsed.TotalMilliseconds, serverAddress, serverPort, destination,
                     _messagingOperationSystemTag, _sendOperationType, _publishOperationName);
             }
         }
 
-        public void ReportMessageSendFailure(IMetricsReporter.PublisherContext context, long startTimestamp,
+        public void ReportMessageSendFailure(IMetricsReporter.PublisherContext context, TimeSpan elapsed,
             AmqpException amqpException)
         {
             var errorType = new KeyValuePair<string, object?>(ErrorType, amqpException.Error.Condition.ToString() ?? DefaultErrorValue);
@@ -98,33 +100,30 @@ namespace RabbitMQ.AMQP.Client.Impl
             _messagingClientSentMessages.Add(1, errorType, serverAddress, serverPort, destination,
                 _messagingOperationSystemTag, _sendOperationType, _publishOperationName);
 
-            if (startTimestamp > 0)
+            if (elapsed != default)
             {
-                var duration = Stopwatch.GetElapsedTime(startTimestamp);
-                _messagingClientOperationDuration.Record(duration.TotalSeconds, errorType, serverAddress, serverPort,
+                _messagingClientOperationDuration.Record(elapsed.TotalMilliseconds, errorType, serverAddress, serverPort,
                     destination,
                     _messagingOperationSystemTag, _sendOperationType, _publishOperationName);
             }
         }
 
-        public void ReportMessageDeliverSuccess(IMetricsReporter.ConsumerContext context, long startTimestamp)
+        public void ReportMessageDeliverSuccess(IMetricsReporter.ConsumerContext context, TimeSpan elapsed)
         {
             var serverAddress = new KeyValuePair<string, object?>(ServerAddress, context.ServerAddress);
             var serverPort = new KeyValuePair<string, object?>(ServerPort, context.ServerPort);
             var destination = new KeyValuePair<string, object?>(MessageDestinationName, context.Destination);
+
             _messagingClientConsumedMessages.Add(1, serverAddress, serverPort, destination,
                 _messagingOperationSystemTag,
                 _processOperationType, _deliverOperationName);
-            if (startTimestamp <= 0)
-            {
-                return;
-            }
 
-            var duration = Stopwatch.GetElapsedTime(startTimestamp);
-            _messagingProcessDuration.Record(duration.TotalSeconds, serverAddress, serverPort,
-                destination,
-                _messagingOperationSystemTag, _processOperationType, _deliverOperationName);
+            if (elapsed != default)
+            {
+                _messagingProcessDuration.Record(elapsed.TotalMilliseconds, serverAddress, serverPort,
+                    destination,
+                    _messagingOperationSystemTag, _processOperationType, _deliverOperationName);
+            }
         }
     }
 }
-#endif

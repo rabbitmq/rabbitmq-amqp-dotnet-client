@@ -5,6 +5,7 @@
   <ItemGroup>
     <!-- RabbitMQ.Amqp.Client -->
     <PackageVersion Include="AMQPNetLite.Core" Version="2.4.11" />
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
     <!-- HAClient -->
     <PackageVersion Include="DotNext.Threading" Version="5.15.0" />
     <!-- Tests -->
@@ -24,11 +25,7 @@
       * https://github.com/rabbitmq/rabbitmq-dotnet-client/pull/1481#pullrequestreview-1847905299
       * https://github.com/rabbitmq/rabbitmq-dotnet-client/pull/1594
     -->
-    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="6.0.0" />
     <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)'=='net8.0'">
-    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)'=='.NETFramework'">
     <GlobalPackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" />
