@@ -109,7 +109,6 @@ public class TlsConnectionTests : IntegrationTest
         connectionSettings.TlsSettings.Protocols = SslProtocols.Tls12;
 #endif
 
-
         if (_isRunningInCI)
         {
             /*
