@@ -43,7 +43,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         private const string MessagingSystemValue = "rabbitmq";
 
         private const string DefaultErrorValue = "_OTHER";
-        
+
         private const string Version = "0.1.0";
 
         public const string MeterName = "RabbitMQ.Amqp";
