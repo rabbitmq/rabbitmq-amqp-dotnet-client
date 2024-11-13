@@ -5,6 +5,8 @@
   <ItemGroup>
     <!-- RabbitMQ.Amqp.Client -->
     <PackageVersion Include="AMQPNetLite.Core" Version="2.4.11" />
+    <PackageVersion Include="OpenTelemetry" Version="1.10.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.10.0" />
     <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
     <!-- HAClient -->
     <PackageVersion Include="DotNext.Threading" Version="5.15.0" />

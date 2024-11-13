@@ -7,6 +7,7 @@ const RabbitMQ.AMQP.Client.Impl.Consts.Exchanges = "exchanges" -> string!
 const RabbitMQ.AMQP.Client.Impl.Consts.Key = "key" -> string!
 const RabbitMQ.AMQP.Client.Impl.Consts.Messages = "messages" -> string!
 const RabbitMQ.AMQP.Client.Impl.Consts.Queues = "queues" -> string!
+const RabbitMQ.AMQP.Client.Impl.MetricsReporter.MeterName = "RabbitMQ.Amqp" -> string!
 override RabbitMQ.AMQP.Client.Error.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.AmqpConnection.CloseAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpConnection.OpenAsync() -> System.Threading.Tasks.Task!
@@ -531,6 +532,11 @@ RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions.ListenerStreamOptions(Amqp.Types
 RabbitMQ.AMQP.Client.Impl.MessageAddressBuilder
 RabbitMQ.AMQP.Client.Impl.MessageAddressBuilder.Build() -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.Impl.MessageAddressBuilder.MessageAddressBuilder(RabbitMQ.AMQP.Client.IMessage! message) -> void
+RabbitMQ.AMQP.Client.Impl.MetricsReporter
+RabbitMQ.AMQP.Client.Impl.MetricsReporter.MetricsReporter(System.Diagnostics.Metrics.IMeterFactory! meterFactory) -> void
+RabbitMQ.AMQP.Client.Impl.MetricsReporter.ReportMessageDeliverSuccess(RabbitMQ.AMQP.Client.IMetricsReporter.ConsumerContext! context, System.TimeSpan elapsed) -> void
+RabbitMQ.AMQP.Client.Impl.MetricsReporter.ReportMessageSendFailure(RabbitMQ.AMQP.Client.IMetricsReporter.PublisherContext! context, System.TimeSpan elapsed, Amqp.AmqpException! amqpException) -> void
+RabbitMQ.AMQP.Client.Impl.MetricsReporter.ReportMessageSendSuccess(RabbitMQ.AMQP.Client.IMetricsReporter.PublisherContext! context, System.TimeSpan elapsed) -> void
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.Activated(bool activated) -> RabbitMQ.AMQP.Client.IRecoveryConfiguration!
 RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.BackOffDelayPolicy(RabbitMQ.AMQP.Client.IBackOffDelayPolicy! backOffDelayPolicy) -> RabbitMQ.AMQP.Client.IRecoveryConfiguration!

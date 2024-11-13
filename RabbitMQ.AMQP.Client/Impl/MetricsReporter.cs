@@ -11,10 +11,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 {
     // .NET docs on metric instrumentation: https://learn.microsoft.com/en-us/dotnet/core/diagnostics/metrics-instrumentation
     // OpenTelemetry semantic conventions for messaging metric: https://opentelemetry.io/docs/specs/semconv/messaging/messaging-metrics
-    internal sealed class MetricsReporter : IMetricsReporter
+    public sealed class MetricsReporter : IMetricsReporter
     {
-        const string Version = "0.1.0";
-
         readonly Counter<int> _messagingClientSentMessages;
         readonly Histogram<double> _messagingClientOperationDuration;
 
@@ -45,9 +43,14 @@ namespace RabbitMQ.AMQP.Client.Impl
         private const string MessagingSystemValue = "rabbitmq";
 
         private const string DefaultErrorValue = "_OTHER";
+        
+        private const string Version = "0.1.0";
+
+        public const string MeterName = "RabbitMQ.Amqp";
+
         public MetricsReporter(IMeterFactory meterFactory)
         {
-            Meter meter = meterFactory.Create("RabbitMQ.Amqp", Version);
+            Meter meter = meterFactory.Create(MeterName, Version);
 
             _messagingClientSentMessages = meter.CreateCounter<int>(
                 "messaging.client.sent.messages",
