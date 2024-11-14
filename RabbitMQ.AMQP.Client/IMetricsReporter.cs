@@ -9,29 +9,15 @@ namespace RabbitMQ.AMQP.Client
 {
     public interface IMetricsReporter
     {
-        void ReportMessageSendSuccess(PublisherContext context, TimeSpan elapsed);
+        void ReportMessageSendSuccess(Context context, TimeSpan elapsed);
 
-        void ReportMessageSendFailure(PublisherContext context, TimeSpan elapsed, AmqpException amqpException);
+        void ReportMessageSendFailure(Context context, TimeSpan elapsed, AmqpException amqpException);
 
-        void ReportMessageDeliverSuccess(ConsumerContext context, TimeSpan elapsed);
+        void ReportMessageDeliverSuccess(Context context, TimeSpan elapsed);
 
-        sealed class ConsumerContext
+        sealed class Context
         {
-            public ConsumerContext(string? destination, string serverAddress, int serverPort)
-            {
-                Destination = destination;
-                ServerAddress = serverAddress;
-                ServerPort = serverPort;
-            }
-
-            public string? Destination { get; }
-            public string ServerAddress { get; }
-            public int ServerPort { get; }
-        }
-
-        sealed class PublisherContext
-        {
-            public PublisherContext(string? destination, string serverAddress, int serverPort)
+            public Context(string? destination, string serverAddress, int serverPort)
             {
                 Destination = destination;
                 ServerAddress = serverAddress;

@@ -77,7 +77,7 @@ namespace RabbitMQ.AMQP.Client
                 "Duration of processing operation. ");
         }
 
-        public void ReportMessageSendSuccess(IMetricsReporter.PublisherContext context, TimeSpan elapsed)
+        public void ReportMessageSendSuccess(IMetricsReporter.Context context, TimeSpan elapsed)
         {
             var serverAddress = new KeyValuePair<string, object?>(ServerAddress, context.ServerAddress);
             var serverPort = new KeyValuePair<string, object?>(ServerPort, context.ServerPort);
@@ -93,7 +93,7 @@ namespace RabbitMQ.AMQP.Client
             }
         }
 
-        public void ReportMessageSendFailure(IMetricsReporter.PublisherContext context, TimeSpan elapsed,
+        public void ReportMessageSendFailure(IMetricsReporter.Context context, TimeSpan elapsed,
             AmqpException amqpException)
         {
             var errorType = new KeyValuePair<string, object?>(ErrorType, amqpException.Error.Condition.ToString() ?? DefaultErrorValue);
@@ -111,7 +111,7 @@ namespace RabbitMQ.AMQP.Client
             }
         }
 
-        public void ReportMessageDeliverSuccess(IMetricsReporter.ConsumerContext context, TimeSpan elapsed)
+        public void ReportMessageDeliverSuccess(IMetricsReporter.Context context, TimeSpan elapsed)
         {
             var serverAddress = new KeyValuePair<string, object?>(ServerAddress, context.ServerAddress);
             var serverPort = new KeyValuePair<string, object?>(ServerPort, context.ServerPort);

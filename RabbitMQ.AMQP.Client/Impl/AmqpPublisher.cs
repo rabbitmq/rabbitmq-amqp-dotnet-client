@@ -112,7 +112,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                     "_senderLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
 
-            IMetricsReporter.PublisherContext context =
+            IMetricsReporter.Context context =
                 new(_address, _connection._connectionSettings.Host,
                     _connection._connectionSettings.Port);
 

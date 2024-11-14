@@ -123,7 +123,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private async Task ProcessMessages()
         {
-            IMetricsReporter.ConsumerContext consumerContext = new(_configuration.Address,
+            IMetricsReporter.Context consumerContext = new(_configuration.Address,
                 _amqpConnection._connectionSettings.Host,
                 _amqpConnection._connectionSettings.Port);
 
