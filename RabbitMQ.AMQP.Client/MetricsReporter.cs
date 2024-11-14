@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using Amqp;
 
-namespace RabbitMQ.AMQP.Client.Impl
+namespace RabbitMQ.AMQP.Client
 {
     // .NET docs on metric instrumentation: https://learn.microsoft.com/en-us/dotnet/core/diagnostics/metrics-instrumentation
     // OpenTelemetry semantic conventions for messaging metric: https://opentelemetry.io/docs/specs/semconv/messaging/messaging-metrics

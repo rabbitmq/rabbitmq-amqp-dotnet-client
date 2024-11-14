@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.35013.160
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMQ.AMQP.Client", "RabbitMQ.AMQP.Client/RabbitMQ.AMQP.Client.csproj", "{25FDE562-7B19-422E-A928-C34EC1A5A926}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMQ.AMQP.Client", "RabbitMQ.AMQP.Client\RabbitMQ.AMQP.Client.csproj", "{25FDE562-7B19-422E-A928-C34EC1A5A926}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests/Tests.csproj", "{A10086DA-3583-4590-BE86-43EAE3852FB4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{A10086DA-3583-4590-BE86-43EAE3852FB4}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GettingStarted", "docs/Examples/GettingStarted/GettingStarted.csproj", "{C0160E0C-C82F-411F-8CFC-D6B53DCF4400}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GettingStarted", "docs\Examples\GettingStarted\GettingStarted.csproj", "{C0160E0C-C82F-411F-8CFC-D6B53DCF4400}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9A316218-49D6-42B4-A64C-8B52AD8C9E4F}"
 	ProjectSection(SolutionItems) = preProject
@@ -23,13 +23,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerformanceTest", "docs/Examples/PerformanceTest/PerformanceTest.csproj", "{F9D06630-0B10-41A7-84CB-81FA948CCE54}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerformanceTest", "docs\Examples\PerformanceTest\PerformanceTest.csproj", "{F9D06630-0B10-41A7-84CB-81FA948CCE54}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HAClient", "docs/Examples/HAClient/HAClient.csproj", "{E2FBE920-8DAB-4B52-87AF-B781BF715A5A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HAClient", "docs\Examples\HAClient\HAClient.csproj", "{E2FBE920-8DAB-4B52-87AF-B781BF715A5A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rpc", "docs\Examples\Rpc\Rpc.csproj", "{59CB2F07-4A5A-4871-8C97-02EC21C68D6B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rpc", "docs\Examples\Rpc\Rpc.csproj", "{59CB2F07-4A5A-4871-8C97-02EC21C68D6B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenTelemetryIntegration", "docs\Examples\OpenTelemetryIntegration\OpenTelemetryIntegration.csproj", "{D74F49FC-2C9A-4227-8988-30925C509388}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenTelemetryIntegration", "docs\Examples\OpenTelemetryIntegration\OpenTelemetryIntegration.csproj", "{D74F49FC-2C9A-4227-8988-30925C509388}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -68,5 +70,12 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C0160E0C-C82F-411F-8CFC-D6B53DCF4400} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
+		{F9D06630-0B10-41A7-84CB-81FA948CCE54} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
+		{E2FBE920-8DAB-4B52-87AF-B781BF715A5A} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
+		{59CB2F07-4A5A-4871-8C97-02EC21C68D6B} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
+		{D74F49FC-2C9A-4227-8988-30925C509388} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 	EndGlobalSection
 EndGlobal

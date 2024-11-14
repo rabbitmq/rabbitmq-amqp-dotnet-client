@@ -17,12 +17,13 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly ConcurrentDictionary<long, IConnection> _connections = new();
         private readonly IMetricsReporter? _metricsReporter;
 
-        private AmqpEnvironment(IConnectionSettings connectionSettings, IMetricsReporter? metricsReporter)
+        private AmqpEnvironment(IConnectionSettings connectionSettings, IMetricsReporter? metricsReporter = default)
         {
             ConnectionSettings = connectionSettings;
             _metricsReporter = metricsReporter;
         }
 
+        // TODO to play nicely with IoC containers, we should not have static Create methods
         public static IEnvironment Create(IConnectionSettings connectionSettings, IMetricsReporter? metricsReporter = default)
         {
             return new AmqpEnvironment(connectionSettings, metricsReporter);

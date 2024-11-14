@@ -142,6 +142,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// <param name="connectionSettings"></param>
         /// <param name="metricsReporter"></param>
         /// <returns></returns>
+        // TODO to play nicely with IoC containers, we should not have static Create methods
         public static async Task<IConnection> CreateAsync(IConnectionSettings connectionSettings,
             IMetricsReporter? metricsReporter = default)
         {
