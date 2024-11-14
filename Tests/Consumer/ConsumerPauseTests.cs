@@ -218,8 +218,6 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
 
         await WhenTcsCompletes(receivedTwiceInitialCreditsTcs);
 
-        consumer.Pause();
-
         DateTime start = DateTime.Now;
         while (consumer.UnsettledMessageCount != 0)
         {

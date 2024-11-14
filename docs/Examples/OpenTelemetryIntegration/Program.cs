@@ -22,7 +22,6 @@ var serviceProvider = new ServiceCollection()
 Sdk.CreateMeterProviderBuilder()
     // Reference the Meter used in the metric reporter in order to get exported
     .AddMeter(MetricsReporter.MeterName)
-    .AddMeter("HatCo.HatStore")
     //in the example we use the console exporter, but you can use any other exporter you want
     .AddConsoleExporter()
     .Build();
