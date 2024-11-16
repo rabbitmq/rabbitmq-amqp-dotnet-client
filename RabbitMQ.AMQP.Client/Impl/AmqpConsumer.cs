@@ -123,10 +123,6 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private async Task ProcessMessages()
         {
-            IMetricsReporter.Context consumerContext = new(_configuration.Address,
-                _amqpConnection._connectionSettings.Host,
-                _amqpConnection._connectionSettings.Port);
-
             try
             {
                 if (_receiverLink is null)
@@ -163,12 +159,13 @@ namespace RabbitMQ.AMQP.Client.Impl
                     if (_metricsReporter is not null && stopwatch is not null)
                     {
                         stopwatch.Stop();
-                        _metricsReporter.ReportMessageDeliverSuccess(consumerContext, stopwatch.Elapsed);
+                        _metricsReporter.Consumed();
                     }
 
                     _unsettledMessageCounter.Increment();
 
-                    IContext context = new DeliveryContext(_receiverLink, nativeMessage, _unsettledMessageCounter);
+                    IContext context = new DeliveryContext(_receiverLink, nativeMessage,
+                        _unsettledMessageCounter, _metricsReporter);
                     var amqpMessage = new AmqpMessage(nativeMessage);
 
                     // TODO catch exceptions thrown by handlers,

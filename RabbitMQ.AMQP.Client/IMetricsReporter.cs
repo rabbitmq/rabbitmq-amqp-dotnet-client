@@ -2,31 +2,37 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-using System;
-using Amqp;
-
 namespace RabbitMQ.AMQP.Client
 {
     public interface IMetricsReporter
     {
-        void ReportMessageSendSuccess(Context context, TimeSpan elapsed);
-
-        void ReportMessageSendFailure(Context context, TimeSpan elapsed, AmqpException amqpException);
-
-        void ReportMessageDeliverSuccess(Context context, TimeSpan elapsed);
-
-        sealed class Context
+        enum PublishDispositionValue
         {
-            public Context(string? destination, string serverAddress, int serverPort)
-            {
-                Destination = destination;
-                ServerAddress = serverAddress;
-                ServerPort = serverPort;
-            }
+            ACCEPTED,
+            REJECTED,
+            RELEASED
+        };
 
-            public string? Destination { get; }
-            public string ServerAddress { get; }
-            public int ServerPort { get; }
-        }
+        enum ConsumeDispositionValue
+        {
+            ACCEPTED,
+            DISCARDED,
+            REQUEUED
+        };
+
+        void ConnectionOpened();
+        void ConnectionClosed();
+
+        void PublisherOpened();
+        void PublisherClosed();
+
+        void ConsumerOpened();
+        void ConsumerClosed();
+
+        void Published();
+        void PublishDisposition(PublishDispositionValue disposition);
+
+        void Consumed();
+        void ConsumeDisposition(ConsumeDispositionValue disposition);
     }
 }

@@ -2,10 +2,8 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.Metrics;
-using Amqp;
+using System.Threading;
 
 namespace RabbitMQ.AMQP.Client
 {
@@ -13,38 +11,28 @@ namespace RabbitMQ.AMQP.Client
     // OpenTelemetry semantic conventions for messaging metric: https://opentelemetry.io/docs/specs/semconv/messaging/messaging-metrics
     public sealed class MetricsReporter : IMetricsReporter
     {
-        readonly Counter<int> _messagingClientSentMessages;
-        readonly Histogram<double> _messagingClientOperationDuration;
+        private int _connectionCount = 0;
+        private readonly Gauge<int> _connections;
 
-        readonly Counter<int> _messagingClientConsumedMessages;
-        readonly Histogram<double> _messagingProcessDuration;
+        private int _publisherCount = 0;
+        private readonly Gauge<int> _publishers;
 
-        readonly KeyValuePair<string, object?>
-            _messagingOperationSystemTag = new(MessagingSystem, MessagingSystemValue);
+        private int _consumerCount = 0;
+        private readonly Gauge<int> _consumers;
 
-        readonly KeyValuePair<string, object?> _publishOperationName = new(MessagingOperationName, PublishOperation);
-        readonly KeyValuePair<string, object?> _sendOperationType = new(MessagingOperationType, SendOperation);
+        private readonly Counter<int> _published;
+        private readonly Counter<int> _publishAccepted;
+        private readonly Counter<int> _publishRejected;
+        private readonly Counter<int> _publishReleased;
 
-        readonly KeyValuePair<string, object?> _deliverOperationName = new(MessagingOperationName, DeliverOperation);
-        readonly KeyValuePair<string, object?> _processOperationType = new(MessagingOperationType, ProcessOperation);
-
-        private const string MessagingOperationName = "messaging.operation.name";
-        private const string MessagingOperationType = "messaging.operation.type";
-        private const string MessagingSystem = "messaging.system";
-        private const string ErrorType = "error.type";
-        private const string MessageDestinationName = "messaging.destination.name";
-        private const string ServerAddress = "server.address";
-        private const string ServerPort = "server.port";
-
-        private const string ProcessOperation = "process";
-        private const string DeliverOperation = "deliver";
-        private const string PublishOperation = "publish";
-        private const string SendOperation = "send";
-        private const string MessagingSystemValue = "rabbitmq";
-
-        private const string DefaultErrorValue = "_OTHER";
+        private readonly Counter<int> _consumed;
+        private readonly Counter<int> _consumeAccepted;
+        private readonly Counter<int> _consumeRequeued;
+        private readonly Counter<int> _consumeDiscarded;
 
         private const string Version = "0.1.0";
+
+        private const string MetricPrefix = "rabbitmq.amqp";
 
         public const string MeterName = "RabbitMQ.Amqp";
 
@@ -52,80 +40,137 @@ namespace RabbitMQ.AMQP.Client
         {
             Meter meter = meterFactory.Create(MeterName, Version);
 
-            _messagingClientSentMessages = meter.CreateCounter<int>(
-                "messaging.client.sent.messages",
-                unit: "{message}",
+            _connections = meter.CreateGauge<int>(
+                MetricPrefix + ".connections",
                 description:
-                "Number of messages producer attempted to send to the broker.");
+                "The total number of connections to the broker in this AMQP environment.");
 
-            _messagingClientOperationDuration = meter.CreateHistogram<double>(
-                "messaging.client.operation.duration",
-                unit: "s",
+            _publishers = meter.CreateGauge<int>(
+                MetricPrefix + ".publishers",
                 description:
-                "Duration of messaging operation initiated by a producer or consumer client.");
+                "The total number of publishers.");
 
-            _messagingClientConsumedMessages = meter.CreateCounter<int>(
+            _consumers = meter.CreateGauge<int>(
+                MetricPrefix + ".consumers",
+                description:
+                "The total number of consumers.");
+
+            _published = meter.CreateCounter<int>(
+                MetricPrefix + ".published",
+                description:
+                "The total number of messages published to the broker.");
+
+            _publishAccepted = meter.CreateCounter<int>(
+                MetricPrefix + ".published_accepted",
+                description:
+                "The total number of messages published and accepted by the broker.");
+
+            _publishRejected = meter.CreateCounter<int>(
+                MetricPrefix + ".published_rejected",
+                description:
+                "The total number of messages published and rejected by the broker.");
+
+            _publishReleased = meter.CreateCounter<int>(
+                MetricPrefix + ".published_released",
+                description:
+                "The total number of messages published and released by the broker.");
+
+            _consumed = meter.CreateCounter<int>(
+                MetricPrefix + ".consumed",
+                description:
+                "The total number of messages consumed to the broker.");
+
+            _consumeAccepted = meter.CreateCounter<int>(
+                MetricPrefix + ".consumed_accepted",
+                description:
+                "The total number of messages consumed and accepted by the broker.");
+
+            _consumeRequeued = meter.CreateCounter<int>(
+                MetricPrefix + ".consumed_requeued",
+                description:
+                "The total number of messages consumed and requeued by the broker.");
+
+            _consumeDiscarded = meter.CreateCounter<int>(
+                MetricPrefix + ".consumed_discarded",
+                description:
+                "The total number of messages consumed and discarded by the broker.");
+
+            _consumed = meter.CreateCounter<int>(
                 "messaging.client.consumed.messages",
                 unit: "{message}",
                 description:
                 "Number of messages that were delivered to the application. ");
-
-            _messagingProcessDuration = meter.CreateHistogram<double>(
-                "messaging.process.duration",
-                unit: "s",
-                description:
-                "Duration of processing operation. ");
         }
 
-        public void ReportMessageSendSuccess(IMetricsReporter.Context context, TimeSpan elapsed)
+        public void ConnectionOpened()
         {
-            var serverAddress = new KeyValuePair<string, object?>(ServerAddress, context.ServerAddress);
-            var serverPort = new KeyValuePair<string, object?>(ServerPort, context.ServerPort);
-            var destination = new KeyValuePair<string, object?>(MessageDestinationName, context.Destination);
+            _connections.Record(Interlocked.Increment(ref _connectionCount));
+        }
 
-            _messagingClientSentMessages.Add(1, serverAddress, serverPort, destination, _messagingOperationSystemTag,
-                _sendOperationType, _publishOperationName);
+        public void ConnectionClosed()
+        {
+            _connections.Record(Interlocked.Decrement(ref _connectionCount));
+        }
 
-            if (elapsed != default)
+        public void PublisherOpened()
+        {
+            _publishers.Record(Interlocked.Increment(ref _publisherCount));
+        }
+
+        public void PublisherClosed()
+        {
+            _publishers.Record(Interlocked.Decrement(ref _publisherCount));
+        }
+
+        public void ConsumerOpened()
+        {
+            _consumers.Record(Interlocked.Increment(ref _consumerCount));
+        }
+
+        public void ConsumerClosed()
+        {
+            _consumers.Record(Interlocked.Decrement(ref _consumerCount));
+        }
+
+        public void Published()
+        {
+            _published.Add(1);
+        }
+
+        public void PublishDisposition(IMetricsReporter.PublishDispositionValue disposition)
+        {
+            switch (disposition)
             {
-                _messagingClientOperationDuration.Record(elapsed.TotalMilliseconds, serverAddress, serverPort, destination,
-                    _messagingOperationSystemTag, _sendOperationType, _publishOperationName);
+                case IMetricsReporter.PublishDispositionValue.ACCEPTED:
+                    _publishAccepted.Add(1);
+                    break;
+                case IMetricsReporter.PublishDispositionValue.REJECTED:
+                    _publishRejected.Add(1);
+                    break;
+                case IMetricsReporter.PublishDispositionValue.RELEASED:
+                    _publishReleased.Add(1);
+                    break;
             }
         }
 
-        public void ReportMessageSendFailure(IMetricsReporter.Context context, TimeSpan elapsed,
-            AmqpException amqpException)
+        public void Consumed()
         {
-            var errorType = new KeyValuePair<string, object?>(ErrorType, amqpException.Error.Condition.ToString() ?? DefaultErrorValue);
-            var serverAddress = new KeyValuePair<string, object?>(ServerAddress, context.ServerAddress);
-            var serverPort = new KeyValuePair<string, object?>(ServerPort, context.ServerPort);
-            var destination = new KeyValuePair<string, object?>(MessageDestinationName, context.Destination);
-            _messagingClientSentMessages.Add(1, errorType, serverAddress, serverPort, destination,
-                _messagingOperationSystemTag, _sendOperationType, _publishOperationName);
-
-            if (elapsed != default)
-            {
-                _messagingClientOperationDuration.Record(elapsed.TotalMilliseconds, errorType, serverAddress, serverPort,
-                    destination,
-                    _messagingOperationSystemTag, _sendOperationType, _publishOperationName);
-            }
+            _consumed.Add(1);
         }
 
-        public void ReportMessageDeliverSuccess(IMetricsReporter.Context context, TimeSpan elapsed)
+        public void ConsumeDisposition(IMetricsReporter.ConsumeDispositionValue disposition)
         {
-            var serverAddress = new KeyValuePair<string, object?>(ServerAddress, context.ServerAddress);
-            var serverPort = new KeyValuePair<string, object?>(ServerPort, context.ServerPort);
-            var destination = new KeyValuePair<string, object?>(MessageDestinationName, context.Destination);
-
-            _messagingClientConsumedMessages.Add(1, serverAddress, serverPort, destination,
-                _messagingOperationSystemTag,
-                _processOperationType, _deliverOperationName);
-
-            if (elapsed != default)
+            switch (disposition)
             {
-                _messagingProcessDuration.Record(elapsed.TotalMilliseconds, serverAddress, serverPort,
-                    destination,
-                    _messagingOperationSystemTag, _processOperationType, _deliverOperationName);
+                case IMetricsReporter.ConsumeDispositionValue.ACCEPTED:
+                    _consumeAccepted.Add(1);
+                    break;
+                case IMetricsReporter.ConsumeDispositionValue.DISCARDED:
+                    _consumeDiscarded.Add(1);
+                    break;
+                case IMetricsReporter.ConsumeDispositionValue.REQUEUED:
+                    _consumeRequeued.Add(1);
+                    break;
             }
         }
     }

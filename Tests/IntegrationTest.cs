@@ -4,13 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
@@ -33,10 +31,6 @@ public abstract class IntegrationTest : IAsyncLifetime
     protected IConnection? _connection;
     protected ConnectionSettings? _connectionSettings;
     protected IManagement? _management;
-    protected IMetricsReporter? _metricsReporter;
-#if NET8_0_OR_GREATER
-    protected IMeterFactory? _meterFactory;
-#endif
     protected string _queueName;
     protected string _exchangeName;
     protected string _containerId = $"integration-test-{Now}";
@@ -70,16 +64,8 @@ public abstract class IntegrationTest : IAsyncLifetime
     {
         if (_setupConnectionAndManagement)
         {
-#if NET8_0_OR_GREATER
-            var serviceProvider = new ServiceCollection()
-                .AddMetrics()
-                .AddSingleton<IMetricsReporter, MetricsReporter>()
-                .BuildServiceProvider();
-            _metricsReporter = serviceProvider.GetRequiredService<IMetricsReporter>();
-            _meterFactory = serviceProvider.GetRequiredService<IMeterFactory>();
-#endif
             _connectionSettings = _connectionSettingBuilder.Build();
-            _connection = await AmqpConnection.CreateAsync(_connectionSettings, _metricsReporter);
+            _connection = await AmqpConnection.CreateAsync(_connectionSettings);
             if (_connection is AmqpConnection amqpConnection)
             {
                 _areFilterExpressionsSupported = amqpConnection.AreFilterExpressionsSupported;

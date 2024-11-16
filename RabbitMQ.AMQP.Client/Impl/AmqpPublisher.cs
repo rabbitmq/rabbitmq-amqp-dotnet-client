@@ -112,10 +112,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                     "_senderLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
 
-            IMetricsReporter.Context context =
-                new(_address, _connection._connectionSettings.Host,
-                    _connection._connectionSettings.Port);
-
+            // TODO keeping this around for timing stats
             Stopwatch? stopwatch = null;
             if (_metricsReporter is not null)
             {
@@ -147,17 +144,20 @@ namespace RabbitMQ.AMQP.Client.Impl
                                 const OutcomeState publishState = OutcomeState.Rejected;
                                 publishOutcome = new PublishOutcome(publishState,
                                     Utils.ConvertError(rejectedOutcome.Error));
+                                _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.REJECTED);
                                 break;
                             }
                         case Released:
                             {
                                 const OutcomeState publishState = OutcomeState.Released;
                                 publishOutcome = new PublishOutcome(publishState, null);
+                                _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.RELEASED);
                                 break;
                             }
                         case Accepted:
                             {
                                 const OutcomeState publishState = OutcomeState.Accepted;
+                                _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.ACCEPTED);
                                 publishOutcome = new PublishOutcome(publishState, null);
                                 break;
                             }
@@ -182,21 +182,15 @@ namespace RabbitMQ.AMQP.Client.Impl
                 PublishOutcome publishOutcome = await messagePublishedTcs.Task.WaitAsync(TimeSpan.FromSeconds(5))
                     .ConfigureAwait(false);
 
-                if (_metricsReporter is not null && stopwatch is not null)
-                {
-                    stopwatch.Stop();
-                    _metricsReporter.ReportMessageSendSuccess(context, stopwatch.Elapsed);
-                }
+                stopwatch?.Stop();
+                _metricsReporter?.Published();
 
                 return new PublishResult(message, publishOutcome);
             }
             catch (AmqpException ex)
             {
-                if (_metricsReporter is not null && stopwatch is not null)
-                {
-                    stopwatch.Stop();
-                    _metricsReporter?.ReportMessageSendFailure(context, stopwatch.Elapsed, ex);
-                }
+                stopwatch?.Stop();
+                _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.REJECTED);
                 var publishOutcome = new PublishOutcome(OutcomeState.Rejected, Utils.ConvertError(ex.Error));
                 return new PublishResult(message, publishOutcome);
             }
