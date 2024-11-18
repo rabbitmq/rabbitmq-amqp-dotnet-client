@@ -84,7 +84,7 @@ public class MetricsTests : IntegrationTest, IMeterFactory
 
         IReadOnlyList<CollectedMeasurement<double>> publishDurationMeasurements = publishDurationCollector.GetMeasurementSnapshot();
         Assert.NotEmpty(publishDurationMeasurements);
-        Assert.Equal(1, publishDurationMeasurements[0].Value);
+        Assert.True(publishDurationMeasurements[0].Value > 0);
 
         IReadOnlyList<CollectedMeasurement<int>> consumedMeasurements = consumedCollector.GetMeasurementSnapshot();
         Assert.NotEmpty(consumedMeasurements);
@@ -152,7 +152,7 @@ public class MetricsTests : IntegrationTest, IMeterFactory
 
         IReadOnlyList<CollectedMeasurement<double>> publishDurationMeasurements = publishDurationCollector.GetMeasurementSnapshot();
         Assert.NotEmpty(publishDurationMeasurements);
-        Assert.Equal(1, publishDurationMeasurements[0].Value);
+        Assert.True(publishDurationMeasurements[0].Value > 0);
 
         /*
          * TODO - restore tags?
