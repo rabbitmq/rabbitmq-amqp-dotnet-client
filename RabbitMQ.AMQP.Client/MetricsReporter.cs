@@ -65,8 +65,8 @@ namespace RabbitMQ.AMQP.Client
 
             _publishDuration = meter.CreateHistogram<double>(
                 MetricPrefix + ".published.duration",
-                unit: "ms",
-                description: "Elapsed time between publishing a message and receiving a broker response, in milliseconds.");
+                unit: "s",
+                description: "Elapsed time between publishing a message and receiving a broker response, in seconds.");
 
             _publishAccepted = meter.CreateCounter<int>(
                 MetricPrefix + ".published_accepted",
@@ -90,8 +90,8 @@ namespace RabbitMQ.AMQP.Client
 
             _consumedDuration = meter.CreateHistogram<double>(
                 MetricPrefix + ".consumed.duration",
-                unit: "ms",
-                description: "Elapsed time of receiving a message and handling it, in milliseconds.");
+                unit: "s",
+                description: "Elapsed time of receiving a message and handling it, in seconds.");
 
             _consumeAccepted = meter.CreateCounter<int>(
                 MetricPrefix + ".consumed_accepted",
@@ -142,7 +142,7 @@ namespace RabbitMQ.AMQP.Client
         public void Published(TimeSpan elapsed)
         {
             _published.Add(1);
-            _publishDuration.Record(elapsed.TotalMilliseconds);
+            _publishDuration.Record(elapsed.TotalSeconds);
         }
 
         public void PublishDisposition(IMetricsReporter.PublishDispositionValue disposition)
@@ -164,7 +164,7 @@ namespace RabbitMQ.AMQP.Client
         public void Consumed(TimeSpan elapsed)
         {
             _consumed.Add(1);
-            _consumedDuration.Record(elapsed.TotalMilliseconds);
+            _consumedDuration.Record(elapsed.TotalSeconds);
         }
 
         public void ConsumeDisposition(IMetricsReporter.ConsumeDispositionValue disposition)
