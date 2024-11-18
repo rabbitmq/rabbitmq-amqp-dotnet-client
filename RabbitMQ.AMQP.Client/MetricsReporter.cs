@@ -94,12 +94,6 @@ namespace RabbitMQ.AMQP.Client
                 MetricPrefix + ".consumed_discarded",
                 description:
                 "The total number of messages consumed and discarded by the broker.");
-
-            _consumed = meter.CreateCounter<int>(
-                "messaging.client.consumed.messages",
-                unit: "{message}",
-                description:
-                "Number of messages that were delivered to the application. ");
         }
 
         public void ConnectionOpened()

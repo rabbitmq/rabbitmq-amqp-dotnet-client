@@ -156,11 +156,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                         continue;
                     }
 
-                    if (_metricsReporter is not null && stopwatch is not null)
-                    {
-                        stopwatch.Stop();
-                        _metricsReporter.Consumed();
-                    }
+                    stopwatch?.Stop();
+                    _metricsReporter?.Consumed();
 
                     _unsettledMessageCounter.Increment();
 
