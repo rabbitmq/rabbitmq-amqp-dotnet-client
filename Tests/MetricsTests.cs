@@ -52,15 +52,34 @@ public class MetricsTests : IntegrationTest, IMeterFactory
         Assert.NotNull(_management);
         const int messageCount = 100;
 
+        var connectionsCollector =
+            new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".connections");
+        var publishersCollector =
+            new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".publishers");
+        var consumersCollector =
+            new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".consumers");
+
         var publishedCollector =
             new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".published");
         var publishDurationCollector =
             new MetricCollector<double>(this, MetricsReporter.MeterName, MetricPrefix + ".published.duration");
+        var publishedAcceptedCollector =
+            new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".published_accepted");
+        var publishedRejectedCollector =
+            new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".published_rejected");
+        var publishedReleasedCollector =
+            new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".published_released");
 
         var consumedCollector =
             new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".consumed");
         var consumeDurationCollector =
             new MetricCollector<double>(this, MetricsReporter.MeterName, MetricPrefix + ".consumed.duration");
+        var consumedAcceptedCollector =
+            new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".consumed_accepted");
+        var consumedRequeuedCollector =
+            new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".consumed_requeued");
+        var consumedDiscardedCollector =
+            new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".consumed_discarded");
 
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
@@ -98,6 +117,16 @@ public class MetricsTests : IntegrationTest, IMeterFactory
         Assert.Equal(messageCount, publishedMeasurements.Count);
         Assert.Equal(1, publishedMeasurements[0].Value);
 
+        IReadOnlyList<CollectedMeasurement<int>> publishedAcceptedMeasurements = publishedAcceptedCollector.GetMeasurementSnapshot();
+        Assert.Equal(messageCount, publishedAcceptedMeasurements.Count);
+        Assert.Equal(1, publishedAcceptedMeasurements[0].Value);
+
+        IReadOnlyList<CollectedMeasurement<int>> publishedRejectedMeasurements = publishedRejectedCollector.GetMeasurementSnapshot();
+        Assert.Empty(publishedRejectedMeasurements);
+
+        IReadOnlyList<CollectedMeasurement<int>> publishedReleasedMeasurements = publishedReleasedCollector.GetMeasurementSnapshot();
+        Assert.Empty(publishedReleasedMeasurements);
+
         IReadOnlyList<CollectedMeasurement<double>> publishDurationMeasurements = publishDurationCollector.GetMeasurementSnapshot();
         Assert.NotEmpty(publishDurationMeasurements);
         Assert.True(publishDurationMeasurements[0].Value > 0);
@@ -105,6 +134,16 @@ public class MetricsTests : IntegrationTest, IMeterFactory
         IReadOnlyList<CollectedMeasurement<int>> consumedMeasurements = consumedCollector.GetMeasurementSnapshot();
         Assert.Equal(messageCount, consumedMeasurements.Count);
         Assert.Equal(1, consumedMeasurements[0].Value);
+
+        IReadOnlyList<CollectedMeasurement<int>> consumedAcceptedMeasurements = consumedAcceptedCollector.GetMeasurementSnapshot();
+        Assert.Equal(messageCount, consumedAcceptedMeasurements.Count);
+        Assert.Equal(1, consumedAcceptedMeasurements[0].Value);
+
+        IReadOnlyList<CollectedMeasurement<int>> consumedRequeuedMeasurements = consumedRequeuedCollector.GetMeasurementSnapshot();
+        Assert.Empty(consumedRequeuedMeasurements);
+
+        IReadOnlyList<CollectedMeasurement<int>> consumedDiscardedMeasurements = consumedDiscardedCollector.GetMeasurementSnapshot();
+        Assert.Empty(consumedDiscardedMeasurements);
 
         IReadOnlyList<CollectedMeasurement<double>> consumeDurationMeasurements = consumeDurationCollector.GetMeasurementSnapshot();
         Assert.NotEmpty(consumeDurationMeasurements);
