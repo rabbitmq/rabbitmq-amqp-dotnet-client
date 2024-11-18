@@ -8,6 +8,7 @@ const RabbitMQ.AMQP.Client.Impl.Consts.Key = "key" -> string!
 const RabbitMQ.AMQP.Client.Impl.Consts.Messages = "messages" -> string!
 const RabbitMQ.AMQP.Client.Impl.Consts.Queues = "queues" -> string!
 const RabbitMQ.AMQP.Client.MetricsReporter.MeterName = "RabbitMQ.Amqp" -> string!
+const RabbitMQ.AMQP.Client.MetricsReporter.MetricPrefix = "rabbitmq.amqp" -> string!
 override RabbitMQ.AMQP.Client.Error.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.AmqpConnection.CloseAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpConnection.OpenAsync() -> System.Threading.Tasks.Task!
@@ -241,7 +242,7 @@ RabbitMQ.AMQP.Client.IMessageAddressBuilder.Build() -> RabbitMQ.AMQP.Client.IMes
 RabbitMQ.AMQP.Client.IMetricsReporter
 RabbitMQ.AMQP.Client.IMetricsReporter.ConnectionClosed() -> void
 RabbitMQ.AMQP.Client.IMetricsReporter.ConnectionOpened() -> void
-RabbitMQ.AMQP.Client.IMetricsReporter.Consumed() -> void
+RabbitMQ.AMQP.Client.IMetricsReporter.Consumed(System.TimeSpan elapsed) -> void
 RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDisposition(RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue disposition) -> void
 RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue
 RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue.ACCEPTED = 0 -> RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue
@@ -714,7 +715,7 @@ RabbitMQ.AMQP.Client.MessageHandler
 RabbitMQ.AMQP.Client.MetricsReporter
 RabbitMQ.AMQP.Client.MetricsReporter.ConnectionClosed() -> void
 RabbitMQ.AMQP.Client.MetricsReporter.ConnectionOpened() -> void
-RabbitMQ.AMQP.Client.MetricsReporter.Consumed() -> void
+RabbitMQ.AMQP.Client.MetricsReporter.Consumed(System.TimeSpan elapsed) -> void
 RabbitMQ.AMQP.Client.MetricsReporter.ConsumeDisposition(RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue disposition) -> void
 RabbitMQ.AMQP.Client.MetricsReporter.ConsumerClosed() -> void
 RabbitMQ.AMQP.Client.MetricsReporter.ConsumerOpened() -> void

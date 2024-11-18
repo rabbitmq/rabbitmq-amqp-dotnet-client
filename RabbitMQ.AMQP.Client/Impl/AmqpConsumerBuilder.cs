@@ -19,6 +19,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public string Address { get; set; } = "";
         public int InitialCredits { get; set; } = 100; // TODO use constant, check with Java lib
         public Map Filters { get; set; } = new();
+        // TODO is a MessageHandler *really* optional???
         public MessageHandler? Handler { get; set; }
         // TODO re-name to ListenerContextAction? Callback?
         public Action<IConsumerBuilder.ListenerContext>? ListenerContext = null;

@@ -34,7 +34,7 @@ namespace RabbitMQ.AMQP.Client
         void Published(TimeSpan elapsed);
         void PublishDisposition(PublishDispositionValue disposition);
 
-        void Consumed();
+        void Consumed(TimeSpan elapsed);
         void ConsumeDisposition(ConsumeDispositionValue disposition);
     }
 }

@@ -28,13 +28,14 @@ namespace RabbitMQ.AMQP.Client
         private readonly Counter<int> _publishReleased;
 
         private readonly Counter<int> _consumed;
+        private readonly Histogram<double> _consumedDuration;
         private readonly Counter<int> _consumeAccepted;
         private readonly Counter<int> _consumeRequeued;
         private readonly Counter<int> _consumeDiscarded;
 
         private const string Version = "0.1.0";
 
-        private const string MetricPrefix = "rabbitmq.amqp";
+        public const string MetricPrefix = "rabbitmq.amqp";
 
         public const string MeterName = "RabbitMQ.Amqp";
 
@@ -86,6 +87,11 @@ namespace RabbitMQ.AMQP.Client
                 MetricPrefix + ".consumed",
                 description:
                 "The total number of messages consumed to the broker.");
+
+            _consumedDuration = meter.CreateHistogram<double>(
+                MetricPrefix + ".consumed.duration",
+                unit: "ms",
+                description: "Elapsed time of receiving a message and handling it, in milliseconds.");
 
             _consumeAccepted = meter.CreateCounter<int>(
                 MetricPrefix + ".consumed_accepted",
@@ -155,9 +161,10 @@ namespace RabbitMQ.AMQP.Client
             }
         }
 
-        public void Consumed()
+        public void Consumed(TimeSpan elapsed)
         {
             _consumed.Add(1);
+            _consumedDuration.Record(elapsed.TotalMilliseconds);
         }
 
         public void ConsumeDisposition(IMetricsReporter.ConsumeDispositionValue disposition)

@@ -156,9 +156,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                         continue;
                     }
 
-                    stopwatch?.Stop();
-                    _metricsReporter?.Consumed();
-
                     _unsettledMessageCounter.Increment();
 
                     IContext context = new DeliveryContext(_receiverLink, nativeMessage,
@@ -167,11 +164,16 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                     // TODO catch exceptions thrown by handlers,
                     // then call exception handler?
-
-                    if (_configuration.Handler != null)
+                    if (_configuration.Handler is not null)
                     {
                         await _configuration.Handler(context, amqpMessage)
                             .ConfigureAwait(false);
+                    }
+
+                    if (_metricsReporter is not null && stopwatch is not null)
+                    {
+                        stopwatch.Stop();
+                        _metricsReporter.Consumed(stopwatch.Elapsed);
                     }
 
                 }

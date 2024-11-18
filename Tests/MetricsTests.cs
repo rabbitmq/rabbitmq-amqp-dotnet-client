@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 using RabbitMQ.AMQP.Client;
@@ -16,7 +17,7 @@ namespace Tests;
 
 public class MetricsTests : IntegrationTest, IMeterFactory
 {
-    private const string MetricPrefix = "rabbitmq.amqp";
+    private const string MetricPrefix = MetricsReporter.MetricPrefix;
     private readonly MetricsReporter _metricsReporter;
     private Meter? _meter;
 
@@ -49,13 +50,17 @@ public class MetricsTests : IntegrationTest, IMeterFactory
     {
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
+        const int messageCount = 100;
 
         var publishedCollector =
             new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".published");
         var publishDurationCollector =
             new MetricCollector<double>(this, MetricsReporter.MeterName, MetricPrefix + ".published.duration");
+
         var consumedCollector =
             new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".consumed");
+        var consumeDurationCollector =
+            new MetricCollector<double>(this, MetricsReporter.MeterName, MetricPrefix + ".consumed.duration");
 
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
@@ -63,15 +68,26 @@ public class MetricsTests : IntegrationTest, IMeterFactory
         IQueueSpecification queueSpec = _management.Queue().Name(_queueName);
         await queueSpec.DeclareAsync();
 
-        await PublishAsync(queueSpec, 2);
+        await PublishAsync(queueSpec, messageCount);
 
-        TaskCompletionSource<IMessage> tcs = new();
+        int receivedCount = 0;
+        TaskCompletionSource<bool> tcs = CreateTaskCompletionSource();
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueSpec)
             .MessageHandler((context, message) =>
                 {
-                    context.Accept();
-                    tcs.SetResult(message);
+                    try
+                    {
+                        context.Accept();
+                        if (Interlocked.Increment(ref receivedCount) == messageCount)
+                        {
+                            tcs.SetResult(true);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        tcs.SetException(ex);
+                    }
                     return Task.CompletedTask;
                 }
             ).BuildAndStartAsync();
@@ -79,7 +95,7 @@ public class MetricsTests : IntegrationTest, IMeterFactory
         await WhenTcsCompletes(tcs);
 
         IReadOnlyList<CollectedMeasurement<int>> publishedMeasurements = publishedCollector.GetMeasurementSnapshot();
-        Assert.NotEmpty(publishedMeasurements);
+        Assert.Equal(messageCount, publishedMeasurements.Count);
         Assert.Equal(1, publishedMeasurements[0].Value);
 
         IReadOnlyList<CollectedMeasurement<double>> publishDurationMeasurements = publishDurationCollector.GetMeasurementSnapshot();
@@ -87,8 +103,12 @@ public class MetricsTests : IntegrationTest, IMeterFactory
         Assert.True(publishDurationMeasurements[0].Value > 0);
 
         IReadOnlyList<CollectedMeasurement<int>> consumedMeasurements = consumedCollector.GetMeasurementSnapshot();
-        Assert.NotEmpty(consumedMeasurements);
+        Assert.Equal(messageCount, consumedMeasurements.Count);
         Assert.Equal(1, consumedMeasurements[0].Value);
+
+        IReadOnlyList<CollectedMeasurement<double>> consumeDurationMeasurements = consumeDurationCollector.GetMeasurementSnapshot();
+        Assert.NotEmpty(consumeDurationMeasurements);
+        Assert.True(consumeDurationMeasurements[0].Value > 0);
         /*
          * TODO - restore tags?
         Assert.Equal(consumedMeasurements[0].Tags["messaging.system"], "rabbitmq");
@@ -121,19 +141,20 @@ public class MetricsTests : IntegrationTest, IMeterFactory
     }
 
     [Fact]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Assertions",
+        "xUnit2013:Do not use equality check to check for collection size.",
+        Justification = "messageCount may change")]
     public async Task PublisherMetricsShouldBeIncrementedWhenMessageIsSendWithSuccess()
     {
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
+        const int messageCount = 1;
+
         var publishedCollector =
             new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".published");
         var publishDurationCollector =
             new MetricCollector<double>(this, MetricsReporter.MeterName, MetricPrefix + ".published.duration");
-        /*
-        MetricCollector<double> clientSendDurationCollector =
-            new(this, "RabbitMQ.Amqp", "messaging.client.operation.duration");
-        */
 
         IQueueSpecification queueSpecification = _management.Queue(_queueName);
         await queueSpecification.DeclareAsync();
@@ -142,16 +163,14 @@ public class MetricsTests : IntegrationTest, IMeterFactory
             .Queue(queueSpecification)
             .BuildAsync();
 
-        await publisher.PublishAsync(new AmqpMessage("Hello wold!"));
-
-        await SystemUtils.WaitUntilQueueMessageCount(queueSpecification, 1);
+        await PublishAsync(queueSpecification, messageCount);
 
         IReadOnlyList<CollectedMeasurement<int>> publishedMeasurements = publishedCollector.GetMeasurementSnapshot();
-        Assert.NotEmpty(publishedMeasurements);
+        Assert.Equal(messageCount, publishedMeasurements.Count);
         Assert.Equal(1, publishedMeasurements[0].Value);
 
         IReadOnlyList<CollectedMeasurement<double>> publishDurationMeasurements = publishDurationCollector.GetMeasurementSnapshot();
-        Assert.NotEmpty(publishDurationMeasurements);
+        Assert.Equal(messageCount, publishDurationMeasurements.Count);
         Assert.True(publishDurationMeasurements[0].Value > 0);
 
         /*
