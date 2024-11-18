@@ -193,6 +193,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
         Assert.NotNull(_management);
 
         const int messageCount = 100;
+        const int initialCredits = messageCount / 10;
 
         IQueueSpecification queueSpecification = _management.Queue(_queueName).Exclusive(true);
         IQueueInfo queueInfo = await queueSpecification.DeclareAsync();
@@ -200,23 +201,24 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
         await PublishAsync(queueSpecification, messageCount);
 
         TaskCompletionSource<bool> receivedTwiceInitialCreditsTcs = CreateTaskCompletionSource();
-        const int initialCredits = 10;
         long receivedCount = 0;
         var unsettledMessages = new ConcurrentBag<IContext>();
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueInfo.Name())
             .InitialCredits(initialCredits)
-            .MessageHandler(async (IContext ctx, IMessage msg) =>
+            .MessageHandler((IContext ctx, IMessage msg) =>
             {
                 if (Interlocked.Increment(ref receivedCount) > (initialCredits * 2))
                 {
                     receivedTwiceInitialCreditsTcs.TrySetResult(true);
                 }
-                await Task.Delay(TimeSpan.FromMilliseconds(r.Next(1, 10)));
                 ctx.Accept();
+                return Task.CompletedTask;
             }).BuildAndStartAsync();
 
         await WhenTcsCompletes(receivedTwiceInitialCreditsTcs);
+
+        consumer.Pause();
 
         DateTime start = DateTime.Now;
         while (consumer.UnsettledMessageCount != 0)
