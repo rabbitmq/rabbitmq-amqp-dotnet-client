@@ -47,7 +47,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// They key is the publisher Id (a Guid)
         /// See <see cref="AmqpPublisher"/>
         /// </summary>
-
         private readonly ConcurrentDictionary<Guid, IPublisher> _publishersDict = new();
 
         /// <summary>

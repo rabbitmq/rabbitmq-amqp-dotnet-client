@@ -14,7 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\RabbitMQ.AMQP.Client\RabbitMQ.AMQP.Client.csproj" />
+      <ProjectReference Include="../../../RabbitMQ.AMQP.Client/RabbitMQ.AMQP.Client.csproj" />
     </ItemGroup>
 
 </Project>

@@ -112,7 +112,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                     "_senderLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
 
-            // TODO keeping this around for timing stats
             Stopwatch? stopwatch = null;
             if (_metricsReporter is not null)
             {
@@ -157,8 +156,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                         case Accepted:
                             {
                                 const OutcomeState publishState = OutcomeState.Accepted;
-                                _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.ACCEPTED);
                                 publishOutcome = new PublishOutcome(publishState, null);
+                                _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.ACCEPTED);
                                 break;
                             }
                         default:
@@ -177,7 +176,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                 _senderLink.Send(nativeMessage, OutcomeCallback, this);
 
                 // TODO cancellation token
-                // TODO operation timeout
                 // PublishOutcome publishOutcome = await messagePublishedTcs.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken)
                 PublishOutcome publishOutcome = await messagePublishedTcs.Task.WaitAsync(TimeSpan.FromSeconds(5))
                     .ConfigureAwait(false);
