@@ -182,8 +182,11 @@ namespace RabbitMQ.AMQP.Client.Impl
                 PublishOutcome publishOutcome = await messagePublishedTcs.Task.WaitAsync(TimeSpan.FromSeconds(5))
                     .ConfigureAwait(false);
 
-                stopwatch?.Stop();
-                _metricsReporter?.Published();
+                if (_metricsReporter is not null && stopwatch is not null)
+                {
+                    stopwatch.Stop();
+                    _metricsReporter.Published(stopwatch.Elapsed);
+                }
 
                 return new PublishResult(message, publishOutcome);
             }

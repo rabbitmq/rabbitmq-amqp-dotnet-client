@@ -254,7 +254,7 @@ RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue
 RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue.ACCEPTED = 0 -> RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue
 RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue.REJECTED = 1 -> RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue
 RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue.RELEASED = 2 -> RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue
-RabbitMQ.AMQP.Client.IMetricsReporter.Published() -> void
+RabbitMQ.AMQP.Client.IMetricsReporter.Published(System.TimeSpan elapsed) -> void
 RabbitMQ.AMQP.Client.IMetricsReporter.PublisherClosed() -> void
 RabbitMQ.AMQP.Client.IMetricsReporter.PublisherOpened() -> void
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle
@@ -720,7 +720,7 @@ RabbitMQ.AMQP.Client.MetricsReporter.ConsumerClosed() -> void
 RabbitMQ.AMQP.Client.MetricsReporter.ConsumerOpened() -> void
 RabbitMQ.AMQP.Client.MetricsReporter.MetricsReporter(System.Diagnostics.Metrics.IMeterFactory! meterFactory) -> void
 RabbitMQ.AMQP.Client.MetricsReporter.PublishDisposition(RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue disposition) -> void
-RabbitMQ.AMQP.Client.MetricsReporter.Published() -> void
+RabbitMQ.AMQP.Client.MetricsReporter.Published(System.TimeSpan elapsed) -> void
 RabbitMQ.AMQP.Client.MetricsReporter.PublisherClosed() -> void
 RabbitMQ.AMQP.Client.MetricsReporter.PublisherOpened() -> void
 RabbitMQ.AMQP.Client.ModelException

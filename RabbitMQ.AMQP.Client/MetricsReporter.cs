@@ -2,6 +2,7 @@
 // 2.0, and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System;
 using System.Diagnostics.Metrics;
 using System.Threading;
 
@@ -21,6 +22,7 @@ namespace RabbitMQ.AMQP.Client
         private readonly Gauge<int> _consumers;
 
         private readonly Counter<int> _published;
+        private readonly Histogram<double> _publishDuration;
         private readonly Counter<int> _publishAccepted;
         private readonly Counter<int> _publishRejected;
         private readonly Counter<int> _publishReleased;
@@ -59,6 +61,11 @@ namespace RabbitMQ.AMQP.Client
                 MetricPrefix + ".published",
                 description:
                 "The total number of messages published to the broker.");
+
+            _publishDuration = meter.CreateHistogram<double>(
+                MetricPrefix + ".published.duration",
+                unit: "ms",
+                description: "Elapsed time between publishing a message and receiving a broker response, in milliseconds.");
 
             _publishAccepted = meter.CreateCounter<int>(
                 MetricPrefix + ".published_accepted",
@@ -126,9 +133,10 @@ namespace RabbitMQ.AMQP.Client
             _consumers.Record(Interlocked.Decrement(ref _consumerCount));
         }
 
-        public void Published()
+        public void Published(TimeSpan elapsed)
         {
             _published.Add(1);
+            _publishDuration.Record(elapsed.TotalMilliseconds);
         }
 
         public void PublishDisposition(IMetricsReporter.PublishDispositionValue disposition)

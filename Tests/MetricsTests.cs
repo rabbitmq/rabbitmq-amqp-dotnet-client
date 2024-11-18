@@ -52,6 +52,8 @@ public class MetricsTests : IntegrationTest, IMeterFactory
 
         var publishedCollector =
             new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".published");
+        var publishDurationCollector =
+            new MetricCollector<double>(this, MetricsReporter.MeterName, MetricPrefix + ".published.duration");
         var consumedCollector =
             new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".consumed");
 
@@ -79,6 +81,10 @@ public class MetricsTests : IntegrationTest, IMeterFactory
         IReadOnlyList<CollectedMeasurement<int>> publishedMeasurements = publishedCollector.GetMeasurementSnapshot();
         Assert.NotEmpty(publishedMeasurements);
         Assert.Equal(1, publishedMeasurements[0].Value);
+
+        IReadOnlyList<CollectedMeasurement<double>> publishDurationMeasurements = publishDurationCollector.GetMeasurementSnapshot();
+        Assert.NotEmpty(publishDurationMeasurements);
+        Assert.Equal(1, publishDurationMeasurements[0].Value);
 
         IReadOnlyList<CollectedMeasurement<int>> consumedMeasurements = consumedCollector.GetMeasurementSnapshot();
         Assert.NotEmpty(consumedMeasurements);
@@ -122,6 +128,8 @@ public class MetricsTests : IntegrationTest, IMeterFactory
 
         var publishedCollector =
             new MetricCollector<int>(this, MetricsReporter.MeterName, MetricPrefix + ".published");
+        var publishDurationCollector =
+            new MetricCollector<double>(this, MetricsReporter.MeterName, MetricPrefix + ".published.duration");
         /*
         MetricCollector<double> clientSendDurationCollector =
             new(this, "RabbitMQ.Amqp", "messaging.client.operation.duration");
@@ -141,6 +149,10 @@ public class MetricsTests : IntegrationTest, IMeterFactory
         IReadOnlyList<CollectedMeasurement<int>> publishedMeasurements = publishedCollector.GetMeasurementSnapshot();
         Assert.NotEmpty(publishedMeasurements);
         Assert.Equal(1, publishedMeasurements[0].Value);
+
+        IReadOnlyList<CollectedMeasurement<double>> publishDurationMeasurements = publishDurationCollector.GetMeasurementSnapshot();
+        Assert.NotEmpty(publishDurationMeasurements);
+        Assert.Equal(1, publishDurationMeasurements[0].Value);
 
         /*
          * TODO - restore tags?
