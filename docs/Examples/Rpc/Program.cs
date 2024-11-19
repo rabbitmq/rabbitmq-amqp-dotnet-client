@@ -15,10 +15,10 @@ Trace.TraceListener = (l, f, a) =>
 Trace.WriteLine(TraceLevel.Information, "Starting the example...");
 const string containerId = "rpc-example-connection";
 
-IEnvironment environment = await AmqpEnvironment.CreateAsync(
+IEnvironment environment = AmqpEnvironment.Create(
     ConnectionSettingBuilder.Create().ContainerId(containerId)
         .RecoveryConfiguration(RecoveryConfiguration.Create().Topology(true))
-        .Build()).ConfigureAwait(false);
+        .Build());
 
 IConnection connection = await environment.CreateConnectionAsync().ConfigureAwait(false);
 Trace.WriteLine(TraceLevel.Information, $"Connected to the broker {connection} successfully");

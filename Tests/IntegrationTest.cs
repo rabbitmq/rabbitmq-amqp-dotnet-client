@@ -29,6 +29,7 @@ public abstract class IntegrationTest : IAsyncLifetime
     protected readonly TimeSpan _waitSpan = TimeSpan.FromSeconds(5);
 
     protected IConnection? _connection;
+    protected ConnectionSettings? _connectionSettings;
     protected IManagement? _management;
     protected string _queueName;
     protected string _exchangeName;
@@ -63,14 +64,12 @@ public abstract class IntegrationTest : IAsyncLifetime
     {
         if (_setupConnectionAndManagement)
         {
-            ConnectionSettings connectionSettings = _connectionSettingBuilder.Build();
-            _connection = await AmqpConnection.CreateAsync(connectionSettings);
-
+            _connectionSettings = _connectionSettingBuilder.Build();
+            _connection = await AmqpConnection.CreateAsync(_connectionSettings);
             if (_connection is AmqpConnection amqpConnection)
             {
                 _areFilterExpressionsSupported = amqpConnection.AreFilterExpressionsSupported;
             }
-
             _management = _connection.Management();
         }
 
@@ -98,7 +97,6 @@ public abstract class IntegrationTest : IAsyncLifetime
             }
             catch
             {
-
             }
 
             try
@@ -329,9 +327,7 @@ public abstract class IntegrationTest : IAsyncLifetime
     {
         if (string.IsNullOrWhiteSpace(_containerId))
         {
-            // TODO create "internal bug" exception type?
-            throw new InvalidOperationException("_containerId is null or whitespace," +
-                " report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+            InternalBugException.CreateAndThrow("_containerId is null or whitespace");
         }
 
         var connectionSettingBuilder = ConnectionSettingBuilder.Create();

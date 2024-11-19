@@ -15,7 +15,7 @@ public class EnvironmentTests
     [Fact]
     public async Task CreateAConnectionWithEnvironment()
     {
-        IEnvironment env = await AmqpEnvironment.CreateAsync(ConnectionSettingBuilder.Create().Build());
+        IEnvironment env = AmqpEnvironment.Create(ConnectionSettingBuilder.Create().Build());
         IConnection connection = await env.CreateConnectionAsync();
         Assert.NotNull(connection);
         Assert.NotEmpty(env.GetConnections());
@@ -28,7 +28,7 @@ public class EnvironmentTests
     public async Task CreateMoreConnectionsWithDifferentParametersEnvironment()
     {
         string envConnectionName = "EnvironmentConnection_" + Guid.NewGuid();
-        IEnvironment env = await AmqpEnvironment.CreateAsync(
+        IEnvironment env = AmqpEnvironment.Create(
             ConnectionSettingBuilder.Create().ContainerId(envConnectionName).Build());
 
         IConnection connection = await env.CreateConnectionAsync();
@@ -55,7 +55,7 @@ public class EnvironmentTests
     public async Task CloseConnectionsIndividually()
     {
         string envConnectionName = "EnvironmentConnection_" + Guid.NewGuid();
-        IEnvironment env = await AmqpEnvironment.CreateAsync(
+        IEnvironment env = AmqpEnvironment.Create(
             ConnectionSettingBuilder.Create().ContainerId(envConnectionName).Build());
         IConnection connection = await env.CreateConnectionAsync();
         await SystemUtils.WaitUntilConnectionIsOpen(envConnectionName);

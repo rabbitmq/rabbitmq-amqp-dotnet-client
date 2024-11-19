@@ -19,6 +19,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public string Address { get; set; } = "";
         public int InitialCredits { get; set; } = 100; // TODO use constant, check with Java lib
         public Map Filters { get; set; } = new();
+        // TODO is a MessageHandler *really* optional???
         public MessageHandler? Handler { get; set; }
         // TODO re-name to ListenerContextAction? Callback?
         public Action<IConsumerBuilder.ListenerContext>? ListenerContext = null;
@@ -32,10 +33,12 @@ namespace RabbitMQ.AMQP.Client.Impl
     {
         private readonly ConsumerConfiguration _configuration = new();
         private readonly AmqpConnection _amqpConnection;
+        private readonly IMetricsReporter? _metricsReporter;
 
-        public AmqpConsumerBuilder(AmqpConnection connection)
+        public AmqpConsumerBuilder(AmqpConnection connection, IMetricsReporter? metricsReporter)
         {
             _amqpConnection = connection;
+            _metricsReporter = metricsReporter;
         }
 
         public IConsumerBuilder Queue(IQueueSpecification queueSpec)
@@ -81,7 +84,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 throw new ConsumerException("Message handler is not set");
             }
 
-            AmqpConsumer consumer = new(_amqpConnection, _configuration);
+            AmqpConsumer consumer = new(_amqpConnection, _configuration, _metricsReporter);
 
             // TODO pass cancellationToken
             await consumer.OpenAsync()

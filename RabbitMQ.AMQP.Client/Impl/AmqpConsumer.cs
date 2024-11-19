@@ -3,11 +3,14 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Amqp;
 using Amqp.Framing;
+using Trace = Amqp.Trace;
+using TraceLevel = Amqp.TraceLevel;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
@@ -28,12 +31,13 @@ namespace RabbitMQ.AMQP.Client.Impl
         private PauseStatus _pauseStatus = PauseStatus.UNPAUSED;
         private readonly UnsettledMessageCounter _unsettledMessageCounter = new();
         private readonly ConsumerConfiguration _configuration;
+        private readonly IMetricsReporter? _metricsReporter;
 
-        internal AmqpConsumer(AmqpConnection amqpConnection, ConsumerConfiguration configuration)
+        internal AmqpConsumer(AmqpConnection amqpConnection, ConsumerConfiguration configuration, IMetricsReporter? metricsReporter)
         {
             _amqpConnection = amqpConnection;
             _configuration = configuration;
-
+            _metricsReporter = metricsReporter;
             _amqpConnection.AddConsumer(_id, this);
         }
 
@@ -127,11 +131,21 @@ namespace RabbitMQ.AMQP.Client.Impl
                     return;
                 }
 
+                Stopwatch? stopwatch = null;
+                if (_metricsReporter is not null)
+                {
+                    stopwatch = new();
+                }
+
                 while (_receiverLink is { LinkState: LinkState.Attached })
                 {
+                    stopwatch?.Restart();
+
                     // TODO the timeout waiting for messages should be configurable
                     TimeSpan timeout = TimeSpan.FromSeconds(60);
-                    Message? nativeMessage = await _receiverLink.ReceiveAsync(timeout).ConfigureAwait(false);
+                    Message? nativeMessage = await _receiverLink.ReceiveAsync(timeout)
+                        .ConfigureAwait(false);
+
                     if (nativeMessage is null)
                     {
                         // this is not a problem, it is just a timeout. 
@@ -144,15 +158,24 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                     _unsettledMessageCounter.Increment();
 
-                    IContext context = new DeliveryContext(_receiverLink, nativeMessage, _unsettledMessageCounter);
+                    IContext context = new DeliveryContext(_receiverLink, nativeMessage,
+                        _unsettledMessageCounter, _metricsReporter);
                     var amqpMessage = new AmqpMessage(nativeMessage);
 
                     // TODO catch exceptions thrown by handlers,
                     // then call exception handler?
-                    if (_configuration.Handler != null)
+                    if (_configuration.Handler is not null)
                     {
-                        await _configuration.Handler(context, amqpMessage).ConfigureAwait(false);
+                        await _configuration.Handler(context, amqpMessage)
+                            .ConfigureAwait(false);
                     }
+
+                    if (_metricsReporter is not null && stopwatch is not null)
+                    {
+                        stopwatch.Stop();
+                        _metricsReporter.Consumed(stopwatch.Elapsed);
+                    }
+
                 }
             }
             catch (Exception e)

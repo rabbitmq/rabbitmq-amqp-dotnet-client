@@ -15,10 +15,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         private string? _key = null;
         private string? _queue = null;
         private TimeSpan _timeout = TimeSpan.FromSeconds(10);
+        private readonly IMetricsReporter? _metricsReporter;
 
-        public AmqpPublisherBuilder(AmqpConnection connection)
+        public AmqpPublisherBuilder(AmqpConnection connection, IMetricsReporter? metricsReporter)
         {
             _connection = connection;
+            _metricsReporter = metricsReporter;
         }
 
         public IPublisherBuilder Exchange(IExchangeSpecification exchangeSpec)
@@ -49,6 +51,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
+        // TODO this is unused, and should be done via a CancellationToken on PublishAsync anyway
         public IPublisherBuilder PublishTimeout(TimeSpan timeout)
         {
             _timeout = timeout;
@@ -68,7 +71,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 address = AddressBuilderHelper.AddressBuilder().Exchange(_exchange).Queue(_queue).Key(_key).Address();
             }
 
-            AmqpPublisher publisher = new(_connection, address, _timeout);
+            AmqpPublisher publisher = new(_connection, address, _metricsReporter);
 
             // TODO pass cancellationToken
             await publisher.OpenAsync()

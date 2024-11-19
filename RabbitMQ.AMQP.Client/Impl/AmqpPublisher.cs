@@ -3,6 +3,7 @@
 // Copyright (c) 2017-2023 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Amqp;
@@ -15,17 +16,17 @@ namespace RabbitMQ.AMQP.Client.Impl
     public class AmqpPublisher : AbstractReconnectLifeCycle, IPublisher
     {
         private readonly AmqpConnection _connection;
-        private readonly TimeSpan _timeout;
         private readonly string? _address;
+        private readonly IMetricsReporter? _metricsReporter;
         private readonly Guid _id = Guid.NewGuid();
 
         private SenderLink? _senderLink = null;
 
-        public AmqpPublisher(AmqpConnection connection, string? address, TimeSpan timeout)
+        public AmqpPublisher(AmqpConnection connection, string? address, IMetricsReporter? metricsReporter)
         {
             _connection = connection;
             _address = address;
-            _timeout = timeout;
+            _metricsReporter = metricsReporter;
             _connection.AddPublisher(_id, this);
         }
 
@@ -111,6 +112,13 @@ namespace RabbitMQ.AMQP.Client.Impl
                     "_senderLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
 
+            Stopwatch? stopwatch = null;
+            if (_metricsReporter is not null)
+            {
+                stopwatch = new();
+                stopwatch.Start();
+            }
+
             try
             {
                 TaskCompletionSource<PublishOutcome> messagePublishedTcs =
@@ -133,19 +141,23 @@ namespace RabbitMQ.AMQP.Client.Impl
                         case Rejected rejectedOutcome:
                             {
                                 const OutcomeState publishState = OutcomeState.Rejected;
-                                publishOutcome = new PublishOutcome(publishState, Utils.ConvertError(rejectedOutcome.Error));
+                                publishOutcome = new PublishOutcome(publishState,
+                                    Utils.ConvertError(rejectedOutcome.Error));
+                                _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.REJECTED);
                                 break;
                             }
                         case Released:
                             {
                                 const OutcomeState publishState = OutcomeState.Released;
                                 publishOutcome = new PublishOutcome(publishState, null);
+                                _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.RELEASED);
                                 break;
                             }
                         case Accepted:
                             {
                                 const OutcomeState publishState = OutcomeState.Accepted;
                                 publishOutcome = new PublishOutcome(publishState, null);
+                                _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.ACCEPTED);
                                 break;
                             }
                         default:
@@ -164,15 +176,22 @@ namespace RabbitMQ.AMQP.Client.Impl
                 _senderLink.Send(nativeMessage, OutcomeCallback, this);
 
                 // TODO cancellation token
-                // TODO operation timeout
                 // PublishOutcome publishOutcome = await messagePublishedTcs.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken)
                 PublishOutcome publishOutcome = await messagePublishedTcs.Task.WaitAsync(TimeSpan.FromSeconds(5))
                     .ConfigureAwait(false);
+
+                if (_metricsReporter is not null && stopwatch is not null)
+                {
+                    stopwatch.Stop();
+                    _metricsReporter.Published(stopwatch.Elapsed);
+                }
 
                 return new PublishResult(message, publishOutcome);
             }
             catch (AmqpException ex)
             {
+                stopwatch?.Stop();
+                _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.REJECTED);
                 var publishOutcome = new PublishOutcome(OutcomeState.Rejected, Utils.ConvertError(ex.Error));
                 return new PublishResult(message, publishOutcome);
             }

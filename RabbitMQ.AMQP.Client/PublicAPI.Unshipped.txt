@@ -7,6 +7,8 @@ const RabbitMQ.AMQP.Client.Impl.Consts.Exchanges = "exchanges" -> string!
 const RabbitMQ.AMQP.Client.Impl.Consts.Key = "key" -> string!
 const RabbitMQ.AMQP.Client.Impl.Consts.Messages = "messages" -> string!
 const RabbitMQ.AMQP.Client.Impl.Consts.Queues = "queues" -> string!
+const RabbitMQ.AMQP.Client.MetricsReporter.MeterName = "RabbitMQ.Amqp" -> string!
+const RabbitMQ.AMQP.Client.MetricsReporter.MetricPrefix = "rabbitmq.amqp" -> string!
 override RabbitMQ.AMQP.Client.Error.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.AmqpConnection.CloseAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpConnection.OpenAsync() -> System.Threading.Tasks.Task!
@@ -237,6 +239,25 @@ RabbitMQ.AMQP.Client.IMessage.UserId() -> byte[]!
 RabbitMQ.AMQP.Client.IMessage.UserId(byte[]! userId) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IMessageAddressBuilder
 RabbitMQ.AMQP.Client.IMessageAddressBuilder.Build() -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.IMetricsReporter
+RabbitMQ.AMQP.Client.IMetricsReporter.ConnectionClosed() -> void
+RabbitMQ.AMQP.Client.IMetricsReporter.ConnectionOpened() -> void
+RabbitMQ.AMQP.Client.IMetricsReporter.Consumed(System.TimeSpan elapsed) -> void
+RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDisposition(RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue disposition) -> void
+RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue
+RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue.ACCEPTED = 0 -> RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue
+RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue.DISCARDED = 1 -> RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue
+RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue.REQUEUED = 2 -> RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue
+RabbitMQ.AMQP.Client.IMetricsReporter.ConsumerClosed() -> void
+RabbitMQ.AMQP.Client.IMetricsReporter.ConsumerOpened() -> void
+RabbitMQ.AMQP.Client.IMetricsReporter.PublishDisposition(RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue disposition) -> void
+RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue
+RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue.ACCEPTED = 0 -> RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue
+RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue.REJECTED = 1 -> RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue
+RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue.RELEASED = 2 -> RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue
+RabbitMQ.AMQP.Client.IMetricsReporter.Published(System.TimeSpan elapsed) -> void
+RabbitMQ.AMQP.Client.IMetricsReporter.PublisherClosed() -> void
+RabbitMQ.AMQP.Client.IMetricsReporter.PublisherOpened() -> void
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.AbstractLifeCycle() -> void
 RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.ChangeState -> RabbitMQ.AMQP.Client.LifeCycleCallBack?
@@ -291,7 +312,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpConsumer.Pause() -> void
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer.Unpause() -> void
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer.UnsettledMessageCount.get -> long
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder
-RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.AmqpConsumerBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.AmqpConsumerBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection, RabbitMQ.AMQP.Client.IMetricsReporter? metricsReporter) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.BuildAndStartAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConsumer!>!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.InitialCredits(int initialCredits) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.MessageHandler(RabbitMQ.AMQP.Client.MessageHandler! handler) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
@@ -369,10 +390,10 @@ RabbitMQ.AMQP.Client.Impl.AmqpMessage.UserId(byte[]! userId) -> RabbitMQ.AMQP.Cl
 RabbitMQ.AMQP.Client.Impl.AmqpNotOpenException
 RabbitMQ.AMQP.Client.Impl.AmqpNotOpenException.AmqpNotOpenException(string! message) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpPublisher
-RabbitMQ.AMQP.Client.Impl.AmqpPublisher.AmqpPublisher(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection, string? address, System.TimeSpan timeout) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpPublisher.AmqpPublisher(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection, string? address, RabbitMQ.AMQP.Client.IMetricsReporter? metricsReporter) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpPublisher.PublishAsync(RabbitMQ.AMQP.Client.IMessage! message, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.PublishResult!>!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder
-RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.AmqpPublisherBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.AmqpPublisherBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection, RabbitMQ.AMQP.Client.IMetricsReporter? metricsReporter) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IPublisher!>!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.Exchange(RabbitMQ.AMQP.Client.IExchangeSpecification! exchangeSpec) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpPublisherBuilder.Exchange(string! exchangeName) -> RabbitMQ.AMQP.Client.IPublisherBuilder!
@@ -596,6 +617,9 @@ RabbitMQ.AMQP.Client.Impl.TlsSettings.RemoteCertificateValidationCallback.get ->
 RabbitMQ.AMQP.Client.Impl.TlsSettings.RemoteCertificateValidationCallback.set -> void
 RabbitMQ.AMQP.Client.Impl.TlsSettings.TlsSettings() -> void
 RabbitMQ.AMQP.Client.Impl.TlsSettings.TlsSettings(System.Security.Authentication.SslProtocols protocols) -> void
+RabbitMQ.AMQP.Client.InternalBugException
+RabbitMQ.AMQP.Client.InternalBugException.InternalBugException() -> void
+RabbitMQ.AMQP.Client.InternalBugException.InternalBugException(string! message) -> void
 RabbitMQ.AMQP.Client.InvalidAddressException
 RabbitMQ.AMQP.Client.InvalidAddressException.InvalidAddressException(string! message) -> void
 RabbitMQ.AMQP.Client.IPublisher
@@ -691,6 +715,18 @@ RabbitMQ.AMQP.Client.ITlsSettings.RemoteCertificateValidationCallback.get -> Sys
 RabbitMQ.AMQP.Client.ITlsSettings.RemoteCertificateValidationCallback.set -> void
 RabbitMQ.AMQP.Client.LifeCycleCallBack
 RabbitMQ.AMQP.Client.MessageHandler
+RabbitMQ.AMQP.Client.MetricsReporter
+RabbitMQ.AMQP.Client.MetricsReporter.ConnectionClosed() -> void
+RabbitMQ.AMQP.Client.MetricsReporter.ConnectionOpened() -> void
+RabbitMQ.AMQP.Client.MetricsReporter.Consumed(System.TimeSpan elapsed) -> void
+RabbitMQ.AMQP.Client.MetricsReporter.ConsumeDisposition(RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue disposition) -> void
+RabbitMQ.AMQP.Client.MetricsReporter.ConsumerClosed() -> void
+RabbitMQ.AMQP.Client.MetricsReporter.ConsumerOpened() -> void
+RabbitMQ.AMQP.Client.MetricsReporter.MetricsReporter(System.Diagnostics.Metrics.IMeterFactory! meterFactory) -> void
+RabbitMQ.AMQP.Client.MetricsReporter.PublishDisposition(RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue disposition) -> void
+RabbitMQ.AMQP.Client.MetricsReporter.Published(System.TimeSpan elapsed) -> void
+RabbitMQ.AMQP.Client.MetricsReporter.PublisherClosed() -> void
+RabbitMQ.AMQP.Client.MetricsReporter.PublisherOpened() -> void
 RabbitMQ.AMQP.Client.ModelException
 RabbitMQ.AMQP.Client.ModelException.ModelException(string! message) -> void
 RabbitMQ.AMQP.Client.OutcomeState
@@ -740,12 +776,13 @@ static RabbitMQ.AMQP.Client.ByteCapacity.Kb(long megabytes) -> RabbitMQ.AMQP.Cli
 static RabbitMQ.AMQP.Client.ByteCapacity.Mb(long megabytes) -> RabbitMQ.AMQP.Client.ByteCapacity!
 static RabbitMQ.AMQP.Client.ByteCapacity.Tb(long terabytes) -> RabbitMQ.AMQP.Client.ByteCapacity!
 static RabbitMQ.AMQP.Client.Impl.AddressBuilderHelper.AddressBuilder() -> RabbitMQ.AMQP.Client.Impl.AddressBuilder!
-static RabbitMQ.AMQP.Client.Impl.AmqpConnection.CreateAsync(RabbitMQ.AMQP.Client.IConnectionSettings! connectionSettings) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
-static RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.CreateAsync(RabbitMQ.AMQP.Client.IConnectionSettings! connectionSettings) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IEnvironment!>!
+static RabbitMQ.AMQP.Client.Impl.AmqpConnection.CreateAsync(RabbitMQ.AMQP.Client.IConnectionSettings! connectionSettings, RabbitMQ.AMQP.Client.IMetricsReporter? metricsReporter = null) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
+static RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.Create(RabbitMQ.AMQP.Client.IConnectionSettings! connectionSettings, RabbitMQ.AMQP.Client.IMetricsReporter? metricsReporter = null) -> RabbitMQ.AMQP.Client.IEnvironment!
 static RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.Create() -> RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy!
 static RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy.Create(int maxAttempt) -> RabbitMQ.AMQP.Client.Impl.BackOffDelayPolicy!
 static RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder.Create() -> RabbitMQ.AMQP.Client.Impl.ConnectionSettingBuilder!
 static RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration.Create() -> RabbitMQ.AMQP.Client.Impl.RecoveryConfiguration!
+static RabbitMQ.AMQP.Client.InternalBugException.CreateAndThrow(string! message) -> void
 static readonly RabbitMQ.AMQP.Client.SaslMechanism.Anonymous -> RabbitMQ.AMQP.Client.SaslMechanism!
 static readonly RabbitMQ.AMQP.Client.SaslMechanism.External -> RabbitMQ.AMQP.Client.SaslMechanism!
 static readonly RabbitMQ.AMQP.Client.SaslMechanism.Plain -> RabbitMQ.AMQP.Client.SaslMechanism!

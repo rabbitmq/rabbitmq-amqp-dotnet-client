@@ -34,7 +34,8 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly AmqpManagement _management;
         private readonly RecordingTopologyListener _recordingTopologyListener = new();
 
-        private readonly IConnectionSettings _connectionSettings;
+        internal readonly IConnectionSettings _connectionSettings;
+        private readonly IMetricsReporter? _metricsReporter;
         internal readonly AmqpSessionManagement _nativePubSubSessions;
 
         private readonly Dictionary<string, object> _connectionProperties = new();
@@ -104,7 +105,6 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IRpcClientBuilder RpcClientBuilder()
         {
-
             return new AmqpRpcClientBuilder(this);
         }
 
@@ -131,6 +131,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IReadOnlyDictionary<string, object> Properties => _connectionProperties;
 
         public long Id { get; set; }
+
         /// <summary>
         /// Creates a new instance of <see cref="AmqpConnection"/>
         /// Through the Connection is possible to create:
@@ -138,10 +139,14 @@ namespace RabbitMQ.AMQP.Client.Impl
         ///  - Publishers and Consumers: See <see cref="AmqpPublisherBuilder"/> and <see cref="AmqpConsumerBuilder"/> 
         /// </summary>
         /// <param name="connectionSettings"></param>
+        /// <param name="metricsReporter"></param>
         /// <returns></returns>
-        public static async Task<IConnection> CreateAsync(IConnectionSettings connectionSettings)
+        // TODO to play nicely with IoC containers, we should not have static Create methods
+        // TODO rename to CreateAndOpenAsync
+        public static async Task<IConnection> CreateAsync(IConnectionSettings connectionSettings,
+            IMetricsReporter? metricsReporter = default)
         {
-            var connection = new AmqpConnection(connectionSettings);
+            var connection = new AmqpConnection(connectionSettings, metricsReporter);
             await connection.OpenAsync()
                 .ConfigureAwait(false);
             return connection;
@@ -154,7 +159,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IConsumerBuilder ConsumerBuilder()
         {
-            return new AmqpConsumerBuilder(this);
+            return new AmqpConsumerBuilder(this, _metricsReporter);
         }
 
         // TODO cancellation token
@@ -170,7 +175,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IPublisherBuilder PublisherBuilder()
         {
             ThrowIfClosed();
-            var publisherBuilder = new AmqpPublisherBuilder(this);
+            var publisherBuilder = new AmqpPublisherBuilder(this, _metricsReporter);
             return publisherBuilder;
         }
 
@@ -235,6 +240,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 {
                     _nativeConnection.Closed -= _closedCallback;
                 }
+
                 _semaphoreOpen.Dispose();
                 _semaphoreClose.Dispose();
             }
@@ -265,9 +271,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-        private AmqpConnection(IConnectionSettings connectionSettings)
+        private AmqpConnection(IConnectionSettings connectionSettings, IMetricsReporter? metricsReporter)
         {
             _connectionSettings = connectionSettings;
+            _metricsReporter = metricsReporter;
             _nativePubSubSessions = new AmqpSessionManagement(this, 1);
             _management =
                 new AmqpManagement(new AmqpManagementParameters(this).TopologyListener(_recordingTopologyListener));
@@ -291,10 +298,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                     HostName = $"vhost:{_connectionSettings.VirtualHost}",
                     // Note: no need to set cf.AMQP.ContainerId
                     ContainerId = _connectionSettings.ContainerId,
-                    Properties = new Fields()
-                    {
-                        [new Symbol("connection_name")] = _connectionSettings.ContainerId,
-                    }
+                    Properties = new Fields() { [new Symbol("connection_name")] = _connectionSettings.ContainerId, }
                 };
 
                 if (_connectionSettings.MaxFrameSize > uint.MinValue)
@@ -350,7 +354,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                     if (_connectionSettings is null)
                     {
                         // TODO create "internal bug" exception type?
-                        throw new InvalidOperationException("_connectionSettings is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                        throw new InvalidOperationException(
+                            "_connectionSettings is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
                     }
                     else
                     {
@@ -497,8 +502,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                         if (false == connected)
                         {
                             var notRecoveredError = new Error(ConnectionNotRecoveredCode,
-                                    $"{ConnectionNotRecoveredMessage}," +
-                                    $"recover status: {_connectionSettings.Recovery}");
+                                $"{ConnectionNotRecoveredMessage}," +
+                                $"recover status: {_connectionSettings.Recovery}");
                             DoClose(notRecoveredError);
                             return;
                         }

@@ -5,9 +5,15 @@
   <ItemGroup>
     <!-- RabbitMQ.Amqp.Client -->
     <PackageVersion Include="AMQPNetLite.Core" Version="2.4.11" />
+    <PackageVersion Include="OpenTelemetry" Version="1.10.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.10.0" />
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="9.0.0" />
     <!-- HAClient -->
     <PackageVersion Include="DotNext.Threading" Version="5.15.0" />
     <!-- Tests -->
+    <PackageVersion Include="Microsoft.Extensions.Diagnostics" Version="9.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Diagnostics.Testing" Version="9.0.0" />
+    <PackageVersion Include="System.Text.Json" Version="9.0.0" />
     <PackageVersion Include="xunit" Version="2.9.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageVersion Include="Xunit.SkippableFact" Version="1.4.13" />
@@ -22,11 +28,7 @@
       * https://github.com/rabbitmq/rabbitmq-dotnet-client/pull/1481#pullrequestreview-1847905299
       * https://github.com/rabbitmq/rabbitmq-dotnet-client/pull/1594
     -->
-    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="6.0.0" />
-    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)'=='net8.0'">
-    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
+    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.0" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)'=='.NETFramework'">
     <GlobalPackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" />

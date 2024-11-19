@@ -13,12 +13,15 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly IReceiverLink _link;
         private readonly Message _message;
         private readonly UnsettledMessageCounter _unsettledMessageCounter;
+        private readonly IMetricsReporter? _metricsReporter;
 
-        public DeliveryContext(IReceiverLink link, Message message, UnsettledMessageCounter unsettledMessageCounter)
+        public DeliveryContext(IReceiverLink link, Message message, UnsettledMessageCounter unsettledMessageCounter,
+            IMetricsReporter? metricsReporter)
         {
             _link = link;
             _message = message;
             _unsettledMessageCounter = unsettledMessageCounter;
+            _metricsReporter = metricsReporter;
         }
 
         public void Accept()
@@ -32,6 +35,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 _link.Accept(_message);
                 _unsettledMessageCounter.Decrement();
+                _metricsReporter?.ConsumeDisposition(IMetricsReporter.ConsumeDispositionValue.ACCEPTED);
             }
             finally
             {
@@ -50,6 +54,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 _link.Reject(_message);
                 _unsettledMessageCounter.Decrement();
+                _metricsReporter?.ConsumeDisposition(IMetricsReporter.ConsumeDispositionValue.DISCARDED);
             }
             finally
             {
@@ -76,6 +81,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 _link.Modify(_message, true, true, messageAnnotations);
                 _unsettledMessageCounter.Decrement();
+                _metricsReporter?.ConsumeDisposition(IMetricsReporter.ConsumeDispositionValue.DISCARDED);
             }
             finally
             {
@@ -94,6 +100,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 _link.Release(_message);
                 _unsettledMessageCounter.Decrement();
+                _metricsReporter?.ConsumeDisposition(IMetricsReporter.ConsumeDispositionValue.REQUEUED);
             }
             finally
             {
@@ -120,6 +127,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 _link.Modify(_message, false, false, messageAnnotations);
                 _unsettledMessageCounter.Decrement();
+                _metricsReporter?.ConsumeDisposition(IMetricsReporter.ConsumeDispositionValue.REQUEUED);
             }
             finally
             {

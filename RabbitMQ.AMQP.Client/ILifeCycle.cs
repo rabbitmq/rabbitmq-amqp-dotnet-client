@@ -35,6 +35,7 @@ namespace RabbitMQ.AMQP.Client
 
     public delegate void LifeCycleCallBack(object sender, State previousState, State currentState, Error? failureCause);
 
+    // TODO consider adding IAsyncDisposable that could call CloseAsync()
     public interface ILifeCycle : IDisposable
     {
         Task CloseAsync();
