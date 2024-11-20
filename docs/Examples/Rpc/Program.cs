@@ -1,4 +1,8 @@
-﻿#pragma warning disable CA2007 // Consider calling ConfigureAwait on the awaited task
+﻿// This source code is dual-licensed under the Apache License, version 2.0,
+// and the Mozilla Public License, version 2.0.
+// Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
+
+#pragma warning disable CA2007 // Consider calling ConfigureAwait on the awaited task
 
 using System.Diagnostics;
 using RabbitMQ.AMQP.Client;
