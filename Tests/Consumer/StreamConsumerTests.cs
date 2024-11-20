@@ -506,7 +506,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
 
         using (IConsumer consumer = await consumerBuilder0.BuildAndStartAsync())
         {
-            await WaitUntilStable(() => (int)Interlocked.Read(ref receivedCount));
+            await WaitUntilStable<long>(() => Interlocked.Read(ref receivedCount));
             await consumer.CloseAsync();
         }
 

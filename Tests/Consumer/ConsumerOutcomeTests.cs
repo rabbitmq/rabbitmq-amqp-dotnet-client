@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using EasyNetQ.Management.Client.Model;
 using RabbitMQ.AMQP.Client;
@@ -30,6 +32,69 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         Utils.ValidateMessageAnnotations(new Dictionary<string, object> { { correctAnnotationKey, annotationValue } });
     }
 
+    [Fact]
+    public async Task RequeuedMessageShouldBeRequeued()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IQueueSpecification queueSpecification = _management.Queue(_queueName).Type(QueueType.QUORUM);
+
+        await queueSpecification.DeclareAsync();
+
+        int deliveryCount = 0;
+        TaskCompletionSource<bool> tcs = CreateTaskCompletionSource();
+        var messages = new ConcurrentQueue<IMessage>();
+        IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder()
+            .Queue(queueSpecification)
+            .MessageHandler((cxt, msg) =>
+            {
+                try
+                {
+                    messages.Enqueue(msg);
+                    if (Interlocked.Increment(ref deliveryCount) == 1)
+                    {
+                        cxt.Requeue();
+                    }
+                    else
+                    {
+                        cxt.Accept();
+                        tcs.SetResult(true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
+
+                return Task.CompletedTask;
+            });
+
+        IConsumer consumer = await consumerBuilder.BuildAndStartAsync();
+
+        IMessage message = new AmqpMessage($"message");
+        IPublisherBuilder publisherBuilder = _connection.PublisherBuilder().Queue(queueSpecification);
+        IPublisher publisher = await publisherBuilder.BuildAsync();
+        PublishResult pr = await publisher.PublishAsync(message);
+
+        await WhenTcsCompletes(tcs);
+
+        Assert.True(messages.TryDequeue(out IMessage? message0));
+        message0.Annotation("x-delivery-count");
+
+        Assert.True(messages.TryDequeue(out IMessage? message1));
+        Assert.Equal(1, (long)message1.Annotation("x-delivery-count"));
+
+        await WaitUntilStable(async () =>
+        {
+            IQueueInfo qi = await _management.GetQueueInfoAsync(queueSpecification);
+            return (int)qi.MessageCount();
+        }, 0);
+
+        await consumer.CloseAsync();
+        consumer.Dispose();
+    }
+
     /// <summary>
     /// The test verifies that a requeued message with annotations will contain the annotations on redelivery.
     /// The delivered message should contain the custom annotations and x-delivery-count
@@ -39,8 +104,6 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
     {
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
-        TaskCompletionSource<bool> tcsRequeue =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         const string annotationKey = "x-opt-annotation-key";
         const string annotationValue = "annotation-value";
@@ -51,6 +114,8 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         int requeueCount = 0;
 
         await _management.Queue().Type(QueueType.QUORUM).Name(_queueName).DeclareAsync();
+
+        TaskCompletionSource<bool> tcsRequeue = CreateTaskCompletionSource();
         List<IMessage> messages = [];
         IPublisher publisher = await _connection.PublisherBuilder().Queue(_queueName).BuildAsync();
         IConsumer consumer = await _connection.ConsumerBuilder().MessageHandler(
@@ -74,7 +139,7 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
             }
         ).Queue(_queueName).BuildAndStartAsync();
 
-        IMessage message = new AmqpMessage($"message");
+        IMessage message = new AmqpMessage(RandomString());
         PublishResult pr = await publisher.PublishAsync(message);
 
         Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
@@ -97,12 +162,85 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
     }
 
     [Fact]
-    public async Task DiscardedMessageWithAnnotationsShouldBeDeadLeadLetteredAndContainAnnotationsWhenConfigured()
+    public async Task DiscardedMessageShouldBeDeadLeadLetteredWhenConfigured()
     {
-        string dlqQueueName = $"dlq_{_queueName}";
-        await DeclareDeadLetterTopology(_queueName, dlqQueueName);
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
+
+        string dlqQueueName = $"dlq_{_queueName}";
+        await DeclareDeadLetterTopology(_queueName, dlqQueueName);
+
+        IConsumerBuilder queueConsumerBuilder = _connection.ConsumerBuilder()
+            .Queue(_queueName)
+            .MessageHandler((cxt, msg) =>
+            {
+                cxt.Discard();
+                return Task.CompletedTask;
+            });
+        IConsumer queueConsumer = await queueConsumerBuilder.BuildAndStartAsync();
+
+        TaskCompletionSource<IMessage> tcs = CreateTaskCompletionSource<IMessage>();
+        IConsumerBuilder deadLetterQueueConsumerBuilder = _connection.ConsumerBuilder()
+            .Queue(dlqQueueName)
+            .MessageHandler((cxt, msg) =>
+            {
+                try
+                {
+                    cxt.Accept();
+                    tcs.SetResult(msg);
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
+
+                return Task.CompletedTask;
+            });
+
+        IConsumer deadLetterConsumer = await deadLetterQueueConsumerBuilder.BuildAndStartAsync();
+
+        Guid messageId = Guid.NewGuid();
+        IMessage message = new AmqpMessage(RandomString())
+            .MessageId(messageId);
+
+        IPublisherBuilder publisherBuilder = _connection.PublisherBuilder()
+            .Queue(_queueName);
+        IPublisher publisher = await publisherBuilder.BuildAsync();
+
+        PublishResult pr = await publisher.PublishAsync(message);
+        await publisher.CloseAsync();
+        publisher.Dispose();
+
+        IMessage deadLetteredMessage = await WhenTcsCompletes(tcs);
+        Assert.Equal(messageId, deadLetteredMessage.MessageId());
+
+        await WaitUntilStable(async () =>
+        {
+            IQueueInfo qi = await _management.GetQueueInfoAsync(_queueName);
+            return (int)qi.MessageCount();
+        }, 0);
+
+        await WaitUntilStable(async () =>
+        {
+            IQueueInfo qi = await _management.GetQueueInfoAsync(dlqQueueName);
+            return (int)qi.MessageCount();
+        }, 0);
+
+        await queueConsumer.CloseAsync();
+        queueConsumer.Dispose();
+
+        await deadLetterConsumer.CloseAsync();
+        deadLetterConsumer.Dispose();
+    }
+
+    [Fact]
+    public async Task DiscardedMessageWithAnnotationsShouldBeDeadLeadLetteredAndContainAnnotationsWhenConfigured()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        string dlqQueueName = $"dlq_{_queueName}";
+        await DeclareDeadLetterTopology(_queueName, dlqQueueName);
 
         const string annotationKey = "x-opt-annotation-key";
         const string annotationValue = "annotation-value";
@@ -118,7 +256,7 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
             }
         ).Queue(_queueName).BuildAndStartAsync();
 
-        IMessage message = new AmqpMessage($"message");
+        IMessage message = new AmqpMessage(RandomString());
         PublishResult pr = await publisher.PublishAsync(message);
         Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
         await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -150,8 +288,9 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
 
     private async Task DeclareDeadLetterTopology(string queueName, string dlxQueueName)
     {
-        string dlx = $"{queueName}.dlx";
         Assert.NotNull(_management);
+
+        string dlx = $"{queueName}.dlx";
         await _management.Queue().Name(queueName).Type(QueueType.QUORUM).DeadLetterExchange(dlx).DeclareAsync();
         await _management.Exchange(dlx).Type(ExchangeType.FANOUT).AutoDelete(true).DeclareAsync();
         await _management.Queue(dlxQueueName).Exclusive(true).DeclareAsync();

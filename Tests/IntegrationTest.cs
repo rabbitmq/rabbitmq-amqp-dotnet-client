@@ -171,12 +171,13 @@ public abstract class IntegrationTest : IAsyncLifetime
         return task.WaitAsync(_waitSpan);
     }
 
-    protected async Task WaitUntilStable(Func<int> getValue)
+    protected static async Task WaitUntilStable<T>(Func<T> getValue, T? stableValue = default)
+        where T : IEquatable<T>
     {
         const int iterations = 20;
         int iteration = 0;
-        int val0 = int.MinValue;
-        int val1 = int.MaxValue;
+        T val0;
+        T val1;
         do
         {
             await Task.Delay(250);
@@ -184,11 +185,41 @@ public abstract class IntegrationTest : IAsyncLifetime
             await Task.Delay(250);
             val1 = getValue();
             iteration++;
-        } while (val0 != val1 && iteration < iterations);
+            if (stableValue is not null && val1.Equals(stableValue))
+            {
+                break;
+            }
+        } while (false == val0.Equals(val1) && iteration < iterations);
 
         if (iteration == iterations)
         {
-            Assert.Fail("value did not stabilize as expected");
+            Assert.Fail($"value did not stabilize as expected (stableValue: {stableValue})");
+        }
+    }
+
+    protected static async Task WaitUntilStable<T>(Func<Task<T>> getValue, T? stableValue = default)
+        where T : IEquatable<T>
+    {
+        const int iterations = 20;
+        int iteration = 0;
+        T val0;
+        T val1;
+        do
+        {
+            await Task.Delay(250);
+            val0 = await getValue();
+            await Task.Delay(250);
+            val1 = await getValue();
+            iteration++;
+            if (stableValue is not null && val1.Equals(stableValue))
+            {
+                break;
+            }
+        } while (false == val0.Equals(val1) && iteration < iterations);
+
+        if (iteration == iterations)
+        {
+            Assert.Fail($"value did not stabilize as expected (stableValue: {stableValue})");
         }
     }
 

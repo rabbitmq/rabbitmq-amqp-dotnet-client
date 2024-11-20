@@ -220,16 +220,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
 
         consumer.Pause();
 
-        DateTime start = DateTime.Now;
-        while (consumer.UnsettledMessageCount != 0)
-        {
-            await Task.Delay(TimeSpan.FromMilliseconds(100));
-            DateTime now = DateTime.Now;
-            if (start - now > _waitSpan)
-            {
-                Assert.Fail("consumer.UnsettledMessageCount never reached zero!");
-            }
-        }
+        await WaitUntilStable(() => consumer.UnsettledMessageCount, 0);
 
         await consumer.CloseAsync();
         consumer.Dispose();
