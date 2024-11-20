@@ -115,10 +115,37 @@ public class HttpApiClient : IDisposable
         return killed;
     }
 
-    public Task<Queue> GetQueueAsync(string queueNameStr)
+    public async Task<Queue> GetQueueAsync(string queueNameStr)
     {
-        var queueName = new QueueName(queueNameStr, "/");
-        return _managementClient.GetQueueAsync(queueName);
+        ushort retries = 20;
+        do
+        {
+            try
+            {
+                var queueName = new QueueName(queueNameStr, "/");
+                return await _managementClient.GetQueueAsync(queueName);
+            }
+            catch (UnexpectedHttpStatusCodeException ex)
+            {
+                if (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    retries--;
+                    if (retries == 0)
+                    {
+                        throw;
+                    }
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            await Task.Delay(500);
+
+        } while (retries >= 0);
+
+        throw new InvalidOperationException($"could not retrieve queue '{queueNameStr}' within 10 seconds!");
     }
 
     public async Task<bool> CheckExchangeAsync(string exchangeNameStr, bool checkExisting = true)
