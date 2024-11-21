@@ -22,6 +22,12 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client</RepositoryUrl>
+    <!--
+      NOTE: un-comment this if it appears that connections or other entities that should be unique
+      are created at the same time. .NET 9 runs parallel test suites per-TFM
+      https://github.com/dotnet/sdk/issues/39470
+      <TestTfmsInParallel>false</TestTfmsInParallel>
+    -->
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <LangVersion>default</LangVersion>
   </PropertyGroup>

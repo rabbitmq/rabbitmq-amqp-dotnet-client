@@ -34,7 +34,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly AmqpManagement _management;
         private readonly RecordingTopologyListener _recordingTopologyListener = new();
 
-        internal readonly IConnectionSettings _connectionSettings;
+        internal readonly ConnectionSettings _connectionSettings;
         private readonly IMetricsReporter? _metricsReporter;
         internal readonly AmqpSessionManagement _nativePubSubSessions;
 
@@ -143,7 +143,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// <returns></returns>
         // TODO to play nicely with IoC containers, we should not have static Create methods
         // TODO rename to CreateAndOpenAsync
-        public static async Task<IConnection> CreateAsync(IConnectionSettings connectionSettings,
+        public static async Task<IConnection> CreateAsync(ConnectionSettings connectionSettings,
             IMetricsReporter? metricsReporter = default)
         {
             var connection = new AmqpConnection(connectionSettings, metricsReporter);
@@ -271,7 +271,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-        private AmqpConnection(IConnectionSettings connectionSettings, IMetricsReporter? metricsReporter)
+        private AmqpConnection(ConnectionSettings connectionSettings, IMetricsReporter? metricsReporter)
         {
             _connectionSettings = connectionSettings;
             _metricsReporter = metricsReporter;
@@ -359,6 +359,9 @@ namespace RabbitMQ.AMQP.Client.Impl
                     }
                     else
                     {
+                        // TODO
+                        // There is absolutely NO POINT in having an interface if this
+                        // is what will be done!
                         connectionSettings = (ConnectionSettings)_connectionSettings;
                         Address address = connectionSettings.Address;
                         _nativeConnection = await cf.CreateAsync(address: address, open: open, onOpened: OnOpened)
@@ -443,7 +446,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                         // we have to check if the recovery is active.
                         // The user may want to disable the recovery mechanism
                         // the user can use the lifecycle callback to handle the error
-                        if (false == _connectionSettings.Recovery.IsActivate())
+                        if (false == _connectionSettings.Recovery.IsActivated())
                         {
                             DoClose();
                             return;

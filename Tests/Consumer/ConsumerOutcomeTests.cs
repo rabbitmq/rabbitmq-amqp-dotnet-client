@@ -20,23 +20,6 @@ namespace Tests.Consumer;
 public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
 {
     [Fact]
-    public void ValidateAnnotations()
-    {
-        const string wrongAnnotationKey = "missing-the-start-x-annotation-key";
-        const string annotationValue = "annotation-value";
-        // This should throw an exception because the annotation key does not start with "x-"
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Utils.ValidateMessageAnnotations(new Dictionary<string, object>
-            {
-                { wrongAnnotationKey, annotationValue }
-            }));
-
-        const string correctAnnotationKey = "x-otp-annotation-key";
-        // This should not throw an exception because the annotation key starts with "x-"
-        Utils.ValidateMessageAnnotations(new Dictionary<string, object> { { correctAnnotationKey, annotationValue } });
-    }
-
-    [Fact]
     public async Task RequeuedMessageShouldBeRequeued()
     {
         Assert.NotNull(_connection);

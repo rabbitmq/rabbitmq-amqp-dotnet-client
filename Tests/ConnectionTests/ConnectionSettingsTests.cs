@@ -2,19 +2,22 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Tests.ConnectionTests;
 
-public class ConnectionValidationTests
+public class ConnectionSettingsTests(ITestOutputHelper testOutputHelper)
+    : IntegrationTest(testOutputHelper, setupConnectionAndManagement: false)
 {
     [Fact]
     public void ValidateAddress()
     {
-        IRecoveryConfiguration recoveryConfiguration = RecoveryConfiguration.Create();
+        RecoveryConfiguration recoveryConfiguration = new RecoveryConfiguration();
 
         ConnectionSettings connectionSettings = new("amqp1", "localhost", 5672, "guest-user",
             "guest-password", "vhost_1", "connection_name", SaslMechanism.External,
@@ -28,7 +31,7 @@ public class ConnectionValidationTests
         Assert.Equal(SaslMechanism.External, connectionSettings.SaslMechanism);
 
         ConnectionSettings second = new("amqp1", "localhost", 5672, "guest-user",
-            "guest-password", "path/", "connection_name", SaslMechanism.External,
+            "guest-password", "vhost_1", "connection_name", SaslMechanism.External,
             recoveryConfiguration);
 
         Assert.Equal(connectionSettings, second);
@@ -43,7 +46,7 @@ public class ConnectionValidationTests
     [Fact]
     public void ValidateAddressBuilder()
     {
-        ConnectionSettings connectionSettings = ConnectionSettingBuilder.Create()
+        ConnectionSettings connectionSettings = ConnectionSettingsBuilder.Create()
             .Host("localhost")
             .VirtualHost("v1")
             .User("guest-t")
@@ -62,7 +65,7 @@ public class ConnectionValidationTests
     [Fact]
     public void ValidateBuilderWithSslOptions()
     {
-        ConnectionSettings connectionSettings = ConnectionSettingBuilder.Create()
+        ConnectionSettings connectionSettings = ConnectionSettingsBuilder.Create()
             .Host("localhost")
             .VirtualHost("v1")
             .User("guest-t")
@@ -80,23 +83,44 @@ public class ConnectionValidationTests
     }
 
     [Fact]
+    public void ConnectionSettingsViaUri()
+    {
+        const string scheme = "amqps";
+        const string host = "rabbitmq-host.foo.baz.com";
+        const string vhost = "/frazzle";
+        string user = RandomString(10);
+        string pass = RandomString(10);
+
+        var uri = new Uri($"{scheme}://{user}:{pass}@{host}/%2Ffrazzle");
+        var connectionSettings = new ConnectionSettings(uri);
+
+        Assert.True(connectionSettings.UseSsl);
+        Assert.Equal(host, connectionSettings.Host);
+        Assert.Equal(5671, connectionSettings.Port);
+        Assert.Equal(user, connectionSettings.User);
+        Assert.Equal(pass, connectionSettings.Password);
+        Assert.Equal(vhost, connectionSettings.VirtualHost);
+        Assert.Equal(scheme, connectionSettings.Scheme);
+    }
+
+    [Fact]
     public async Task RaiseErrorsIfTheParametersAreNotValid()
     {
         await Assert.ThrowsAsync<ConnectionException>(async () =>
-            await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().VirtualHost("wrong_vhost").Build()));
+            await AmqpConnection.CreateAsync(ConnectionSettingsBuilder.Create().VirtualHost("wrong_vhost").Build()));
 
         // TODO check inner exception is a SocketException
         await Assert.ThrowsAnyAsync<ConnectionException>(async () =>
-            await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Host("wrong_host").Build()));
+            await AmqpConnection.CreateAsync(ConnectionSettingsBuilder.Create().Host("wrong_host").Build()));
 
         await Assert.ThrowsAsync<ConnectionException>(async () =>
-            await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Password("wrong_password").Build()));
+            await AmqpConnection.CreateAsync(ConnectionSettingsBuilder.Create().Password("wrong_password").Build()));
 
         await Assert.ThrowsAsync<ConnectionException>(async () =>
-            await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().User("wrong_user").Build()));
+            await AmqpConnection.CreateAsync(ConnectionSettingsBuilder.Create().User("wrong_user").Build()));
 
         // TODO check inner exception is a SocketException
         await Assert.ThrowsAnyAsync<ConnectionException>(async () =>
-            await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create().Port(1234).Build()));
+            await AmqpConnection.CreateAsync(ConnectionSettingsBuilder.Create().Port(1234).Build()));
     }
 }

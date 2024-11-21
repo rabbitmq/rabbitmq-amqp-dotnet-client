@@ -33,10 +33,10 @@ public abstract partial class IntegrationTest : IAsyncLifetime
     protected IManagement? _management;
     protected string _queueName;
     protected string _exchangeName;
-    protected string _containerId = $"integration-test-{Now}";
+    protected string _containerId = $"integration-test-{Now}-{GenerateShortUuid()}";
 
     private readonly bool _setupConnectionAndManagement;
-    protected readonly ConnectionSettingBuilder _connectionSettingBuilder;
+    protected readonly ConnectionSettingsBuilder _connectionSettingBuilder;
 
     protected bool _areFilterExpressionsSupported = false;
 
@@ -48,9 +48,9 @@ public abstract partial class IntegrationTest : IAsyncLifetime
 
         _testDisplayName = InitTestDisplayName();
 
-        _queueName = $"{_testDisplayName}-queue-{Now}";
-        _exchangeName = $"{_testDisplayName}-exchange-{Now}";
-        _containerId = $"{_testDisplayName}:{Now}";
+        _queueName = $"{_testDisplayName}-queue-{Now}-{GenerateShortUuid()}";
+        _exchangeName = $"{_testDisplayName}-exchange-{Now}-{GenerateShortUuid()}";
+        _containerId = $"{_testDisplayName}:{Now}-{GenerateShortUuid()}";
 
         if (IsVerbose)
         {
@@ -77,13 +77,6 @@ public abstract partial class IntegrationTest : IAsyncLifetime
             }
             _management = _connection.Management();
         }
-
-        /*
-         * Note: re-assigning here since Theory tests
-         * will include the theory data at this point
-         */
-        _queueName = $"{_testDisplayName}-queue-{Now}";
-        _exchangeName = $"{_testDisplayName}-exchange-{Now}";
     }
 
     public virtual async Task DisposeAsync()
@@ -358,21 +351,21 @@ public abstract partial class IntegrationTest : IAsyncLifetime
             object? testObj = testMember.GetValue(_testOutputHelper);
             if (testObj is ITest test)
             {
-                rv = test.DisplayName;
+                rv = s_testDisplayNameRegex.Replace(test.DisplayName, "T.");
             }
         }
 
         return rv;
     }
 
-    private ConnectionSettingBuilder InitConnectionSettingsBuilder()
+    private ConnectionSettingsBuilder InitConnectionSettingsBuilder()
     {
         if (string.IsNullOrWhiteSpace(_containerId))
         {
             InternalBugException.CreateAndThrow("_containerId is null or whitespace");
         }
 
-        var connectionSettingBuilder = ConnectionSettingBuilder.Create();
+        var connectionSettingBuilder = ConnectionSettingsBuilder.Create();
         connectionSettingBuilder.ContainerId(_containerId);
         connectionSettingBuilder.Host(s_rabbitMqHost);
 

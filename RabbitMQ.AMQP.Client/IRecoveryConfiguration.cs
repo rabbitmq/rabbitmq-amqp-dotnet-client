@@ -17,7 +17,7 @@ namespace RabbitMQ.AMQP.Client
         /// <returns></returns>
         IRecoveryConfiguration Activated(bool activated);
 
-        bool IsActivate();
+        bool IsActivated();
 
         /// <summary>
         /// Define the backoff delay policy.
@@ -42,29 +42,78 @@ namespace RabbitMQ.AMQP.Client
     }
 
     /// <summary>
-    /// Interface for the backoff delay policy.
-    /// Used during the recovery of the connection.
+    /// RecoveryConfiguration is a class that represents the configuration of the recovery of the topology.
+    /// It is used to configure the recovery of the topology of the server after a connection is established in case of a reconnection
+    /// The RecoveryConfiguration can be disabled or enabled.
+    /// If RecoveryConfiguration._active is disabled, the reconnect mechanism will not be activated.
+    /// If RecoveryConfiguration._topology is disabled, the recovery of the topology will not be activated.
     /// </summary>
-    public interface IBackOffDelayPolicy
+    public class RecoveryConfiguration : IRecoveryConfiguration
     {
+        // Activate the reconnect mechanism
+        private bool _active = true;
+
+        // Activate the recovery of the topology
+        private bool _topology = false;
+
+        private IBackOffDelayPolicy _backOffDelayPolicy = new BackOffDelayPolicy();
+
         /// <summary>
-        /// Get the next delay in milliseconds.
+        /// Define if the recovery is activated.
+        /// If is not activated the connection will not try to reconnect.
         /// </summary>
+        /// <param name="activated"></param>
         /// <returns></returns>
-        int Delay();
+        public IRecoveryConfiguration Activated(bool activated)
+        {
+            _active = activated;
+            return this;
+        }
+
+        public bool IsActivated()
+        {
+            return _active;
+        }
 
         /// <summary>
-        ///  Reset the backoff delay policy.
+        /// Define the backoff delay policy.
+        /// It is used when the connection is trying to reconnect.
         /// </summary>
-        void Reset();
+        /// <param name="backOffDelayPolicy"></param>
+        /// <returns></returns>
+        public IRecoveryConfiguration BackOffDelayPolicy(IBackOffDelayPolicy backOffDelayPolicy)
+        {
+            _backOffDelayPolicy = backOffDelayPolicy;
+            return this;
+        }
+
+        public IBackOffDelayPolicy GetBackOffDelayPolicy()
+        {
+            return _backOffDelayPolicy;
+        }
 
         /// <summary>
-        /// Define if the backoff delay policy is active.
-        /// Can be used to disable the backoff delay policy after a certain number of retries.
-        /// or when the user wants to disable the backoff delay policy.
+        /// Define if the recovery of the topology is activated.
+        /// When Activated the connection will try to recover the topology after a reconnection.
+        /// It is valid only if the recovery is activated.
         /// </summary>
-        bool IsActive();
+        /// <param name="activated"></param>
+        /// <returns></returns>
+        public IRecoveryConfiguration Topology(bool activated)
+        {
+            _topology = activated;
+            return this;
+        }
 
-        int CurrentAttempt { get; }
+        public bool IsTopologyActive()
+        {
+            return _topology;
+        }
+
+        public override string ToString()
+        {
+            return
+                $"RecoveryConfiguration{{ Active={_active}, Topology={_topology}, BackOffDelayPolicy={_backOffDelayPolicy} }}";
+        }
     }
 }

@@ -382,7 +382,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         internal Task<Message> RequestAsync(object? body, string path, string method,
             int[] expectedResponseCodes,
-            TimeSpan? timeout = null,
+            TimeSpan? timeout = null, // TODO no need for timeouts with CancellationToken
             CancellationToken cancellationToken = default)
         {
             string id = Guid.NewGuid().ToString();
@@ -422,7 +422,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             ThrowIfClosed();
 
-            // TODO: make the timeout configurable
+            // TODO: no need for timeout when there is a CancellationToken
             TimeSpan timeout = argTimeout ?? TimeSpan.FromSeconds(30);
 
             TaskCompletionSource<Message> tcs = Utils.CreateTaskCompletionSource<Message>();

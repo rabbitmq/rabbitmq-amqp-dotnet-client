@@ -19,7 +19,7 @@ public class SaslConnectionTests(ITestOutputHelper testOutputHelper)
         Assert.Null(_connection);
         Assert.Null(_management);
 
-        ConnectionSettingBuilder connectionSettingBuilder = ConnectionSettingBuilder.Create();
+        ConnectionSettingsBuilder connectionSettingBuilder = ConnectionSettingsBuilder.Create();
 
         _containerId = $"{_testDisplayName}:{Now}";
         connectionSettingBuilder.ContainerId(_containerId);
@@ -40,7 +40,7 @@ public class SaslConnectionTests(ITestOutputHelper testOutputHelper)
         Assert.Null(_connection);
         Assert.Null(_management);
 
-        ConnectionSettingBuilder connectionSettingBuilder = ConnectionSettingBuilder.Create();
+        ConnectionSettingsBuilder connectionSettingBuilder = ConnectionSettingsBuilder.Create();
 
         _containerId = $"{_testDisplayName}:{Now}";
         connectionSettingBuilder.ContainerId(_containerId);

@@ -22,8 +22,15 @@ namespace Tests.Rpc
             Assert.Null(_management);
 
             string containerId = $"rpc-server-client-recovery-{DateTime.Now}";
-            IConnection connection = await AmqpConnection.CreateAsync(ConnectionSettingBuilder.Create()
-                .ContainerId(containerId).RecoveryConfiguration(RecoveryConfiguration.Create().Topology(true)).Build());
+
+            var recoveryConfiguration = new RecoveryConfiguration();
+            recoveryConfiguration.Topology(true);
+
+            IConnection connection = await AmqpConnection.CreateAsync(
+                ConnectionSettingsBuilder.Create()
+                    .ContainerId(containerId)
+                    .RecoveryConfiguration(recoveryConfiguration).Build());
+
             IManagement management = connection.Management();
             string rpcRequestQueueName = $"rpc-server-client-recovery-queue-request-{DateTime.Now}";
             IQueueSpecification requestQueue = management.Queue(rpcRequestQueueName)

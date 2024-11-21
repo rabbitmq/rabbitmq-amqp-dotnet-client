@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using Xunit.Sdk;
@@ -13,6 +14,7 @@ namespace Tests;
 public abstract partial class IntegrationTest
 {
     const string DefaultRabbitMqHost = "localhost";
+    private static readonly Regex s_testDisplayNameRegex = new Regex("^Tests\\.", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly HttpApiClient s_httpApiClient = new();
     private static readonly string s_rabbitMqHost = InitRabbitMqHost();
     private static readonly bool s_isRunningInCI = InitIsRunningInCI();
@@ -323,4 +325,6 @@ public abstract partial class IntegrationTest
 
         return false;
     }
+
+    private static string GenerateShortUuid() => S_Random.Next().ToString("x");
 }

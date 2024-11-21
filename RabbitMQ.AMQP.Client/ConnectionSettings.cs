@@ -3,16 +3,17 @@
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using Amqp;
 
-namespace RabbitMQ.AMQP.Client.Impl
+namespace RabbitMQ.AMQP.Client
 {
-    public class ConnectionSettingBuilder
+    public class ConnectionSettingsBuilder
     {
-        // TODO: maybe add the event "LifeCycle" to the builder
         private string _host = "localhost";
         private int _port = -1; // Note: -1 means use the defalt for the scheme
         private string? _user = "guest";
@@ -22,60 +23,57 @@ namespace RabbitMQ.AMQP.Client.Impl
         private string _virtualHost = "/";
         private uint _maxFrameSize = Consts.DefaultMaxFrameSize;
         private SaslMechanism _saslMechanism = Client.SaslMechanism.Anonymous;
-        private IRecoveryConfiguration _recoveryConfiguration = Impl.RecoveryConfiguration.Create();
+        private IRecoveryConfiguration _recoveryConfiguration = new RecoveryConfiguration();
+        private IList<Uri>? _uris;
 
-        private ConnectionSettingBuilder()
+        public static ConnectionSettingsBuilder Create()
         {
+            return new ConnectionSettingsBuilder();
         }
 
-        public static ConnectionSettingBuilder Create()
-        {
-            return new ConnectionSettingBuilder();
-        }
-
-        public ConnectionSettingBuilder Host(string host)
+        public ConnectionSettingsBuilder Host(string host)
         {
             _host = host;
             return this;
         }
 
-        public ConnectionSettingBuilder Port(int port)
+        public ConnectionSettingsBuilder Port(int port)
         {
             _port = port;
             return this;
         }
 
-        public ConnectionSettingBuilder User(string user)
+        public ConnectionSettingsBuilder User(string user)
         {
             _user = user;
             return this;
         }
 
-        public ConnectionSettingBuilder Password(string password)
+        public ConnectionSettingsBuilder Password(string password)
         {
             _password = password;
             return this;
         }
 
-        public ConnectionSettingBuilder Scheme(string scheme)
+        public ConnectionSettingsBuilder Scheme(string scheme)
         {
             _scheme = scheme;
             return this;
         }
 
-        public ConnectionSettingBuilder ContainerId(string containerId)
+        public ConnectionSettingsBuilder ContainerId(string containerId)
         {
             _containerId = containerId;
             return this;
         }
 
-        public ConnectionSettingBuilder VirtualHost(string virtualHost)
+        public ConnectionSettingsBuilder VirtualHost(string virtualHost)
         {
             _virtualHost = virtualHost;
             return this;
         }
 
-        public ConnectionSettingBuilder MaxFrameSize(uint maxFrameSize)
+        public ConnectionSettingsBuilder MaxFrameSize(uint maxFrameSize)
         {
             _maxFrameSize = maxFrameSize;
             if (_maxFrameSize != uint.MinValue && _maxFrameSize < 512)
@@ -86,7 +84,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public ConnectionSettingBuilder SaslMechanism(SaslMechanism saslMechanism)
+        public ConnectionSettingsBuilder SaslMechanism(SaslMechanism saslMechanism)
         {
             _saslMechanism = saslMechanism;
             if (_saslMechanism == Client.SaslMechanism.Anonymous ||
@@ -99,14 +97,21 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public ConnectionSettingBuilder RecoveryConfiguration(IRecoveryConfiguration recoveryConfiguration)
+        public ConnectionSettingsBuilder RecoveryConfiguration(IRecoveryConfiguration recoveryConfiguration)
         {
             _recoveryConfiguration = recoveryConfiguration;
             return this;
         }
 
+        public ConnectionSettingsBuilder Uris(IEnumerable<Uri> uris)
+        {
+            _uris = uris.ToList();
+            return this;
+        }
+
         public ConnectionSettings Build()
         {
+            // TODO this should do something similar to consolidate in the Java code
             var c = new ConnectionSettings(_scheme, _host, _port, _user,
                 _password, _virtualHost,
                 _containerId, _saslMechanism,
@@ -119,20 +124,54 @@ namespace RabbitMQ.AMQP.Client.Impl
     // <summary>
     // Represents a network address.
     // </summary>
-    public class ConnectionSettings : IConnectionSettings
+    public class ConnectionSettings : IEquatable<ConnectionSettings>
     {
         private readonly Address _address;
         private readonly string _virtualHost = "/";
         private readonly string _containerId = "";
         private readonly uint _maxFrameSize = Consts.DefaultMaxFrameSize;
-        private readonly ITlsSettings? _tlsSettings;
+        private readonly TlsSettings? _tlsSettings;
         private readonly SaslMechanism _saslMechanism = SaslMechanism.Plain;
-        private readonly IRecoveryConfiguration _recoveryConfiguration = RecoveryConfiguration.Create();
+        private readonly IRecoveryConfiguration _recoveryConfiguration = new RecoveryConfiguration();
 
-        public ConnectionSettings(string address, ITlsSettings? tlsSettings = null)
+        public ConnectionSettings(Uri uri)
         {
-            _address = new Address(address);
-            _tlsSettings = tlsSettings;
+            string? user = null;
+            string? password = null;
+            string userInfo = uri.UserInfo;
+            if (!string.IsNullOrEmpty(userInfo))
+            {
+                string[] userPass = userInfo.Split(':');
+                if (userPass.Length > 2)
+                {
+                    throw new ArgumentException($"Bad user info in AMQP URI: {userInfo}");
+                }
+
+                user = UriDecode(userPass[0]);
+                if (userPass.Length == 2)
+                {
+                    password = UriDecode(userPass[1]);
+                }
+            }
+
+            // C# automatically changes URIs into a canonical form
+            // that has at least the path segment "/"
+            if (uri.Segments.Length > 2)
+            {
+                throw new ArgumentException($"Multiple segments in path of AMQP URI: {string.Join(", ", uri.Segments)}");
+            }
+
+            if (uri.Segments.Length == 2)
+            {
+                _virtualHost = UriDecode(uri.Segments[1]);
+            }
+
+            _address = new Address(host: uri.Host,
+                port: uri.Port,
+                user: user,
+                password: password,
+                path: "/",
+                scheme: uri.Scheme);
 
             if (_address.UseSsl && _tlsSettings == null)
             {
@@ -146,7 +185,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             SaslMechanism saslMechanism,
             IRecoveryConfiguration recoveryConfiguration,
             uint maxFrameSize = Consts.DefaultMaxFrameSize,
-            ITlsSettings? tlsSettings = null)
+            TlsSettings? tlsSettings = null)
         {
             _address = new Address(host: host, port: port,
                 user: user, password: password,
@@ -183,8 +222,11 @@ namespace RabbitMQ.AMQP.Client.Impl
         public bool UseSsl => _address.UseSsl;
         public uint MaxFrameSize => _maxFrameSize;
         public SaslMechanism SaslMechanism => _saslMechanism;
-        public ITlsSettings? TlsSettings => _tlsSettings;
+        public TlsSettings? TlsSettings => _tlsSettings;
         public IRecoveryConfiguration Recovery => _recoveryConfiguration;
+        public IEnumerable<Uri>? Uris => throw new NotImplementedException();
+
+        internal Address Address => _address;
 
         public override string ToString()
         {
@@ -202,188 +244,59 @@ namespace RabbitMQ.AMQP.Client.Impl
                 return false;
             }
 
-            if (obj is ConnectionSettings address)
+            if (Object.ReferenceEquals(this, obj))
             {
-                return _address.Host == address._address.Host &&
-                       _address.Port == address._address.Port &&
-                       _address.Path == address._address.Path &&
-                       _address.User == address._address.User &&
-                       _address.Password == address._address.Password &&
-                       _address.Scheme == address._address.Scheme;
+                return true;
+            }
+
+            if (obj is ConnectionSettings other)
+            {
+                return
+                    _address.Host == other._address.Host &&
+                    _address.Port == other._address.Port &&
+                    _virtualHost == other._virtualHost &&
+                    _address.User == other._address.User &&
+                    _address.Password == other._address.Password &&
+                    _address.Scheme == other._address.Scheme &&
+                    _containerId == other._containerId &&
+                    _address.Path == other._address.Path;
             }
 
             return false;
         }
 
-        protected bool Equals(ConnectionSettings other)
+        bool IEquatable<ConnectionSettings>.Equals(ConnectionSettings? other)
         {
             if (other is null)
             {
                 return false;
             }
 
-            return _address.Equals(other._address);
+            if (Object.ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            return Equals(other);
         }
 
         public override int GetHashCode()
         {
-            return _address.GetHashCode();
+            return HashCode.Combine(_address.Host, _address.Port,
+                _virtualHost, _address.User, _address.Password,
+                _address.Scheme, _containerId, _address.Path);
         }
 
-        public bool Equals(IConnectionSettings? other)
+        ///<summary>
+        /// Unescape a string, protecting '+'.
+        /// </summary>
+        private static string UriDecode(string str)
         {
-            if (other is null)
-            {
-                return false;
-            }
-
-            if (other is IConnectionSettings connectionSettings)
-            {
-                return _address.Host == connectionSettings.Host &&
-                       _address.Port == connectionSettings.Port &&
-                       _address.Path == connectionSettings.Path &&
-                       _address.User == connectionSettings.User &&
-                       _address.Password == connectionSettings.Password &&
-                       _address.Scheme == connectionSettings.Scheme;
-            }
-
-            return false;
-        }
-
-        internal Address Address => _address;
-
-        // public RecoveryConfiguration RecoveryConfiguration { get; set; } = RecoveryConfiguration.Create();
-    }
-
-    /// <summary>
-    /// RecoveryConfiguration is a class that represents the configuration of the recovery of the topology.
-    /// It is used to configure the recovery of the topology of the server after a connection is established in case of a reconnection
-    /// The RecoveryConfiguration can be disabled or enabled.
-    /// If RecoveryConfiguration._active is disabled, the reconnect mechanism will not be activated.
-    /// If RecoveryConfiguration._topology is disabled, the recovery of the topology will not be activated.
-    /// </summary>
-    public class RecoveryConfiguration : IRecoveryConfiguration
-    {
-        public static RecoveryConfiguration Create()
-        {
-            return new RecoveryConfiguration();
-        }
-
-        private RecoveryConfiguration()
-        {
-        }
-
-        // Activate the reconnect mechanism
-        private bool _active = true;
-
-        // Activate the recovery of the topology
-        private bool _topology = false;
-
-        private IBackOffDelayPolicy _backOffDelayPolicy = Impl.BackOffDelayPolicy.Create();
-
-        public IRecoveryConfiguration Activated(bool activated)
-        {
-            _active = activated;
-            return this;
-        }
-
-        public bool IsActivate()
-        {
-            return _active;
-        }
-
-        public IRecoveryConfiguration BackOffDelayPolicy(IBackOffDelayPolicy backOffDelayPolicy)
-        {
-            _backOffDelayPolicy = backOffDelayPolicy;
-            return this;
-        }
-
-        public IBackOffDelayPolicy GetBackOffDelayPolicy()
-        {
-            return _backOffDelayPolicy;
-        }
-
-        public IRecoveryConfiguration Topology(bool activated)
-        {
-            _topology = activated;
-            return this;
-        }
-
-        public bool IsTopologyActive()
-        {
-            return _topology;
-        }
-
-        public override string ToString()
-        {
-            return
-                $"RecoveryConfiguration{{ Active={_active}, Topology={_topology}, BackOffDelayPolicy={_backOffDelayPolicy} }}";
+            return Uri.UnescapeDataString(str.Replace("+", "%2B"));
         }
     }
 
-    public class BackOffDelayPolicy : IBackOffDelayPolicy
-    {
-        public static BackOffDelayPolicy Create()
-        {
-            return new BackOffDelayPolicy();
-        }
-
-        public static BackOffDelayPolicy Create(int maxAttempt)
-        {
-            return new BackOffDelayPolicy(maxAttempt);
-        }
-
-        private BackOffDelayPolicy()
-        {
-        }
-
-        private BackOffDelayPolicy(int maxAttempt)
-        {
-            _maxAttempt = maxAttempt;
-        }
-
-        private const int StartRandomMilliseconds = 500;
-        private const int EndRandomMilliseconds = 1500;
-
-        private int _attempt = 1;
-        private readonly int _maxAttempt = 12;
-
-        private void ResetAfterMaxAttempt()
-        {
-            if (_attempt > 5)
-            {
-                _attempt = 1;
-            }
-        }
-
-        public int Delay()
-        {
-            _attempt++;
-            CurrentAttempt++;
-            ResetAfterMaxAttempt();
-            return Utils.RandomNext(StartRandomMilliseconds, EndRandomMilliseconds) * _attempt;
-        }
-
-        public void Reset()
-        {
-            _attempt = 1;
-            CurrentAttempt = 0;
-        }
-
-        public bool IsActive()
-        {
-            return CurrentAttempt < _maxAttempt;
-        }
-
-        public int CurrentAttempt { get; private set; } = 0;
-
-        public override string ToString()
-        {
-            return $"BackOffDelayPolicy{{ Attempt={_attempt}, TotalAttempt={CurrentAttempt}, IsActive={IsActive()} }}";
-        }
-    }
-
-    public class TlsSettings : ITlsSettings
+    public class TlsSettings
     {
         internal const SslProtocols DefaultSslProtocols = SslProtocols.None;
         private readonly X509CertificateCollection _clientCertificates = new X509CertificateCollection();
