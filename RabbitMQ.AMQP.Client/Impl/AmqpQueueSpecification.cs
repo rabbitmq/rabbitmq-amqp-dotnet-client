@@ -35,7 +35,16 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         internal DefaultQueueInfo(Map response)
         {
-            _name = (string)response["name"];
+            if (response["name"] is string name)
+            {
+                _name = name;
+            }
+            else
+            {
+                // TODO error?
+                _name = string.Empty;
+            }
+
             _durable = (bool)response["durable"];
             _autoDelete = (bool)response["auto_delete"];
             _exclusive = (bool)response["exclusive"];
@@ -48,10 +57,12 @@ namespace RabbitMQ.AMQP.Client.Impl
 
             _leader = (string)response["leader"];
 
-            string[]? replicas = (string[])response["replicas"];
-            if (replicas.Length > 0)
+            if (response["replicas"] is string[] queueReplicas)
             {
-                _replicas.AddRange(replicas);
+                if (queueReplicas.Length > 0)
+                {
+                    _replicas.AddRange(queueReplicas);
+                }
             }
 
             _messageCount = (ulong)response["message_count"];

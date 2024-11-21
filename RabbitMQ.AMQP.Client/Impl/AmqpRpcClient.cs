@@ -158,6 +158,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 .Queue(_configuration.ReplyToQueue)
                 .MessageHandler((context, message) =>
                 {
+                    // TODO MessageHandler funcs should catch all exceptions
                     context.Accept();
                     object correlationId = ExtractCorrelationId(message);
                     if (_pendingRequests.TryGetValue(correlationId, out TaskCompletionSource<IMessage>? request))
@@ -198,8 +199,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             {
                 object correlationId = CorrelationIdSupplier();
                 message = RequestPostProcess(message, correlationId);
-                _pendingRequests.TryAdd(correlationId,
-                    new TaskCompletionSource<IMessage>(TaskCreationOptions.RunContinuationsAsynchronously));
+                _pendingRequests.TryAdd(correlationId, Utils.CreateTaskCompletionSource<IMessage>());
                 if (_publisher != null)
                 {
                     PublishResult pr = await _publisher.PublishAsync(

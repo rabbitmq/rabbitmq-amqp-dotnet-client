@@ -18,7 +18,7 @@ public class HttpApiClient : IDisposable
 
     public HttpApiClient()
     {
-        _managementClient = SystemUtils.InitManagementClient();
+        _managementClient = InitManagementClient();
     }
 
     public ushort GetClusterSize()
@@ -380,4 +380,11 @@ public class HttpApiClient : IDisposable
     }
 
     public void Dispose() => _managementClient.Dispose();
+
+    private static ManagementClient InitManagementClient()
+    {
+        ushort managementUriPort = 15672;
+        Uri managementUri = new($"http://localhost:{managementUriPort}");
+        return new ManagementClient(managementUri, "guest", "guest");
+    }
 }

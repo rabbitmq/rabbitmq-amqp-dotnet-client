@@ -54,7 +54,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
             return Task.FromResult(messageContexts.Count >= expectedCount);
         }
 
-        await SystemUtils.WaitUntilAsync(() => WaitForMessageContextCountAtLeast(initialCredits));
+        await WaitUntilFuncAsync(() => WaitForMessageContextCountAtLeast(initialCredits));
 
         IQueueInfo queueInfo = await _management.GetQueueInfoAsync(declaredQueueInfo.Name());
         ulong expectedMessageCount = messageCount - initialCredits;
@@ -67,7 +67,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
             return apiQueue.MessagesUnacknowledged == expectedMessagesUnacknowledged;
         }
 
-        await SystemUtils.WaitUntilAsync(() => MessagesUnacknowledgedIsEqualTo(initialCredits));
+        await WaitUntilFuncAsync(() => MessagesUnacknowledgedIsEqualTo(initialCredits));
 
         Assert.NotNull(apiQueue);
         Assert.Equal(initialCredits, apiQueue.MessagesUnacknowledged);
@@ -85,7 +85,7 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
             Queue apiQueue = await _httpApiClient.GetQueueAsync(declaredQueueInfo.Name());
             return apiQueue.MessagesUnacknowledged == 0;
         }
-        await SystemUtils.WaitUntilAsync(MessagesUnacknowledgedIsZero);
+        await WaitUntilFuncAsync(MessagesUnacknowledgedIsZero);
 
         Assert.Equal(initialCredits, messageContexts.Count);
         Assert.Equal((uint)0, consumer.UnsettledMessageCount);
@@ -93,13 +93,13 @@ public class ConsumerPauseTests(ITestOutputHelper testOutputHelper) : Integratio
 
         consumer.Unpause();
 
-        await SystemUtils.WaitUntilAsync(() => WaitForMessageContextCountAtLeast(initialCredits));
+        await WaitUntilFuncAsync(() => WaitForMessageContextCountAtLeast(initialCredits));
 
         queueInfo = await _management.GetQueueInfoAsync(declaredQueueInfo.Name());
         expectedMessageCount = messageCount - (initialCredits * 2);
         Assert.Equal(expectedMessageCount, queueInfo.MessageCount());
 
-        await SystemUtils.WaitUntilAsync(() => MessagesUnacknowledgedIsEqualTo(initialCredits));
+        await WaitUntilFuncAsync(() => MessagesUnacknowledgedIsEqualTo(initialCredits));
 
         Assert.NotNull(apiQueue);
         Assert.Equal(initialCredits, apiQueue.MessagesUnacknowledged);

@@ -39,7 +39,7 @@ const string containerId = "HA-Client-Connection";
 
 IEnvironment environment = AmqpEnvironment.Create(ConnectionSettingBuilder.Create().ContainerId(containerId).Build());
 
-IConnection connection = await environment.CreateConnectionAsync().ConfigureAwait(false);
+IConnection connection = await environment.CreateConnectionAsync();
 
 connection.ChangeState += (sender, fromState, toState, e) =>
 {
@@ -108,7 +108,7 @@ for (int i = 0; i < totalMessagesToSend; i++)
     {
         Trace.WriteLine(TraceLevel.Error, $"Failed to publish message, {e.Message}");
         Interlocked.Increment(ref messagesFailed);
-        await Task.Delay(500).ConfigureAwait(false);
+        await Task.Delay(500);
     }
     finally
     {

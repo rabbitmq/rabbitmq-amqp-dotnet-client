@@ -125,20 +125,28 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         IConsumer consumer = await _connection.ConsumerBuilder().MessageHandler(
             (context, message) =>
             {
-                messages.Add(message);
-                if (requeueCount == 0)
+                try
                 {
-                    requeueCount++;
-                    context.Requeue(new Dictionary<string, object>
+                    messages.Add(message);
+                    if (Interlocked.Increment(ref requeueCount) == 1)
                     {
-                        { annotationKey, annotationValue }, { annotationKey1, annotationValue1 }
-                    });
+                        context.Requeue(new Dictionary<string, object>
+                        {
+                            { annotationKey, annotationValue },
+                            { annotationKey1, annotationValue1 }
+                        });
+                    }
+                    else
+                    {
+                        context.Accept();
+                        tcsRequeue.SetResult(true);
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    context.Accept();
-                    tcsRequeue.SetResult(true);
+                    tcsRequeue.SetException(ex);
                 }
+
                 return Task.CompletedTask;
             }
         ).Queue(_queueName).BuildAndStartAsync();
@@ -148,7 +156,7 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
 
         Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
 
-        await tcsRequeue.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await WhenTcsCompletes(tcsRequeue);
 
         Assert.Equal(2, messages.Count);
         Assert.Null(messages[0].Annotation(annotationKey));
@@ -158,11 +166,13 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         Assert.Equal(messages[1].Annotation(annotationKey), annotationValue);
         Assert.Equal(messages[1].Annotation(annotationKey1), annotationValue1);
         Assert.NotNull(messages[1].Annotation("x-delivery-count"));
-        HttpApiClient client = new();
+
+        using HttpApiClient client = new();
         Queue q = await client.GetQueueAsync(_queueName);
         Assert.Equal(0, q.Messages);
 
         await consumer.CloseAsync();
+        consumer.Dispose();
     }
 
     [Fact]
@@ -248,11 +258,10 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
 
         const string annotationKey = "x-opt-annotation-key";
         const string annotationValue = "annotation-value";
-        TaskCompletionSource<bool> tcs =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<bool> tcs = CreateTaskCompletionSource();
         IPublisher publisher = await _connection.PublisherBuilder().Queue(_queueName).BuildAsync();
-        IConsumer consumer = await _connection.ConsumerBuilder().MessageHandler(
-            (context, _) =>
+        IConsumer consumer = await _connection.ConsumerBuilder()
+            .MessageHandler((context, _) =>
             {
                 context.Discard(new Dictionary<string, object> { { annotationKey, annotationValue } });
                 tcs.SetResult(true);
@@ -263,10 +272,13 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         IMessage message = new AmqpMessage(RandomString());
         PublishResult pr = await publisher.PublishAsync(message);
         Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
-        await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        await WhenTcsCompletes(tcs);
+
         await consumer.CloseAsync();
-        TaskCompletionSource<IMessage> tcsDl =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        consumer.Dispose();
+
+        TaskCompletionSource<IMessage> tcsDl = CreateTaskCompletionSource<IMessage>();
         IConsumer dlConsumer = await _connection.ConsumerBuilder()
             .MessageHandler((context, message1) =>
             {
@@ -276,11 +288,11 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
             })
             .Queue(dlqQueueName).BuildAndStartAsync();
 
-        IMessage mResult = await tcsDl.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        IMessage mResult = await WhenTcsCompletes(tcsDl);
         Assert.NotNull(mResult);
         Assert.Equal(mResult.Annotation(annotationKey), annotationValue);
 
-        var client = new HttpApiClient();
+        using HttpApiClient client = new();
         Queue q = await client.GetQueueAsync(_queueName);
         Assert.Equal(0, q.Messages);
 
@@ -288,6 +300,7 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         Assert.Equal(0, q1.Messages);
 
         await dlConsumer.CloseAsync();
+        dlConsumer.Dispose();
     }
 
     private async Task DeclareDeadLetterTopology(string queueName, string dlxQueueName)

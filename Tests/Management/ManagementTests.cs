@@ -74,7 +74,7 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         }
         else
         {
-            Assert.Equal(SystemUtils.ClusterSize, queueInfo.Members().Count);
+            Assert.Equal(ClusterSize, queueInfo.Members().Count);
         }
 
         Assert.NotNull(queueInfo.Leader());
@@ -288,11 +288,11 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
 
         await _management.Exchange(_exchangeName).Type(ExchangeType.TOPIC).DeclareAsync();
 
-        await SystemUtils.WaitUntilExchangeExistsAsync(exchangeSpec);
+        await WaitUntilExchangeExistsAsync(exchangeSpec);
 
         await exchangeSpec.DeleteAsync();
 
-        await SystemUtils.WaitUntilExchangeDeletedAsync(exchangeSpec);
+        await WaitUntilExchangeDeletedAsync(exchangeSpec);
     }
 
     [Fact]
@@ -306,11 +306,11 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
 
         await _management.Exchange(_exchangeName).Type("direct").DeclareAsync();
 
-        await SystemUtils.WaitUntilExchangeExistsAsync(exchangeSpec);
+        await WaitUntilExchangeExistsAsync(exchangeSpec);
 
         await exchangeSpec.DeleteAsync();
 
-        await SystemUtils.WaitUntilExchangeDeletedAsync(exchangeSpec);
+        await WaitUntilExchangeDeletedAsync(exchangeSpec);
     }
 
     [Fact]
@@ -338,10 +338,10 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
             _management.Exchange(_exchangeName).AutoDelete(true).Argument("my_key", "my _value");
         await exchangeSpec1.DeclareAsync();
 
-        await SystemUtils.WaitUntilExchangeExistsAsync(exchangeSpec0);
+        await WaitUntilExchangeExistsAsync(exchangeSpec0);
 
         await exchangeSpec0.DeleteAsync();
-        await SystemUtils.WaitUntilExchangeDeletedAsync(exchangeSpec0);
+        await WaitUntilExchangeDeletedAsync(exchangeSpec0);
     }
 
     [Fact]
@@ -359,7 +359,7 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
             await Assert.ThrowsAsync<PreconditionFailedException>(exchangeSpec1.DeclareAsync);
 
         await exchangeSpec0.DeleteAsync();
-        await SystemUtils.WaitUntilExchangeDeletedAsync(exchangeSpec0);
+        await WaitUntilExchangeDeletedAsync(exchangeSpec0);
     }
 
     [Fact]
@@ -377,10 +377,10 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
             await _management.Exchange(_exchangeName).AutoDelete(false)
                 .Argument("my_key_2", "my _value_2").DeclareAsync());
 
-        await SystemUtils.WaitUntilExchangeExistsAsync(exchangeSpecification);
+        await WaitUntilExchangeExistsAsync(exchangeSpecification);
 
         await exchangeSpecification.DeleteAsync();
-        await SystemUtils.WaitUntilExchangeDeletedAsync("my_exchange_raise_precondition_fail");
+        await WaitUntilExchangeDeletedAsync("my_exchange_raise_precondition_fail");
     }
 
     ////////////// ----------------- Topology TESTS ----------------- //////////////
@@ -427,10 +427,10 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(queueType);
         await queueSpec.DeclareAsync();
         await PublishAsync(queueSpec, 19);
-        await SystemUtils.WaitUntilQueueMessageCount(_queueName, 19);
+        await WaitUntilQueueMessageCount(_queueName, 19);
         ulong deleted = await queueSpec.PurgeAsync();
         Assert.Equal((ulong)19, deleted);
-        await SystemUtils.WaitUntilQueueMessageCount(_queueName, 0);
+        await WaitUntilQueueMessageCount(_queueName, 0);
     }
 
     [Fact]
@@ -442,7 +442,7 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(QueueType.STREAM);
         await queueSpec.DeclareAsync();
         await PublishAsync(queueSpec, 19);
-        await SystemUtils.WaitUntilQueueMessageCount(_queueName, 19);
+        await WaitUntilQueueMessageCount(_queueName, 19);
         await Assert.ThrowsAsync<BadRequestException>(() => queueSpec.PurgeAsync());
     }
 }

@@ -119,9 +119,9 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
             states.Add((fromState, toState));
         };
 
-        await SystemUtils.WaitUntilConnectionIsKilledAndOpen(_containerId);
+        await WaitUntilConnectionIsKilledAndOpen(_containerId);
 
-        await SystemUtils.WaitUntilFuncAsync(() => publisher.State == State.Open);
+        await WaitUntilFuncAsync(() => publisher.State == State.Open);
 
         Assert.Equal(State.Open, publisher.State);
         await publisher.CloseAsync();
@@ -166,9 +166,9 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
         List<(State, State)> states = [];
         consumer.ChangeState += (_, fromState, toState, _) => { states.Add((fromState, toState)); };
 
-        await SystemUtils.WaitUntilConnectionIsKilledAndOpen(_containerId);
+        await WaitUntilConnectionIsKilledAndOpen(_containerId);
 
-        await SystemUtils.WaitUntilFuncAsync(() => consumer.State == State.Open);
+        await WaitUntilFuncAsync(() => consumer.State == State.Open);
 
         Assert.Equal(State.Open, consumer.State);
         await consumer.CloseAsync();
@@ -225,12 +225,12 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
 
         await PublishAsync(queueSpecification, publishBatchCount);
 
-        await SystemUtils.WaitUntilFuncAsync(() => messagesReceived == 10);
+        await WaitUntilFuncAsync(() => messagesReceived == 10);
 
-        await SystemUtils.WaitUntilConnectionIsKilledAndOpen(_containerId);
+        await WaitUntilConnectionIsKilledAndOpen(_containerId);
 
-        await SystemUtils.WaitUntilFuncAsync(() => publisher.State == State.Open);
-        await SystemUtils.WaitUntilFuncAsync(() => consumer.State == State.Open);
+        await WaitUntilFuncAsync(() => publisher.State == State.Open);
+        await WaitUntilFuncAsync(() => consumer.State == State.Open);
 
         await PublishAsync(queueSpecification, publishBatchCount);
 
@@ -239,7 +239,7 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
         await publisher.CloseAsync();
         publisher.Dispose();
 
-        await SystemUtils.WaitUntilFuncAsync(() => Interlocked.Read(ref messagesReceived) == 20);
+        await WaitUntilFuncAsync(() => Interlocked.Read(ref messagesReceived) == 20);
 
         await consumer.CloseAsync();
         consumer.Dispose();
@@ -306,10 +306,10 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
         Assert.Equal(State.Open, publisher.State);
         Assert.Equal(State.Open, consumer.State);
 
-        await SystemUtils.WaitUntilConnectionIsKilled(_containerId);
+        await WaitUntilConnectionIsKilled(_containerId);
 
-        await SystemUtils.WaitUntilFuncAsync(() => publisher.State == State.Closed);
-        await SystemUtils.WaitUntilFuncAsync(() => consumer.State == State.Closed);
+        await WaitUntilFuncAsync(() => publisher.State == State.Closed);
+        await WaitUntilFuncAsync(() => consumer.State == State.Closed);
 
         Assert.Equal(State.Closed, _connection.State);
         Assert.Equal(State.Closed, _management.State);

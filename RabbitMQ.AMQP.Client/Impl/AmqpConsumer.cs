@@ -46,7 +46,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             try
             {
                 TaskCompletionSource<ReceiverLink> attachCompletedTcs =
-                    new(TaskCreationOptions.RunContinuationsAsynchronously);
+                    Utils.CreateTaskCompletionSource<ReceiverLink>();
 
                 // this is an event to get the filters to the listener context
                 // it _must_ be here because in case of reconnect the original filters could be not valid anymore

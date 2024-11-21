@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -37,6 +38,12 @@ namespace RabbitMQ.AMQP.Client
             s_random ??= new Random();
             return s_random.Next(minValue, maxValue);
 #endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static TaskCompletionSource<T> CreateTaskCompletionSource<T>()
+        {
+            return new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
         internal static string GenerateQueueName()

@@ -56,7 +56,7 @@ namespace RabbitMQ.AMQP.Client
 
         private static async Task DoWaitAsync(this Task task, CancellationToken cancellationToken)
         {
-            var cancellationTokenTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> cancellationTokenTcs = Utils.CreateTaskCompletionSource<bool>();
 
             using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true),
                 state: cancellationTokenTcs, useSynchronizationContext: false))
@@ -73,7 +73,7 @@ namespace RabbitMQ.AMQP.Client
 
         private static async Task<T0> DoWaitGenericAsync<T0>(this Task<T0> task, CancellationToken cancellationToken)
         {
-            var cancellationTokenTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> cancellationTokenTcs = Utils.CreateTaskCompletionSource<bool>();
 
             using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true),
                 state: cancellationTokenTcs, useSynchronizationContext: false))

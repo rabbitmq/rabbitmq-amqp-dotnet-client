@@ -312,11 +312,11 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
                 }
             ).Stream().Offset(StreamOffsetSpecification.First).Builder().BuildAndStartAsync();
 
-        await tcs0.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await WhenTcsCompletes(tcs0);
 
-        await SystemUtils.WaitUntilConnectionIsKilled(_containerId);
+        await WaitUntilConnectionIsKilled(_containerId);
 
-        await tcs1.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await WhenTcsCompletes(tcs1);
 
         Assert.Equal(20, totalConsumed);
         await consumer.CloseAsync();
@@ -365,7 +365,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
                 ctx => { ctx.StreamOptions.Offset(5); }
             ).BuildAndStartAsync();
 
-        await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await WhenTcsCompletes(tcs);
         Assert.Equal(5, totalConsumed);
         await consumer.CloseAsync();
     }
@@ -436,12 +436,12 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
                 }
             ).BuildAndStartAsync();
 
-        await tcs0.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await WhenTcsCompletes(tcs0);
         Assert.Equal(6, totalConsumed);
 
-        await SystemUtils.WaitUntilConnectionIsKilled(_containerId);
+        await WaitUntilConnectionIsKilled(_containerId);
 
-        await tcs1.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await WhenTcsCompletes(tcs1);
         Assert.Equal(10, totalConsumed);
 
         await consumer.CloseAsync();

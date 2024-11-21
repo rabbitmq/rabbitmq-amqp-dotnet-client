@@ -35,7 +35,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             try
             {
                 TaskCompletionSource<SenderLink> attachCompletedTcs =
-                    new(TaskCreationOptions.RunContinuationsAsynchronously);
+                    Utils.CreateTaskCompletionSource<SenderLink>();
 
                 Attach attach = Utils.CreateAttach(_address, DeliveryMode.AtLeastOnce, _id);
 
@@ -122,7 +122,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             try
             {
                 TaskCompletionSource<PublishOutcome> messagePublishedTcs =
-                    new(TaskCreationOptions.RunContinuationsAsynchronously);
+                    Utils.CreateTaskCompletionSource<PublishOutcome>();
+
                 Message nativeMessage = ((AmqpMessage)message).NativeMessage;
 
                 void OutcomeCallback(ILink sender, Message inMessage, Outcome outcome, object state)

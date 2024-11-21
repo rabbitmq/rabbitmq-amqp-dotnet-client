@@ -21,7 +21,7 @@ namespace Tests.Rpc
             Assert.NotNull(_connection);
             Assert.NotNull(_management);
             await _management.Queue(_queueName).Exclusive(true).AutoDelete(true).DeclareAsync();
-            TaskCompletionSource<IMessage> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<IMessage> tcs = CreateTaskCompletionSource<IMessage>();
             IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
             {
                 var reply = context.Message("pong");
@@ -32,7 +32,7 @@ namespace Tests.Rpc
             IPublisher p = await _connection.PublisherBuilder().Queue(_queueName).BuildAsync();
 
             await p.PublishAsync(new AmqpMessage("test"));
-            IMessage m = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            IMessage m = await WhenTcsCompletes(tcs);
             Assert.Equal("pong", m.Body());
             await rpcServer.CloseAsync();
         }
@@ -44,7 +44,7 @@ namespace Tests.Rpc
             Assert.NotNull(_management);
             List<(State, State)> states = [];
             await _management.Queue(_queueName).Exclusive(true).AutoDelete(true).DeclareAsync();
-            TaskCompletionSource<int> tsc = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<int> tcs = CreateTaskCompletionSource<int>();
             IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
             {
                 var m = context.Message(request.Body());
@@ -55,12 +55,12 @@ namespace Tests.Rpc
                 states.Add((fromState, toState));
                 if (states.Count == 2)
                 {
-                    tsc.SetResult(states.Count);
+                    tcs.SetResult(states.Count);
                 }
             };
             Assert.NotNull(rpcServer);
             await rpcServer.CloseAsync();
-            int count = await tsc.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            int count = await WhenTcsCompletes(tcs);
             Assert.Equal(2, count);
             Assert.Equal(State.Open, states[0].Item1);
             Assert.Equal(State.Closing, states[0].Item2);
@@ -88,7 +88,7 @@ namespace Tests.Rpc
             string queueReplyTo = $"queueReplyTo-{Now}";
             IQueueSpecification spec = _management.Queue(queueReplyTo).Exclusive(true).AutoDelete(true);
             await spec.DeclareAsync();
-            TaskCompletionSource<IMessage> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<IMessage> tcs = CreateTaskCompletionSource<IMessage>();
 
             IConsumer consumer = await _connection.ConsumerBuilder().Queue(queueReplyTo).MessageHandler(
                 (context, message) =>
@@ -106,7 +106,7 @@ namespace Tests.Rpc
             PublishResult pr = await publisher.PublishAsync(message);
             Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
 
-            IMessage m = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            IMessage m = await WhenTcsCompletes(tcs);
             Assert.Equal("pong", m.Body());
 
             await rpcServer.CloseAsync();
@@ -264,7 +264,7 @@ namespace Tests.Rpc
 
             await _management.Queue(requestQueue).Exclusive(true).AutoDelete(true).DeclareAsync();
             const int messagesToSend = 99;
-            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<bool> tcs = CreateTaskCompletionSource();
             List<IMessage> messagesReceived = [];
             IRpcServer rpcServer = await _connection.RpcServerBuilder().Handler((context, request) =>
             {
@@ -306,9 +306,9 @@ namespace Tests.Rpc
                 }));
             }
 
-            await Task.WhenAll(tasks);
+            await WhenAllComplete(tasks);
 
-            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            await WhenTcsCompletes(tcs);
 
             Assert.Equal(messagesToSend, messagesReceived.Count);
 

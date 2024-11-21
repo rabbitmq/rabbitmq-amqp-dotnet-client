@@ -20,7 +20,7 @@ public class TlsConnectionTests : IntegrationTest
 
     private readonly ITestOutputHelper _output;
     private readonly HttpApiClient _httpApiClient = new();
-    private readonly bool _isRunningInCI = SystemUtils.IsRunningInCI;
+    private readonly bool _isRunningInCI = IsRunningInCI;
 
     private ushort _port = 5671;
 
@@ -32,7 +32,7 @@ public class TlsConnectionTests : IntegrationTest
 
     public override Task InitializeAsync()
     {
-        if (SystemUtils.IsCluster)
+        if (IsCluster)
         {
             _port = s_ports[Utils.RandomNext(0, s_ports.Length)];
         }
