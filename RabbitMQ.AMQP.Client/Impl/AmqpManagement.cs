@@ -47,7 +47,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         private const string ReplyTo = "$me";
 
         protected readonly TaskCompletionSource<bool> _managementSessionClosedTcs =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
+            Utils.CreateTaskCompletionSource<bool>();
 
         internal AmqpManagement(AmqpManagementParameters amqpManagementParameters)
         {
@@ -269,7 +269,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                         new Target() { Address = ManagementNodeAddress, ExpiryPolicy = new Symbol("SESSION_END"), },
                 };
 
-                var tcs = new TaskCompletionSource<ReceiverLink>(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource<ReceiverLink> tcs = Utils.CreateTaskCompletionSource<ReceiverLink>();
                 var tmpReceiverLink = new ReceiverLink(
                     _managementSession, LinkPairName, receiveAttach, (ILink link, Attach attach) =>
                     {
@@ -328,7 +328,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                     },
                 };
 
-                var tcs = new TaskCompletionSource<SenderLink>(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource<SenderLink> tcs = Utils.CreateTaskCompletionSource<SenderLink>();
                 var tmpSenderLink = new SenderLink(
                     _managementSession, LinkPairName, senderAttach, (ILink link, Attach attach) =>
                     {
@@ -425,10 +425,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             // TODO: make the timeout configurable
             TimeSpan timeout = argTimeout ?? TimeSpan.FromSeconds(30);
 
-            TaskCompletionSource<Message> mre = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource<Message> tcs = Utils.CreateTaskCompletionSource<Message>();
 
             // Add TaskCompletionSource to the dictionary it will be used to set the result of the request
-            if (false == _requests.TryAdd(message.Properties.MessageId, mre))
+            if (false == _requests.TryAdd(message.Properties.MessageId, tcs))
             {
                 // TODO what to do in this error case?
             }
@@ -461,7 +461,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
             // The response is handled in a separate thread, see ProcessResponses method in the Init method
             // TODO timeout & token
-            Message result = await mre.Task.WaitAsync(linkedCts.Token)
+            Message result = await tcs.Task.WaitAsync(linkedCts.Token)
                 .ConfigureAwait(false);
 
             await sendTask.WaitAsync(linkedCts.Token)

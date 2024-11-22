@@ -34,7 +34,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
             else
             {
-                TaskCompletionSource<ISession> sessionBeginTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                TaskCompletionSource<ISession> sessionBeginTcs = Utils.CreateTaskCompletionSource<ISession>();
                 void OnBegin(ISession session, Begin peerBegin)
                 {
                     sessionBeginTcs.SetResult(session);

@@ -24,7 +24,7 @@ IEnvironment environment = AmqpEnvironment.Create(
         .RecoveryConfiguration(RecoveryConfiguration.Create().Topology(true))
         .Build());
 
-IConnection connection = await environment.CreateConnectionAsync().ConfigureAwait(false);
+IConnection connection = await environment.CreateConnectionAsync();
 Trace.WriteLine(TraceLevel.Information, $"Connected to the broker {connection} successfully");
 
 const string rpcQueue = "amqp10.net-rpc-queue";
@@ -32,7 +32,7 @@ const string rpcQueue = "amqp10.net-rpc-queue";
 IManagement management = connection.Management();
 
 IQueueSpecification queueSpec = management.Queue(rpcQueue).Type(QueueType.QUORUM);
-await queueSpec.DeclareAsync().ConfigureAwait(false);
+await queueSpec.DeclareAsync();
 
 const int messagesToSend = 10_000_000;
 TaskCompletionSource<bool> tcs = new();
@@ -57,14 +57,14 @@ IRpcServer rpcServer = await connection.RpcServerBuilder().RequestQueue(rpcQueue
 ).BuildAsync();
 
 IRpcClient rpcClient = await connection.RpcClientBuilder().RequestAddress().Queue(rpcQueue).RpcClient().BuildAsync()
-    .ConfigureAwait(false);
+    ;
 
 for (int i = 0; i < messagesToSend; i++)
 {
     try
     {
         IMessage reply = await rpcClient.PublishAsync(
-            new AmqpMessage($"ping_{DateTime.Now}")).ConfigureAwait(false);
+            new AmqpMessage($"ping_{DateTime.Now}"));
         Trace.WriteLine(TraceLevel.Information, $"[Client] Reply received: {reply.Body()}");
     }
     catch (Exception e)
@@ -77,10 +77,10 @@ for (int i = 0; i < messagesToSend; i++)
     }
 }
 
-await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
+await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
-await rpcClient.CloseAsync().ConfigureAwait(false);
-await rpcServer.CloseAsync().ConfigureAwait(false);
-await queueSpec.DeleteAsync().ConfigureAwait(false);
-await environment.CloseAsync().ConfigureAwait(false);
+await rpcClient.CloseAsync();
+await rpcServer.CloseAsync();
+await queueSpec.DeleteAsync();
+await environment.CloseAsync();
 Trace.WriteLine(TraceLevel.Information, "Bye!");

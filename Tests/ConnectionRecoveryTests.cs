@@ -82,7 +82,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(State.Open, connection.State);
         await connection.CloseAsync();
         Assert.Equal(State.Closed, connection.State);
-        await connectionClosedStateTcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await WhenTcsCompletes(connectionClosedStateTcs);
         Assert.Equal(State.Open, listFromStatus[0]);
         Assert.Equal(State.Closing, listToStatus[0]);
         Assert.Null(listError[0]);
@@ -145,8 +145,8 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         };
 
         Assert.Equal(State.Open, connection.State);
-        await SystemUtils.WaitUntilConnectionIsKilled(_containerId);
-        await listErrorCountGreaterThanOrEqualToTwoTcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await WaitUntilConnectionIsKilled(_containerId);
+        await WhenTcsCompletes(listErrorCountGreaterThanOrEqualToTwoTcs);
 
         Assert.Equal(State.Open, listFromStatus[0]);
         Assert.Equal(State.Reconnecting, listToStatus[0]);
@@ -157,7 +157,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Null(listError[1]);
 
         await connection.CloseAsync();
-        await listErrorCountGreaterThanOrEqualToFourTcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await WhenTcsCompletes(listErrorCountGreaterThanOrEqualToFourTcs);
 
         Assert.Equal(State.Open, listFromStatus[2]);
         Assert.Equal(State.Closing, listToStatus[2]);
@@ -213,9 +213,9 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         };
 
         Assert.Equal(State.Open, connection.State);
-        await SystemUtils.WaitUntilConnectionIsKilled(_containerId);
+        await WaitUntilConnectionIsKilled(_containerId);
 
-        await listFromStatusCountGreaterOrEqualToTwo.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await WhenTcsCompletes(listFromStatusCountGreaterOrEqualToTwo);
 
         Assert.Equal(State.Open, listFromStatus[0]);
         Assert.Equal(State.Reconnecting, listToStatus[0]);
@@ -228,7 +228,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         await connection.CloseAsync();
         Assert.Equal(State.Closed, connection.State);
-        await listErrorCountGreaterOrEqualToTwo.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await WhenTcsCompletes(listErrorCountGreaterOrEqualToTwo);
     }
 
     /// <summary>
@@ -265,15 +265,15 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         await management.Queue().Name(_queueName).AutoDelete(true).Exclusive(true).DeclareAsync();
         Assert.Equal(1, topologyListener.QueueCount());
 
-        await SystemUtils.WaitUntilConnectionIsKilled(_containerId);
-        await twoRecoveryEventsSeenTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
-        await SystemUtils.WaitUntilFuncAsync(() => recoveryEvents == 2);
+        await WaitUntilConnectionIsKilled(_containerId);
+        await WhenTcsCompletes(twoRecoveryEventsSeenTcs);
+        await WaitUntilFuncAsync(() => recoveryEvents == 2);
 
-        await SystemUtils.WaitUntilQueueExistsAsync(_queueName);
+        await WaitUntilQueueExistsAsync(_queueName);
 
         await connection.CloseAsync();
 
-        await SystemUtils.WaitUntilQueueDeletedAsync(_queueName);
+        await WaitUntilQueueDeletedAsync(_queueName);
 
         Assert.Equal(0, topologyListener.QueueCount());
     }
@@ -312,10 +312,10 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         await management.Queue().Name(_queueName).AutoDelete(true).Exclusive(true).DeclareAsync();
         Assert.Equal(1, topologyListener.QueueCount());
 
-        await SystemUtils.WaitUntilConnectionIsKilled(_containerId);
-        await oneRecoveryEventSeenTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await WaitUntilConnectionIsKilled(_containerId);
+        await WhenTcsCompletes(oneRecoveryEventSeenTcs);
 
-        await SystemUtils.WaitUntilQueueDeletedAsync(_queueName);
+        await WaitUntilQueueDeletedAsync(_queueName);
 
         await connection.CloseAsync();
         Assert.Equal(0, topologyListener.QueueCount());
@@ -354,19 +354,19 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         // Since we cannot reboot the broker for this test we delete the exchange manually to simulate check if  
         // the exchange is recovered.
-        await SystemUtils.DeleteExchangeAsync(_exchangeName);
+        await DeleteExchangeAsync(_exchangeName);
 
-        await SystemUtils.WaitUntilConnectionIsKilled(_containerId);
+        await WaitUntilConnectionIsKilled(_containerId);
 
-        await twoRecoveryEventsSeenTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await WhenTcsCompletes(twoRecoveryEventsSeenTcs);
 
         if (topologyEnabled)
         {
-            await SystemUtils.WaitUntilExchangeExistsAsync(_exchangeName);
+            await WaitUntilExchangeExistsAsync(_exchangeName);
         }
         else
         {
-            await SystemUtils.WaitUntilExchangeDeletedAsync(_exchangeName);
+            await WaitUntilExchangeDeletedAsync(_exchangeName);
         }
 
         Assert.Equal(1, topologyListener.ExchangeCount());
@@ -421,23 +421,23 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         // Since we cannot reboot the broker for this test we delete the exchange manually to simulate check if  
         // the exchange is recovered.
-        await SystemUtils.DeleteExchangeAsync(_exchangeName);
+        await DeleteExchangeAsync(_exchangeName);
 
         // The queue will be deleted due of the auto-delete flag
-        await SystemUtils.WaitUntilConnectionIsKilled(_containerId);
-        await twoRecoveryEventsSeenTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        await WaitUntilConnectionIsKilled(_containerId);
+        await WhenTcsCompletes(twoRecoveryEventsSeenTcs);
 
         if (topologyEnabled)
         {
-            await SystemUtils.WaitUntilExchangeExistsAsync(_exchangeName);
-            await SystemUtils.WaitUntilQueueExistsAsync(_queueName);
-            await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync(_exchangeName, _queueName);
+            await WaitUntilExchangeExistsAsync(_exchangeName);
+            await WaitUntilQueueExistsAsync(_queueName);
+            await WaitUntilBindingsBetweenExchangeAndQueueExistAsync(_exchangeName, _queueName);
         }
         else
         {
-            await SystemUtils.WaitUntilExchangeDeletedAsync(_exchangeName);
-            await SystemUtils.WaitUntilQueueDeletedAsync(_queueName);
-            await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(_exchangeName, _queueName);
+            await WaitUntilExchangeDeletedAsync(_exchangeName);
+            await WaitUntilQueueDeletedAsync(_queueName);
+            await WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(_exchangeName, _queueName);
         }
 
         Assert.Equal(1, topologyListener.ExchangeCount());
@@ -502,14 +502,14 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                 .DestinationQueue(queueSpecWontDelete).Key($"key_{i}").BindAsync();
         }
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync(_exchangeName, _queueName);
+        await WaitUntilBindingsBetweenExchangeAndQueueExistAsync(_exchangeName, _queueName);
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync(_exchangeName, wontDeleteQueueName);
+        await WaitUntilBindingsBetweenExchangeAndQueueExistAsync(_exchangeName, wontDeleteQueueName);
 
         Assert.Equal(20, topologyListener.BindingCount());
         await queueSpec.DeleteAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(_exchangeName, _queueName);
+        await WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(_exchangeName, _queueName);
 
         Assert.Equal(10, topologyListener.BindingCount());
         await queueSpecWontDelete.DeleteAsync();
@@ -563,17 +563,17 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                 .DestinationQueue(queueSpec).Key($"key_{i}").BindAsync();
         }
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync(_exchangeName,
+        await WaitUntilBindingsBetweenExchangeAndQueueExistAsync(_exchangeName,
             _queueName);
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync(
+        await WaitUntilBindingsBetweenExchangeAndQueueExistAsync(
             wontDeleteExchangeName,
             _queueName);
 
         Assert.Equal(20, topologyListener.BindingCount());
         await exSpec.DeleteAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(
+        await WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(
             _exchangeName,
             _queueName);
 
@@ -627,7 +627,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
                 .DestinationExchange(exSpecDestination).Key($"key_{i}").BindAsync();
         }
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(_exchangeName, destinationExchangeName);
+        await WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(_exchangeName, destinationExchangeName);
 
         Assert.Equal(10, topologyListener.BindingCount());
 
@@ -636,7 +636,7 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         await exSpec.DeleteAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(_exchangeName, destinationExchangeName);
+        await WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(_exchangeName, destinationExchangeName);
 
         Assert.Equal(0, topologyListener.ExchangeCount());
 

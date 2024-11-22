@@ -92,8 +92,8 @@ namespace Tests
                     .Build());
             Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
             await Task.Delay(200);
-            await SystemUtils.WaitUntilQueueMessageCount(_queueName, 1);
-            await SystemUtils.WaitUntilQueueMessageCount(_queueName + "2", 0);
+            await WaitUntilQueueMessageCount(_queueName, 1);
+            await WaitUntilQueueMessageCount(_queueName + "2", 0);
             await _management.Queue(_queueName + "2").Quorum().Queue().DeleteAsync();
         }
     }

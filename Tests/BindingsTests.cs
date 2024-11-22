@@ -34,13 +34,13 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
             .Key("key");
         await bindingSpec.BindAsync();
 
-        await SystemUtils.WaitUntilExchangeExistsAsync(sourceExchangeSpec);
+        await WaitUntilExchangeExistsAsync(sourceExchangeSpec);
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync(sourceExchangeSpec, destinationQueueSpec);
+        await WaitUntilBindingsBetweenExchangeAndQueueExistAsync(sourceExchangeSpec, destinationQueueSpec);
 
         await bindingSpec.UnbindAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(sourceExchangeSpec,
+        await WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(sourceExchangeSpec,
             destinationQueueSpec);
 
         /*
@@ -50,8 +50,8 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
         await destinationQueueSpec.DeleteAsync();
         await _connection.CloseAsync();
 
-        await SystemUtils.WaitUntilExchangeDeletedAsync(sourceExchangeSpec);
-        await SystemUtils.WaitUntilQueueDeletedAsync(destinationQueueSpec);
+        await WaitUntilExchangeDeletedAsync(sourceExchangeSpec);
+        await WaitUntilQueueDeletedAsync(destinationQueueSpec);
     }
 
     [Fact]
@@ -78,23 +78,23 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
         await firstBindingSpec.BindAsync();
         await secondBindingSpec.BindAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync(exchangeSpec, queueSpec);
+        await WaitUntilBindingsBetweenExchangeAndQueueExistAsync(exchangeSpec, queueSpec);
 
         await firstBindingSpec.UnbindAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistAsync(exchangeSpec, queueSpec);
+        await WaitUntilBindingsBetweenExchangeAndQueueExistAsync(exchangeSpec, queueSpec);
 
         await secondBindingSpec.UnbindAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(exchangeSpec, queueSpec);
+        await WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(exchangeSpec, queueSpec);
 
         await exchangeSpec.DeleteAsync();
         await queueSpec.DeleteAsync();
 
         await _connection.CloseAsync();
 
-        await SystemUtils.WaitUntilExchangeDeletedAsync(exchangeSpec);
-        await SystemUtils.WaitUntilQueueDeletedAsync(queueSpec);
+        await WaitUntilExchangeDeletedAsync(exchangeSpec);
+        await WaitUntilQueueDeletedAsync(queueSpec);
     }
 
     [Theory]
@@ -128,21 +128,21 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
 
         await bindingSpecification.BindAsync();
 
-        await SystemUtils.WaitUntilExchangeExistsAsync(sourceExchangeSpec);
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(sourceExchangeSpec,
+        await WaitUntilExchangeExistsAsync(sourceExchangeSpec);
+        await WaitUntilBindingsBetweenExchangeAndExchangeExistAsync(sourceExchangeSpec,
             destinationExchangeSpec);
 
         await bindingSpecification.UnbindAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(sourceExchangeSpec,
+        await WaitUntilBindingsBetweenExchangeAndExchangeDontExistAsync(sourceExchangeSpec,
             destinationExchangeSpec);
 
         await sourceExchangeSpec.DeleteAsync();
         await destinationExchangeSpec.DeleteAsync();
         await _connection.CloseAsync();
 
-        await SystemUtils.WaitUntilExchangeDeletedAsync(sourceExchangeName);
-        await SystemUtils.WaitUntilExchangeDeletedAsync(destinationExchangeName);
+        await WaitUntilExchangeDeletedAsync(sourceExchangeName);
+        await WaitUntilExchangeDeletedAsync(destinationExchangeName);
     }
 
     [Theory]
@@ -163,8 +163,8 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
         await exchangeSpec.DeclareAsync();
         await queueSpec.DeclareAsync();
 
-        await SystemUtils.WaitUntilExchangeExistsAsync(exchangeSpec);
-        await SystemUtils.WaitUntilQueueExistsAsync(queueSpec);
+        await WaitUntilExchangeExistsAsync(exchangeSpec);
+        await WaitUntilQueueExistsAsync(queueSpec);
 
         var arguments = new Dictionary<string, object> { { key1, value1 }, { key2, value2 } };
         IBindingSpecification bindingSpecification = _management.Binding()
@@ -174,24 +174,24 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
             .Arguments(arguments);
         await bindingSpecification.BindAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(
+        await WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(
             exchangeSpec,
             queueSpec, arguments);
 
         await bindingSpecification.UnbindAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(
+        await WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(
             exchangeSpec,
             queueSpec, arguments);
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(exchangeSpec, queueSpec);
+        await WaitUntilBindingsBetweenExchangeAndQueueDontExistAsync(exchangeSpec, queueSpec);
 
         await exchangeSpec.DeleteAsync();
         await queueSpec.DeleteAsync();
         await _connection.CloseAsync();
 
-        await SystemUtils.WaitUntilExchangeDeletedAsync(exchangeSpec);
-        await SystemUtils.WaitUntilQueueDeletedAsync(queueSpec);
+        await WaitUntilExchangeDeletedAsync(exchangeSpec);
+        await WaitUntilQueueDeletedAsync(queueSpec);
     }
 
     // TODO: test with multi-bindings with parameters with list as value
@@ -236,19 +236,19 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
             .Arguments(specialBindArgs);
         await specialBindSpec.BindAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(exchangeSpec, queueSpec,
+        await WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(exchangeSpec, queueSpec,
             specialBindArgs);
 
         await specialBindSpec.UnbindAsync();
 
-        await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(exchangeSpec, queueSpec,
+        await WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(exchangeSpec, queueSpec,
             specialBindArgs);
 
         for (int i = 0; i < 10; i++)
         {
             var bindArgs = new Dictionary<string, object>() { { $"是英国v_{i}", $"p_{i}" } };
 
-            await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(exchangeSpec, queueSpec,
+            await WaitUntilBindingsBetweenExchangeAndQueueExistWithArgsAsync(exchangeSpec, queueSpec,
                 bindArgs);
 
             await _management.Binding()
@@ -258,7 +258,7 @@ public class BindingsTests(ITestOutputHelper testOutputHelper) : IntegrationTest
                 .Arguments(bindArgs)
                 .UnbindAsync();
 
-            await SystemUtils.WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(exchangeSpec, queueSpec,
+            await WaitUntilBindingsBetweenExchangeAndQueueDontExistWithArgsAsync(exchangeSpec, queueSpec,
                 bindArgs);
         }
         await exchangeSpec.DeleteAsync();

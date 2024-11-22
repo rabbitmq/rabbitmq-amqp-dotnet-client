@@ -73,7 +73,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         PublishResult pr = await publisher.PublishAsync(new AmqpMessage("Hello wold!"));
         Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
 
-        await SystemUtils.WaitUntilQueueMessageCount(queueSpecification, 1);
+        await WaitUntilQueueMessageCount(queueSpecification, 1);
 
         Assert.Single(_connection.Publishers);
         await publisher.CloseAsync();
@@ -135,7 +135,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         PublishResult pr = await publisher.PublishAsync(new AmqpMessage("Hello wold!"));
         Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
 
-        await SystemUtils.WaitUntilQueueMessageCount(queueToSend1, 1);
+        await WaitUntilQueueMessageCount(queueToSend1, 1);
 
         Assert.Single(_connection.Publishers);
 

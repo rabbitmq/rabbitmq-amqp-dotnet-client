@@ -16,7 +16,7 @@ using Xunit.Abstractions;
 
 namespace Tests;
 
-public abstract class IntegrationTest : IAsyncLifetime
+public abstract partial class IntegrationTest : IAsyncLifetime
 {
 #if NET6_0_OR_GREATER
     private static readonly Random s_random = Random.Shared;
@@ -52,9 +52,14 @@ public abstract class IntegrationTest : IAsyncLifetime
         _exchangeName = $"{_testDisplayName}-exchange-{Now}";
         _containerId = $"{_testDisplayName}:{Now}";
 
-        if (SystemUtils.IsVerbose)
+        if (IsVerbose)
         {
             _testOutputHelper.WriteLine("{0} [DEBUG] [START] {1}", DateTime.Now, _testDisplayName);
+        }
+
+        if (IsRunningInCI)
+        {
+            _waitSpan = TimeSpan.FromSeconds(8);
         }
 
         _connectionSettingBuilder = InitConnectionSettingsBuilder();
@@ -83,7 +88,7 @@ public abstract class IntegrationTest : IAsyncLifetime
 
     public virtual async Task DisposeAsync()
     {
-        if (SystemUtils.IsVerbose)
+        if (IsVerbose)
         {
             _testOutputHelper.WriteLine("{0} [DEBUG] [START DISPOSE] {1}", DateTime.Now, _testDisplayName);
         }
@@ -120,7 +125,7 @@ public abstract class IntegrationTest : IAsyncLifetime
             _connection.Dispose();
         }
 
-        if (SystemUtils.IsVerbose)
+        if (IsVerbose)
         {
             _testOutputHelper.WriteLine("{0} [DEBUG] [END DISPOSE] {1}", DateTime.Now, _testDisplayName);
         }
@@ -148,7 +153,7 @@ public abstract class IntegrationTest : IAsyncLifetime
 
     protected static TaskCompletionSource<T> CreateTaskCompletionSource<T>()
     {
-        return new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+        return Utils.CreateTaskCompletionSource<T>();
     }
 
     protected Task<T> WhenTcsCompletes<T>(TaskCompletionSource<T> tcs)
@@ -174,6 +179,7 @@ public abstract class IntegrationTest : IAsyncLifetime
     protected static async Task WaitUntilStable<T>(Func<T> getValue, T? stableValue = default)
         where T : IEquatable<T>
     {
+        DateTime start = DateTime.Now;
         const int iterations = 20;
         int iteration = 0;
         T val0;
@@ -193,13 +199,16 @@ public abstract class IntegrationTest : IAsyncLifetime
 
         if (iteration == iterations)
         {
-            Assert.Fail($"value did not stabilize as expected (stableValue: {stableValue})");
+            DateTime stop = DateTime.Now;
+            TimeSpan duration = stop - start;
+            Assert.Fail($"value did not stabilize as expected within '{duration}' (stableValue: {stableValue})");
         }
     }
 
     protected static async Task WaitUntilStable<T>(Func<Task<T>> getValue, T? stableValue = default)
         where T : IEquatable<T>
     {
+        DateTime start = DateTime.Now;
         const int iterations = 20;
         int iteration = 0;
         T val0;
@@ -219,7 +228,9 @@ public abstract class IntegrationTest : IAsyncLifetime
 
         if (iteration == iterations)
         {
-            Assert.Fail($"value did not stabilize as expected (stableValue: {stableValue})");
+            DateTime stop = DateTime.Now;
+            TimeSpan duration = stop - start;
+            Assert.Fail($"value did not stabilize as expected within '{duration}' (stableValue: {stableValue})");
         }
     }
 
@@ -363,9 +374,9 @@ public abstract class IntegrationTest : IAsyncLifetime
 
         var connectionSettingBuilder = ConnectionSettingBuilder.Create();
         connectionSettingBuilder.ContainerId(_containerId);
-        connectionSettingBuilder.Host(SystemUtils.RabbitMqHost);
+        connectionSettingBuilder.Host(s_rabbitMqHost);
 
-        if (SystemUtils.IsCluster)
+        if (s_isCluster)
         {
             // Note: 5672,5673 and 5674 could be returned here
             connectionSettingBuilder.Port(Utils.RandomNext(5672, 5675));

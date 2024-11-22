@@ -74,9 +74,9 @@ namespace Tests.Rpc
 
                 if (i % 25 == 0)
                 {
-                    await SystemUtils.WaitUntilConnectionIsKilled(containerId);
+                    await WaitUntilConnectionIsKilled(containerId);
                     await Task.Delay(500);
-                    await SystemUtils.WaitUntilQueueExistsAsync(clientReplyQueue.QueueName);
+                    await WaitUntilQueueExistsAsync(clientReplyQueue.QueueName);
                 }
             }
 

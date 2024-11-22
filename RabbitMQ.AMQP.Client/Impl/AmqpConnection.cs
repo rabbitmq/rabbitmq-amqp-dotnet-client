@@ -96,7 +96,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
 
         private readonly TaskCompletionSource<bool> _connectionClosedTcs =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
+            Utils.CreateTaskCompletionSource<bool>();
 
         public IRpcServerBuilder RpcServerBuilder()
         {

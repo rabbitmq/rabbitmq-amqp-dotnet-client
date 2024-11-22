@@ -68,10 +68,10 @@ public class CustomPublisherConsumerRecoveryTests(ITestOutputHelper testOutputHe
         Assert.Equal(State.Open, publisher.State);
         Assert.Equal(State.Open, consumer.State);
 
-        await SystemUtils.WaitUntilConnectionIsKilled(_containerId);
+        await WaitUntilConnectionIsKilled(_containerId);
 
-        await SystemUtils.WaitUntilFuncAsync(() => publisher.State == State.Closed);
-        await SystemUtils.WaitUntilFuncAsync(() => consumer.State == State.Closed);
+        await WaitUntilFuncAsync(() => publisher.State == State.Closed);
+        await WaitUntilFuncAsync(() => consumer.State == State.Closed);
 
         Assert.Equal(State.Closed, _connection.State);
         Assert.Equal(State.Closed, _management.State);

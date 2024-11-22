@@ -67,20 +67,28 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
             .Queue(queueSpecification)
             .MessageHandler((context, message) =>
             {
-                Assert.Equal("message_0", message.Body());
-                Interlocked.Increment(ref consumed);
-                switch (consumed)
+                try
                 {
-                    case 1:
-                        // first time requeue the message
-                        // it must consume again
-                        context.Requeue();
-                        break;
-                    case 2:
-                        context.Accept();
-                        tcs.SetResult(consumed);
-                        break;
+                    Assert.Equal("message_0", message.Body());
+                    Interlocked.Increment(ref consumed);
+                    switch (consumed)
+                    {
+                        case 1:
+                            // first time requeue the message
+                            // it must consume again
+                            context.Requeue();
+                            break;
+                        case 2:
+                            context.Accept();
+                            tcs.SetResult(consumed);
+                            break;
+                    }
                 }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
+
                 return Task.CompletedTask;
             }
         ).BuildAndStartAsync();
@@ -90,7 +98,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         await consumer.CloseAsync();
         consumer.Dispose();
 
-        await SystemUtils.WaitUntilQueueMessageCount(queueSpecification, 0);
+        await WaitUntilQueueMessageCount(queueSpecification, 0);
         await queueSpecification.DeleteAsync();
     }
 
@@ -116,22 +124,29 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
             List<IMessage> receivedMessages = new();
             Task MessageHandler(IContext cxt, IMessage msg)
             {
-                receivedMessages.Add(msg);
-
-                Interlocked.Increment(ref messagesConsumedCount);
-
-                if (messagesConsumedCount % 2 == 0)
+                try
                 {
-                    cxt.Discard();
+                    receivedMessages.Add(msg);
+
+                    Interlocked.Increment(ref messagesConsumedCount);
+
+                    if (messagesConsumedCount % 2 == 0)
+                    {
+                        cxt.Discard();
+                    }
+                    else
+                    {
+                        cxt.Accept();
+                    }
+
+                    if (messagesConsumedCount == publishCount)
+                    {
+                        tcs.SetResult(receivedMessages);
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    cxt.Accept();
-                }
-
-                if (messagesConsumedCount == publishCount)
-                {
-                    tcs.SetResult(receivedMessages);
+                    tcs.SetException(ex);
                 }
 
                 return Task.CompletedTask;
@@ -204,7 +219,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         // wait for the consumer to consume all messages
         // we can't use the TaskCompletionSource here because we don't know how many messages will be consumed
         // In two seconds, the consumer should consume all messages
-        await SystemUtils.WaitUntilFuncAsync(() => consumed >= numberOfMessagesExpected);
+        await WaitUntilFuncAsync(() => consumed >= numberOfMessagesExpected);
 
         // we don't know how many messages will be consumed
         // expect for the case FIRST
