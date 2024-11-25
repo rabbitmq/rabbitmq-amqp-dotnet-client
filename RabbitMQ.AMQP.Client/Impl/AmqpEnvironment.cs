@@ -62,6 +62,10 @@ namespace RabbitMQ.AMQP.Client.Impl
         public ReadOnlyCollection<IConnection> GetConnections() =>
             new(_connections.Values.ToList());
 
-        public Task CloseAsync() => Task.WhenAll(_connections.Values.Select(c => c.CloseAsync()));
+        // TODO cancellation token
+        public Task CloseAsync()
+        {
+            return Task.WhenAll(_connections.Values.Select(c => c.CloseAsync()));
+        }
     }
 }

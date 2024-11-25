@@ -12,6 +12,19 @@ using Amqp;
 
 namespace RabbitMQ.AMQP.Client
 {
+    public interface IUriSelector
+    {
+        Uri Select(ICollection<Uri> uris);
+    }
+
+    public class RandomUriSelector : IUriSelector
+    {
+        public Uri Select(ICollection<Uri> uris)
+        {
+            return uris.Skip(Utils.RandomNext(0, uris.Count)).First();
+        }
+    }
+
     public class ConnectionSettingsBuilder
     {
         private string _host = "localhost";
@@ -24,7 +37,10 @@ namespace RabbitMQ.AMQP.Client
         private uint _maxFrameSize = Consts.DefaultMaxFrameSize;
         private SaslMechanism _saslMechanism = Client.SaslMechanism.Anonymous;
         private IRecoveryConfiguration _recoveryConfiguration = new RecoveryConfiguration();
-        private IList<Uri>? _uris;
+        private TlsSettings? _tlsSettings = null;
+        private Uri? _uri;
+        private List<Uri>? _uris;
+        private IUriSelector? _uriSelector;
 
         public static ConnectionSettingsBuilder Create()
         {
@@ -57,8 +73,15 @@ namespace RabbitMQ.AMQP.Client
 
         public ConnectionSettingsBuilder Scheme(string scheme)
         {
-            _scheme = scheme;
-            return this;
+            if (Utils.IsValidScheme(scheme))
+            {
+                _scheme = scheme;
+                return this;
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(scheme), "scheme must be 'amqp' or 'amqps'");
+            }
         }
 
         public ConnectionSettingsBuilder ContainerId(string containerId)
@@ -76,10 +99,10 @@ namespace RabbitMQ.AMQP.Client
         public ConnectionSettingsBuilder MaxFrameSize(uint maxFrameSize)
         {
             _maxFrameSize = maxFrameSize;
-            if (_maxFrameSize != uint.MinValue && _maxFrameSize < 512)
+            if (_maxFrameSize != Consts.DefaultMaxFrameSize && _maxFrameSize < 512)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxFrameSize),
-                    "maxFrameSize must be greater or equal to 512");
+                    "maxFrameSize must be 0 (no limit) or greater than or equal to 512");
             }
             return this;
         }
@@ -103,21 +126,70 @@ namespace RabbitMQ.AMQP.Client
             return this;
         }
 
+        public ConnectionSettingsBuilder TlsSettings(TlsSettings tlsSettings)
+        {
+            _tlsSettings = tlsSettings;
+            return this;
+        }
+
+        public ConnectionSettingsBuilder Uri(Uri uri)
+        {
+            _uri = uri;
+            ValidateUris();
+            return this;
+        }
+
         public ConnectionSettingsBuilder Uris(IEnumerable<Uri> uris)
         {
             _uris = uris.ToList();
+            ValidateUris();
+            return this;
+        }
+
+        public ConnectionSettingsBuilder UriSelector(IUriSelector uriSelector)
+        {
+            _uriSelector = uriSelector;
             return this;
         }
 
         public ConnectionSettings Build()
         {
             // TODO this should do something similar to consolidate in the Java code
-            var c = new ConnectionSettings(_scheme, _host, _port, _user,
-                _password, _virtualHost,
-                _containerId, _saslMechanism,
-                _recoveryConfiguration,
-                _maxFrameSize);
-            return c;
+            ValidateUris();
+            if (_uri is not null)
+            {
+                return new ConnectionSettings(_uri,
+                    _containerId, _saslMechanism,
+                    _recoveryConfiguration,
+                    _maxFrameSize,
+                    _tlsSettings);
+            }
+            else if (_uris is not null)
+            {
+                return new ClusterConnectionSettings(_uris,
+                    _uriSelector,
+                    _containerId, _saslMechanism,
+                    _recoveryConfiguration,
+                    _maxFrameSize,
+                    _tlsSettings);
+            }
+            else
+            {
+                return new ConnectionSettings(_scheme, _host, _port, _user,
+                    _password, _virtualHost,
+                    _containerId, _saslMechanism,
+                    _recoveryConfiguration,
+                    _maxFrameSize,
+                    _tlsSettings);
+            }
+        }
+
+        private void ValidateUris()
+        {
+            if (_uri is not null && _uris is not null)
+            {
+                throw new ArgumentOutOfRangeException("uris", "Do not set both Uri and Uris");
+            }
         }
     }
 
@@ -126,44 +198,30 @@ namespace RabbitMQ.AMQP.Client
     // </summary>
     public class ConnectionSettings : IEquatable<ConnectionSettings>
     {
-        private readonly Address _address;
-        private readonly string _virtualHost = "/";
-        private readonly string _containerId = "";
+        protected Address _address = new("amqp://localhost:5672");
+        protected string _virtualHost = Consts.DefaultVirtualHost;
+        private readonly string _containerId = string.Empty;
         private readonly uint _maxFrameSize = Consts.DefaultMaxFrameSize;
         private readonly TlsSettings? _tlsSettings;
         private readonly SaslMechanism _saslMechanism = SaslMechanism.Plain;
         private readonly IRecoveryConfiguration _recoveryConfiguration = new RecoveryConfiguration();
 
-        public ConnectionSettings(Uri uri)
+        public ConnectionSettings(Uri uri,
+            string? containerId = null,
+            SaslMechanism? saslMechanism = null,
+            IRecoveryConfiguration? recoveryConfiguration = null,
+            uint? maxFrameSize = null,
+            TlsSettings? tlsSettings = null)
+            : this(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings)
         {
-            string? user = null;
-            string? password = null;
-            string userInfo = uri.UserInfo;
-            if (!string.IsNullOrEmpty(userInfo))
-            {
-                string[] userPass = userInfo.Split(':');
-                if (userPass.Length > 2)
-                {
-                    throw new ArgumentException($"Bad user info in AMQP URI: {userInfo}");
-                }
+            (string? user, string? password) = ProcessUserInfo(uri);
 
-                user = UriDecode(userPass[0]);
-                if (userPass.Length == 2)
-                {
-                    password = UriDecode(userPass[1]);
-                }
-            }
+            _virtualHost = ProcessUriSegmentsForVirtualHost(uri);
 
-            // C# automatically changes URIs into a canonical form
-            // that has at least the path segment "/"
-            if (uri.Segments.Length > 2)
+            string scheme = uri.Scheme;
+            if (false == Utils.IsValidScheme(scheme))
             {
-                throw new ArgumentException($"Multiple segments in path of AMQP URI: {string.Join(", ", uri.Segments)}");
-            }
-
-            if (uri.Segments.Length == 2)
-            {
-                _virtualHost = UriDecode(uri.Segments[1]);
+                throw new ArgumentOutOfRangeException("uri.Scheme", "Uri scheme must be 'amqp' or 'amqps'");
             }
 
             _address = new Address(host: uri.Host,
@@ -171,7 +229,7 @@ namespace RabbitMQ.AMQP.Client
                 user: user,
                 password: password,
                 path: "/",
-                scheme: uri.Scheme);
+                scheme: scheme);
 
             if (_address.UseSsl && _tlsSettings == null)
             {
@@ -179,36 +237,72 @@ namespace RabbitMQ.AMQP.Client
             }
         }
 
-        public ConnectionSettings(string scheme, string host, int port,
-            string? user, string? password,
-            string virtualHost, string containerId,
-            SaslMechanism saslMechanism,
-            IRecoveryConfiguration recoveryConfiguration,
-            uint maxFrameSize = Consts.DefaultMaxFrameSize,
+        public ConnectionSettings(string scheme,
+            string host,
+            int port,
+            string? user = null,
+            string? password = null,
+            string? virtualHost = null,
+            string containerId = "",
+            SaslMechanism? saslMechanism = null,
+            IRecoveryConfiguration? recoveryConfiguration = null,
+            uint? maxFrameSize = null,
             TlsSettings? tlsSettings = null)
+            : this(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings)
         {
+            if (false == Utils.IsValidScheme(scheme))
+            {
+                throw new ArgumentOutOfRangeException(nameof(scheme), "scheme must be 'amqp' or 'amqps'");
+            }
+
             _address = new Address(host: host, port: port,
                 user: user, password: password,
                 path: "/", scheme: scheme);
-            _containerId = containerId;
-            _virtualHost = virtualHost;
-            _saslMechanism = saslMechanism;
 
-            _maxFrameSize = maxFrameSize;
-            if (_maxFrameSize != uint.MinValue && _maxFrameSize < 512)
+            if (virtualHost is not null)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxFrameSize),
-                    "maxFrameSize must be greater or equal to 512");
+                _virtualHost = virtualHost;
             }
-
-            _tlsSettings = tlsSettings;
 
             if (_address.UseSsl && _tlsSettings == null)
             {
                 _tlsSettings = new TlsSettings();
             }
+        }
 
-            _recoveryConfiguration = recoveryConfiguration;
+        protected ConnectionSettings(
+            string? containerId = null,
+            SaslMechanism? saslMechanism = null,
+            IRecoveryConfiguration? recoveryConfiguration = null,
+            uint? maxFrameSize = null,
+            TlsSettings? tlsSettings = null)
+        {
+            if (containerId is not null)
+            {
+                _containerId = containerId;
+            }
+
+            if (saslMechanism is not null)
+            {
+                _saslMechanism = saslMechanism;
+            }
+
+            if (recoveryConfiguration is not null)
+            {
+                _recoveryConfiguration = recoveryConfiguration;
+            }
+
+            if (maxFrameSize is not null)
+            {
+                _maxFrameSize = (uint)maxFrameSize;
+                if (_maxFrameSize != Consts.DefaultMaxFrameSize && _maxFrameSize < 512)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(maxFrameSize),
+                        "maxFrameSize must be 0 (no limit) or greater than or equal to 512");
+                }
+            }
+
+            _tlsSettings = tlsSettings;
         }
 
         public string Host => _address.Host;
@@ -224,9 +318,10 @@ namespace RabbitMQ.AMQP.Client
         public SaslMechanism SaslMechanism => _saslMechanism;
         public TlsSettings? TlsSettings => _tlsSettings;
         public IRecoveryConfiguration Recovery => _recoveryConfiguration;
-        public IEnumerable<Uri>? Uris => throw new NotImplementedException();
 
-        internal Address Address => _address;
+        internal virtual Address Address => _address;
+
+        internal virtual IList<Address> Addresses => new[] { _address };
 
         public override string ToString()
         {
@@ -287,6 +382,48 @@ namespace RabbitMQ.AMQP.Client
                 _address.Scheme, _containerId, _address.Path);
         }
 
+        protected static (string? user, string? password) ProcessUserInfo(Uri uri)
+        {
+            string? user = null;
+            string? password = null;
+            string userInfo = uri.UserInfo;
+            if (!string.IsNullOrEmpty(userInfo))
+            {
+                string[] userPass = userInfo.Split(':');
+                if (userPass.Length > 2)
+                {
+                    throw new ArgumentException($"Bad user info in AMQP URI: {userInfo}");
+                }
+
+                user = UriDecode(userPass[0]);
+                if (userPass.Length == 2)
+                {
+                    password = UriDecode(userPass[1]);
+                }
+            }
+
+            return (user, password);
+        }
+
+        protected static string ProcessUriSegmentsForVirtualHost(Uri uri)
+        {
+            // C# automatically changes URIs into a canonical form
+            // that has at least the path segment "/"
+            if (uri.Segments.Length > 2)
+            {
+                throw new ArgumentException($"Multiple segments in path of AMQP URI: {string.Join(", ", uri.Segments)}");
+            }
+
+            if (uri.Segments.Length == 2)
+            {
+                return UriDecode(uri.Segments[1]);
+            }
+            else
+            {
+                return Consts.DefaultVirtualHost;
+            }
+        }
+
         ///<summary>
         /// Unescape a string, protecting '+'.
         /// </summary>
@@ -294,6 +431,130 @@ namespace RabbitMQ.AMQP.Client
         {
             return Uri.UnescapeDataString(str.Replace("+", "%2B"));
         }
+    }
+
+    public class ClusterConnectionSettings : ConnectionSettings
+    {
+        private readonly List<Uri> _uris;
+        private readonly Dictionary<Uri, Address> _uriToAddress;
+        private readonly IUriSelector _uriSelector = new RandomUriSelector();
+
+        public ClusterConnectionSettings(IEnumerable<Uri> uris,
+            IUriSelector? uriSelector = null,
+            string? containerId = null,
+            SaslMechanism? saslMechanism = null,
+            IRecoveryConfiguration? recoveryConfiguration = null,
+            uint? maxFrameSize = null,
+            TlsSettings? tlsSettings = null)
+            : base(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings)
+        {
+            _uris = uris.ToList();
+            if (_uris.Count == 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(uris), "At least one Uri is required.");
+            }
+
+            _uriToAddress = new(_uris.Count);
+
+            if (uriSelector is not null)
+            {
+                _uriSelector = uriSelector;
+            }
+
+            string? tmpVirtualHost = null;
+
+            bool first = true;
+            foreach (Uri uri in _uris)
+            {
+                string scheme = uri.Scheme;
+                if (false == Utils.IsValidScheme(scheme))
+                {
+                    throw new ArgumentOutOfRangeException("uri.Scheme", "Uri scheme must be 'amqp' or 'amqps'");
+                }
+
+                (string? user, string? password) = ProcessUserInfo(uri);
+
+                if (tmpVirtualHost is null)
+                {
+                    tmpVirtualHost = ProcessUriSegmentsForVirtualHost(uri);
+                }
+                else
+                {
+                    string thisVirtualHost = ProcessUriSegmentsForVirtualHost(uri);
+                    if (false == thisVirtualHost.Equals(tmpVirtualHost, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        throw new ArgumentException($"All AMQP URIs must use the same virtual host. Expected '{tmpVirtualHost}', got '{thisVirtualHost}'");
+                    }
+                }
+
+                var address = new Address(host: uri.Host,
+                    port: uri.Port,
+                    user: user,
+                    password: password,
+                    path: "/",
+                    scheme: scheme);
+
+                _uriToAddress[uri] = address;
+
+                if (first)
+                {
+                    _address = address;
+                    first = false;
+                }
+            }
+
+            if (tmpVirtualHost is not null)
+            {
+                _virtualHost = tmpVirtualHost;
+            }
+        }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is null)
+            {
+                return false;
+            }
+
+            if (base.Equals(obj) && (obj is ClusterConnectionSettings other))
+            {
+                for (int i = 0; i < _uris.Count; i++)
+                {
+                    Uri thisUri = _uris[i];
+                    Uri otherUri = other._uris[i];
+                    if (false == thisUri.Equals(otherUri))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            int baseHashCode = base.GetHashCode();
+            int hashCode = baseHashCode;
+            for (int i = 0; i < _uris.Count; i++)
+            {
+                hashCode ^= _uris[i].GetHashCode();
+            }
+            return hashCode;
+        }
+
+        internal override Address Address
+        {
+            get
+            {
+                Uri uri = _uriSelector.Select(_uris);
+                return _uriToAddress[uri];
+            }
+        }
+
+        internal override IList<Address> Addresses => _uriToAddress.Values.ToList();
     }
 
     public class TlsSettings

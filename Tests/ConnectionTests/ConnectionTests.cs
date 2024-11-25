@@ -13,6 +13,27 @@ namespace Tests.ConnectionTests;
 public class ConnectionTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
 {
     [Fact]
+    public async Task RaiseErrorsIfTheParametersAreNotValid()
+    {
+        await Assert.ThrowsAsync<ConnectionException>(async () =>
+            await AmqpConnection.CreateAsync(ConnectionSettingsBuilder.Create().VirtualHost("wrong_vhost").Build()));
+
+        // TODO check inner exception is a SocketException
+        await Assert.ThrowsAnyAsync<ConnectionException>(async () =>
+            await AmqpConnection.CreateAsync(ConnectionSettingsBuilder.Create().Host("wrong_host").Build()));
+
+        await Assert.ThrowsAsync<ConnectionException>(async () =>
+            await AmqpConnection.CreateAsync(ConnectionSettingsBuilder.Create().Password("wrong_password").Build()));
+
+        await Assert.ThrowsAsync<ConnectionException>(async () =>
+            await AmqpConnection.CreateAsync(ConnectionSettingsBuilder.Create().User("wrong_user").Build()));
+
+        // TODO check inner exception is a SocketException
+        await Assert.ThrowsAnyAsync<ConnectionException>(async () =>
+            await AmqpConnection.CreateAsync(ConnectionSettingsBuilder.Create().Port(1234).Build()));
+    }
+
+    [Fact]
     public async Task ThrowAmqpClosedExceptionWhenItemIsClosed()
     {
         Assert.NotNull(_connection);

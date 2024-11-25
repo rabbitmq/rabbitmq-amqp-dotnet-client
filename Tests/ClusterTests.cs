@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
+using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -15,7 +16,7 @@ public class ClusterTests(ITestOutputHelper testOutputHelper)
     : IntegrationTest(testOutputHelper, setupConnectionAndManagement: false)
 {
     [SkippableFact]
-    public Task CreateConnectionWithEnvironmentAndMultipleUris()
+    public async Task CreateConnectionWithEnvironmentAndMultipleUris()
     {
         Skip.IfNot(IsCluster);
 
@@ -31,16 +32,16 @@ public class ClusterTests(ITestOutputHelper testOutputHelper)
         connectionSettingBuilder.Uris(uris);
         ConnectionSettings connectionSettings = connectionSettingBuilder.Build();
 
-        /*
-        IEnvironment env = AmqpEnvironment.Create(ConnectionSettingBuilder.Create().Build());
-        IConnection connection = await env.CreateConnectionAsync();
-        Assert.NotNull(connection);
-        Assert.NotEmpty(env.GetConnections());
-        await env.CloseAsync();
-        Assert.Equal(State.Closed, connection.State);
-        Assert.Empty(env.GetConnections());
-        */
+        IEnvironment env = AmqpEnvironment.Create(connectionSettings);
 
-        return Task.CompletedTask;
+        // Note: by using _connection, the test will dispose the object on teardown
+        _connection = await env.CreateConnectionAsync();
+        Assert.NotNull(_connection);
+        Assert.NotEmpty(env.GetConnections());
+
+        await env.CloseAsync();
+
+        Assert.Equal(State.Closed, _connection.State);
+        Assert.Empty(env.GetConnections());
     }
 }

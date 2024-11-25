@@ -179,6 +179,19 @@ namespace RabbitMQ.AMQP.Client
             return true;
         }
 
+        internal static bool IsValidScheme(string scheme)
+        {
+            if (scheme.Equals("amqp", StringComparison.InvariantCultureIgnoreCase) ||
+                scheme.Equals("amqps", StringComparison.InvariantCultureIgnoreCase))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         internal static void ValidateMessageAnnotations(Dictionary<string, object> annotations)
         {
             foreach (KeyValuePair<string, object> kvp in annotations)

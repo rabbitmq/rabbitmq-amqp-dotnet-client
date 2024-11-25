@@ -34,8 +34,10 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly AmqpManagement _management;
         private readonly RecordingTopologyListener _recordingTopologyListener = new();
 
-        internal readonly ConnectionSettings _connectionSettings;
+        private readonly ConnectionSettings _connectionSettings;
         private readonly IMetricsReporter? _metricsReporter;
+
+        // TODO this is coupled with publishers and consumers
         internal readonly AmqpSessionManagement _nativePubSubSessions;
 
         private readonly Dictionary<string, object> _connectionProperties = new();
@@ -350,23 +352,9 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 try
                 {
-                    ConnectionSettings connectionSettings;
-                    if (_connectionSettings is null)
-                    {
-                        // TODO create "internal bug" exception type?
-                        throw new InvalidOperationException(
-                            "_connectionSettings is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
-                    }
-                    else
-                    {
-                        // TODO
-                        // There is absolutely NO POINT in having an interface if this
-                        // is what will be done!
-                        connectionSettings = (ConnectionSettings)_connectionSettings;
-                        Address address = connectionSettings.Address;
-                        _nativeConnection = await cf.CreateAsync(address: address, open: open, onOpened: OnOpened)
-                            .ConfigureAwait(false);
-                    }
+                    Address address = _connectionSettings.Address;
+                    _nativeConnection = await cf.CreateAsync(address: address, open: open, onOpened: OnOpened)
+                        .ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
