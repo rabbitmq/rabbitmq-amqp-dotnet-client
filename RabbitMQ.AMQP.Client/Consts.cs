@@ -2,9 +2,9 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-namespace RabbitMQ.AMQP.Client.Impl
+namespace RabbitMQ.AMQP.Client
 {
-    public class Consts
+    public static class Consts
     {
         public const string Exchanges = "exchanges";
         public const string Key = "key";

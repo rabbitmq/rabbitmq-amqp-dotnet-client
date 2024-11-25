@@ -262,9 +262,9 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
         await _connection.CloseAsync();
         _connection.Dispose();
 
-        IRecoveryConfiguration recoveryConfiguration = RecoveryConfiguration.Create().Activated(false);
+        IRecoveryConfiguration recoveryConfiguration = new RecoveryConfiguration().Activated(false);
         ConnectionSettings connectionSettings =
-            ConnectionSettingBuilder.Create().RecoveryConfiguration(recoveryConfiguration)
+            ConnectionSettingsBuilder.Create().RecoveryConfiguration(recoveryConfiguration)
             .ContainerId(_containerId).Build();
 
         _connection = await AmqpConnection.CreateAsync(connectionSettings);
@@ -324,8 +324,13 @@ public class PublisherConsumerRecoveryTests(ITestOutputHelper testOutputHelper) 
 
         // Here we need a second _connection since the RecoveryConfiguration is disabled
         // and the _connection is closed. So we can't use the same _connection to delete the queue
+
+        var recoveryConfiguration1 = new RecoveryConfiguration();
+        recoveryConfiguration1.Activated(false);
+
         IConnection connection2 = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create().RecoveryConfiguration(RecoveryConfiguration.Create().Activated(false))
+            ConnectionSettingsBuilder.Create()
+                .RecoveryConfiguration(recoveryConfiguration1)
                 .ContainerId(_containerId).Build());
 
         IQueueSpecification queueSpec2 = connection2.Management().Queue(_queueName);

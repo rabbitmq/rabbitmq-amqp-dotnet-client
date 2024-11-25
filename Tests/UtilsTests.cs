@@ -2,6 +2,8 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System;
+using System.Collections.Generic;
 using RabbitMQ.AMQP.Client;
 using Xunit;
 
@@ -9,6 +11,23 @@ namespace Tests;
 
 public class UtilsTests
 {
+    [Fact]
+    public void ValidateMessageAnnotationsTest()
+    {
+        const string wrongAnnotationKey = "missing-the-start-x-annotation-key";
+        const string annotationValue = "annotation-value";
+        // This should throw an exception because the annotation key does not start with "x-"
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Utils.ValidateMessageAnnotations(new Dictionary<string, object>
+            {
+                { wrongAnnotationKey, annotationValue }
+            }));
+
+        const string correctAnnotationKey = "x-otp-annotation-key";
+        // This should not throw an exception because the annotation key starts with "x-"
+        Utils.ValidateMessageAnnotations(new Dictionary<string, object> { { correctAnnotationKey, annotationValue } });
+    }
+
     [Theory]
     [InlineData("3.13.6")]
     [InlineData("3.13.6.2")]

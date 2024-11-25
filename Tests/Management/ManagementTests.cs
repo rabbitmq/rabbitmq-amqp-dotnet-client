@@ -400,7 +400,7 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         var queueSpecs = new List<IQueueSpecification>();
         for (int i = 1; i < 7; i++)
         {
-            IQueueSpecification qs = _management.Queue().Name($"Q_{i}");
+            IQueueSpecification qs = _management.Queue().Name($"{_queueName}_{i}");
             await qs.DeclareAsync();
             queueSpecs.Add(qs);
             Assert.Equal(((RecordingTopologyListener)topologyListener).QueueCount(), i);

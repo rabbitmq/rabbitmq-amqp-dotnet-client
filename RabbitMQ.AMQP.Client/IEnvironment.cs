@@ -17,7 +17,7 @@ namespace RabbitMQ.AMQP.Client
         /// </summary>
         /// <param name="connectionSettings"></param>
         /// <returns>IConnection</returns>
-        public Task<IConnection> CreateConnectionAsync(IConnectionSettings connectionSettings);
+        public Task<IConnection> CreateConnectionAsync(ConnectionSettings connectionSettings);
 
         /// <summary>
         /// Create a new connection with the default connection settings.

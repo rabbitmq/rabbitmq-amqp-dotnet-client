@@ -12,24 +12,24 @@ namespace RabbitMQ.AMQP.Client.Impl
 {
     public class AmqpEnvironment : IEnvironment
     {
-        private IConnectionSettings ConnectionSettings { get; }
+        private ConnectionSettings ConnectionSettings { get; }
         private long _sequentialId = 0;
         private readonly ConcurrentDictionary<long, IConnection> _connections = new();
         private readonly IMetricsReporter? _metricsReporter;
 
-        private AmqpEnvironment(IConnectionSettings connectionSettings, IMetricsReporter? metricsReporter = default)
+        private AmqpEnvironment(ConnectionSettings connectionSettings, IMetricsReporter? metricsReporter = default)
         {
             ConnectionSettings = connectionSettings;
             _metricsReporter = metricsReporter;
         }
 
         // TODO to play nicely with IoC containers, we should not have static Create methods
-        public static IEnvironment Create(IConnectionSettings connectionSettings, IMetricsReporter? metricsReporter = default)
+        public static IEnvironment Create(ConnectionSettings connectionSettings, IMetricsReporter? metricsReporter = default)
         {
             return new AmqpEnvironment(connectionSettings, metricsReporter);
         }
 
-        public async Task<IConnection> CreateConnectionAsync(IConnectionSettings connectionSettings)
+        public async Task<IConnection> CreateConnectionAsync(ConnectionSettings connectionSettings)
         {
             IConnection c = await AmqpConnection.CreateAsync(connectionSettings, _metricsReporter).ConfigureAwait(false);
             c.Id = Interlocked.Increment(ref _sequentialId);

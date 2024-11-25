@@ -15,32 +15,18 @@ namespace Tests;
 
 internal class FakeBackOffDelayPolicyDisabled : IBackOffDelayPolicy
 {
-    public int Delay()
-    {
-        return 1;
-    }
-
-    public void Reset()
-    {
-    }
-
-    public bool IsActive() => false;
     public int CurrentAttempt => 1;
+    public int Delay() => 1;
+    public bool IsActive() => false;
+    public void Reset() { }
 }
 
 internal class FakeFastBackOffDelay : IBackOffDelayPolicy
 {
-    public int Delay()
-    {
-        return 200;
-    }
-
-    public void Reset()
-    {
-    }
-
-    public bool IsActive() => true;
     public int CurrentAttempt => 1;
+    public int Delay() => 200;
+    public bool IsActive() => true;
+    public void Reset() { }
 }
 
 public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
@@ -60,9 +46,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Null(_connection);
         Assert.Null(_management);
 
+        var recoveryConfiguration = new RecoveryConfiguration();
+        recoveryConfiguration.Activated(activeRecovery);
+        recoveryConfiguration.Topology(false);
+
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create().ContainerId(_containerId).RecoveryConfiguration(
-                RecoveryConfiguration.Create().Activated(activeRecovery).Topology(false)).Build());
+            ConnectionSettingsBuilder.Create().ContainerId(_containerId).RecoveryConfiguration(
+                recoveryConfiguration).Build());
 
         TaskCompletionSource<bool> connectionClosedStateTcs = CreateTaskCompletionSource<bool>();
         var listFromStatus = new List<State>();
@@ -108,10 +98,14 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Null(_connection);
         Assert.Null(_management);
 
+        var recoveryConfiguration = new RecoveryConfiguration();
+        recoveryConfiguration.Activated(true);
+        recoveryConfiguration.Topology(false);
+        recoveryConfiguration.BackOffDelayPolicy(new FakeFastBackOffDelay());
+
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create().ContainerId(_containerId).RecoveryConfiguration(
-                RecoveryConfiguration.Create().Activated(true).Topology(false)
-                    .BackOffDelayPolicy(new FakeFastBackOffDelay())).Build());
+            ConnectionSettingsBuilder.Create().ContainerId(_containerId).RecoveryConfiguration(
+                recoveryConfiguration).Build());
 
         TaskCompletionSource<bool> listErrorCountGreaterThanOrEqualToTwoTcs = CreateTaskCompletionSource<bool>();
         TaskCompletionSource<bool> listErrorCountGreaterThanOrEqualToFourTcs = CreateTaskCompletionSource<bool>();
@@ -181,10 +175,16 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Null(_connection);
         Assert.Null(_management);
 
+        var backoffDelayPolicy = new FakeBackOffDelayPolicyDisabled();
+        var recoveryConfiguration = new RecoveryConfiguration();
+        recoveryConfiguration.Activated(true);
+        recoveryConfiguration.Topology(false);
+        recoveryConfiguration.BackOffDelayPolicy(backoffDelayPolicy);
+
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create().ContainerId(_containerId).RecoveryConfiguration(
-                RecoveryConfiguration.Create().Activated(true).Topology(false).BackOffDelayPolicy(
-                    new FakeBackOffDelayPolicyDisabled())).Build());
+            ConnectionSettingsBuilder.Create()
+            .ContainerId(_containerId)
+            .RecoveryConfiguration(recoveryConfiguration).Build());
 
         var listFromStatus = new List<State>();
         TaskCompletionSource<bool> listFromStatusCountGreaterOrEqualToTwo = CreateTaskCompletionSource<bool>();
@@ -244,11 +244,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Null(_connection);
         Assert.Null(_management);
 
+        var recoveryConfiguration = new RecoveryConfiguration();
+        recoveryConfiguration.Topology(true);
+        recoveryConfiguration.BackOffDelayPolicy(new FakeFastBackOffDelay());
+
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create()
-                .RecoveryConfiguration(RecoveryConfiguration.Create()
-                    .BackOffDelayPolicy(new FakeFastBackOffDelay())
-                    .Topology(true))
+            ConnectionSettingsBuilder.Create()
+                .RecoveryConfiguration(recoveryConfiguration)
                 .ContainerId(_containerId)
                 .Build());
         TaskCompletionSource<bool> twoRecoveryEventsSeenTcs = CreateTaskCompletionSource<bool>();
@@ -291,11 +293,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Null(_connection);
         Assert.Null(_management);
 
+        var recoveryConfiguration = new RecoveryConfiguration();
+        recoveryConfiguration.Topology(false);
+        recoveryConfiguration.BackOffDelayPolicy(new FakeFastBackOffDelay());
+
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create()
-                .RecoveryConfiguration(RecoveryConfiguration.Create()
-                    .BackOffDelayPolicy(new FakeFastBackOffDelay())
-                    .Topology(false))
+            ConnectionSettingsBuilder.Create()
+                .RecoveryConfiguration(recoveryConfiguration)
                 .ContainerId(_containerId)
                 .Build());
         TaskCompletionSource<bool> oneRecoveryEventSeenTcs = CreateTaskCompletionSource<bool>();
@@ -329,11 +333,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Null(_connection);
         Assert.Null(_management);
 
+        var recoveryConfiguration = new RecoveryConfiguration();
+        recoveryConfiguration.BackOffDelayPolicy(new FakeFastBackOffDelay());
+        recoveryConfiguration.Topology(topologyEnabled);
+
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create()
-                .RecoveryConfiguration(RecoveryConfiguration.Create()
-                    .BackOffDelayPolicy(new FakeFastBackOffDelay())
-                    .Topology(topologyEnabled))
+            ConnectionSettingsBuilder.Create()
+                .RecoveryConfiguration(recoveryConfiguration)
                 .ContainerId(_containerId)
                 .Build());
         TaskCompletionSource<bool> twoRecoveryEventsSeenTcs = CreateTaskCompletionSource<bool>();
@@ -387,11 +393,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
         Assert.Null(_connection);
         Assert.Null(_management);
 
+        var recoveryConfiguration = new RecoveryConfiguration();
+        recoveryConfiguration.BackOffDelayPolicy(new FakeFastBackOffDelay());
+        recoveryConfiguration.Topology(topologyEnabled);
+
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create()
-                .RecoveryConfiguration(RecoveryConfiguration.Create()
-                    .BackOffDelayPolicy(new FakeFastBackOffDelay())
-                    .Topology(topologyEnabled))
+            ConnectionSettingsBuilder.Create()
+                .RecoveryConfiguration(recoveryConfiguration)
                 .ContainerId(_containerId)
                 .Build());
         TaskCompletionSource<bool> twoRecoveryEventsSeenTcs = CreateTaskCompletionSource<bool>();
@@ -470,11 +478,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         string wontDeleteQueueName = _queueName + "-wont-delete";
 
+        var recoveryConfiguration = new RecoveryConfiguration();
+        recoveryConfiguration.BackOffDelayPolicy(new FakeFastBackOffDelay());
+        recoveryConfiguration.Topology(true);
+
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create()
-                .RecoveryConfiguration(RecoveryConfiguration.Create()
-                    .BackOffDelayPolicy(new FakeFastBackOffDelay())
-                    .Topology(true))
+            ConnectionSettingsBuilder.Create()
+                .RecoveryConfiguration(recoveryConfiguration)
                 .ContainerId(_containerId)
                 .Build());
 
@@ -530,11 +540,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         string wontDeleteExchangeName = _exchangeName + "-wont-delete";
 
+        var recoveryConfiguration = new RecoveryConfiguration();
+        recoveryConfiguration.BackOffDelayPolicy(new FakeFastBackOffDelay());
+        recoveryConfiguration.Topology(true);
+
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create()
-                .RecoveryConfiguration(RecoveryConfiguration.Create()
-                    .BackOffDelayPolicy(new FakeFastBackOffDelay())
-                    .Topology(true))
+            ConnectionSettingsBuilder.Create()
+                .RecoveryConfiguration(recoveryConfiguration)
                 .ContainerId(_containerId)
                 .Build());
 
@@ -599,11 +611,13 @@ public class ConnectionRecoveryTests(ITestOutputHelper testOutputHelper)
 
         string destinationExchangeName = _exchangeName + "-destination";
 
+        var recoveryConfiguration = new RecoveryConfiguration();
+        recoveryConfiguration.BackOffDelayPolicy(new FakeFastBackOffDelay());
+        recoveryConfiguration.Topology(true);
+
         IConnection connection = await AmqpConnection.CreateAsync(
-            ConnectionSettingBuilder.Create()
-                .RecoveryConfiguration(RecoveryConfiguration.Create()
-                    .BackOffDelayPolicy(new FakeFastBackOffDelay())
-                    .Topology(true))
+            ConnectionSettingsBuilder.Create()
+                .RecoveryConfiguration(recoveryConfiguration)
                 .ContainerId(_containerId)
                 .Build());
 

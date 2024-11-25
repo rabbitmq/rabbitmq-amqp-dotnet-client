@@ -92,7 +92,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
     public abstract class AbstractReconnectLifeCycle : AbstractLifeCycle
     {
-        private readonly BackOffDelayPolicy _backOffDelayPolicy = BackOffDelayPolicy.Create(2);
+        private readonly BackOffDelayPolicy _backOffDelayPolicy = new BackOffDelayPolicy(2);
 
         internal void ChangeStatus(State newState, Error? error)
         {

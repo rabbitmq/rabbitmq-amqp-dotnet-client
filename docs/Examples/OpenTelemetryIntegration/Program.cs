@@ -41,7 +41,7 @@ Trace.WriteLine(TraceLevel.Information, "Starting the example...");
 const string containerId = "getting-started-Connection";
 
 IEnvironment environment = AmqpEnvironment.Create(
-    ConnectionSettingBuilder.Create().ContainerId(containerId).Build(), metricsReporter);
+    ConnectionSettingsBuilder.Create().ContainerId(containerId).Build(), metricsReporter);
 
 IConnection connection = await environment.CreateConnectionAsync();
 

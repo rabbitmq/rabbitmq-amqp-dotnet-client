@@ -19,9 +19,12 @@ Trace.TraceListener = (l, f, a) =>
 Trace.WriteLine(TraceLevel.Information, "Starting the example...");
 const string containerId = "rpc-example-connection";
 
+var recoveryConfiguration = new RecoveryConfiguration();
+recoveryConfiguration.Topology(true);
+
 IEnvironment environment = AmqpEnvironment.Create(
-    ConnectionSettingBuilder.Create().ContainerId(containerId)
-        .RecoveryConfiguration(RecoveryConfiguration.Create().Topology(true))
+    ConnectionSettingsBuilder.Create().ContainerId(containerId)
+        .RecoveryConfiguration(recoveryConfiguration)
         .Build());
 
 IConnection connection = await environment.CreateConnectionAsync();
