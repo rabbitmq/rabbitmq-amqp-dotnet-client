@@ -16,5 +16,10 @@ namespace RabbitMQ.AMQP.Client
         /// <code>uint.MinValue</code> means "no limit"
         /// </summary>
         public const uint DefaultMaxFrameSize = uint.MinValue; // NOTE: Azure/amqpnetlite uses 256 * 1024
+
+        /// <summary>
+        /// The default virtual host, <c>/</c>
+        /// </summary>
+        public const string DefaultVirtualHost = "/";
     }
 }

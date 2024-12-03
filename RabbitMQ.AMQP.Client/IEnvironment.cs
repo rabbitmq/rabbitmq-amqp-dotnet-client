@@ -34,6 +34,7 @@ namespace RabbitMQ.AMQP.Client
         /// Close all connections.
         /// </summary>
         /// <returns></returns>
+        // TODO cancellation token
         Task CloseAsync();
     }
 }
