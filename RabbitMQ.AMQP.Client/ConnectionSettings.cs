@@ -231,10 +231,7 @@ namespace RabbitMQ.AMQP.Client
                 path: "/",
                 scheme: scheme);
 
-            if (_address.UseSsl && _tlsSettings == null)
-            {
-                _tlsSettings = new TlsSettings();
-            }
+            _tlsSettings = InitTlsSettings();
         }
 
         public ConnectionSettings(string scheme,
@@ -255,19 +252,19 @@ namespace RabbitMQ.AMQP.Client
                 throw new ArgumentOutOfRangeException(nameof(scheme), "scheme must be 'amqp' or 'amqps'");
             }
 
-            _address = new Address(host: host, port: port,
-                user: user, password: password,
-                path: "/", scheme: scheme);
+            _address = new Address(host: host,
+                port: port,
+                user: user,
+                password: password,
+                path: "/",
+                scheme: scheme);
 
             if (virtualHost is not null)
             {
                 _virtualHost = virtualHost;
             }
 
-            if (_address.UseSsl && _tlsSettings == null)
-            {
-                _tlsSettings = new TlsSettings();
-            }
+            _tlsSettings = InitTlsSettings();
         }
 
         protected ConnectionSettings(
@@ -421,6 +418,18 @@ namespace RabbitMQ.AMQP.Client
             else
             {
                 return Consts.DefaultVirtualHost;
+            }
+        }
+
+        private TlsSettings? InitTlsSettings()
+        {
+            if (_address.UseSsl && _tlsSettings is null)
+            {
+                return new TlsSettings();
+            }
+            else
+            {
+                return null;
             }
         }
 
