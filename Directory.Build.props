@@ -14,7 +14,6 @@
     <IncludeSymbols>true</IncludeSymbols>
     <IsPackable>false</IsPackable>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
     <PackageId>$(AssemblyName)</PackageId>
     <PackageProjectUrl>https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client</PackageProjectUrl>
     <PackageReleaseNotes>https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/latest</PackageReleaseNotes>
