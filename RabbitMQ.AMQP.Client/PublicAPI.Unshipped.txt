@@ -11,6 +11,8 @@ const RabbitMQ.AMQP.Client.Consts.Queues = "queues" -> string!
 const RabbitMQ.AMQP.Client.MetricsReporter.MeterName = "RabbitMQ.Amqp" -> string!
 const RabbitMQ.AMQP.Client.MetricsReporter.MetricPrefix = "rabbitmq.amqp" -> string!
 override RabbitMQ.AMQP.Client.BackOffDelayPolicy.ToString() -> string!
+override RabbitMQ.AMQP.Client.ByteCapacity.Equals(object? obj) -> bool
+override RabbitMQ.AMQP.Client.ByteCapacity.GetHashCode() -> int
 override RabbitMQ.AMQP.Client.ClusterConnectionSettings.Equals(object? obj) -> bool
 override RabbitMQ.AMQP.Client.ClusterConnectionSettings.GetHashCode() -> int
 override RabbitMQ.AMQP.Client.ConnectionSettings.Equals(object? obj) -> bool
@@ -48,8 +50,8 @@ RabbitMQ.AMQP.Client.BackOffDelayPolicy.Reset() -> void
 RabbitMQ.AMQP.Client.BadRequestException
 RabbitMQ.AMQP.Client.BadRequestException.BadRequestException(string! message) -> void
 RabbitMQ.AMQP.Client.ByteCapacity
-RabbitMQ.AMQP.Client.ByteCapacity.Equals(RabbitMQ.AMQP.Client.ByteCapacity? other) -> bool
-RabbitMQ.AMQP.Client.ByteCapacity.ToBytes() -> long
+RabbitMQ.AMQP.Client.ByteCapacity.ByteCapacity(long bytes) -> void
+RabbitMQ.AMQP.Client.ByteCapacity.Equals(RabbitMQ.AMQP.Client.ByteCapacity? obj) -> bool
 RabbitMQ.AMQP.Client.ClassicQueueMode
 RabbitMQ.AMQP.Client.ClassicQueueMode.Default = 0 -> RabbitMQ.AMQP.Client.ClassicQueueMode
 RabbitMQ.AMQP.Client.ClassicQueueMode.Lazy = 1 -> RabbitMQ.AMQP.Client.ClassicQueueMode
@@ -762,10 +764,12 @@ RabbitMQ.AMQP.Client.TlsSettings.RemoteCertificateValidationCallback.set -> void
 RabbitMQ.AMQP.Client.TlsSettings.TlsSettings() -> void
 RabbitMQ.AMQP.Client.TlsSettings.TlsSettings(System.Security.Authentication.SslProtocols protocols) -> void
 static RabbitMQ.AMQP.Client.ByteCapacity.B(long bytes) -> RabbitMQ.AMQP.Client.ByteCapacity!
-static RabbitMQ.AMQP.Client.ByteCapacity.From(string! value) -> RabbitMQ.AMQP.Client.ByteCapacity!
+static RabbitMQ.AMQP.Client.ByteCapacity.explicit operator RabbitMQ.AMQP.Client.ByteCapacity!(string! value) -> RabbitMQ.AMQP.Client.ByteCapacity!
 static RabbitMQ.AMQP.Client.ByteCapacity.Gb(long gigabytes) -> RabbitMQ.AMQP.Client.ByteCapacity!
-static RabbitMQ.AMQP.Client.ByteCapacity.Kb(long megabytes) -> RabbitMQ.AMQP.Client.ByteCapacity!
+static RabbitMQ.AMQP.Client.ByteCapacity.implicit operator long(RabbitMQ.AMQP.Client.ByteCapacity! value) -> long
+static RabbitMQ.AMQP.Client.ByteCapacity.Kb(long kilobytes) -> RabbitMQ.AMQP.Client.ByteCapacity!
 static RabbitMQ.AMQP.Client.ByteCapacity.Mb(long megabytes) -> RabbitMQ.AMQP.Client.ByteCapacity!
+static RabbitMQ.AMQP.Client.ByteCapacity.Parse(string! value) -> RabbitMQ.AMQP.Client.ByteCapacity!
 static RabbitMQ.AMQP.Client.ByteCapacity.Tb(long terabytes) -> RabbitMQ.AMQP.Client.ByteCapacity!
 static RabbitMQ.AMQP.Client.ConnectionSettings.ProcessUriSegmentsForVirtualHost(System.Uri! uri) -> string!
 static RabbitMQ.AMQP.Client.ConnectionSettings.ProcessUserInfo(System.Uri! uri) -> (string? user, string? password)
