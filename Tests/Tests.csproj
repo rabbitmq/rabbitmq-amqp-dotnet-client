@@ -21,6 +21,7 @@
     <IsTestProject>true</IsTestProject>
     <Nullable>enable</Nullable>
     <SignAssembly>True</SignAssembly>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

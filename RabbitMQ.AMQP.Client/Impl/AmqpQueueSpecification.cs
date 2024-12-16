@@ -226,8 +226,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IQueueSpecification MaxLengthBytes(ByteCapacity maxLengthBytes)
         {
-            Utils.ValidatePositive("Max length", maxLengthBytes.ToBytes());
-            _queueArguments["x-max-length-bytes"] = maxLengthBytes.ToBytes();
+            Utils.ValidatePositive("Max length", maxLengthBytes);
+            _queueArguments["x-max-length-bytes"] = maxLengthBytes;
             return this;
         }
 
@@ -385,8 +385,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IStreamSpecification MaxSegmentSizeBytes(ByteCapacity maxSegmentSize)
         {
-            Utils.ValidatePositive("x-stream-max-segment-size-bytes", maxSegmentSize.ToBytes());
-            _parent._queueArguments["x-stream-max-segment-size-bytes"] = maxSegmentSize.ToBytes();
+            Utils.ValidatePositive("x-stream-max-segment-size-bytes", maxSegmentSize);
+            _parent._queueArguments["x-stream-max-segment-size-bytes"] = maxSegmentSize;
             return this;
         }
 
