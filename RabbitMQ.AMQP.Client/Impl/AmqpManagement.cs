@@ -16,8 +16,9 @@ using TraceLevel = Amqp.TraceLevel;
 namespace RabbitMQ.AMQP.Client.Impl
 {
     /// <summary>
-    /// AmqpManagement implements the IManagement
-    /// See <see cref="IManagement"/> for more information
+    /// AmqpManagement implements the <see cref="IManagement"/> interface
+    /// to manage the <see href="https://www.rabbitmq.com/tutorials/amqp-concepts">AMQP 0.9.1 model</see> 
+    /// topology (exchanges, queues, and bindings).
     /// </summary>
     public class AmqpManagement : AbstractLifeCycle, IManagement, IManagementTopology
     {
@@ -55,10 +56,9 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
 
         /// <summary>
-        /// Create a new queue specification
-        /// See <see cref="IQueueSpecification"/> for more information
+        /// Create an <see cref="IQueueSpecification"/>, with an auto-generated name.
         /// </summary>
-        /// <returns> A builder for IQueueSpecification </returns>
+        /// <returns>A builder for <see cref="IQueueSpecification"/></returns>
         public IQueueSpecification Queue()
         {
             ThrowIfClosed();
@@ -66,20 +66,20 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
 
         /// <summary>
-        /// Create a new queue specification with the given name
-        /// See <see cref="IQueueSpecification"/> for more information
+        /// Create an <see cref="IQueueSpecification"/>, with the given name.
         /// </summary>
-        /// <returns>A builder for IQueueSpecification </returns>
+        /// <returns>A builder for <see cref="IQueueSpecification"/></returns>
         public IQueueSpecification Queue(string name)
         {
             return Queue().Name(name);
         }
 
         /// <summary>
-        /// Get the queue info for the given queue specification
-        /// See <see cref="IQueueInfo"/> for more information
+        /// Get the <see cref="IQueueInfo"/> for the given queue specification
         /// </summary>
-        /// <returns> Queue Information</returns>
+        /// <param name="queueSpec">The <see cref="IQueueSpecification"/></param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/></param>
+        /// <returns>The <see cref="IQueueInfo"/> for the given spec.</returns>
         public Task<IQueueInfo> GetQueueInfoAsync(IQueueSpecification queueSpec,
             CancellationToken cancellationToken = default)
         {
@@ -87,10 +87,11 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
 
         /// <summary>
-        /// Get the queue info for the given queue name
-        /// See <see cref="IQueueInfo"/> for more information
+        /// Get the <see cref="IQueueInfo"/> for the given queue name.
         /// </summary>
-        /// <returns> Queue Information</returns>
+        /// <param name="queueName">The queue name</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/></param>
+        /// <returns>The <see cref="IQueueInfo"/> for the given spec.</returns>
         public async Task<IQueueInfo> GetQueueInfoAsync(string queueName,
             CancellationToken cancellationToken = default)
         {
@@ -105,19 +106,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             return new DefaultQueueInfo((Map)response.Body);
         }
 
-        internal IQueueSpecification Queue(QueueSpec spec)
-        {
-            return Queue().Name(spec.QueueName)
-                .AutoDelete(spec.IsAutoDelete)
-                .Exclusive(spec.IsExclusive)
-                .Arguments(spec.QueueArguments);
-        }
-
         /// <summary>
-        ///  Create a new AMQPExchange specification
-        ///  See <see cref="IExchangeSpecification"/> for more information
+        /// Create an <see cref="IExchangeSpecification"/>, with an auto-generated name.
         /// </summary>
-        /// <returns>A builder for IExchangeSpecification</returns>
+        /// <returns>A builder for <see cref="IExchangeSpecification"/></returns>
         public IExchangeSpecification Exchange()
         {
             ThrowIfClosed();
@@ -125,46 +117,25 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
 
         /// <summary>
-        ///
-        /// Create a new AMQPExchange specification with the given name
-        /// See <see cref="IExchangeSpecification"/> for more information
+        /// Create an <see cref="IExchangeSpecification"/>, with the given name.
         /// </summary>
-        /// <returns> A builder for IExchangeSpecification</returns>
+        /// <returns>A builder for <see cref="IExchangeSpecification"/></returns>
         public IExchangeSpecification Exchange(string name)
         {
             return Exchange().Name(name);
         }
 
-        internal IExchangeSpecification Exchange(ExchangeSpec spec)
-        {
-            return Exchange().Name(spec.ExchangeName)
-                .AutoDelete(spec.IsAutoDelete)
-                .Type(spec.ExchangeType)
-                .Arguments(spec.ExchangeArguments);
-        }
-
+        /// <summary>
+        /// Create an <see cref="IBindingSpecification"/>.
+        /// </summary>
+        /// <returns>A builder for <see cref="IBindingSpecification"/></returns>
         public IBindingSpecification Binding()
         {
             return new AmqpBindingSpecification(this);
         }
 
-        internal IBindingSpecification Binding(BindingSpec spec)
-        {
-            return Binding()
-                .SourceExchange(spec.SourceExchangeName)
-                .DestinationQueue(spec.DestinationQueueName)
-                .DestinationExchange(spec.DestinationExchangeName)
-                .Key(spec.BindingKey)
-                .Arguments(spec.BindingArguments);
-        }
-
-        ITopologyListener IManagementTopology.TopologyListener()
-        {
-            return _amqpManagementParameters.TopologyListener();
-        }
-
         /// <summary>
-        ///  Open the management session to RabbitMQ
+        /// Open the management session.
         /// </summary>
         public override async Task OpenAsync()
         {
@@ -191,6 +162,257 @@ namespace RabbitMQ.AMQP.Client.Impl
 
             await base.OpenAsync()
                 .ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Close the management session.
+        /// </summary>
+        public override async Task CloseAsync()
+        {
+            // TODO 10 seconds seems too long
+            TimeSpan closeSpan = TimeSpan.FromSeconds(10);
+
+            if (_managementSession is { IsClosed: false })
+            {
+                OnNewStatus(State.Closing, null);
+
+                await _managementSession.CloseAsync(closeSpan)
+                    .ConfigureAwait(false);
+
+                await _managementSessionClosedTcs.Task.WaitAsync(closeSpan)
+                    .ConfigureAwait(false);
+
+                _managementSession = null;
+                _senderLink = null;
+                _receiverLink = null;
+
+                // this is actually a double set of the status, but it is needed to ensure that the status is set to closed
+                // but the `OnNewStatus` is idempotent
+                OnNewStatus(State.Closed, null);
+            }
+        }
+
+        /// <summary>
+        /// Convert this <see cref="AmqpManagement"/> instance to a string.
+        /// </summary>
+        /// <returns>The string representation of this <see cref="AmqpManagement"/> instance.</returns>
+        public override string ToString()
+        {
+            string info = $"AmqpManagement{{" +
+                          $"AmqpConnection='{_amqpManagementParameters.Connection}', " +
+                          $"Status='{State.ToString()}'" +
+                          $"ReceiverLink closed: {_receiverLink?.IsClosed} " +
+                          $"}}";
+
+            return info;
+        }
+
+        ITopologyListener IManagementTopology.TopologyListener()
+        {
+            return _amqpManagementParameters.TopologyListener();
+        }
+
+        internal protected virtual Task InternalSendAsync(Message message, TimeSpan timeout)
+        {
+            if (_senderLink is null)
+            {
+                // TODO create "internal bug" exception type?
+                throw new InvalidOperationException(
+                    "_senderLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+            }
+
+            return _senderLink.SendAsync(message, timeout);
+        }
+
+        internal protected void HandleResponseMessage(Message msg)
+        {
+            if (msg.Properties.CorrelationId != null &&
+                _requests.TryRemove(msg.Properties.CorrelationId, out TaskCompletionSource<Message>? mre))
+            {
+                if (mre.TrySetResult(msg))
+                {
+                    Trace.WriteLine(TraceLevel.Verbose, $"Set result for:  {msg.Properties.CorrelationId}");
+                }
+            }
+            else
+            {
+                Trace.WriteLine(TraceLevel.Error, $"No request found for message: {msg.Properties.CorrelationId}");
+            }
+        }
+
+        internal IQueueSpecification Queue(QueueSpec spec)
+        {
+            return Queue().Name(spec.QueueName)
+                .AutoDelete(spec.IsAutoDelete)
+                .Exclusive(spec.IsExclusive)
+                .Arguments(spec.QueueArguments);
+        }
+
+        internal IExchangeSpecification Exchange(ExchangeSpec spec)
+        {
+            return Exchange().Name(spec.ExchangeName)
+                .AutoDelete(spec.IsAutoDelete)
+                .Type(spec.ExchangeType)
+                .Arguments(spec.ExchangeArguments);
+        }
+
+        internal IBindingSpecification Binding(BindingSpec spec)
+        {
+            return Binding()
+                .SourceExchange(spec.SourceExchangeName)
+                .DestinationQueue(spec.DestinationQueueName)
+                .DestinationExchange(spec.DestinationExchangeName)
+                .Key(spec.BindingKey)
+                .Arguments(spec.BindingArguments);
+        }
+
+        internal Task<Message> RequestAsync(string path, string method,
+            int[] expectedResponseCodes,
+            TimeSpan? timeout = null,
+            CancellationToken cancellationToken = default)
+        {
+            return RequestAsync(null, path, method, expectedResponseCodes,
+                timeout, cancellationToken);
+        }
+
+        internal Task<Message> RequestAsync(object? body, string path, string method,
+            int[] expectedResponseCodes,
+            TimeSpan? timeout = null, // TODO no need for timeouts with CancellationToken
+            CancellationToken cancellationToken = default)
+        {
+            string id = Guid.NewGuid().ToString();
+            return RequestAsync(id, body, path, method, expectedResponseCodes, timeout, cancellationToken);
+        }
+
+        internal Task<Message> RequestAsync(string id, object? body, string path, string method,
+            int[] expectedResponseCodes,
+            TimeSpan? timeout = null,
+            CancellationToken cancellationToken = default)
+        {
+            var message = new Message(body)
+            {
+                Properties = new Properties { MessageId = id, To = path, Subject = method, ReplyTo = ReplyTo }
+            };
+
+            return RequestAsync(message, expectedResponseCodes, timeout, cancellationToken);
+        }
+
+        /// <summary>
+        /// Core function to send a request and wait for the response
+        /// The request is an AMQP message with the following properties:
+        /// - Properties.MessageId: Mandatory to identify the request
+        /// - Properties.To: The path of the request, for example "/queues/my-queue"
+        /// - Properties.Subject: The method of the request, for example "PUT"
+        /// - Properties.ReplyTo: The address where the response will be sent. Default is: "$me"
+        /// - Body: The body of the request. For example the QueueSpec to create a queue
+        /// </summary>
+        /// <param name="message">Request Message. Contains all the info to create/delete a resource</param>
+        /// <param name="expectedResponseCodes">The response codes expected for a specific call. See Code* Constants </param>
+        /// <param name="argTimeout">Default timeout for a request </param>
+        /// <param name="cancellationToken">Cancellation token for this request</param>
+        /// <returns> A message with the Info response. For example in case of Queue creation is DefaultQueueInfo </returns>
+        /// <exception cref="ModelException"> Application errors, see <see cref="ModelException"/> </exception>
+        internal async Task<Message> RequestAsync(Message message, int[] expectedResponseCodes,
+            TimeSpan? argTimeout = null, CancellationToken cancellationToken = default)
+        {
+            ThrowIfClosed();
+
+            // TODO: no need for timeout when there is a CancellationToken
+            TimeSpan timeout = argTimeout ?? TimeSpan.FromSeconds(30);
+
+            TaskCompletionSource<Message> tcs = Utils.CreateTaskCompletionSource<Message>();
+
+            // Add TaskCompletionSource to the dictionary it will be used to set the result of the request
+            if (false == _requests.TryAdd(message.Properties.MessageId, tcs))
+            {
+                // TODO what to do in this error case?
+            }
+
+            // TODO: re-use with TryReset?
+            using var timeoutCts = new CancellationTokenSource(timeout);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+
+            void RequestTimeoutAction()
+            {
+                Trace.WriteLine(TraceLevel.Warning, $"Request timeout for {message.Properties.MessageId}");
+
+                if (_requests.TryRemove(message.Properties.MessageId, out TaskCompletionSource<Message>? timedOutMre))
+                {
+                    if (false == timedOutMre.TrySetCanceled(linkedCts.Token))
+                    {
+                        // TODO debug log rare condition?
+                    }
+                }
+                else
+                {
+                    // TODO log missing request?
+                }
+            }
+
+            using CancellationTokenRegistration ctsr = timeoutCts.Token.Register(RequestTimeoutAction);
+
+            // NOTE: no cancellation token support
+            Task sendTask = InternalSendAsync(message, timeout);
+
+            // The response is handled in a separate thread, see ProcessResponses method in the Init method
+            // TODO timeout & token
+            Message result = await tcs.Task.WaitAsync(linkedCts.Token)
+                .ConfigureAwait(false);
+
+            await sendTask.WaitAsync(linkedCts.Token)
+                .ConfigureAwait(false);
+
+            // Check the responses and throw exceptions if needed.
+            CheckResponse(message, expectedResponseCodes, result);
+
+            return result;
+        }
+
+        internal void ChangeStatus(State newState, Error? error)
+        {
+            OnNewStatus(newState, error);
+        }
+
+        /// <summary>
+        /// Check the response of a request and throw exceptions if needed
+        /// </summary>
+        /// <param name="sentMessage">The message sent </param>
+        /// <param name="expectedResponseCodes"> The expected response codes  </param>
+        /// <param name="receivedMessage">The message received from the server</param>
+        /// <exception cref="ModelException"></exception>
+        /// <exception cref="PreconditionFailedException"></exception>
+        /// <exception cref="InvalidCodeException"></exception>
+        internal void CheckResponse(Message sentMessage, int[] expectedResponseCodes, Message receivedMessage)
+        {
+            // Check if the response code is a number
+            // by protocol the response code is in the Subject property
+            if (!int.TryParse(receivedMessage.Properties.Subject, out int responseCode))
+            {
+                throw new ModelException($"Response code is not a number {receivedMessage.Properties.Subject}");
+            }
+
+            switch (responseCode)
+            {
+                case Code409:
+                    throw new PreconditionFailedException($"{receivedMessage.Body}, response code: {responseCode}");
+                case Code400:
+                    throw new BadRequestException($"{receivedMessage.Body}, response code: {responseCode}");
+            }
+
+            // Check if the correlationId is the same as the messageId
+            if (sentMessage.Properties.MessageId != receivedMessage.Properties.CorrelationId)
+            {
+                throw new ModelException(
+                    $"CorrelationId does not match, expected {sentMessage.Properties.MessageId} but got {receivedMessage.Properties.CorrelationId}");
+            }
+
+            bool any = expectedResponseCodes.Any(c => c == responseCode);
+            if (!any)
+            {
+                throw new InvalidCodeException(
+                    $"Unexpected response code: {responseCode} instead of {expectedResponseCodes.Aggregate("", (s, i) => s + i + ", ")}"
+                );
+            }
         }
 
         private void OnManagementSessionClosed(IAmqpObject sender, Amqp.Framing.Error error)
@@ -353,226 +575,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                     // TODO log this case?
                 }
             }
-        }
-
-        protected void HandleResponseMessage(Message msg)
-        {
-            if (msg.Properties.CorrelationId != null &&
-                _requests.TryRemove(msg.Properties.CorrelationId, out TaskCompletionSource<Message>? mre))
-            {
-                if (mre.TrySetResult(msg))
-                {
-                    Trace.WriteLine(TraceLevel.Verbose, $"Set result for:  {msg.Properties.CorrelationId}");
-                }
-            }
-            else
-            {
-                Trace.WriteLine(TraceLevel.Error, $"No request found for message: {msg.Properties.CorrelationId}");
-            }
-        }
-
-        internal Task<Message> RequestAsync(string path, string method,
-            int[] expectedResponseCodes,
-            TimeSpan? timeout = null,
-            CancellationToken cancellationToken = default)
-        {
-            return RequestAsync(null, path, method, expectedResponseCodes,
-                timeout, cancellationToken);
-        }
-
-        internal Task<Message> RequestAsync(object? body, string path, string method,
-            int[] expectedResponseCodes,
-            TimeSpan? timeout = null, // TODO no need for timeouts with CancellationToken
-            CancellationToken cancellationToken = default)
-        {
-            string id = Guid.NewGuid().ToString();
-            return RequestAsync(id, body, path, method, expectedResponseCodes, timeout, cancellationToken);
-        }
-
-        internal Task<Message> RequestAsync(string id, object? body, string path, string method,
-            int[] expectedResponseCodes,
-            TimeSpan? timeout = null,
-            CancellationToken cancellationToken = default)
-        {
-            var message = new Message(body)
-            {
-                Properties = new Properties { MessageId = id, To = path, Subject = method, ReplyTo = ReplyTo }
-            };
-
-            return RequestAsync(message, expectedResponseCodes, timeout, cancellationToken);
-        }
-
-        /// <summary>
-        /// Core function to send a request and wait for the response
-        /// The request is an AMQP message with the following properties:
-        /// - Properties.MessageId: Mandatory to identify the request
-        /// - Properties.To: The path of the request, for example "/queues/my-queue"
-        /// - Properties.Subject: The method of the request, for example "PUT"
-        /// - Properties.ReplyTo: The address where the response will be sent. Default is: "$me"
-        /// - Body: The body of the request. For example the QueueSpec to create a queue
-        /// </summary>
-        /// <param name="message">Request Message. Contains all the info to create/delete a resource</param>
-        /// <param name="expectedResponseCodes">The response codes expected for a specific call. See Code* Constants </param>
-        /// <param name="argTimeout">Default timeout for a request </param>
-        /// <param name="cancellationToken">Cancellation token for this request</param>
-        /// <returns> A message with the Info response. For example in case of Queue creation is DefaultQueueInfo </returns>
-        /// <exception cref="ModelException"> Application errors, see <see cref="ModelException"/> </exception>
-        internal async Task<Message> RequestAsync(Message message, int[] expectedResponseCodes,
-            TimeSpan? argTimeout = null, CancellationToken cancellationToken = default)
-        {
-            ThrowIfClosed();
-
-            // TODO: no need for timeout when there is a CancellationToken
-            TimeSpan timeout = argTimeout ?? TimeSpan.FromSeconds(30);
-
-            TaskCompletionSource<Message> tcs = Utils.CreateTaskCompletionSource<Message>();
-
-            // Add TaskCompletionSource to the dictionary it will be used to set the result of the request
-            if (false == _requests.TryAdd(message.Properties.MessageId, tcs))
-            {
-                // TODO what to do in this error case?
-            }
-
-            // TODO: re-use with TryReset?
-            using var timeoutCts = new CancellationTokenSource(timeout);
-            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
-
-            void RequestTimeoutAction()
-            {
-                Trace.WriteLine(TraceLevel.Warning, $"Request timeout for {message.Properties.MessageId}");
-
-                if (_requests.TryRemove(message.Properties.MessageId, out TaskCompletionSource<Message>? timedOutMre))
-                {
-                    if (false == timedOutMre.TrySetCanceled(linkedCts.Token))
-                    {
-                        // TODO debug log rare condition?
-                    }
-                }
-                else
-                {
-                    // TODO log missing request?
-                }
-            }
-
-            using CancellationTokenRegistration ctsr = timeoutCts.Token.Register(RequestTimeoutAction);
-
-            // NOTE: no cancellation token support
-            Task sendTask = InternalSendAsync(message, timeout);
-
-            // The response is handled in a separate thread, see ProcessResponses method in the Init method
-            // TODO timeout & token
-            Message result = await tcs.Task.WaitAsync(linkedCts.Token)
-                .ConfigureAwait(false);
-
-            await sendTask.WaitAsync(linkedCts.Token)
-                .ConfigureAwait(false);
-
-            // Check the responses and throw exceptions if needed.
-            CheckResponse(message, expectedResponseCodes, result);
-
-            return result;
-        }
-
-        /// <summary>
-        /// Check the response of a request and throw exceptions if needed
-        /// </summary>
-        /// <param name="sentMessage">The message sent </param>
-        /// <param name="expectedResponseCodes"> The expected response codes  </param>
-        /// <param name="receivedMessage">The message received from the server</param>
-        /// <exception cref="ModelException"></exception>
-        /// <exception cref="PreconditionFailedException"></exception>
-        /// <exception cref="InvalidCodeException"></exception>
-        internal void CheckResponse(Message sentMessage, int[] expectedResponseCodes, Message receivedMessage)
-        {
-            // Check if the response code is a number
-            // by protocol the response code is in the Subject property
-            if (!int.TryParse(receivedMessage.Properties.Subject, out int responseCode))
-            {
-                throw new ModelException($"Response code is not a number {receivedMessage.Properties.Subject}");
-            }
-
-            switch (responseCode)
-            {
-                case Code409:
-                    throw new PreconditionFailedException($"{receivedMessage.Body}, response code: {responseCode}");
-                case Code400:
-                    throw new BadRequestException($"{receivedMessage.Body}, response code: {responseCode}");
-            }
-
-            // Check if the correlationId is the same as the messageId
-            if (sentMessage.Properties.MessageId != receivedMessage.Properties.CorrelationId)
-            {
-                throw new ModelException(
-                    $"CorrelationId does not match, expected {sentMessage.Properties.MessageId} but got {receivedMessage.Properties.CorrelationId}");
-            }
-
-            bool any = expectedResponseCodes.Any(c => c == responseCode);
-            if (!any)
-            {
-                throw new InvalidCodeException(
-                    $"Unexpected response code: {responseCode} instead of {expectedResponseCodes.Aggregate("", (s, i) => s + i + ", ")}"
-                );
-            }
-        }
-
-        protected virtual Task InternalSendAsync(Message message, TimeSpan timeout)
-        {
-            if (_senderLink is null)
-            {
-                // TODO create "internal bug" exception type?
-                throw new InvalidOperationException(
-                    "_senderLink is null, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
-            }
-
-            return _senderLink.SendAsync(message, timeout);
-        }
-
-        public override async Task CloseAsync()
-        {
-            // TODO 10 seconds seems too long
-            TimeSpan closeSpan = TimeSpan.FromSeconds(10);
-
-            if (_managementSession is { IsClosed: false })
-            {
-                OnNewStatus(State.Closing, null);
-
-                await _managementSession.CloseAsync(closeSpan)
-                    .ConfigureAwait(false);
-
-                await _managementSessionClosedTcs.Task.WaitAsync(closeSpan)
-                    .ConfigureAwait(false);
-
-                _managementSession = null;
-                _senderLink = null;
-                _receiverLink = null;
-
-                // this is actually a double set of the status, but it is needed to ensure that the status is set to closed
-                // but the `OnNewStatus` is idempotent
-                OnNewStatus(State.Closed, null);
-            }
-        }
-
-        public override string ToString()
-        {
-            string info = $"AmqpManagement{{" +
-                          $"AmqpConnection='{_amqpManagementParameters.Connection}', " +
-                          $"Status='{State.ToString()}'" +
-                          $"ReceiverLink closed: {_receiverLink?.IsClosed} " +
-                          $"}}";
-
-            return info;
-        }
-
-        internal void ChangeStatus(State newState, Error? error)
-        {
-            OnNewStatus(newState, error);
-        }
-    }
-
-    public class InvalidCodeException : Exception
-    {
-        public InvalidCodeException(string message) : base(message)
-        {
         }
     }
 }

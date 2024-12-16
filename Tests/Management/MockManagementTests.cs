@@ -16,7 +16,7 @@ public class MockManagementTests()
 {
     public class TestAmqpManagement() : AmqpManagement(new AmqpManagementParameters(null!))
     {
-        protected override async Task InternalSendAsync(Message message, TimeSpan timeout)
+        internal protected override async Task InternalSendAsync(Message message, TimeSpan timeout)
         {
             await Task.Delay(1000);
         }
@@ -29,7 +29,7 @@ public class MockManagementTests()
             State = State.Open;
         }
 
-        protected override async Task InternalSendAsync(Message message, TimeSpan timeout)
+        internal protected override async Task InternalSendAsync(Message message, TimeSpan timeout)
         {
             await Task.Delay(1000);
         }
