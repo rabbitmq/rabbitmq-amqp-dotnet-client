@@ -16,8 +16,8 @@ using Amqp.Types;
 namespace RabbitMQ.AMQP.Client.Impl
 {
     /// <summary>
-    /// AmqpConnection is the concrete implementation of <see cref="IConnection"/>
-    /// It is a wrapper around the Microsoft AMQP.Net Lite <see cref="Connection"/> class
+    /// <see cref="AmqpConnection"/> is the concrete implementation of <see cref="IConnection"/>.
+    /// It is a wrapper around the Microsoft AMQP.Net Lite <see cref="Amqp.Connection"/> class.
     /// </summary>
     public class AmqpConnection : AbstractLifeCycle, IConnection
     {
@@ -36,9 +36,6 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private readonly ConnectionSettings _connectionSettings;
         private readonly IMetricsReporter? _metricsReporter;
-
-        // TODO this is coupled with publishers and consumers
-        internal readonly AmqpSessionManagement _nativePubSubSessions;
 
         private readonly Dictionary<string, object> _connectionProperties = new();
         private bool _areFilterExpressionsSupported = false;
@@ -59,86 +56,27 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// </summary>
         private readonly ConcurrentDictionary<Guid, IConsumer> _consumersDict = new();
 
-        // TODO this couples AmqpConnection with AmqpPublisher, yuck
-        internal void AddPublisher(Guid id, IPublisher consumer)
-        {
-            if (false == _publishersDict.TryAdd(id, consumer))
-            {
-                // TODO create "internal bug" exception type?
-                throw new InvalidOperationException("could not add publisher, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
-            }
-        }
-
-        internal void RemovePublisher(Guid id)
-        {
-            if (false == _publishersDict.TryRemove(id, out _))
-            {
-                // TODO create "internal bug" exception type?
-                throw new InvalidOperationException("could not remove publisher, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
-            }
-        }
-
-        // TODO this couples AmqpConnection with AmqpConsumer, yuck
-        internal void AddConsumer(Guid id, IConsumer consumer)
-        {
-            if (false == _consumersDict.TryAdd(id, consumer))
-            {
-                // TODO create "internal bug" exception type?
-                throw new InvalidOperationException("could not add consumer, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
-            }
-        }
-
-        internal void RemoveConsumer(Guid id)
-        {
-            if (false == _consumersDict.TryRemove(id, out _))
-            {
-                // TODO create "internal bug" exception type?
-                throw new InvalidOperationException("could not remove consumer, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
-            }
-        }
-
         private readonly TaskCompletionSource<bool> _connectionClosedTcs =
             Utils.CreateTaskCompletionSource<bool>();
 
-        public IRpcServerBuilder RpcServerBuilder()
-        {
-            return new AmqpRpcServerBuilder(this);
-        }
-
-        public IRpcClientBuilder RpcClientBuilder()
-        {
-            return new AmqpRpcClientBuilder(this);
-        }
+        // TODO this is coupled with publishers and consumers
+        internal readonly AmqpSessionManagement _nativePubSubSessions;
 
         /// <summary>
-        /// Read-only collection of publishers.
-        /// See <see cref="IPublisher"/>
-        /// </summary>
-        /// <returns> All the active Publishers </returns>
-        public IEnumerable<IPublisher> Publishers
-            => _publishersDict.Values.ToArray();
-
-        /// <summary>
-        /// Read-only collection of consumers.
-        /// See <see cref="IConsumer"/>
-        /// </summary>
-        /// <returns> All the active Consumers </returns>
-        public IEnumerable<IConsumer> Consumers
-            => _consumersDict.Values.ToArray();
-
-        /// <summary>
-        /// Read-only dictionary of connection properties.
-        /// </summary>
-        /// <returns><see cref="IReadOnlyDictionary{TKey, TValue}"/> of connection properties</returns>
-        public IReadOnlyDictionary<string, object> Properties => _connectionProperties;
-
-        public long Id { get; set; }
-
-        /// <summary>
-        /// Creates a new instance of <see cref="AmqpConnection"/>
-        /// Through the Connection is possible to create:
-        ///  - Management. See <see cref="AmqpManagement"/>
-        ///  - Publishers and Consumers: See <see cref="AmqpPublisherBuilder"/> and <see cref="AmqpConsumerBuilder"/> 
+        /// <para>
+        ///   Creates a new instance of <see cref="AmqpConnection"/>
+        /// </para>
+        /// <para>
+        ///   Through this <see cref="IConnection"/> instance it is possible to create:
+        /// <list type="bullet">
+        ///   <item>
+        ///     <see cref="IManagement"/>: See <see cref="AmqpManagement"/>.
+        ///   </item>
+        ///   <item>
+        ///     <see cref="IPublisher"/> and <see cref="IConsumer"/>. See <see cref="AmqpPublisherBuilder"/> and <see cref="AmqpConsumerBuilder"/>.
+        ///   </item>
+        /// </list>
+        /// </para>
         /// </summary>
         /// <param name="connectionSettings"></param>
         /// <param name="metricsReporter"></param>
@@ -148,21 +86,83 @@ namespace RabbitMQ.AMQP.Client.Impl
         public static async Task<IConnection> CreateAsync(ConnectionSettings connectionSettings,
             IMetricsReporter? metricsReporter = default)
         {
-            var connection = new AmqpConnection(connectionSettings, metricsReporter);
+            AmqpConnection connection = new(connectionSettings, metricsReporter);
             await connection.OpenAsync()
                 .ConfigureAwait(false);
             return connection;
         }
 
+        /// <summary>
+        /// The <see cref="IManagement"/> instance for this connection.
+        /// </summary>
+        /// <returns><see cref="IManagement"/> instance for this connection.</returns>
         public IManagement Management()
         {
             return _management;
         }
 
+        /// <summary>
+        /// Create an <see cref="IPublisherBuilder"/> instance for this connection.
+        /// </summary>
+        /// <returns><see cref="IPublisherBuilder"/> instance for this connection.</returns>
+        public IPublisherBuilder PublisherBuilder()
+        {
+            ThrowIfClosed();
+            var publisherBuilder = new AmqpPublisherBuilder(this, _metricsReporter);
+            return publisherBuilder;
+        }
+
+        /// <summary>
+        /// Create an <see cref="IConsumerBuilder"/> instance for this connection.
+        /// </summary>
+        /// <returns><see cref="IConsumerBuilder"/> instance for this connection.</returns>
         public IConsumerBuilder ConsumerBuilder()
         {
             return new AmqpConsumerBuilder(this, _metricsReporter);
         }
+
+        /// <summary>
+        /// Create an <see cref="IRpcServerBuilder"/> instance for this connection.
+        /// </summary>
+        /// <returns><see cref="IRpcServerBuilder"/> instance for this connection.</returns>
+        public IRpcServerBuilder RpcServerBuilder()
+        {
+            return new AmqpRpcServerBuilder(this);
+        }
+
+        /// <summary>
+        /// Create an <see cref="IRpcClientBuilder"/> instance for this connection.
+        /// </summary>
+        /// <returns><see cref="IRpcClientBuilder"/> instance for this connection.</returns>
+        public IRpcClientBuilder RpcClientBuilder()
+        {
+            return new AmqpRpcClientBuilder(this);
+        }
+
+        /// <summary>
+        /// Get the properties for this connection.
+        /// </summary>
+        /// <returns><see cref="IReadOnlyDictionary{TKey, TValue}"/> of connection properties.</returns>
+        public IReadOnlyDictionary<string, object> Properties => _connectionProperties;
+
+        /// <summary>
+        /// Get the <see cref="IPublisher"/> instances associated with this connection.
+        /// </summary>
+        /// <returns><see cref="IEnumerable{T}"/> of <see cref="IPublisher"/> instances.</returns>
+        public IEnumerable<IPublisher> Publishers
+            => _publishersDict.Values.ToArray();
+
+        /// <summary>
+        /// Get the <see cref="IConsumer"/> instances associated with this connection.
+        /// </summary>
+        /// <returns><see cref="IEnumerable{T}"/> of <see cref="IConsumer"/> instances.</returns>
+        public IEnumerable<IConsumer> Consumers
+            => _consumersDict.Values.ToArray();
+
+        /// <summary>
+        /// Get or set the Connection ID. Used by <see cref="AmqpEnvironment"/>
+        /// </summary>
+        public long Id { get; set; }
 
         // TODO cancellation token
         public override async Task OpenAsync()
@@ -172,13 +172,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                 .ConfigureAwait(false);
             await base.OpenAsync()
                 .ConfigureAwait(false);
-        }
-
-        public IPublisherBuilder PublisherBuilder()
-        {
-            ThrowIfClosed();
-            var publisherBuilder = new AmqpPublisherBuilder(this, _metricsReporter);
-            return publisherBuilder;
         }
 
         public override async Task CloseAsync()
@@ -229,10 +222,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             return info;
         }
 
-        internal Connection? NativeConnection => _nativeConnection;
-
-        internal bool AreFilterExpressionsSupported => _areFilterExpressionsSupported;
-
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -248,6 +237,48 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
 
             base.Dispose(disposing);
+        }
+
+        internal Connection? NativeConnection => _nativeConnection;
+
+        internal bool AreFilterExpressionsSupported => _areFilterExpressionsSupported;
+
+        // TODO this couples AmqpConnection with AmqpPublisher, yuck
+        internal void AddPublisher(Guid id, IPublisher consumer)
+        {
+            if (false == _publishersDict.TryAdd(id, consumer))
+            {
+                // TODO create "internal bug" exception type?
+                throw new InvalidOperationException("could not add publisher, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+            }
+        }
+
+        internal void RemovePublisher(Guid id)
+        {
+            if (false == _publishersDict.TryRemove(id, out _))
+            {
+                // TODO create "internal bug" exception type?
+                throw new InvalidOperationException("could not remove publisher, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+            }
+        }
+
+        // TODO this couples AmqpConnection with AmqpConsumer, yuck
+        internal void AddConsumer(Guid id, IConsumer consumer)
+        {
+            if (false == _consumersDict.TryAdd(id, consumer))
+            {
+                // TODO create "internal bug" exception type?
+                throw new InvalidOperationException("could not add consumer, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+            }
+        }
+
+        internal void RemoveConsumer(Guid id)
+        {
+            if (false == _consumersDict.TryRemove(id, out _))
+            {
+                // TODO create "internal bug" exception type?
+                throw new InvalidOperationException("could not remove consumer, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+            }
         }
 
         /// <summary>
@@ -617,73 +648,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                 // TODO Java client throws exception here
             }
             _areFilterExpressionsSupported = Utils.SupportsFilterExpressions(brokerVersion);
-        }
-    }
-
-    internal class Visitor : IVisitor
-    {
-        private readonly AmqpManagement _management;
-
-        internal Visitor(AmqpManagement management)
-        {
-            _management = management;
-        }
-
-        public async Task VisitQueuesAsync(IEnumerable<QueueSpec> queueSpec)
-        {
-            // TODO this could be done in parallel
-            foreach (QueueSpec spec in queueSpec)
-            {
-                Trace.WriteLine(TraceLevel.Information, $"Recovering queue {spec.QueueName}");
-                try
-                {
-                    await _management.Queue(spec).DeclareAsync()
-                        .ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    Trace.WriteLine(TraceLevel.Error,
-                        $"Error recovering queue {spec.QueueName}. Error: {e}. Management Status: {_management}");
-                }
-            }
-        }
-
-        public async Task VisitExchangesAsync(IEnumerable<ExchangeSpec> exchangeSpec)
-        {
-            // TODO this could be done in parallel
-            foreach (ExchangeSpec spec in exchangeSpec)
-            {
-                Trace.WriteLine(TraceLevel.Information, $"Recovering exchange {spec.ExchangeName}");
-                try
-                {
-                    await _management.Exchange(spec).DeclareAsync()
-                        .ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    Trace.WriteLine(TraceLevel.Error,
-                        $"Error recovering exchange {spec.ExchangeName}. Error: {e}. Management Status: {_management}");
-                }
-            }
-        }
-
-        public async Task VisitBindingsAsync(IEnumerable<BindingSpec> bindingSpec)
-        {
-            // TODO this could be done in parallel
-            foreach (BindingSpec spec in bindingSpec)
-            {
-                Trace.WriteLine(TraceLevel.Information, $"Recovering binding {spec.BindingPath}");
-                try
-                {
-                    await _management.Binding(spec).BindAsync()
-                        .ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    Trace.WriteLine(TraceLevel.Error,
-                        $"Error recovering binding {spec.BindingPath}. Error: {e}. Management Status: {_management}");
-                }
-            }
         }
     }
 }
