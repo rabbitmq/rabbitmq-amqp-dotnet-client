@@ -3,7 +3,7 @@
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System.Collections.Concurrent;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -59,13 +59,12 @@ namespace RabbitMQ.AMQP.Client.Impl
             return CreateConnectionAsync(ConnectionSettings);
         }
 
-        public ReadOnlyCollection<IConnection> GetConnections() =>
-            new(_connections.Values.ToList());
-
         // TODO cancellation token
         public Task CloseAsync()
         {
             return Task.WhenAll(_connections.Values.Select(c => c.CloseAsync()));
         }
+
+        internal IList<IConnection> Connections => _connections.Values.ToList();
     }
 }

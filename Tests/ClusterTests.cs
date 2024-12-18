@@ -33,15 +33,17 @@ public class ClusterTests(ITestOutputHelper testOutputHelper)
         ConnectionSettings connectionSettings = connectionSettingBuilder.Build();
 
         IEnvironment env = AmqpEnvironment.Create(connectionSettings);
+        var amqpEnv = (AmqpEnvironment)env;
 
         // Note: by using _connection, the test will dispose the object on teardown
         _connection = await env.CreateConnectionAsync();
         Assert.NotNull(_connection);
-        Assert.NotEmpty(env.GetConnections());
+
+        Assert.NotEmpty(amqpEnv.Connections);
 
         await env.CloseAsync();
 
         Assert.Equal(State.Closed, _connection.State);
-        Assert.Empty(env.GetConnections());
+        Assert.Empty(amqpEnv.Connections);
     }
 }
