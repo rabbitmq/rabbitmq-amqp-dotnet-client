@@ -3,18 +3,10 @@
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
-    internal interface IVisitor
-    {
-        Task VisitQueuesAsync(IEnumerable<QueueSpec> queueSpec);
-        Task VisitExchangesAsync(IEnumerable<ExchangeSpec> exchangeSpec);
-        Task VisitBindingsAsync(IEnumerable<BindingSpec> bindingSpec);
-    }
-
     /// <summary>
     /// RecordingTopologyListener is a concrete implementation of <see cref="ITopologyListener"/>
     ///  It is used to record the topology of the entities declared in the AMQP server ( like queues, exchanges, etc)
@@ -24,33 +16,8 @@ namespace RabbitMQ.AMQP.Client.Impl
     internal class RecordingTopologyListener : ITopologyListener
     {
         private readonly ConcurrentDictionary<string, QueueSpec> _queueSpecifications = new();
-
         private readonly ConcurrentDictionary<string, ExchangeSpec> _exchangeSpecifications = new();
-
         private readonly ConcurrentDictionary<string, BindingSpec> _bindingSpecifications = new();
-
-        private void RemoveBindingsSpecificationFromQueue(string queueName)
-        {
-            foreach (var binding in _bindingSpecifications.Values)
-            {
-                if (binding.DestinationQueueName == queueName)
-                {
-                    _bindingSpecifications.TryRemove(binding.BindingPath, out _);
-                }
-            }
-        }
-
-        private void RemoveBindingsSpecificationFromExchange(string exchangeName)
-        {
-            foreach (var binding in _bindingSpecifications.Values)
-            {
-                if (binding.SourceExchangeName == exchangeName
-                    || binding.DestinationExchangeName == exchangeName)
-                {
-                    _bindingSpecifications.TryRemove(binding.BindingPath, out _);
-                }
-            }
-        }
 
         public void QueueDeclared(IQueueSpecification specification)
         {
@@ -103,71 +70,39 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public int BindingCount() => _bindingSpecifications.Count;
 
+        private void RemoveBindingsSpecificationFromQueue(string queueName)
+        {
+            foreach (BindingSpec binding in _bindingSpecifications.Values)
+            {
+                if (binding.DestinationQueueName == queueName)
+                {
+                    _bindingSpecifications.TryRemove(binding.BindingPath, out _);
+                }
+            }
+        }
+
+        private void RemoveBindingsSpecificationFromExchange(string exchangeName)
+        {
+            foreach (BindingSpec binding in _bindingSpecifications.Values)
+            {
+                if (binding.SourceExchangeName == exchangeName
+                    || binding.DestinationExchangeName == exchangeName)
+                {
+                    _bindingSpecifications.TryRemove(binding.BindingPath, out _);
+                }
+            }
+        }
+
         internal async Task Accept(IVisitor visitor)
         {
-            await visitor.VisitQueuesAsync(_queueSpecifications.Values).ConfigureAwait(false);
+            await visitor.VisitQueuesAsync(_queueSpecifications.Values)
+                .ConfigureAwait(false);
 
-            await visitor.VisitExchangesAsync(_exchangeSpecifications.Values).ConfigureAwait(false);
+            await visitor.VisitExchangesAsync(_exchangeSpecifications.Values)
+                .ConfigureAwait(false);
 
-            await visitor.VisitBindingsAsync(_bindingSpecifications.Values).ConfigureAwait(false);
+            await visitor.VisitBindingsAsync(_bindingSpecifications.Values)
+                .ConfigureAwait(false);
         }
-    }
-
-    internal class QueueSpec
-    {
-        private readonly IQueueSpecification _queueSpecification;
-
-        internal QueueSpec(IQueueSpecification queueSpecification)
-        {
-            _queueSpecification = queueSpecification;
-        }
-
-        internal string QueueName => _queueSpecification.QueueName;
-
-        internal bool IsExclusive => _queueSpecification.IsExclusive;
-
-        internal bool IsAutoDelete => _queueSpecification.IsAutoDelete;
-
-        internal Dictionary<object, object> QueueArguments => _queueSpecification.QueueArguments;
-    }
-
-    internal class ExchangeSpec
-    {
-        private readonly IExchangeSpecification _exchangeSpecification;
-
-        internal ExchangeSpec(IExchangeSpecification exchangeSpecification)
-        {
-            _exchangeSpecification = exchangeSpecification;
-        }
-
-        internal string ExchangeName => _exchangeSpecification.ExchangeName;
-
-        internal string ExchangeType => _exchangeSpecification.ExchangeType;
-
-        internal bool IsAutoDelete => _exchangeSpecification.IsAutoDelete;
-
-        internal Dictionary<string, object> ExchangeArguments => _exchangeSpecification.ExchangeArguments;
-    }
-
-    internal class BindingSpec
-    {
-        private readonly IBindingSpecification _bindingSpecification;
-
-        internal BindingSpec(IBindingSpecification bindingSpecification)
-        {
-            _bindingSpecification = bindingSpecification;
-        }
-
-        internal string SourceExchangeName => _bindingSpecification.SourceExchangeName;
-
-        internal string DestinationExchangeName => _bindingSpecification.DestinationExchangeName;
-
-        internal string DestinationQueueName => _bindingSpecification.DestinationQueueName;
-
-        internal string BindingKey => _bindingSpecification.BindingKey;
-
-        internal Dictionary<string, object> BindingArguments => _bindingSpecification.BindingArguments;
-
-        internal string BindingPath => _bindingSpecification.BindingPath;
     }
 }
