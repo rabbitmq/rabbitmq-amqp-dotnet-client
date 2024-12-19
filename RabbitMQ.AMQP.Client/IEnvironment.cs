@@ -2,38 +2,42 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
 namespace RabbitMQ.AMQP.Client
 {
     /// <summary>
-    /// Interface to create IConnections and manage them.
+    /// <para>
+    ///   The <see cref="IEnvironment"/> is the main entry point to a node or a cluster of nodes.
+    /// </para>
+    /// <para>
+    ///   The <see cref="CreateConnectionAsync()"/> method allows creating <see cref="IConnection"/> instances.
+    ///   An application is expected to maintain a single <see cref="IEnvironment"/> instance and to close that instance
+    ///   upon application exit.
+    /// </para>
+    /// <para>
+    ///   <see cref="IEnvironment"/> instances are expected to be thread-safe.
+    /// </para>
     /// </summary>
     public interface IEnvironment
     {
         /// <summary>
-        /// Create a new connection with the given connection settings.
+        /// Create a new <see cref="IConnection"/> with the given connection settings.
         /// </summary>
         /// <param name="connectionSettings"></param>
-        /// <returns>IConnection</returns>
+        /// <returns><see cref="Task{IConnection}"/> instance.</returns>
         public Task<IConnection> CreateConnectionAsync(ConnectionSettings connectionSettings);
 
         /// <summary>
-        /// Create a new connection with the default connection settings.
+        /// Create a new <see cref="IConnection"/> with the default connection settings.
         /// </summary>
-        /// <returns>IConnection</returns>
+        /// <returns><see cref="Task{IConnection}"/> instance.</returns>
         public Task<IConnection> CreateConnectionAsync();
 
         /// <summary>
-        /// Get all connections.
+        /// Close this environment and its resources.
         /// </summary>
-        public ReadOnlyCollection<IConnection> GetConnections();
-
-        /// <summary>
-        /// Close all connections.
-        /// </summary>
-        /// <returns></returns>
+        /// <returns><see cref="Task"/></returns>
         // TODO cancellation token
         Task CloseAsync();
     }
