@@ -10,6 +10,14 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
+    /// <summary>
+    /// <para>
+    ///   <see cref="AmqpEnvironment"/> is the implementation of <see cref="IEnvironment"/>.
+    /// </para>
+    /// <para>
+    ///   The <see cref="CreateConnectionAsync()"/> method allows creating <see cref="IConnection"/> instances.
+    /// </para>
+    /// </summary>
     public class AmqpEnvironment : IEnvironment
     {
         private ConnectionSettings ConnectionSettings { get; }
@@ -23,12 +31,24 @@ namespace RabbitMQ.AMQP.Client.Impl
             _metricsReporter = metricsReporter;
         }
 
-        // TODO to play nicely with IoC containers, we should not have static Create methods
+        /// <summary>
+        /// Create a new <see cref="IEnvironment"/> instance, using the provided <see cref="ConnectionSettings"/>
+        /// and optional <see cref="IMetricsReporter"/>
+        /// </summary>
+        /// <param name="connectionSettings"></param>
+        /// <param name="metricsReporter"></param>
+        /// <returns><see cref="IEnvironment"/> instance.</returns>
         public static IEnvironment Create(ConnectionSettings connectionSettings, IMetricsReporter? metricsReporter = default)
         {
+            // TODO to play nicely with IoC containers, we should not have static Create methods
             return new AmqpEnvironment(connectionSettings, metricsReporter);
         }
 
+        /// <summary>
+        /// Create a new <see cref="IConnection"/> instance, using the provided <see cref="ConnectionSettings"/>.
+        /// </summary>
+        /// <param name="connectionSettings"></param>
+        /// <returns><see cref="Task{IConnection}"/> instance.</returns>
         public async Task<IConnection> CreateConnectionAsync(ConnectionSettings connectionSettings)
         {
             IConnection c = await AmqpConnection.CreateAsync(connectionSettings, _metricsReporter).ConfigureAwait(false);
@@ -49,6 +69,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             return c;
         }
 
+        /// <summary>
+        /// Create a new <see cref="IConnection"/> instance, using the <see cref="IEnvironment"/> <see cref="ConnectionSettings"/>.
+        /// </summary>
+        /// <returns><see cref="Task{IConnection}"/> instance.</returns>
         public Task<IConnection> CreateConnectionAsync()
         {
             if (ConnectionSettings is null)
@@ -59,6 +83,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             return CreateConnectionAsync(ConnectionSettings);
         }
 
+        /// <summary>
+        /// Close this environment and its resources.
+        /// </summary>
+        /// <returns><see cref="Task"/></returns>
         // TODO cancellation token
         public Task CloseAsync()
         {
