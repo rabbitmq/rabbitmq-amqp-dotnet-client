@@ -647,7 +647,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
             Assert.Equal(expected6, (string)m.Property("foo"));
         }
 
-        msgs = await ConsumeAsync(messageCount * 4, options => options.Property("foo", "$p:b"));
+        msgs = await ConsumeAsync(messageCount * 4, options => options.Property("foo", "&p:b"));
         foreach (IMessage m in msgs)
         {
             Assert.StartsWith("b", (string)m.Property("foo"));
@@ -949,13 +949,13 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
         await PublishAsync(q, 1, (_, msg) => msg.Subject("foo bar"));
         await PublishAsync(q, 1, (_, msg) => msg.Subject("ab 12"));
 
-        IEnumerable<IMessage> msgs = await ConsumeAsync(2, options => options.Subject("$p:ab"));
+        IEnumerable<IMessage> msgs = await ConsumeAsync(2, options => options.Subject("&p:ab"));
         foreach (IMessage m in msgs)
         {
             Assert.StartsWith("ab", m.Subject());
         }
 
-        msgs = await ConsumeAsync(1, options => options.Subject("$s:bar"));
+        msgs = await ConsumeAsync(1, options => options.Subject("&s:bar"));
         foreach (IMessage m in msgs)
         {
             Assert.Equal("foo bar", m.Subject());
