@@ -154,11 +154,10 @@ namespace RabbitMQ.AMQP.Client
             return this;
         }
 
-        public ConnectionSettingsBuilder OAuth2Options(OAuth2Options? oAuth2Options = null)
+        public ConnectionSettingsBuilder OAuth2Options(OAuth2Options? oAuth2Options)
         {
             _oAuth2Options = oAuth2Options;
             return this;
-
         }
 
         public ConnectionSettings Build()
@@ -171,26 +170,26 @@ namespace RabbitMQ.AMQP.Client
                     _containerId, _saslMechanism,
                     _recoveryConfiguration,
                     _maxFrameSize,
-                    _tlsSettings);
+                    _tlsSettings,
+                    _oAuth2Options);
             }
-            else if (_uris is not null)
+
+            if (_uris is not null)
             {
                 return new ClusterConnectionSettings(_uris,
                     _uriSelector,
                     _containerId, _saslMechanism,
                     _recoveryConfiguration,
                     _maxFrameSize,
-                    _tlsSettings);
+                    _tlsSettings, _oAuth2Options);
             }
-            else
-            {
-                return new ConnectionSettings(_scheme, _host, _port, _user,
-                    _password, _virtualHost,
-                    _containerId, _saslMechanism,
-                    _recoveryConfiguration,
-                    _maxFrameSize,
-                    _tlsSettings);
-            }
+
+            return new ConnectionSettings(_scheme, _host, _port, _user,
+                _password, _virtualHost,
+                _containerId, _saslMechanism,
+                _recoveryConfiguration,
+                _maxFrameSize,
+                _tlsSettings, _oAuth2Options);
         }
 
         private void ValidateUris()
@@ -214,14 +213,14 @@ namespace RabbitMQ.AMQP.Client
         private readonly TlsSettings? _tlsSettings;
         private readonly SaslMechanism _saslMechanism = SaslMechanism.Plain;
         private readonly IRecoveryConfiguration _recoveryConfiguration = new RecoveryConfiguration();
-        private readonly OAuth2Options? _oAuth2Options = null;
 
         public ConnectionSettings(Uri uri,
             string? containerId = null,
             SaslMechanism? saslMechanism = null,
             IRecoveryConfiguration? recoveryConfiguration = null,
             uint? maxFrameSize = null,
-            TlsSettings? tlsSettings = null)
+            TlsSettings? tlsSettings = null,
+            OAuth2Options? oAuth2Options = null)
             : this(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings)
         {
             (string? user, string? password) = ProcessUserInfo(uri);
@@ -241,6 +240,14 @@ namespace RabbitMQ.AMQP.Client
                 path: "/",
                 scheme: scheme);
 
+            if (oAuth2Options is not null)
+            {
+                // in case of OAuth2, we need to use plain mechanism
+                _saslMechanism = SaslMechanism.Plain;
+                _address = new Address(_address.Host, _address.Port, "", oAuth2Options.Token, _address.Path,
+                    _address.Scheme);
+            }
+
             _tlsSettings = InitTlsSettings();
         }
 
@@ -254,7 +261,8 @@ namespace RabbitMQ.AMQP.Client
             SaslMechanism? saslMechanism = null,
             IRecoveryConfiguration? recoveryConfiguration = null,
             uint? maxFrameSize = null,
-            TlsSettings? tlsSettings = null)
+            TlsSettings? tlsSettings = null,
+            OAuth2Options? oAuth2Options = null)
             : this(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings)
         {
             if (false == Utils.IsValidScheme(scheme))
@@ -274,6 +282,14 @@ namespace RabbitMQ.AMQP.Client
                 _virtualHost = virtualHost;
             }
 
+            if (oAuth2Options is not null)
+            {
+                // in case of OAuth2, we need to use plain mechanism
+                _saslMechanism = SaslMechanism.Plain;
+                _address = new Address(_address.Host, _address.Port, "", oAuth2Options.Token, _address.Path,
+                    _address.Scheme);
+            }
+
             _tlsSettings = InitTlsSettings();
         }
 
@@ -282,8 +298,7 @@ namespace RabbitMQ.AMQP.Client
             SaslMechanism? saslMechanism = null,
             IRecoveryConfiguration? recoveryConfiguration = null,
             uint? maxFrameSize = null,
-            TlsSettings? tlsSettings = null,
-            OAuth2Options? oAuth2Options = null)
+            TlsSettings? tlsSettings = null)
         {
             if (containerId is not null)
             {
@@ -298,15 +313,6 @@ namespace RabbitMQ.AMQP.Client
             if (recoveryConfiguration is not null)
             {
                 _recoveryConfiguration = recoveryConfiguration;
-            }
-
-            _oAuth2Options = oAuth2Options;
-            if (_oAuth2Options is not null)
-            {
-                // in case of OAuth2, we need to use plain mechanism
-                _saslMechanism = SaslMechanism.Plain;
-                _address = new Address(_address.Host, _address.Port, _address.User, _oAuth2Options.Token, _address.Path,
-                    _address.Scheme);
             }
 
             if (maxFrameSize is not null)
@@ -477,7 +483,7 @@ namespace RabbitMQ.AMQP.Client
             uint? maxFrameSize = null,
             TlsSettings? tlsSettings = null,
             OAuth2Options? oAuth2Options = null)
-            : base(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings, oAuth2Options)
+            : base(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings)
         {
             _uris = uris.ToList();
             if (_uris.Count == 0)
@@ -525,6 +531,14 @@ namespace RabbitMQ.AMQP.Client
                     password: password,
                     path: "/",
                     scheme: scheme);
+
+                // if (oAuth2Options is not null)
+                // {
+                //     // in case of OAuth2, we need to use plain mechanism
+                //     _saslMechanism = SaslMechanism.Plain;
+                //     _address = new Address(_address.Host, _address.Port, "", oAuth2Options.Token, _address.Path,
+                //         _address.Scheme);
+                // }
 
                 _uriToAddress[uri] = address;
 
