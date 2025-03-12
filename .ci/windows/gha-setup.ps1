@@ -20,6 +20,11 @@ New-Variable -Name ca_certificate_file -Option Constant -Value `
 New-Variable -Name enabled_plugins_file -Option Constant -Value `
     (Resolve-Path -LiteralPath (Join-Path -Path $ci_windows_dir -ChildPath 'enabled_plugins'))
 
+New-Variable -Name advanced_config_file -Option Constant -Value `
+    (Resolve-Path -LiteralPath (Join-Path -Path $ci_windows_dir -ChildPath 'advanced.config'))
+
+
+
 Write-Host "[INFO] importing CA cert from '$ca_certificate_file'"
 Import-Certificate -Verbose -CertStoreLocation Cert:\LocalMachine\Root -FilePath $ca_certificate_file
 
@@ -145,6 +150,7 @@ $rabbitmq_appdata_dir = Join-Path -Path $env:AppData -ChildPath 'RabbitMQ'
 New-Item -Path $rabbitmq_appdata_dir -ItemType Directory
 $rabbitmq_conf_file = Join-Path -Path $rabbitmq_appdata_dir -ChildPath 'rabbitmq.conf'
 $rabbitmq_enabled_plugins_file = Join-Path -Path $rabbitmq_appdata_dir -ChildPath 'enabled_plugins'
+$rabbitmq_advanced_config_file = Join-Path -Path $rabbitmq_appdata_dir -ChildPath 'advanced.config'
 
 Write-Host "[INFO] Creating RabbitMQ configuration file in '$rabbitmq_appdata_dir'"
 Get-Content $rabbitmq_conf_in_file | %{ $_ -replace '@@CERTS_DIR@@', $certs_dir } | %{ $_ -replace '\\', '/' } | Set-Content -LiteralPath $rabbitmq_conf_file
@@ -152,6 +158,10 @@ Get-Content $rabbitmq_conf_file
 
 Write-Host "[INFO] Copying  '$enabled_plugins_file' to '$rabbitmq_enabled_plugins_file'"
 Copy-Item -Verbose -Force -LiteralPath $enabled_plugins_file -Destination $rabbitmq_enabled_plugins_file
+
+Write-Host "[INFO] Copying  '$advanced_config_file' to '$rabbitmq_advanced_config_file'"
+Copy-Item -Verbose -Force -LiteralPath $advanced_config_file -Destination $rabbitmq_advanced_config_file
+
 
 Write-Host '[INFO] Creating Erlang cookie files...'
 

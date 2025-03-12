@@ -25,8 +25,8 @@ namespace Tests
         private const string Base64Key = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGH";
 
         private const string Audience = "rabbitmq";
-
-        [Fact]
+        // 
+        [SkippableFact]
         public async Task ConnectToRabbitMqWithOAuth2TokenShouldSuccess()
         {
             IConnection connection = await AmqpConnection.CreateAsync(
@@ -40,7 +40,7 @@ namespace Tests
             await connection.CloseAsync();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task ConnectToRabbitMqWithOAuth2TokenShouldDisconnectAfterTimeout()
         {
             IConnection connection = await AmqpConnection.CreateAsync(
@@ -50,7 +50,7 @@ namespace Tests
                     .RecoveryConfiguration(new RecoveryConfiguration().Activated(false).Topology(false))
                     .OAuth2Options(new OAuth2Options(GenerateToken(DateTime.UtcNow.AddMilliseconds(1_000))))
                     .Build());
-
+            
             Assert.NotNull(connection);
             Assert.Equal(State.Open, connection.State);
             State? stateFrom = null;
