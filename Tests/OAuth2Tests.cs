@@ -50,7 +50,7 @@ namespace Tests
                     .RecoveryConfiguration(new RecoveryConfiguration().Activated(false).Topology(false))
                     .OAuth2Options(new OAuth2Options(GenerateToken(DateTime.UtcNow.AddMilliseconds(1_000))))
                     .Build());
-            
+
             Assert.NotNull(connection);
             Assert.Equal(State.Open, connection.State);
             State? stateFrom = null;
