@@ -139,7 +139,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public async Task RefreshTokenAsync(string token)
         {
             int[] expectedResponseCodes = { Code204 };
-            _ = await RequestAsync( Encoding.ASCII.GetBytes(token),
+            _ = await RequestAsync(Encoding.ASCII.GetBytes(token),
             AuthTokens, Put, expectedResponseCodes)
                 .ConfigureAwait(false);
         }

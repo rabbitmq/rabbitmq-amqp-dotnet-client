@@ -44,7 +44,6 @@ namespace Tests
             await connection.CloseAsync();
         }
 
-
         [SkippableFact]
         public async Task RefreshTokenShouldNotDisconnectTheClient()
         {
@@ -124,7 +123,8 @@ namespace Tests
                 claims: claims,
                 expires: duration,
                 signingCredentials: creds
-            ) { Header = { ["kid"] = "token-key" } };
+            )
+            { Header = { ["kid"] = "token-key" } };
 
             var tokenHandler = new JwtSecurityTokenHandler();
             return tokenHandler.WriteToken(token);
