@@ -253,6 +253,11 @@ namespace RabbitMQ.AMQP.Client
                 scheme: scheme);
         }
 
+        internal void UpdateOAuthPassword(string? password)
+        {
+            _address = new Address(_address.Host, _address.Port, _address.User, password, _address.Path, _address.Scheme);
+        }
+
         public ConnectionSettings(string scheme,
             string host,
             int port,

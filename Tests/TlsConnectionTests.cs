@@ -46,12 +46,15 @@ public class TlsConnectionTests : IntegrationTest
         return base.DisposeAsync();
     }
 
-    [Fact]
-    public async Task ConnectUsingTlsAndUserPassword()
+    [Theory]
+    [InlineData("/")]
+    [InlineData("tls")]
+    public async Task ConnectUsingTlsAndUserPassword(string virtualHost)
     {
         ConnectionSettings connectionSettings = _connectionSettingBuilder
             .Scheme("amqps")
             .Port(_port)
+            .VirtualHost(virtualHost)
             .Build();
         Assert.True(connectionSettings.UseSsl);
         Assert.NotNull(connectionSettings.TlsSettings);
@@ -78,7 +81,7 @@ public class TlsConnectionTests : IntegrationTest
         Assert.Equal(_port, connectionSettings.Port);
         Assert.Equal("guest", connectionSettings.User);
         Assert.Equal("guest", connectionSettings.Password);
-        Assert.Equal("/", connectionSettings.VirtualHost);
+        Assert.Equal(virtualHost, connectionSettings.VirtualHost);
         Assert.Equal("amqps", connectionSettings.Scheme);
 
         IConnection connection = await AmqpConnection.CreateAsync(connectionSettings);

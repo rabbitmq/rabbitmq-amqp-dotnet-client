@@ -44,6 +44,24 @@ namespace Tests
             await connection.CloseAsync();
         }
 
+
+        [SkippableFact]
+        public async Task RefreshTokenShouldNotDisconnectTheClient()
+        {
+            Skip.IfNot(IsCluster);
+            IConnection connection = await AmqpConnection.CreateAsync(
+                ConnectionSettingsBuilder.Create()
+                    .Host("localhost")
+                    .Port(5672)
+                    .OAuth2Options(new OAuth2Options(GenerateToken(DateTime.UtcNow.AddMilliseconds(1_000))))
+                    .Build());
+            await connection.RefreshTokenAsync(GenerateToken(DateTime.UtcNow.AddMinutes(5)));
+            Thread.Sleep(TimeSpan.FromSeconds(1));
+            Assert.NotNull(connection);
+            Assert.Equal(State.Open, connection.State);
+            await connection.CloseAsync();
+        }
+
         [SkippableFact]
         public async Task ConnectToRabbitMqWithOAuth2TokenShouldDisconnectAfterTimeout()
         {
@@ -65,8 +83,8 @@ namespace Tests
                 State? stateFrom = null;
                 State? stateTo = null;
                 Error? stateError = null;
-                TaskCompletionSource<bool> tcs = new();
-                connection.ChangeState += (sender, from, to, error) =>
+                TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                connection.ChangeState += (_, from, to, error) =>
                 {
                     stateFrom = from;
                     stateTo = to;
@@ -106,9 +124,7 @@ namespace Tests
                 claims: claims,
                 expires: duration,
                 signingCredentials: creds
-            );
-
-            token.Header["kid"] = "token-key";
+            ) { Header = { ["kid"] = "token-key" } };
 
             var tokenHandler = new JwtSecurityTokenHandler();
             return tokenHandler.WriteToken(token);
