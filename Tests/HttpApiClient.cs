@@ -39,6 +39,11 @@ public class HttpApiClient : IDisposable
         await _managementClient.CreatePermissionAsync("/", userName, permissionInfo);
     }
 
+    public async Task CreateVhostAsync(string vhostName)
+    {
+        await _managementClient.CreateVhostAsync(vhostName);
+    }
+
     public async Task<bool> CheckConnectionAsync(string containerId, bool checkOpened = true)
     {
         bool rv = true;

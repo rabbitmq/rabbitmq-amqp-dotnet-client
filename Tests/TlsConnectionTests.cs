@@ -6,6 +6,7 @@ using System.IO;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
@@ -47,10 +48,11 @@ public class TlsConnectionTests : IntegrationTest
     }
 
     [Theory]
+    [InlineData("/my_tls_host")]
     [InlineData("/")]
-    [InlineData("tls")]
     public async Task ConnectUsingTlsAndUserPassword(string virtualHost)
     {
+        await CreateVhostAsync(virtualHost);
         ConnectionSettings connectionSettings = _connectionSettingBuilder
             .Scheme("amqps")
             .Port(_port)

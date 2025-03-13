@@ -9,8 +9,25 @@ using Xunit;
 
 namespace Tests;
 
+internal class FakeBackOffDelayPolicyDisabled : IBackOffDelayPolicy
+{
+    public int CurrentAttempt => 1;
+    public int Delay() => 1;
+    public bool IsActive() => false;
+    public void Reset() { }
+}
+
+internal class FakeFastBackOffDelay : IBackOffDelayPolicy
+{
+    public int CurrentAttempt => 1;
+    public int Delay() => 200;
+    public bool IsActive() => true;
+    public void Reset() { }
+}
+
 public class UtilsTests
 {
+
     [Fact]
     public void ValidateMessageAnnotationsTest()
     {
