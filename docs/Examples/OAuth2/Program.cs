@@ -36,7 +36,6 @@ _ = Task.Run(() =>
     }
 });
 
-
 Console.WriteLine("Connection state: " + connection.State);
 
 // press any key to exit
