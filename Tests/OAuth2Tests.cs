@@ -16,11 +16,12 @@ using Microsoft.IdentityModel.Tokens;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
+using Xunit.Abstractions;
 using IConnection = RabbitMQ.AMQP.Client.IConnection;
 
 namespace Tests
 {
-    public class OAuth2Tests
+    public class OAuth2Tests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper, setupConnectionAndManagement: false)
     {
         private const string Base64Key = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGH";
 
@@ -29,6 +30,7 @@ namespace Tests
         [SkippableFact]
         public async Task ConnectToRabbitMqWithOAuth2TokenShouldSuccess()
         {
+            Skip.IfNot(IsCluster);
             IConnection connection = await AmqpConnection.CreateAsync(
                 ConnectionSettingsBuilder.Create()
                     .Host("localhost")
@@ -43,6 +45,7 @@ namespace Tests
         [SkippableFact]
         public async Task ConnectToRabbitMqWithOAuth2TokenShouldDisconnectAfterTimeout()
         {
+            Skip.IfNot(IsCluster);
             IConnection connection = await AmqpConnection.CreateAsync(
                 ConnectionSettingsBuilder.Create()
                     .Host("localhost")
