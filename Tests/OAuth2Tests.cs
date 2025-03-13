@@ -103,6 +103,42 @@ namespace Tests
             }
         }
 
+        [SkippableFact]
+        public async Task ConnectionShouldReconnectWithTheNewToken()
+        {
+            var recoveryConfiguration = new RecoveryConfiguration();
+            recoveryConfiguration.Topology(false);
+            recoveryConfiguration.BackOffDelayPolicy(new FakeFastBackOffDelay());
+
+            Skip.IfNot(IsCluster);
+            IConnection connection = await AmqpConnection.CreateAsync(
+                ConnectionSettingsBuilder.Create()
+                    .Host("localhost")
+                    .Port(5672)
+                    .RecoveryConfiguration(recoveryConfiguration)
+                    .ContainerId(_containerId)
+                    .OAuth2Options(new OAuth2Options(GenerateToken(DateTime.UtcNow.AddMilliseconds(1_500))))
+                    .Build());
+            await connection.RefreshTokenAsync(GenerateToken(DateTime.UtcNow.AddMinutes(5)));
+            TaskCompletionSource<bool> twoRecoveryEventsSeenTcs = CreateTaskCompletionSource<bool>();
+            int recoveryEvents = 0;
+            connection.ChangeState += (sender, from, to, error) =>
+            {
+                if (Interlocked.Increment(ref recoveryEvents) == 2)
+                {
+                    twoRecoveryEventsSeenTcs.SetResult(true);
+                }
+            };
+            
+            
+            Assert.Equal(State.Open, connection.State);
+            Thread.Sleep(TimeSpan.FromSeconds(1));
+            await WaitUntilConnectionIsKilledAndOpen(_containerId);
+            Assert.Equal(State.Open, connection.State);
+            await WhenTcsCompletes(twoRecoveryEventsSeenTcs);
+            await connection.CloseAsync();
+        }
+
         private static string GenerateToken(DateTime duration)
         {
             byte[] decodedKey = Convert.FromBase64String(Base64Key);
