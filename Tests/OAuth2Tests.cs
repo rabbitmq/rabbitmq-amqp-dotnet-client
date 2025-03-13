@@ -129,8 +129,7 @@ namespace Tests
                     twoRecoveryEventsSeenTcs.SetResult(true);
                 }
             };
-            
-            
+
             Assert.Equal(State.Open, connection.State);
             Thread.Sleep(TimeSpan.FromSeconds(1));
             await WaitUntilConnectionIsKilledAndOpen(_containerId);
