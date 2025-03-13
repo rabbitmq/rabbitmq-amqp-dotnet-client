@@ -208,10 +208,11 @@ namespace RabbitMQ.AMQP.Client
     {
         protected Address _address = new("amqp://localhost:5672");
         protected string _virtualHost = Consts.DefaultVirtualHost;
+        private readonly SaslMechanism _saslMechanism = SaslMechanism.Plain;
+        private readonly OAuth2Options? _oAuth2Options = null;
         private readonly string _containerId = string.Empty;
         private readonly uint _maxFrameSize = Consts.DefaultMaxFrameSize;
         private readonly TlsSettings? _tlsSettings;
-        private readonly SaslMechanism _saslMechanism = SaslMechanism.Plain;
         private readonly IRecoveryConfiguration _recoveryConfiguration = new RecoveryConfiguration();
 
         public ConnectionSettings(Uri uri,
@@ -221,7 +222,7 @@ namespace RabbitMQ.AMQP.Client
             uint? maxFrameSize = null,
             TlsSettings? tlsSettings = null,
             OAuth2Options? oAuth2Options = null)
-            : this(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings)
+            : this(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings, oAuth2Options)
         {
             (string? user, string? password) = ProcessUserInfo(uri);
 
@@ -233,22 +234,23 @@ namespace RabbitMQ.AMQP.Client
                 throw new ArgumentOutOfRangeException("uri.Scheme", "Uri scheme must be 'amqp' or 'amqps'");
             }
 
-            _address = new Address(host: uri.Host,
-                port: uri.Port,
+            _address = InitAddress(uri.Host, uri.Port, user, password, scheme);
+            _tlsSettings = InitTlsSettings();
+        }
+
+        protected Address InitAddress(string host, int port, string? user, string? password, string scheme)
+        {
+            if (_oAuth2Options is not null)
+            {
+                return new Address(host, port, "", _oAuth2Options.Token, "/", scheme);
+            }
+
+            return new Address(host,
+                port: port,
                 user: user,
                 password: password,
                 path: "/",
                 scheme: scheme);
-
-            if (oAuth2Options is not null)
-            {
-                // in case of OAuth2, we need to use plain mechanism
-                _saslMechanism = SaslMechanism.Plain;
-                _address = new Address(_address.Host, _address.Port, "", oAuth2Options.Token, _address.Path,
-                    _address.Scheme);
-            }
-
-            _tlsSettings = InitTlsSettings();
         }
 
         public ConnectionSettings(string scheme,
@@ -263,31 +265,17 @@ namespace RabbitMQ.AMQP.Client
             uint? maxFrameSize = null,
             TlsSettings? tlsSettings = null,
             OAuth2Options? oAuth2Options = null)
-            : this(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings)
+            : this(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings, oAuth2Options)
         {
             if (false == Utils.IsValidScheme(scheme))
             {
                 throw new ArgumentOutOfRangeException(nameof(scheme), "scheme must be 'amqp' or 'amqps'");
             }
 
-            _address = new Address(host: host,
-                port: port,
-                user: user,
-                password: password,
-                path: "/",
-                scheme: scheme);
-
+            _address = InitAddress(host, port, user, password, scheme);
             if (virtualHost is not null)
             {
                 _virtualHost = virtualHost;
-            }
-
-            if (oAuth2Options is not null)
-            {
-                // in case of OAuth2, we need to use plain mechanism
-                _saslMechanism = SaslMechanism.Plain;
-                _address = new Address(_address.Host, _address.Port, "", oAuth2Options.Token, _address.Path,
-                    _address.Scheme);
             }
 
             _tlsSettings = InitTlsSettings();
@@ -298,7 +286,8 @@ namespace RabbitMQ.AMQP.Client
             SaslMechanism? saslMechanism = null,
             IRecoveryConfiguration? recoveryConfiguration = null,
             uint? maxFrameSize = null,
-            TlsSettings? tlsSettings = null)
+            TlsSettings? tlsSettings = null,
+            OAuth2Options? oAuth2Options = null)
         {
             if (containerId is not null)
             {
@@ -308,6 +297,13 @@ namespace RabbitMQ.AMQP.Client
             if (saslMechanism is not null)
             {
                 _saslMechanism = saslMechanism;
+            }
+
+            if (oAuth2Options is not null)
+            {
+                // If OAuth2Options is set, then SaslMechanism must be Plain
+                _oAuth2Options = oAuth2Options;
+                _saslMechanism = SaslMechanism.Plain;
             }
 
             if (recoveryConfiguration is not null)
@@ -483,7 +479,7 @@ namespace RabbitMQ.AMQP.Client
             uint? maxFrameSize = null,
             TlsSettings? tlsSettings = null,
             OAuth2Options? oAuth2Options = null)
-            : base(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings)
+            : base(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings, oAuth2Options)
         {
             _uris = uris.ToList();
             if (_uris.Count == 0)
@@ -525,20 +521,7 @@ namespace RabbitMQ.AMQP.Client
                     }
                 }
 
-                var address = new Address(host: uri.Host,
-                    port: uri.Port,
-                    user: user,
-                    password: password,
-                    path: "/",
-                    scheme: scheme);
-
-                // if (oAuth2Options is not null)
-                // {
-                //     // in case of OAuth2, we need to use plain mechanism
-                //     _saslMechanism = SaslMechanism.Plain;
-                //     _address = new Address(_address.Host, _address.Port, "", oAuth2Options.Token, _address.Path,
-                //         _address.Scheme);
-                // }
+                var address = InitAddress(uri.Host, uri.Port, user, password, scheme);
 
                 _uriToAddress[uri] = address;
 

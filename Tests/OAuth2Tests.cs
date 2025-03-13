@@ -21,11 +21,13 @@ using IConnection = RabbitMQ.AMQP.Client.IConnection;
 
 namespace Tests
 {
-    public class OAuth2Tests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper, setupConnectionAndManagement: false)
+    public class OAuth2Tests(ITestOutputHelper testOutputHelper)
+        : IntegrationTest(testOutputHelper, setupConnectionAndManagement: false)
     {
         private const string Base64Key = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGH";
 
         private const string Audience = "rabbitmq";
+
         // 
         [SkippableFact]
         public async Task ConnectToRabbitMqWithOAuth2TokenShouldSuccess()
@@ -46,37 +48,42 @@ namespace Tests
         public async Task ConnectToRabbitMqWithOAuth2TokenShouldDisconnectAfterTimeout()
         {
             Skip.IfNot(IsCluster);
-            IConnection connection = await AmqpConnection.CreateAsync(
-                ConnectionSettingsBuilder.Create()
-                    .Host("localhost")
-                    .Port(5672)
-                    .RecoveryConfiguration(new RecoveryConfiguration().Activated(false).Topology(false))
-                    .OAuth2Options(new OAuth2Options(GenerateToken(DateTime.UtcNow.AddMilliseconds(1_000))))
-                    .Build());
-
-            Assert.NotNull(connection);
-            Assert.Equal(State.Open, connection.State);
-            State? stateFrom = null;
-            State? stateTo = null;
-            Error? stateError = null;
-            TaskCompletionSource<bool> tcs = new();
-            connection.ChangeState += (sender, from, to, error) =>
+            var l = new List<ConnectionSettingsBuilder>
             {
-                stateFrom = from;
-                stateTo = to;
-                stateError = error;
-                tcs.SetResult(true);
+                ConnectionSettingsBuilder.Create().Uris(new List<Uri> { new("amqp://") }),
+                ConnectionSettingsBuilder.Create().Uri(new Uri("amqp://localhost:5672")),
+                ConnectionSettingsBuilder.Create().Host("localhost").Port(5672)
             };
 
-            await tcs.Task;
-            Assert.NotNull(stateFrom);
-            Assert.NotNull(stateTo);
-            Assert.NotNull(stateError);
-            Assert.NotNull(stateError.ErrorCode);
-            Assert.Equal(State.Open, stateFrom);
-            Assert.Equal(State.Closed, stateTo);
-            Assert.Equal(State.Closed, connection.State);
-            Assert.Contains(stateError.ErrorCode, "amqp:unauthorized-access");
+            foreach (ConnectionSettingsBuilder builder in l)
+            {
+                IConnection connection = await AmqpConnection.CreateAsync(builder
+                    .RecoveryConfiguration(new RecoveryConfiguration().Activated(false).Topology(false))
+                    .OAuth2Options(new OAuth2Options(GenerateToken(DateTime.UtcNow.AddMilliseconds(1_000)))).Build());
+                Assert.NotNull(connection);
+                Assert.Equal(State.Open, connection.State);
+                State? stateFrom = null;
+                State? stateTo = null;
+                Error? stateError = null;
+                TaskCompletionSource<bool> tcs = new();
+                connection.ChangeState += (sender, from, to, error) =>
+                {
+                    stateFrom = from;
+                    stateTo = to;
+                    stateError = error;
+                    tcs.SetResult(true);
+                };
+
+                await tcs.Task;
+                Assert.NotNull(stateFrom);
+                Assert.NotNull(stateTo);
+                Assert.NotNull(stateError);
+                Assert.NotNull(stateError.ErrorCode);
+                Assert.Equal(State.Open, stateFrom);
+                Assert.Equal(State.Closed, stateTo);
+                Assert.Equal(State.Closed, connection.State);
+                Assert.Contains(stateError.ErrorCode, "amqp:unauthorized-access");
+            }
         }
 
         private static string GenerateToken(DateTime duration)
