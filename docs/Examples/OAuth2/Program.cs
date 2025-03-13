@@ -17,12 +17,30 @@ IConnection connection = await AmqpConnection.CreateAsync(
     ConnectionSettingsBuilder.Create()
         .Host("localhost")
         .Port(5672)
-        .OAuth2Options(new OAuth2Options(Token.GenerateToken(DateTime.UtcNow.AddMilliseconds(1500))))
+        .OAuth2Options(new OAuth2Options(Token.GenerateToken(DateTime.UtcNow.AddSeconds(5))))
         .Build()).ConfigureAwait(false);
 
 Trace.WriteLine(TraceLevel.Information, $"Connected to the broker {connection} successfully");
 Trace.WriteLine(TraceLevel.Information, $"Connection status {connection.State}");
 
-Thread.Sleep(TimeSpan.FromSeconds(15));
+CancellationTokenSource cts = new();
+
+_ = Task.Run(() =>
+{
+    while (!cts.IsCancellationRequested)
+    {
+        string token = Token.GenerateToken(DateTime.UtcNow.AddSeconds(5));
+        Trace.WriteLine(TraceLevel.Information, $"Token Refresh..{token}");
+        connection.RefreshTokenAsync(token).Wait();
+        Task.Delay(TimeSpan.FromSeconds(4), cts.Token).Wait();
+    }
+});
+
 
 Console.WriteLine("Connection state: " + connection.State);
+
+// press any key to exit
+Console.ReadKey();
+cts.Cancel();
+
+await connection.CloseAsync().ConfigureAwait(false);

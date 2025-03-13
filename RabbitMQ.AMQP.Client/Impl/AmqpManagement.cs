@@ -47,7 +47,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         internal const string Post = "POST";
         internal const string Delete = "DELETE";
         private const string ReplyTo = "$me";
-        private const string AuthTokens = "/auth/tokens";
+        internal const string AuthTokens = "/auth/tokens";
 
         protected readonly TaskCompletionSource<bool> _managementSessionClosedTcs =
             Utils.CreateTaskCompletionSource<bool>();
@@ -134,14 +134,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IBindingSpecification Binding()
         {
             return new AmqpBindingSpecification(this);
-        }
-
-        public async Task RefreshTokenAsync(string token)
-        {
-            int[] expectedResponseCodes = { Code204 };
-            _ = await RequestAsync(Encoding.ASCII.GetBytes(token),
-            AuthTokens, Put, expectedResponseCodes)
-                .ConfigureAwait(false);
         }
 
         /// <summary>

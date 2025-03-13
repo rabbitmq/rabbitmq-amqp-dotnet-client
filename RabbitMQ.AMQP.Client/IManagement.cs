@@ -63,7 +63,6 @@ namespace RabbitMQ.AMQP.Client
         /// <returns>A builder for <see cref="IBindingSpecification"/></returns>
         IBindingSpecification Binding();
 
-        public Task RefreshTokenAsync(string token);
     }
 
     internal interface IManagementTopology

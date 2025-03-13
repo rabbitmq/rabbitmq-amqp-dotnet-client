@@ -6,6 +6,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Amqp;
@@ -164,9 +165,18 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// </summary>
         public long Id { get; set; }
 
+        /// <summary>
+        /// Refresh the OAuth token and update the connection settings.
+        /// </summary>
+        /// <param name="token">OAuth token</param>
         public async Task RefreshTokenAsync(string token)
         {
-            await _management.RefreshTokenAsync(token)
+            // here we use the primitive RequestAsync method because we don't want to
+            // expose this method in the IManagement interface
+            // we need to update the connection settings with the new token
+            int[] expectedResponseCodes = { AmqpManagement.Code204 };
+            _ = await _management.RequestAsync(Encoding.ASCII.GetBytes(token),
+                    AmqpManagement.AuthTokens, AmqpManagement.Put, expectedResponseCodes)
                 .ConfigureAwait(false);
             _connectionSettings.UpdateOAuthPassword(token);
         }
