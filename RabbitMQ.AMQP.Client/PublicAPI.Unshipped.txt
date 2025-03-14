@@ -499,7 +499,9 @@ RabbitMQ.AMQP.Client.Impl.AmqpRpcServerBuilder.RequestQueue(RabbitMQ.AMQP.Client
 RabbitMQ.AMQP.Client.Impl.AmqpRpcServerBuilder.RequestQueue(string! requestQueue) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.AmqpStreamSpecification(RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification! parent) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.FileSizePerChunk(RabbitMQ.AMQP.Client.ByteCapacity! fileSizePerChunk) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.InitialClusterSize(int initialClusterSize) -> RabbitMQ.AMQP.Client.IStreamSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.LeaderLocator(RabbitMQ.AMQP.Client.LeaderLocatorStrategy leaderLocatorStrategy) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.MaxAge(System.TimeSpan maxAge) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.MaxSegmentSizeBytes(RabbitMQ.AMQP.Client.ByteCapacity! maxSegmentSize) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
@@ -680,12 +682,17 @@ RabbitMQ.AMQP.Client.IRpcServerBuilder.ReplyPostProcessor(System.Func<RabbitMQ.A
 RabbitMQ.AMQP.Client.IRpcServerBuilder.RequestQueue(RabbitMQ.AMQP.Client.IQueueSpecification! requestQueue) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.IRpcServerBuilder.RequestQueue(string! requestQueue) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.IStreamSpecification
+RabbitMQ.AMQP.Client.IStreamSpecification.FileSizePerChunk(RabbitMQ.AMQP.Client.ByteCapacity! fileSizePerChunk) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.IStreamSpecification.InitialClusterSize(int initialClusterSize) -> RabbitMQ.AMQP.Client.IStreamSpecification!
+RabbitMQ.AMQP.Client.IStreamSpecification.LeaderLocator(RabbitMQ.AMQP.Client.LeaderLocatorStrategy leaderLocatorStrategy) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.IStreamSpecification.MaxAge(System.TimeSpan maxAge) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.IStreamSpecification.MaxSegmentSizeBytes(RabbitMQ.AMQP.Client.ByteCapacity! maxSegmentSize) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.IStreamSpecification.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IUriSelector
 RabbitMQ.AMQP.Client.IUriSelector.Select(System.Collections.Generic.ICollection<System.Uri!>! uris) -> System.Uri!
+RabbitMQ.AMQP.Client.LeaderLocatorStrategy
+RabbitMQ.AMQP.Client.LeaderLocatorStrategy.Balanced = 1 -> RabbitMQ.AMQP.Client.LeaderLocatorStrategy
+RabbitMQ.AMQP.Client.LeaderLocatorStrategy.ClientLocal = 0 -> RabbitMQ.AMQP.Client.LeaderLocatorStrategy
 RabbitMQ.AMQP.Client.LifeCycleCallBack
 RabbitMQ.AMQP.Client.MessageHandler
 RabbitMQ.AMQP.Client.MetricsReporter

@@ -35,11 +35,16 @@ namespace RabbitMQ.AMQP.Client
     {
         DropHead,
         RejectPublish,
-
         RejectPublishDlx
         // DROP_HEAD("drop-head"),
         // REJECT_PUBLISH("reject-publish"),
         // REJECT_PUBLISH_DLX("reject-publish-dlx");
+    }
+
+    public enum LeaderLocatorStrategy
+    {
+        ClientLocal,
+        Balanced
     }
 
     public interface IQueueSpecification : IEntityInfoSpecification<IQueueInfo>
@@ -92,6 +97,10 @@ namespace RabbitMQ.AMQP.Client
         public IStreamSpecification MaxSegmentSizeBytes(ByteCapacity maxSegmentSize);
 
         public IStreamSpecification InitialClusterSize(int initialClusterSize);
+        
+        public IStreamSpecification LeaderLocator(LeaderLocatorStrategy leaderLocatorStrategy);
+        
+        public IStreamSpecification FileSizePerChunk(ByteCapacity fileSizePerChunk);
 
         public IQueueSpecification Queue();
     }

@@ -397,6 +397,25 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
+        public IStreamSpecification LeaderLocator(LeaderLocatorStrategy leaderLocatorStrategy)
+        {
+            _parent._queueArguments["x-queue-leader-locator"] = leaderLocatorStrategy switch
+            {
+                LeaderLocatorStrategy.ClientLocal => "client-local",
+                LeaderLocatorStrategy.Balanced => "balanced",
+                _ => throw new ArgumentOutOfRangeException(nameof(leaderLocatorStrategy), leaderLocatorStrategy, null)
+            };
+            return this;
+        }
+
+        public IStreamSpecification FileSizePerChunk(ByteCapacity fileSizePerChunk)
+        {
+            Utils.ValidatePositive("x-stream-file-size-per-chunk", fileSizePerChunk);
+            _parent._queueArguments["x-stream-file-size-per-chunk"] = (long)fileSizePerChunk;
+            return this;
+            
+        }
+
         public IQueueSpecification Queue()
         {
             return _parent;
