@@ -231,7 +231,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-
         public IQueueSpecification LeaderLocator(LeaderLocatorStrategy leaderLocatorStrategy)
         {
             _queueArguments["x-queue-leader-locator"] = leaderLocatorStrategy switch
@@ -242,7 +241,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             };
             return this;
         }
-
 
         public IQueueSpecification SingleActiveConsumer(bool singleActiveConsumer)
         {
@@ -409,7 +407,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             _parent._queueArguments["x-initial-cluster-size"] = initialClusterSize;
             return this;
         }
-
 
         public IStreamSpecification FileSizePerChunk(ByteCapacity fileSizePerChunk)
         {
