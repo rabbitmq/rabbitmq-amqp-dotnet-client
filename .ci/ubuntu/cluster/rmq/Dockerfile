@@ -12,6 +12,5 @@ COPY --chown=rabbitmq:rabbitmq --chmod=0644 enabled_plugins /etc/rabbitmq/enable
 COPY --chown=rabbitmq:rabbitmq rabbitmq-env.conf /etc/rabbitmq/rabbitmq-env.conf
 COPY --chown=rabbitmq:rabbitmq rabbitmq.conf /etc/rabbitmq/rabbitmq.conf
 COPY --chown=rabbitmq:rabbitmq advanced.config /etc/rabbitmq/advanced.config
-COPY --chown=rabbitmq:rabbitmq definitions.json /etc/rabbitmq/definitions.json
 
 EXPOSE 4369 5671 5672 15672 15692 25672 35672-35682

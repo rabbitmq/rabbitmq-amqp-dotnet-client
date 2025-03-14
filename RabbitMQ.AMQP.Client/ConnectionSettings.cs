@@ -604,7 +604,7 @@ namespace RabbitMQ.AMQP.Client
         public TlsSettings(SslProtocols protocols)
         {
             Protocols = protocols;
-            RemoteCertificateValidationCallback = trustEverythingCertValidationCallback;
+            RemoteCertificateValidationCallback = TrustEverythingCertValidationCallback;
             LocalCertificateSelectionCallback = null;
         }
 
@@ -620,7 +620,7 @@ namespace RabbitMQ.AMQP.Client
 
         public LocalCertificateSelectionCallback? LocalCertificateSelectionCallback { get; set; }
 
-        private bool trustEverythingCertValidationCallback(object sender, X509Certificate? certificate,
+        private bool TrustEverythingCertValidationCallback(object sender, X509Certificate? certificate,
             X509Chain? chain, SslPolicyErrors sslPolicyErrors)
         {
             return (sslPolicyErrors & ~AcceptablePolicyErrors) == SslPolicyErrors.None;
