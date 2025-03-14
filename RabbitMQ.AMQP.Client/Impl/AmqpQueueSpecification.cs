@@ -231,6 +231,19 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
+
+        public IQueueSpecification LeaderLocator(LeaderLocatorStrategy leaderLocatorStrategy)
+        {
+            _queueArguments["x-queue-leader-locator"] = leaderLocatorStrategy switch
+            {
+                LeaderLocatorStrategy.ClientLocal => "client-local",
+                LeaderLocatorStrategy.Balanced => "balanced",
+                _ => throw new ArgumentOutOfRangeException(nameof(leaderLocatorStrategy), leaderLocatorStrategy, null)
+            };
+            return this;
+        }
+
+
         public IQueueSpecification SingleActiveConsumer(bool singleActiveConsumer)
         {
             _queueArguments["x-single-active-consumer"] = singleActiveConsumer;
@@ -397,23 +410,12 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public IStreamSpecification LeaderLocator(LeaderLocatorStrategy leaderLocatorStrategy)
-        {
-            _parent._queueArguments["x-queue-leader-locator"] = leaderLocatorStrategy switch
-            {
-                LeaderLocatorStrategy.ClientLocal => "client-local",
-                LeaderLocatorStrategy.Balanced => "balanced",
-                _ => throw new ArgumentOutOfRangeException(nameof(leaderLocatorStrategy), leaderLocatorStrategy, null)
-            };
-            return this;
-        }
 
         public IStreamSpecification FileSizePerChunk(ByteCapacity fileSizePerChunk)
         {
             Utils.ValidatePositive("x-stream-file-size-per-chunk", fileSizePerChunk);
             _parent._queueArguments["x-stream-file-size-per-chunk"] = (long)fileSizePerChunk;
             return this;
-            
         }
 
         public IQueueSpecification Queue()
@@ -453,6 +455,13 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             Utils.ValidatePositive("x-quorum-initial-group-size", size);
             _parent._queueArguments["x-quorum-initial-group-size"] = size;
+            return this;
+        }
+
+        public IQuorumQueueSpecification QuorumTargetGroupSize(int size)
+        {
+            Utils.ValidatePositive("x-quorum-target-group-size", size);
+            _parent._queueArguments["x-quorum-target-group-size"] = size;
             return this;
         }
 

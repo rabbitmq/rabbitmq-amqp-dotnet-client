@@ -71,6 +71,8 @@ namespace RabbitMQ.AMQP.Client
         IQueueSpecification OverflowStrategy(OverFlowStrategy overflow);
 
         IQueueSpecification MaxLengthBytes(ByteCapacity maxLengthBytes);
+        
+        IQueueSpecification LeaderLocator(LeaderLocatorStrategy strategy);
 
         // TODO: Add more tests for SingleActiveConsumer
         IQueueSpecification SingleActiveConsumer(bool singleActiveConsumer);
@@ -98,7 +100,6 @@ namespace RabbitMQ.AMQP.Client
 
         public IStreamSpecification InitialClusterSize(int initialClusterSize);
         
-        public IStreamSpecification LeaderLocator(LeaderLocatorStrategy leaderLocatorStrategy);
         
         public IStreamSpecification FileSizePerChunk(ByteCapacity fileSizePerChunk);
 
@@ -120,6 +121,8 @@ namespace RabbitMQ.AMQP.Client
         IQuorumQueueSpecification DeliveryLimit(int limit);
 
         IQuorumQueueSpecification QuorumInitialGroupSize(int size);
+        
+        IQuorumQueueSpecification QuorumTargetGroupSize(int size);
 
         IQueueSpecification Queue();
     }
