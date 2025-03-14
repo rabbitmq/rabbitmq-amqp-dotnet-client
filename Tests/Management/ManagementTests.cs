@@ -151,10 +151,13 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
 
         IQueueInfo queueInfo = await _management.Queue()
             .Name(_queueName)
+            .MaxLengthBytes(ByteCapacity.Kb(1024))
+            .LeaderLocator(LeaderLocatorStrategy.Balanced)
             .Stream()
             .MaxAge(TimeSpan.FromSeconds(10))
             .MaxSegmentSizeBytes(ByteCapacity.Kb(1024))
             .InitialClusterSize(1)
+            .FileSizePerChunk(ByteCapacity.Kb(1024))
             .Queue()
             .DeclareAsync();
 
@@ -162,6 +165,9 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         Assert.Equal("10s", queueInfo.Arguments()["x-max-age"]);
         Assert.Equal(1024000L, queueInfo.Arguments()["x-stream-max-segment-size-bytes"]);
         Assert.Equal(1, queueInfo.Arguments()["x-initial-cluster-size"]);
+        Assert.Equal("balanced", queueInfo.Arguments()["x-queue-leader-locator"]);
+        Assert.Equal(1024000L, queueInfo.Arguments()["x-stream-file-size-per-chunk"]);
+        Assert.Equal(1024000L, queueInfo.Arguments()["x-max-length-bytes"]);
         // NB: DisposeAsync will delete the queue with name _queueName
     }
 
@@ -173,10 +179,12 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
 
         IQueueInfo queueInfo = await _management.Queue()
             .Name(_queueName)
+            .LeaderLocator(LeaderLocatorStrategy.ClientLocal)
             .Quorum()
             .DeliveryLimit(12)
             .DeadLetterStrategy(QuorumQueueDeadLetterStrategy.AtLeastOnce)
             .QuorumInitialGroupSize(3)
+            .QuorumTargetGroupSize(5)
             .Queue()
             .DeclareAsync();
 
@@ -184,6 +192,8 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         Assert.Equal(12, queueInfo.Arguments()["x-max-delivery-limit"]);
         Assert.Equal("at-least-once", queueInfo.Arguments()["x-dead-letter-strategy"]);
         Assert.Equal(3, queueInfo.Arguments()["x-quorum-initial-group-size"]);
+        Assert.Equal(5, queueInfo.Arguments()["x-quorum-target-group-size"]);
+        Assert.Equal("client-local", queueInfo.Arguments()["x-queue-leader-locator"]);
         // NB: DisposeAsync will delete the queue with name _queueName
     }
 
