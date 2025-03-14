@@ -6,6 +6,7 @@ using System.IO;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
@@ -46,12 +47,16 @@ public class TlsConnectionTests : IntegrationTest
         return base.DisposeAsync();
     }
 
-    [Fact]
-    public async Task ConnectUsingTlsAndUserPassword()
+    [Theory]
+    [InlineData("/my_tls_host")]
+    [InlineData("/")]
+    public async Task ConnectUsingTlsAndUserPassword(string virtualHost)
     {
+        await CreateVhostAsync(virtualHost);
         ConnectionSettings connectionSettings = _connectionSettingBuilder
             .Scheme("amqps")
             .Port(_port)
+            .VirtualHost(virtualHost)
             .Build();
         Assert.True(connectionSettings.UseSsl);
         Assert.NotNull(connectionSettings.TlsSettings);
@@ -71,14 +76,15 @@ public class TlsConnectionTests : IntegrationTest
         else
         {
             connectionSettings.TlsSettings.AcceptablePolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors;
-            connectionSettings.TlsSettings.RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => true;
+            connectionSettings.TlsSettings.RemoteCertificateValidationCallback =
+                (sender, certificate, chain, errors) => true;
         }
 
         Assert.Equal("localhost", connectionSettings.Host);
         Assert.Equal(_port, connectionSettings.Port);
         Assert.Equal("guest", connectionSettings.User);
         Assert.Equal("guest", connectionSettings.Password);
-        Assert.Equal("/", connectionSettings.VirtualHost);
+        Assert.Equal(virtualHost, connectionSettings.VirtualHost);
         Assert.Equal("amqps", connectionSettings.Scheme);
 
         IConnection connection = await AmqpConnection.CreateAsync(connectionSettings);
@@ -87,18 +93,22 @@ public class TlsConnectionTests : IntegrationTest
         Assert.Equal(State.Closed, connection.State);
     }
 
-    [Fact]
-    public async Task ConnectUsingTlsAndClientCertificate()
+    [Theory]
+    [InlineData("/my_tls_host_certificate")]
+    [InlineData("/")]
+    public async Task ConnectUsingTlsAndClientCertificate(string virtualHost)
     {
+        await CreateVhostAsync(virtualHost);
         string clientCertFile = GetClientCertFile();
         var cert = new X509Certificate2(clientCertFile, "grapefruit");
 
-        await CreateUserFromCertSubject(cert);
+        await CreateUserFromCertSubject(cert, virtualHost);
 
         ConnectionSettings connectionSettings = _connectionSettingBuilder
             .Scheme("amqps")
             .SaslMechanism(SaslMechanism.External)
             .Port(_port)
+            .VirtualHost(virtualHost)
             .Build();
 
         Assert.True(connectionSettings.UseSsl);
@@ -120,14 +130,15 @@ public class TlsConnectionTests : IntegrationTest
         else
         {
             connectionSettings.TlsSettings.AcceptablePolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors;
-            connectionSettings.TlsSettings.RemoteCertificateValidationCallback = (sender, certificate, chain, errors) => true;
+            connectionSettings.TlsSettings.RemoteCertificateValidationCallback =
+                (sender, certificate, chain, errors) => true;
         }
 
         Assert.Equal("localhost", connectionSettings.Host);
         Assert.Equal(_port, connectionSettings.Port);
         Assert.Null(connectionSettings.User);
         Assert.Null(connectionSettings.Password);
-        Assert.Equal("/", connectionSettings.VirtualHost);
+        Assert.Equal(virtualHost, connectionSettings.VirtualHost);
         Assert.Equal("amqps", connectionSettings.Scheme);
         Assert.Equal(SaslMechanism.External, connectionSettings.SaslMechanism);
 
@@ -137,10 +148,10 @@ public class TlsConnectionTests : IntegrationTest
         Assert.Equal(State.Closed, connection.State);
     }
 
-    private Task CreateUserFromCertSubject(X509Certificate cert)
+    private Task CreateUserFromCertSubject(X509Certificate cert, string virtualHost)
     {
         string userName = cert.Subject.Trim().Replace(" ", string.Empty);
-        return _httpApiClient.CreateUserAsync(userName);
+        return _httpApiClient.CreateUserAsync(userName, virtualHost);
     }
 
     private static string GetClientCertFile()
@@ -151,6 +162,7 @@ public class TlsConnectionTests : IntegrationTest
         {
             clientCertFile = Path.GetFullPath(Path.Combine(cwd, "../../../../../.ci/certs/client_localhost.p12"));
         }
+
         Assert.True(File.Exists(clientCertFile));
         return clientCertFile;
     }

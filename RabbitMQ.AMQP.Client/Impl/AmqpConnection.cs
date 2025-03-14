@@ -6,6 +6,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Amqp;
@@ -164,6 +165,22 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// </summary>
         public long Id { get; set; }
 
+        /// <summary>
+        /// Refresh the OAuth token and update the connection settings.
+        /// </summary>
+        /// <param name="token">OAuth token</param>
+        public async Task RefreshTokenAsync(string token)
+        {
+            // here we use the primitive RequestAsync method because we don't want to
+            // expose this method in the IManagement interface
+            // we need to update the connection settings with the new token
+            int[] expectedResponseCodes = { AmqpManagement.Code204 };
+            _ = await _management.RequestAsync(Encoding.ASCII.GetBytes(token),
+                    AmqpManagement.AuthTokens, AmqpManagement.Put, expectedResponseCodes)
+                .ConfigureAwait(false);
+            _connectionSettings.UpdateOAuthPassword(token);
+        }
+
         // TODO cancellation token
         public override async Task OpenAsync()
         {
@@ -249,7 +266,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             if (false == _publishersDict.TryAdd(id, consumer))
             {
                 // TODO create "internal bug" exception type?
-                throw new InvalidOperationException("could not add publisher, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                throw new InvalidOperationException(
+                    "could not add publisher, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
         }
 
@@ -258,7 +276,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             if (false == _publishersDict.TryRemove(id, out _))
             {
                 // TODO create "internal bug" exception type?
-                throw new InvalidOperationException("could not remove publisher, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                throw new InvalidOperationException(
+                    "could not remove publisher, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
         }
 
@@ -268,7 +287,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             if (false == _consumersDict.TryAdd(id, consumer))
             {
                 // TODO create "internal bug" exception type?
-                throw new InvalidOperationException("could not add consumer, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                throw new InvalidOperationException(
+                    "could not add consumer, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
         }
 
@@ -277,7 +297,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             if (false == _consumersDict.TryRemove(id, out _))
             {
                 // TODO create "internal bug" exception type?
-                throw new InvalidOperationException("could not remove consumer, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
+                throw new InvalidOperationException(
+                    "could not remove consumer, report via https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues");
             }
         }
 
@@ -639,6 +660,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 {
                     value = (string)kvp.Value;
                 }
+
                 _connectionProperties[key] = value;
             }
 
@@ -647,6 +669,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             {
                 // TODO Java client throws exception here
             }
+
             _areFilterExpressionsSupported = Utils.SupportsFilterExpressions(brokerVersion);
         }
     }

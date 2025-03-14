@@ -3,6 +3,7 @@
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace RabbitMQ.AMQP.Client
 {
@@ -60,5 +61,7 @@ namespace RabbitMQ.AMQP.Client
         /// Get or set the Connection ID. Used by <see cref="IEnvironment"/>
         /// </summary>
         public long Id { get; set; }
+
+        public Task RefreshTokenAsync(string token);
     }
 }

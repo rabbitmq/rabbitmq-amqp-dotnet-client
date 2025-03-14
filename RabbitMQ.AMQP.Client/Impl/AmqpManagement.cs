@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Amqp;
@@ -46,6 +47,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         internal const string Post = "POST";
         internal const string Delete = "DELETE";
         private const string ReplyTo = "$me";
+        internal const string AuthTokens = "/auth/tokens";
 
         protected readonly TaskCompletionSource<bool> _managementSessionClosedTcs =
             Utils.CreateTaskCompletionSource<bool>();

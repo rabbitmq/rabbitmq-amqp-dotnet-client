@@ -41,6 +41,7 @@ namespace RabbitMQ.AMQP.Client
         private Uri? _uri;
         private List<Uri>? _uris;
         private IUriSelector? _uriSelector;
+        private OAuth2Options? _oAuth2Options;
 
         public static ConnectionSettingsBuilder Create()
         {
@@ -104,6 +105,7 @@ namespace RabbitMQ.AMQP.Client
                 throw new ArgumentOutOfRangeException(nameof(maxFrameSize),
                     "maxFrameSize must be 0 (no limit) or greater than or equal to 512");
             }
+
             return this;
         }
 
@@ -152,6 +154,12 @@ namespace RabbitMQ.AMQP.Client
             return this;
         }
 
+        public ConnectionSettingsBuilder OAuth2Options(OAuth2Options? oAuth2Options)
+        {
+            _oAuth2Options = oAuth2Options;
+            return this;
+        }
+
         public ConnectionSettings Build()
         {
             // TODO this should do something similar to consolidate in the Java code
@@ -162,26 +170,26 @@ namespace RabbitMQ.AMQP.Client
                     _containerId, _saslMechanism,
                     _recoveryConfiguration,
                     _maxFrameSize,
-                    _tlsSettings);
+                    _tlsSettings,
+                    _oAuth2Options);
             }
-            else if (_uris is not null)
+
+            if (_uris is not null)
             {
                 return new ClusterConnectionSettings(_uris,
                     _uriSelector,
                     _containerId, _saslMechanism,
                     _recoveryConfiguration,
                     _maxFrameSize,
-                    _tlsSettings);
+                    _tlsSettings, _oAuth2Options);
             }
-            else
-            {
-                return new ConnectionSettings(_scheme, _host, _port, _user,
-                    _password, _virtualHost,
-                    _containerId, _saslMechanism,
-                    _recoveryConfiguration,
-                    _maxFrameSize,
-                    _tlsSettings);
-            }
+
+            return new ConnectionSettings(_scheme, _host, _port, _user,
+                _password, _virtualHost,
+                _containerId, _saslMechanism,
+                _recoveryConfiguration,
+                _maxFrameSize,
+                _tlsSettings, _oAuth2Options);
         }
 
         private void ValidateUris()
@@ -200,10 +208,11 @@ namespace RabbitMQ.AMQP.Client
     {
         protected Address _address = new("amqp://localhost:5672");
         protected string _virtualHost = Consts.DefaultVirtualHost;
+        private readonly SaslMechanism _saslMechanism = SaslMechanism.Plain;
+        private readonly OAuth2Options? _oAuth2Options = null;
         private readonly string _containerId = string.Empty;
         private readonly uint _maxFrameSize = Consts.DefaultMaxFrameSize;
         private readonly TlsSettings? _tlsSettings;
-        private readonly SaslMechanism _saslMechanism = SaslMechanism.Plain;
         private readonly IRecoveryConfiguration _recoveryConfiguration = new RecoveryConfiguration();
 
         public ConnectionSettings(Uri uri,
@@ -211,8 +220,9 @@ namespace RabbitMQ.AMQP.Client
             SaslMechanism? saslMechanism = null,
             IRecoveryConfiguration? recoveryConfiguration = null,
             uint? maxFrameSize = null,
-            TlsSettings? tlsSettings = null)
-            : this(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings)
+            TlsSettings? tlsSettings = null,
+            OAuth2Options? oAuth2Options = null)
+            : this(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings, oAuth2Options)
         {
             (string? user, string? password) = ProcessUserInfo(uri);
 
@@ -224,14 +234,28 @@ namespace RabbitMQ.AMQP.Client
                 throw new ArgumentOutOfRangeException("uri.Scheme", "Uri scheme must be 'amqp' or 'amqps'");
             }
 
-            _address = new Address(host: uri.Host,
-                port: uri.Port,
+            _address = InitAddress(uri.Host, uri.Port, user, password, scheme);
+            _tlsSettings = InitTlsSettings();
+        }
+
+        protected Address InitAddress(string host, int port, string? user, string? password, string scheme)
+        {
+            if (_oAuth2Options is not null)
+            {
+                return new Address(host, port, "", _oAuth2Options.Token, "/", scheme);
+            }
+
+            return new Address(host,
+                port: port,
                 user: user,
                 password: password,
                 path: "/",
                 scheme: scheme);
+        }
 
-            _tlsSettings = InitTlsSettings();
+        internal void UpdateOAuthPassword(string? password)
+        {
+            _address = new Address(_address.Host, _address.Port, _address.User, password, _address.Path, _address.Scheme);
         }
 
         public ConnectionSettings(string scheme,
@@ -244,21 +268,16 @@ namespace RabbitMQ.AMQP.Client
             SaslMechanism? saslMechanism = null,
             IRecoveryConfiguration? recoveryConfiguration = null,
             uint? maxFrameSize = null,
-            TlsSettings? tlsSettings = null)
-            : this(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings)
+            TlsSettings? tlsSettings = null,
+            OAuth2Options? oAuth2Options = null)
+            : this(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings, oAuth2Options)
         {
             if (false == Utils.IsValidScheme(scheme))
             {
                 throw new ArgumentOutOfRangeException(nameof(scheme), "scheme must be 'amqp' or 'amqps'");
             }
 
-            _address = new Address(host: host,
-                port: port,
-                user: user,
-                password: password,
-                path: "/",
-                scheme: scheme);
-
+            _address = InitAddress(host, port, user, password, scheme);
             if (virtualHost is not null)
             {
                 _virtualHost = virtualHost;
@@ -272,7 +291,8 @@ namespace RabbitMQ.AMQP.Client
             SaslMechanism? saslMechanism = null,
             IRecoveryConfiguration? recoveryConfiguration = null,
             uint? maxFrameSize = null,
-            TlsSettings? tlsSettings = null)
+            TlsSettings? tlsSettings = null,
+            OAuth2Options? oAuth2Options = null)
         {
             if (containerId is not null)
             {
@@ -282,6 +302,13 @@ namespace RabbitMQ.AMQP.Client
             if (saslMechanism is not null)
             {
                 _saslMechanism = saslMechanism;
+            }
+
+            if (oAuth2Options is not null)
+            {
+                // If OAuth2Options is set, then SaslMechanism must be Plain
+                _oAuth2Options = oAuth2Options;
+                _saslMechanism = SaslMechanism.Plain;
             }
 
             if (recoveryConfiguration is not null)
@@ -408,7 +435,8 @@ namespace RabbitMQ.AMQP.Client
             // that has at least the path segment "/"
             if (uri.Segments.Length > 2)
             {
-                throw new ArgumentException($"Multiple segments in path of AMQP URI: {string.Join(", ", uri.Segments)}");
+                throw new ArgumentException(
+                    $"Multiple segments in path of AMQP URI: {string.Join(", ", uri.Segments)}");
             }
 
             if (uri.Segments.Length == 2)
@@ -454,8 +482,9 @@ namespace RabbitMQ.AMQP.Client
             SaslMechanism? saslMechanism = null,
             IRecoveryConfiguration? recoveryConfiguration = null,
             uint? maxFrameSize = null,
-            TlsSettings? tlsSettings = null)
-            : base(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings)
+            TlsSettings? tlsSettings = null,
+            OAuth2Options? oAuth2Options = null)
+            : base(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings, oAuth2Options)
         {
             _uris = uris.ToList();
             if (_uris.Count == 0)
@@ -463,7 +492,7 @@ namespace RabbitMQ.AMQP.Client
                 throw new ArgumentOutOfRangeException(nameof(uris), "At least one Uri is required.");
             }
 
-            _uriToAddress = new(_uris.Count);
+            _uriToAddress = new Dictionary<Uri, Address>(_uris.Count);
 
             if (uriSelector is not null)
             {
@@ -492,16 +521,12 @@ namespace RabbitMQ.AMQP.Client
                     string thisVirtualHost = ProcessUriSegmentsForVirtualHost(uri);
                     if (false == thisVirtualHost.Equals(tmpVirtualHost, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        throw new ArgumentException($"All AMQP URIs must use the same virtual host. Expected '{tmpVirtualHost}', got '{thisVirtualHost}'");
+                        throw new ArgumentException(
+                            $"All AMQP URIs must use the same virtual host. Expected '{tmpVirtualHost}', got '{thisVirtualHost}'");
                     }
                 }
 
-                var address = new Address(host: uri.Host,
-                    port: uri.Port,
-                    user: user,
-                    password: password,
-                    path: "/",
-                    scheme: scheme);
+                var address = InitAddress(uri.Host, uri.Port, user, password, scheme);
 
                 _uriToAddress[uri] = address;
 
@@ -551,6 +576,7 @@ namespace RabbitMQ.AMQP.Client
             {
                 hashCode ^= _uris[i].GetHashCode();
             }
+
             return hashCode;
         }
 
@@ -578,7 +604,7 @@ namespace RabbitMQ.AMQP.Client
         public TlsSettings(SslProtocols protocols)
         {
             Protocols = protocols;
-            RemoteCertificateValidationCallback = trustEverythingCertValidationCallback;
+            RemoteCertificateValidationCallback = TrustEverythingCertValidationCallback;
             LocalCertificateSelectionCallback = null;
         }
 
@@ -594,10 +620,20 @@ namespace RabbitMQ.AMQP.Client
 
         public LocalCertificateSelectionCallback? LocalCertificateSelectionCallback { get; set; }
 
-        private bool trustEverythingCertValidationCallback(object sender, X509Certificate? certificate,
+        private bool TrustEverythingCertValidationCallback(object sender, X509Certificate? certificate,
             X509Chain? chain, SslPolicyErrors sslPolicyErrors)
         {
             return (sslPolicyErrors & ~AcceptablePolicyErrors) == SslPolicyErrors.None;
         }
+    }
+
+    public class OAuth2Options
+    {
+        public OAuth2Options(string token)
+        {
+            Token = token;
+        }
+
+        public string Token { get; set; }
     }
 }
