@@ -101,7 +101,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// <exception cref="InvalidOperationException"></exception>
         /// <exception cref="NotSupportedException"></exception>
         /// <exception cref="PublisherException"></exception>
-        public async Task<PublishResult> PublishAsync(IMessage message, CancellationToken cancellationToken = default)
+        public Task<PublishResult> PublishAsync(IMessage message, CancellationToken cancellationToken = default)
         {
             ThrowIfClosed();
 
@@ -119,17 +119,17 @@ namespace RabbitMQ.AMQP.Client.Impl
                 stopwatch.Start();
             }
 
+            TaskCompletionSource<PublishResult> publishResultTcs =
+                Utils.CreateTaskCompletionSource<PublishResult>();
+
             try
             {
-                TaskCompletionSource<PublishOutcome> messagePublishedTcs =
-                    Utils.CreateTaskCompletionSource<PublishOutcome>();
-
                 Message nativeMessage = ((AmqpMessage)message).NativeMessage;
 
                 void OutcomeCallback(ILink sender, Message inMessage, Outcome outcome, object state)
                 {
                     // Note: sometimes `message` is null 🤔
-                    System.Diagnostics.Debug.Assert(Object.ReferenceEquals(this, state));
+                    Debug.Assert(Object.ReferenceEquals(this, state));
 
                     if (false == Object.ReferenceEquals(_senderLink, sender))
                     {
@@ -167,7 +167,15 @@ namespace RabbitMQ.AMQP.Client.Impl
                             }
                     }
 
-                    messagePublishedTcs.SetResult(publishOutcome);
+                    // TODO cancellation token
+                    if (_metricsReporter is not null && stopwatch is not null)
+                    {
+                        stopwatch.Stop();
+                        _metricsReporter.Published(stopwatch.Elapsed);
+                    }
+
+                    var publishResult = new PublishResult(message, publishOutcome);
+                    publishResultTcs.SetResult(publishResult);
                 }
 
                 /*
@@ -176,25 +184,16 @@ namespace RabbitMQ.AMQP.Client.Impl
                  */
                 _senderLink.Send(nativeMessage, OutcomeCallback, this);
 
-                // TODO cancellation token
-                // PublishOutcome publishOutcome = await messagePublishedTcs.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken)
-                PublishOutcome publishOutcome = await messagePublishedTcs.Task.WaitAsync(TimeSpan.FromSeconds(5))
-                    .ConfigureAwait(false);
-
-                if (_metricsReporter is not null && stopwatch is not null)
-                {
-                    stopwatch.Stop();
-                    _metricsReporter.Published(stopwatch.Elapsed);
-                }
-
-                return new PublishResult(message, publishOutcome);
+                return publishResultTcs.Task;
             }
             catch (AmqpException ex)
             {
                 stopwatch?.Stop();
                 _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.REJECTED);
                 var publishOutcome = new PublishOutcome(OutcomeState.Rejected, Utils.ConvertError(ex.Error));
-                return new PublishResult(message, publishOutcome);
+                var publishResult = new PublishResult(message, publishOutcome);
+                publishResultTcs.SetResult(publishResult);
+                return publishResultTcs.Task;
             }
             catch (Exception e)
             {
