@@ -217,7 +217,6 @@ RabbitMQ.AMQP.Client.IEnvironment
 RabbitMQ.AMQP.Client.IEnvironment.CloseAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.IEnvironment.CreateConnectionAsync() -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
 RabbitMQ.AMQP.Client.IEnvironment.CreateConnectionAsync(RabbitMQ.AMQP.Client.ConnectionSettings! connectionSettings) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
-RabbitMQ.AMQP.Client.IEnvironment.GetConnections() -> System.Collections.ObjectModel.ReadOnlyCollection<RabbitMQ.AMQP.Client.IConnection!>!
 RabbitMQ.AMQP.Client.IExchangeSpecification
 RabbitMQ.AMQP.Client.IExchangeSpecification.Argument(string! key, object! value) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
 RabbitMQ.AMQP.Client.IExchangeSpecification.Arguments(System.Collections.Generic.Dictionary<string!, object!>! arguments) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
@@ -365,7 +364,6 @@ RabbitMQ.AMQP.Client.Impl.AmqpEnvironment
 RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.CloseAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.CreateConnectionAsync() -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
 RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.CreateConnectionAsync(RabbitMQ.AMQP.Client.ConnectionSettings! connectionSettings) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
-RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.GetConnections() -> System.Collections.ObjectModel.ReadOnlyCollection<RabbitMQ.AMQP.Client.IConnection!>!
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.AmqpExchangeSpecification(RabbitMQ.AMQP.Client.Impl.AmqpManagement! management) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.Argument(string! key, object! value) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
