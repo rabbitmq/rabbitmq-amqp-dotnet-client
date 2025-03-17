@@ -31,12 +31,18 @@ public class HttpApiClient : IDisposable
     /// Creates a user, without password, with full permissions
     /// </summary>
     /// <param name="userName">The user name.</param>
-    public async Task CreateUserAsync(string userName)
+    /// <param name="virtualHost">The virtual host</param>
+    public async Task CreateUserAsync(string userName, string virtualHost)
     {
         var userInfo = new UserInfo(null, null, []);
         await _managementClient.CreateUserAsync(userName, userInfo);
         var permissionInfo = new PermissionInfo();
-        await _managementClient.CreatePermissionAsync("/", userName, permissionInfo);
+        await _managementClient.CreatePermissionAsync(virtualHost, userName, permissionInfo);
+    }
+
+    public async Task CreateVhostAsync(string vhostName)
+    {
+        await _managementClient.CreateVhostAsync(vhostName);
     }
 
     public async Task<bool> CheckConnectionAsync(string containerId, bool checkOpened = true)

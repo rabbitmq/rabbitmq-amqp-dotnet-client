@@ -296,6 +296,11 @@ public abstract partial class IntegrationTest
         }
     }
 
+    protected static Task CreateVhostAsync(string vhost)
+    {
+        return s_httpApiClient.CreateVhostAsync(vhost);
+    }
+
     private static bool InitIsRunningInCI()
     {
         if (bool.TryParse(Environment.GetEnvironmentVariable("CI"), out bool ci))

@@ -7,3 +7,4 @@ This directory contains examples of how to use the RabbitMQ AMQP 1.0 .NET client
 - How to write a reliable client [here](./HAClient/)
 - Performance Test [here](./PerformanceTest/). You can tune some parameters in the `Program.cs` file.
 - OpenTelemetry Integration [here](./OpenTelemetryIntegration/)
+- OAuth2 Example [here](./OAuth2)

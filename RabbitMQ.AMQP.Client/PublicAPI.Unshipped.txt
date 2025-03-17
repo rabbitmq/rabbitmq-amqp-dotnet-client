@@ -59,16 +59,17 @@ RabbitMQ.AMQP.Client.ClassicQueueVersion
 RabbitMQ.AMQP.Client.ClassicQueueVersion.V1 = 0 -> RabbitMQ.AMQP.Client.ClassicQueueVersion
 RabbitMQ.AMQP.Client.ClassicQueueVersion.V2 = 1 -> RabbitMQ.AMQP.Client.ClassicQueueVersion
 RabbitMQ.AMQP.Client.ClusterConnectionSettings
-RabbitMQ.AMQP.Client.ClusterConnectionSettings.ClusterConnectionSettings(System.Collections.Generic.IEnumerable<System.Uri!>! uris, RabbitMQ.AMQP.Client.IUriSelector? uriSelector = null, string? containerId = null, RabbitMQ.AMQP.Client.SaslMechanism? saslMechanism = null, RabbitMQ.AMQP.Client.IRecoveryConfiguration? recoveryConfiguration = null, uint? maxFrameSize = null, RabbitMQ.AMQP.Client.TlsSettings? tlsSettings = null) -> void
+RabbitMQ.AMQP.Client.ClusterConnectionSettings.ClusterConnectionSettings(System.Collections.Generic.IEnumerable<System.Uri!>! uris, RabbitMQ.AMQP.Client.IUriSelector? uriSelector = null, string? containerId = null, RabbitMQ.AMQP.Client.SaslMechanism? saslMechanism = null, RabbitMQ.AMQP.Client.IRecoveryConfiguration? recoveryConfiguration = null, uint? maxFrameSize = null, RabbitMQ.AMQP.Client.TlsSettings? tlsSettings = null, RabbitMQ.AMQP.Client.OAuth2Options? oAuth2Options = null) -> void
 RabbitMQ.AMQP.Client.ConnectionException
 RabbitMQ.AMQP.Client.ConnectionException.ConnectionException(string! message) -> void
 RabbitMQ.AMQP.Client.ConnectionException.ConnectionException(string! message, System.Exception! innerException) -> void
 RabbitMQ.AMQP.Client.ConnectionSettings
-RabbitMQ.AMQP.Client.ConnectionSettings.ConnectionSettings(string! scheme, string! host, int port, string? user = null, string? password = null, string? virtualHost = null, string! containerId = "", RabbitMQ.AMQP.Client.SaslMechanism? saslMechanism = null, RabbitMQ.AMQP.Client.IRecoveryConfiguration? recoveryConfiguration = null, uint? maxFrameSize = null, RabbitMQ.AMQP.Client.TlsSettings? tlsSettings = null) -> void
-RabbitMQ.AMQP.Client.ConnectionSettings.ConnectionSettings(string? containerId = null, RabbitMQ.AMQP.Client.SaslMechanism? saslMechanism = null, RabbitMQ.AMQP.Client.IRecoveryConfiguration? recoveryConfiguration = null, uint? maxFrameSize = null, RabbitMQ.AMQP.Client.TlsSettings? tlsSettings = null) -> void
-RabbitMQ.AMQP.Client.ConnectionSettings.ConnectionSettings(System.Uri! uri, string? containerId = null, RabbitMQ.AMQP.Client.SaslMechanism? saslMechanism = null, RabbitMQ.AMQP.Client.IRecoveryConfiguration? recoveryConfiguration = null, uint? maxFrameSize = null, RabbitMQ.AMQP.Client.TlsSettings? tlsSettings = null) -> void
+RabbitMQ.AMQP.Client.ConnectionSettings.ConnectionSettings(string! scheme, string! host, int port, string? user = null, string? password = null, string? virtualHost = null, string! containerId = "", RabbitMQ.AMQP.Client.SaslMechanism? saslMechanism = null, RabbitMQ.AMQP.Client.IRecoveryConfiguration? recoveryConfiguration = null, uint? maxFrameSize = null, RabbitMQ.AMQP.Client.TlsSettings? tlsSettings = null, RabbitMQ.AMQP.Client.OAuth2Options? oAuth2Options = null) -> void
+RabbitMQ.AMQP.Client.ConnectionSettings.ConnectionSettings(string? containerId = null, RabbitMQ.AMQP.Client.SaslMechanism? saslMechanism = null, RabbitMQ.AMQP.Client.IRecoveryConfiguration? recoveryConfiguration = null, uint? maxFrameSize = null, RabbitMQ.AMQP.Client.TlsSettings? tlsSettings = null, RabbitMQ.AMQP.Client.OAuth2Options? oAuth2Options = null) -> void
+RabbitMQ.AMQP.Client.ConnectionSettings.ConnectionSettings(System.Uri! uri, string? containerId = null, RabbitMQ.AMQP.Client.SaslMechanism? saslMechanism = null, RabbitMQ.AMQP.Client.IRecoveryConfiguration? recoveryConfiguration = null, uint? maxFrameSize = null, RabbitMQ.AMQP.Client.TlsSettings? tlsSettings = null, RabbitMQ.AMQP.Client.OAuth2Options? oAuth2Options = null) -> void
 RabbitMQ.AMQP.Client.ConnectionSettings.ContainerId.get -> string!
 RabbitMQ.AMQP.Client.ConnectionSettings.Host.get -> string!
+RabbitMQ.AMQP.Client.ConnectionSettings.InitAddress(string! host, int port, string? user, string? password, string! scheme) -> Amqp.Address!
 RabbitMQ.AMQP.Client.ConnectionSettings.MaxFrameSize.get -> uint
 RabbitMQ.AMQP.Client.ConnectionSettings.Password.get -> string?
 RabbitMQ.AMQP.Client.ConnectionSettings.Path.get -> string!
@@ -88,6 +89,7 @@ RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.ConnectionSettingsBuilder() -> vo
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.ContainerId(string! containerId) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.Host(string! host) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.MaxFrameSize(uint maxFrameSize) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
+RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.OAuth2Options(RabbitMQ.AMQP.Client.OAuth2Options? oAuth2Options) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.Password(string! password) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.Port(int port) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.RecoveryConfiguration(RabbitMQ.AMQP.Client.IRecoveryConfiguration! recoveryConfiguration) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
@@ -154,6 +156,7 @@ RabbitMQ.AMQP.Client.IConnection.Management() -> RabbitMQ.AMQP.Client.IManagemen
 RabbitMQ.AMQP.Client.IConnection.Properties.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object!>!
 RabbitMQ.AMQP.Client.IConnection.PublisherBuilder() -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.IConnection.Publishers.get -> System.Collections.Generic.IEnumerable<RabbitMQ.AMQP.Client.IPublisher!>!
+RabbitMQ.AMQP.Client.IConnection.RefreshTokenAsync(string! token) -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.IConnection.RpcClientBuilder() -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
 RabbitMQ.AMQP.Client.IConnection.RpcServerBuilder() -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.IConsumer
@@ -341,6 +344,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpConnection.Management() -> RabbitMQ.AMQP.Client.IM
 RabbitMQ.AMQP.Client.Impl.AmqpConnection.Properties.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object!>!
 RabbitMQ.AMQP.Client.Impl.AmqpConnection.PublisherBuilder() -> RabbitMQ.AMQP.Client.IPublisherBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConnection.Publishers.get -> System.Collections.Generic.IEnumerable<RabbitMQ.AMQP.Client.IPublisher!>!
+RabbitMQ.AMQP.Client.Impl.AmqpConnection.RefreshTokenAsync(string! token) -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.AmqpConnection.RpcClientBuilder() -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConnection.RpcServerBuilder() -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer
@@ -449,6 +453,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.Exclusive(bool isExclusive) -> 
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.Expires(System.TimeSpan expiration) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.IsAutoDelete.get -> bool
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.IsExclusive.get -> bool
+RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.LeaderLocator(RabbitMQ.AMQP.Client.LeaderLocatorStrategy leaderLocatorStrategy) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.MaxLength(long maxLength) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.MaxLengthBytes(RabbitMQ.AMQP.Client.ByteCapacity! maxLengthBytes) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.MessageTtl(System.TimeSpan ttl) -> RabbitMQ.AMQP.Client.IQueueSpecification!
@@ -468,6 +473,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.DeadLetterStrategy(RabbitMQ.AM
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.DeliveryLimit(int limit) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.QuorumInitialGroupSize(int size) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.QuorumTargetGroupSize(int size) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpRpcClient
 RabbitMQ.AMQP.Client.Impl.AmqpRpcClient.AmqpRpcClient(RabbitMQ.AMQP.Client.Impl.RpcClientConfiguration! configuration) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpRpcClient.PublishAsync(RabbitMQ.AMQP.Client.IMessage! message, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IMessage!>!
@@ -493,6 +499,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpRpcServerBuilder.RequestQueue(RabbitMQ.AMQP.Client
 RabbitMQ.AMQP.Client.Impl.AmqpRpcServerBuilder.RequestQueue(string! requestQueue) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.AmqpStreamSpecification(RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification! parent) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.FileSizePerChunk(RabbitMQ.AMQP.Client.ByteCapacity! fileSizePerChunk) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.InitialClusterSize(int initialClusterSize) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.MaxAge(System.TimeSpan maxAge) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.MaxSegmentSizeBytes(RabbitMQ.AMQP.Client.ByteCapacity! maxSegmentSize) -> RabbitMQ.AMQP.Client.IStreamSpecification!
@@ -625,6 +632,7 @@ RabbitMQ.AMQP.Client.IQueueSpecification.Exclusive(bool isExclusive) -> RabbitMQ
 RabbitMQ.AMQP.Client.IQueueSpecification.Expires(System.TimeSpan expiration) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IQueueSpecification.IsAutoDelete.get -> bool
 RabbitMQ.AMQP.Client.IQueueSpecification.IsExclusive.get -> bool
+RabbitMQ.AMQP.Client.IQueueSpecification.LeaderLocator(RabbitMQ.AMQP.Client.LeaderLocatorStrategy strategy) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IQueueSpecification.MaxLength(long maxLength) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IQueueSpecification.MaxLengthBytes(RabbitMQ.AMQP.Client.ByteCapacity! maxLengthBytes) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IQueueSpecification.MessageTtl(System.TimeSpan ttl) -> RabbitMQ.AMQP.Client.IQueueSpecification!
@@ -643,6 +651,7 @@ RabbitMQ.AMQP.Client.IQuorumQueueSpecification.DeadLetterStrategy(RabbitMQ.AMQP.
 RabbitMQ.AMQP.Client.IQuorumQueueSpecification.DeliveryLimit(int limit) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
 RabbitMQ.AMQP.Client.IQuorumQueueSpecification.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IQuorumQueueSpecification.QuorumInitialGroupSize(int size) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
+RabbitMQ.AMQP.Client.IQuorumQueueSpecification.QuorumTargetGroupSize(int size) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
 RabbitMQ.AMQP.Client.IRecoveryConfiguration
 RabbitMQ.AMQP.Client.IRecoveryConfiguration.Activated(bool activated) -> RabbitMQ.AMQP.Client.IRecoveryConfiguration!
 RabbitMQ.AMQP.Client.IRecoveryConfiguration.BackOffDelayPolicy(RabbitMQ.AMQP.Client.IBackOffDelayPolicy! backOffDelayPolicy) -> RabbitMQ.AMQP.Client.IRecoveryConfiguration!
@@ -674,12 +683,16 @@ RabbitMQ.AMQP.Client.IRpcServerBuilder.ReplyPostProcessor(System.Func<RabbitMQ.A
 RabbitMQ.AMQP.Client.IRpcServerBuilder.RequestQueue(RabbitMQ.AMQP.Client.IQueueSpecification! requestQueue) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.IRpcServerBuilder.RequestQueue(string! requestQueue) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!
 RabbitMQ.AMQP.Client.IStreamSpecification
+RabbitMQ.AMQP.Client.IStreamSpecification.FileSizePerChunk(RabbitMQ.AMQP.Client.ByteCapacity! fileSizePerChunk) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.IStreamSpecification.InitialClusterSize(int initialClusterSize) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.IStreamSpecification.MaxAge(System.TimeSpan maxAge) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.IStreamSpecification.MaxSegmentSizeBytes(RabbitMQ.AMQP.Client.ByteCapacity! maxSegmentSize) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.IStreamSpecification.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IUriSelector
 RabbitMQ.AMQP.Client.IUriSelector.Select(System.Collections.Generic.ICollection<System.Uri!>! uris) -> System.Uri!
+RabbitMQ.AMQP.Client.LeaderLocatorStrategy
+RabbitMQ.AMQP.Client.LeaderLocatorStrategy.Balanced = 1 -> RabbitMQ.AMQP.Client.LeaderLocatorStrategy
+RabbitMQ.AMQP.Client.LeaderLocatorStrategy.ClientLocal = 0 -> RabbitMQ.AMQP.Client.LeaderLocatorStrategy
 RabbitMQ.AMQP.Client.LifeCycleCallBack
 RabbitMQ.AMQP.Client.MessageHandler
 RabbitMQ.AMQP.Client.MetricsReporter
@@ -696,6 +709,10 @@ RabbitMQ.AMQP.Client.MetricsReporter.PublisherClosed() -> void
 RabbitMQ.AMQP.Client.MetricsReporter.PublisherOpened() -> void
 RabbitMQ.AMQP.Client.ModelException
 RabbitMQ.AMQP.Client.ModelException.ModelException(string! message) -> void
+RabbitMQ.AMQP.Client.OAuth2Options
+RabbitMQ.AMQP.Client.OAuth2Options.OAuth2Options(string! token) -> void
+RabbitMQ.AMQP.Client.OAuth2Options.Token.get -> string!
+RabbitMQ.AMQP.Client.OAuth2Options.Token.set -> void
 RabbitMQ.AMQP.Client.OutcomeState
 RabbitMQ.AMQP.Client.OutcomeState.Accepted = 0 -> RabbitMQ.AMQP.Client.OutcomeState
 RabbitMQ.AMQP.Client.OutcomeState.Rejected = 1 -> RabbitMQ.AMQP.Client.OutcomeState

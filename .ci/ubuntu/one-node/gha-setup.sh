@@ -8,12 +8,9 @@ script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 readonly script_dir
 echo "[INFO] script_dir: '$script_dir'"
 
-if [[ $3 == 'arm' ]]
-then
-    readonly rabbitmq_image="${RABBITMQ_IMAGE:-pivotalrabbitmq/rabbitmq-arm64:main}"
-else
-    readonly rabbitmq_image="${RABBITMQ_IMAGE:-pivotalrabbitmq/rabbitmq:main}"
-fi
+
+readonly rabbitmq_image="${RABBITMQ_IMAGE:-rabbitmq:4.1.0-beta.4-management-alpine}"
+
 
 
 readonly docker_name_prefix='rabbitmq-amqp-dotnet-client'
@@ -92,6 +89,7 @@ function start_rabbitmq
         --volume "$GITHUB_WORKSPACE/.ci/ubuntu/one-node/enabled_plugins:/etc/rabbitmq/enabled_plugins" \
         --volume "$GITHUB_WORKSPACE/.ci/ubuntu/one-node/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro" \
         --volume "$GITHUB_WORKSPACE/.ci/certs:/etc/rabbitmq/certs:ro" \
+        --volume "$GITHUB_WORKSPACE/.ci/ubuntu/one-node/advanced.config:/etc/rabbitmq/advanced.config:ro" \
         --volume "$GITHUB_WORKSPACE/.ci/ubuntu/log:/var/log/rabbitmq" \
         "$rabbitmq_image"
 }
