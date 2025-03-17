@@ -1,7 +1,6 @@
 # RabbitMQ AMQP 1.0 .NET Client
 
 This library is meant to be used with RabbitMQ 4.0.
-Suitable for testing in pre-production environments
 
 
 ## Install
