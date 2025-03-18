@@ -193,6 +193,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is closed.");
         }
 
+        /// <summary>
+        /// Pause the consumer to stop receiving messages.
+        /// </summary>
         public void Pause()
         {
             if (_receiverLink is null)
@@ -224,8 +227,14 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        /// <summary>
+        /// Get the number of unsettled messages.
+        /// </summary>
         public long UnsettledMessageCount => _unsettledMessageCounter.Get();
 
+        /// <summary>
+        /// Request to receive messages again.
+        /// </summary>
         public void Unpause()
         {
             if (_receiverLink is null)
