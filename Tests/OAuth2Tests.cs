@@ -7,11 +7,8 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Amqp;
 using Microsoft.IdentityModel.Tokens;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
@@ -55,7 +52,7 @@ namespace Tests
                     .OAuth2Options(new OAuth2Options(GenerateToken(DateTime.UtcNow.AddMilliseconds(1_000))))
                     .Build());
             await connection.RefreshTokenAsync(GenerateToken(DateTime.UtcNow.AddMinutes(5)));
-            Thread.Sleep(TimeSpan.FromSeconds(1));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             Assert.NotNull(connection);
             Assert.Equal(State.Open, connection.State);
             await connection.CloseAsync();
@@ -131,7 +128,7 @@ namespace Tests
             };
 
             Assert.Equal(State.Open, connection.State);
-            Thread.Sleep(TimeSpan.FromSeconds(1));
+            await Task.Delay(TimeSpan.FromSeconds(1));
             await WaitUntilConnectionIsKilledAndOpen(_containerId);
             Assert.Equal(State.Open, connection.State);
             await WhenTcsCompletes(twoRecoveryEventsSeenTcs);

@@ -24,6 +24,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             _metricsReporter = metricsReporter;
         }
 
+        /// <summary>
+        /// <para>Accept the message (AMQP 1.0 <c>accepted</c> outcome).</para>
+        /// <para>This means the message has been processed and the broker can delete it.</para>
+        /// </summary>
         public void Accept()
         {
             try
@@ -43,6 +47,13 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        ///<summary>
+        /// <para>Discard the message (AMQP 1.0 <c>rejected</c> outcome).</para>
+        /// <para>
+        ///   This means the message cannot be processed because it is invalid, the broker can
+        ///   drop it or dead-letter it if it is configured.
+        /// </para>
+        ///</summary>
         public void Discard()
         {
             try
