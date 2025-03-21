@@ -122,83 +122,83 @@ namespace RabbitMQ.AMQP.Client.Impl
             TaskCompletionSource<PublishResult> publishResultTcs =
                 Utils.CreateTaskCompletionSource<PublishResult>();
 
-            try
+            Message nativeMessage = ((AmqpMessage)message).NativeMessage;
+
+            void OutcomeCallback(ILink sender, Message inMessage, Outcome outcome, object state)
             {
-                Message nativeMessage = ((AmqpMessage)message).NativeMessage;
+                // Note: sometimes `inMessage` is null 🤔
+                Debug.Assert(Object.ReferenceEquals(this, state));
 
-                void OutcomeCallback(ILink sender, Message inMessage, Outcome outcome, object state)
+                if (false == Object.ReferenceEquals(_senderLink, sender))
                 {
-                    // Note: sometimes `message` is null 🤔
-                    Debug.Assert(Object.ReferenceEquals(this, state));
-
-                    if (false == Object.ReferenceEquals(_senderLink, sender))
-                    {
-                        // TODO log this case?
-                    }
-
-                    PublishOutcome publishOutcome;
-                    switch (outcome)
-                    {
-                        case Rejected rejectedOutcome:
-                            {
-                                const OutcomeState publishState = OutcomeState.Rejected;
-                                publishOutcome = new PublishOutcome(publishState,
-                                    Utils.ConvertError(rejectedOutcome.Error));
-                                _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.REJECTED);
-                                break;
-                            }
-                        case Released:
-                            {
-                                const OutcomeState publishState = OutcomeState.Released;
-                                publishOutcome = new PublishOutcome(publishState, null);
-                                _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.RELEASED);
-                                break;
-                            }
-                        case Accepted:
-                            {
-                                const OutcomeState publishState = OutcomeState.Accepted;
-                                publishOutcome = new PublishOutcome(publishState, null);
-                                _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.ACCEPTED);
-                                break;
-                            }
-                        default:
-                            {
-                                throw new NotSupportedException();
-                            }
-                    }
-
-                    // TODO cancellation token
-                    if (_metricsReporter is not null && stopwatch is not null)
-                    {
-                        stopwatch.Stop();
-                        _metricsReporter.Published(stopwatch.Elapsed);
-                    }
-
-                    var publishResult = new PublishResult(message, publishOutcome);
-                    publishResultTcs.SetResult(publishResult);
+                    // TODO log this case?
                 }
 
-                /*
-                 * Note: do NOT use SendAsync here as it prevents the Closed event from
-                 * firing on the native connection. Bizarre, I know!
-                 */
-                _senderLink.Send(nativeMessage, OutcomeCallback, this);
+                PublishOutcome publishOutcome;
+                switch (outcome)
+                {
+                    case Rejected rejectedOutcome:
+                        {
+                            const OutcomeState publishState = OutcomeState.Rejected;
+                            publishOutcome = new PublishOutcome(publishState,
+                                Utils.ConvertError(rejectedOutcome.Error));
+                            _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.REJECTED);
+                            break;
+                        }
+                    case Released:
+                        {
+                            const OutcomeState publishState = OutcomeState.Released;
+                            publishOutcome = new PublishOutcome(publishState, null);
+                            _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.RELEASED);
+                            break;
+                        }
+                    case Accepted:
+                        {
+                            const OutcomeState publishState = OutcomeState.Accepted;
+                            publishOutcome = new PublishOutcome(publishState, null);
+                            _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.ACCEPTED);
+                            break;
+                        }
+                    default:
+                        {
+                            throw new NotSupportedException();
+                        }
+                }
 
-                return publishResultTcs.Task;
+                // TODO cancellation token
+                if (_metricsReporter is not null && stopwatch is not null)
+                {
+                    stopwatch.Stop();
+                    _metricsReporter.Published(stopwatch.Elapsed);
+                }
+
+                var publishResult = new PublishResult(message, publishOutcome);
+                publishResultTcs.SetResult(publishResult);
             }
-            catch (AmqpException ex)
+
+            /*
+             * Note: do NOT use SendAsync here as it prevents the Closed event from
+             * firing on the native connection. Bizarre, I know!
+             */
+            try
+            {
+                _senderLink.Send(nativeMessage, OutcomeCallback, this);
+            }
+            catch (AmqpException amqpException)
             {
                 stopwatch?.Stop();
                 _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.REJECTED);
-                var publishOutcome = new PublishOutcome(OutcomeState.Rejected, Utils.ConvertError(ex.Error));
+                var publishOutcome = new PublishOutcome(OutcomeState.Rejected, Utils.ConvertError(amqpException.Error));
                 var publishResult = new PublishResult(message, publishOutcome);
                 publishResultTcs.SetResult(publishResult);
-                return publishResultTcs.Task;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                throw new PublisherException($"{ToString()} Failed to publish message, {e}");
+                var publisherException = new PublisherException($"{ToString()} Failed to publish message", ex);
+                publishResultTcs.SetException(publisherException);
             }
+
+            return publishResultTcs.Task;
         }
 
         public override async Task CloseAsync()

@@ -2,37 +2,40 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace RabbitMQ.AMQP.Client
 {
-    public class PublisherException : Exception
-    {
-        public PublisherException(string message) : base(message)
-        {
-        }
-    }
-
     /// <summary>
     ///  Represents the status of a publish operation.
-    ///  Accepted: The message was accepted for publication.
-    ///  Rejected: The message was rejected by the broker.
-    ///  Released: The message was released by the broker.
+    ///  See <see href="https://www.rabbitmq.com/docs/amqp#outcomes">AMQP Outcomes</see>.
     /// </summary>
     public enum OutcomeState
     {
+        /// <summary>
+        /// The message has been accepted by the broker.
+        /// </summary>
         Accepted,
+
+        /// <summary>
+        /// At least one queue the message was routed to rejected the message. This happens when the
+        /// queue length is exceeded and the queue's overflow behaviour is set to reject-publish or when
+        /// a target classic queue is unavailable.
+        /// </summary>
         Rejected,
-        Released,
+
+        /// <summary>
+        /// The broker could not route the message to any queue.
+        /// This is likely to be due to a topology misconfiguration.
+        /// </summary>
+        Released
     }
 
     /// <summary>
     ///  PublishOutcome represents the outcome of a publish operation.
     ///  It contains the state of the outcome and an error if the outcome is not successful.
     /// </summary>
-
     public class PublishOutcome
     {
         public PublishOutcome(OutcomeState state, Error? error)
