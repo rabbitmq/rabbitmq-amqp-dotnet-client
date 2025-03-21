@@ -13,6 +13,9 @@ using TraceLevel = Amqp.TraceLevel;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
+    /// <summary>
+    /// Implementation of <see cref="IPublisher"/>.
+    /// </summary>
     public class AmqpPublisher : AbstractReconnectLifeCycle, IPublisher
     {
         private readonly AmqpConnection _connection;
@@ -30,6 +33,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             _connection.AddPublisher(_id, this);
         }
 
+        /// <summary>
+        /// Open this publisher
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the async operation.</returns>
         public override async Task OpenAsync()
         {
             try
@@ -91,13 +98,11 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
 
         /// <summary>
-        /// Publishes a message to the broker in an asynchronous manner.
-        /// The PublishResult is synchronous. In order to increase the performance
-        /// you can use more tasks to publish messages in parallel
+        /// Publishes a message to the broker asynchronously.
         /// </summary>
         /// <param name="message"></param>
         /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <returns>A <see cref="Task"/> representating the await-able result of the publish operation.</returns>
         /// <exception cref="InvalidOperationException"></exception>
         /// <exception cref="NotSupportedException"></exception>
         /// <exception cref="PublisherException"></exception>
@@ -201,6 +206,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             return publishResultTcs.Task;
         }
 
+        /// <summary>
+        /// Close this publisher
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the async operation.</returns>
         public override async Task CloseAsync()
         {
             if (_senderLink is null)

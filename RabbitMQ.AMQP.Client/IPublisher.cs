@@ -33,8 +33,8 @@ namespace RabbitMQ.AMQP.Client
     }
 
     /// <summary>
-    ///  PublishOutcome represents the outcome of a publish operation.
-    ///  It contains the state of the outcome and an error if the outcome is not successful.
+    /// Represents the outcome of a publish operation.
+    /// It contains the state of the outcome and an error if the outcome is not successful.
     /// </summary>
     public class PublishOutcome
     {
@@ -44,11 +44,21 @@ namespace RabbitMQ.AMQP.Client
             Error = error;
         }
 
+        /// <summary>
+        /// The <see cref="OutcomeState"/>.
+        /// </summary>
         public OutcomeState State { get; }
 
+        /// <summary>
+        /// The <see cref="Error"/>, if any.
+        /// </summary>
         public Error? Error { get; }
     }
 
+    /// <summary>
+    /// Represents the result of a publish operation.
+    /// It contains the <see cref="PublishOutcome"/> and the original <see cref="IMessage"/>.
+    /// </summary>
     public class PublishResult
     {
         public PublishResult(IMessage message, PublishOutcome outcome)
@@ -63,8 +73,8 @@ namespace RabbitMQ.AMQP.Client
     }
 
     /// <summary>
-    ///  Interface for publishing messages to an AMQP broker.
-    ///  Implementations of this interface are expected to be thread-safe.
+    /// Interface for publishing messages to an AMQP broker.
+    /// Implementations of this interface are expected to be thread-safe.
     /// </summary>
     public interface IPublisher : ILifeCycle
     {
