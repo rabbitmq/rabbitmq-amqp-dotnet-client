@@ -725,6 +725,7 @@ RabbitMQ.AMQP.Client.PreconditionFailedException
 RabbitMQ.AMQP.Client.PreconditionFailedException.PreconditionFailedException(string! message) -> void
 RabbitMQ.AMQP.Client.PublisherException
 RabbitMQ.AMQP.Client.PublisherException.PublisherException(string! message) -> void
+RabbitMQ.AMQP.Client.PublisherException.PublisherException(string! message, System.Exception! innerException) -> void
 RabbitMQ.AMQP.Client.PublishOutcome
 RabbitMQ.AMQP.Client.PublishOutcome.Error.get -> RabbitMQ.AMQP.Client.Error?
 RabbitMQ.AMQP.Client.PublishOutcome.PublishOutcome(RabbitMQ.AMQP.Client.OutcomeState state, RabbitMQ.AMQP.Client.Error? error) -> void
