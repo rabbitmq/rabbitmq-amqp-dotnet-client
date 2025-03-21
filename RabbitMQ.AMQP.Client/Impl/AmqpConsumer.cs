@@ -14,6 +14,9 @@ using TraceLevel = Amqp.TraceLevel;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
+    /// <summary>
+    /// Implementation of <see cref="IConsumer"/>.
+    /// </summary>
     public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
     {
         private enum PauseStatus
