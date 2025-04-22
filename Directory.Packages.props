@@ -7,6 +7,7 @@
     <PackageVersion Include="AMQPNetLite.Core" Version="2.4.11" />
     <PackageVersion Include="OpenTelemetry" Version="1.10.0" />
     <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.10.0" />
+    <PackageVersion Include="RabbitMQ.Client" Version="7.1.2" />
     <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="9.0.0" />
     <!-- HAClient -->
     <PackageVersion Include="DotNext.Threading" Version="5.15.0" />
