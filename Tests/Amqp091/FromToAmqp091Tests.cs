@@ -38,7 +38,6 @@ namespace Tests.Amqp091
                 Assert.Equal(OutcomeState.Accepted, result.Outcome.State);
             }
 
-
             var factory = new ConnectionFactory();
             var connection = await factory.CreateConnectionAsync();
             var channel = await connection.CreateChannelAsync();

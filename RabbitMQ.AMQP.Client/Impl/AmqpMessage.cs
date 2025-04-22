@@ -269,7 +269,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             {
                 throw new InvalidOperationException("Body is not an Application Data");
             }
-            
+
         }
 
         public IMessage Body(object body)

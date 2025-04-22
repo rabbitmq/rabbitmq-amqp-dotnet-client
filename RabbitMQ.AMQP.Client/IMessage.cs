@@ -97,10 +97,9 @@ namespace RabbitMQ.AMQP.Client
         public IMessage Annotation(string key, object value);
 
         public byte[] Body();
-        
+
         public string BodyAsString();
-        
-        
+
         public IMessage Body(object body);
 
         IMessageAddressBuilder ToAddress();
