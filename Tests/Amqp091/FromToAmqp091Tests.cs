@@ -39,16 +39,16 @@ namespace Tests.Amqp091
             }
 
             var factory = new ConnectionFactory();
-            var connection = await factory.CreateConnectionAsync();
-            var channel = await connection.CreateChannelAsync();
-            var consumer091 = new AsyncEventingBasicConsumer(channel);
+            var connection = factory.CreateConnection();
+            var channel = connection.CreateModel();
+            var consumer091 = new EventingBasicConsumer(channel);
             var tcs091 = new TaskCompletionSource<BasicDeliverEventArgs>();
-            consumer091.ReceivedAsync += async (sender, ea) =>
+            consumer091.Received += (sender, ea) =>
             {
                 tcs091.SetResult(ea);
-                await channel.BasicAckAsync(deliveryTag: ea.DeliveryTag, multiple: false);
+                channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
             };
-            await channel.BasicConsumeAsync(_queueName, false, "consumerTag", consumer091);
+            channel.BasicConsume(_queueName, false, "consumerTag", consumer091);
             var receivedMessage091 = await tcs091.Task;
             Assert.NotNull(receivedMessage091);
             Assert.Equal(_queueName, receivedMessage091.RoutingKey);
