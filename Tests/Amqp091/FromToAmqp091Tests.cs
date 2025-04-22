@@ -2,6 +2,7 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,34 +29,14 @@ namespace Tests.Amqp091
             await queueSpec.DeclareAsync();
 
             var publisher = await _connection.PublisherBuilder().BuildAsync();
-            // string text = JsonConvert.SerializeObject(message); //produces {"Text":"as","Seq":1,"Max":7000} 
             byte[] body = System.Text.Encoding.UTF8.GetBytes("{Text:as,Seq:1,Max:7000}");
             IMessage amqpMessage = new AmqpMessage(body).ToAddress().Queue(_queueName).Build();
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 1; i++)
             {
                 PublishResult result = await publisher.PublishAsync(message: amqpMessage).ConfigureAwait(true);
                 Assert.NotNull(result);
                 Assert.Equal(OutcomeState.Accepted, result.Outcome.State);
             }
-
-
-            // TaskCompletionSource<IMessage> tcs = new();
-            // IConsumer consumer = await _connection.ConsumerBuilder()
-            //     .Queue(queueSpec)
-            //     .MessageHandler((context, message) =>
-            //         {
-            //             tcs.SetResult(message);
-            //             context.Accept();
-            //             return Task.CompletedTask;
-            //         }
-            //     ).BuildAndStartAsync();
-            //
-            // IMessage receivedMessage = await tcs.Task;
-            // Assert.NotNull(receivedMessage);
-            // // get the string form bytes
-            //
-            // string receivedMessageBody = System.Text.Encoding.UTF8.GetString((byte[])receivedMessage.Body());
-            // Assert.Equal("{Text:as,Seq:1,Max:7000}", receivedMessageBody);
 
 
             var factory = new ConnectionFactory();

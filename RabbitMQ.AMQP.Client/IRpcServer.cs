@@ -78,7 +78,8 @@ namespace RabbitMQ.AMQP.Client
 
         public interface IContext
         {
-            IMessage Message(object body);
+            IMessage Message(byte[] body);
+            IMessage Message(string body);
         }
     }
 }

@@ -67,7 +67,7 @@ namespace Tests.Rpc
                 {
                     IMessage response = await rpcClient.PublishAsync(request);
                     messagesConfirmed++;
-                    Assert.Equal("pong", response.Body());
+                    Assert.Equal("pong", response.BodyAsString());
                 }
                 catch (AmqpNotOpenException)
                 {

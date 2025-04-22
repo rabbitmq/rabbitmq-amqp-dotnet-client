@@ -245,8 +245,9 @@ RabbitMQ.AMQP.Client.IMessage.AbsoluteExpiryTime() -> System.DateTime
 RabbitMQ.AMQP.Client.IMessage.AbsoluteExpiryTime(System.DateTime absoluteExpiryTime) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IMessage.Annotation(string! key) -> object!
 RabbitMQ.AMQP.Client.IMessage.Annotation(string! key, object! value) -> RabbitMQ.AMQP.Client.IMessage!
-RabbitMQ.AMQP.Client.IMessage.Body() -> object!
+RabbitMQ.AMQP.Client.IMessage.Body() -> byte[]!
 RabbitMQ.AMQP.Client.IMessage.Body(object! body) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.IMessage.BodyAsString() -> string!
 RabbitMQ.AMQP.Client.IMessage.ContentEncoding() -> string!
 RabbitMQ.AMQP.Client.IMessage.ContentEncoding(string! contentEncoding) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IMessage.ContentType() -> string!
@@ -391,11 +392,13 @@ RabbitMQ.AMQP.Client.Impl.AmqpMessage.AbsoluteExpiryTime() -> System.DateTime
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.AbsoluteExpiryTime(System.DateTime absoluteExpiryTime) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.AmqpMessage() -> void
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.AmqpMessage(Amqp.Message! nativeMessage) -> void
-RabbitMQ.AMQP.Client.Impl.AmqpMessage.AmqpMessage(object! body) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpMessage.AmqpMessage(byte[]! body) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpMessage.AmqpMessage(string! body) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.Annotation(string! key) -> object!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.Annotation(string! key, object! value) -> RabbitMQ.AMQP.Client.IMessage!
-RabbitMQ.AMQP.Client.Impl.AmqpMessage.Body() -> object!
+RabbitMQ.AMQP.Client.Impl.AmqpMessage.Body() -> byte[]!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.Body(object! body) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.Impl.AmqpMessage.BodyAsString() -> string!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.ContentEncoding() -> string!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.ContentEncoding(string! contentEncoding) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.ContentType() -> string!
@@ -674,7 +677,8 @@ RabbitMQ.AMQP.Client.IRpcClientBuilder.RequestPostProcessor(System.Func<RabbitMQ
 RabbitMQ.AMQP.Client.IRpcClientBuilder.Timeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IRpcClientBuilder!
 RabbitMQ.AMQP.Client.IRpcServer
 RabbitMQ.AMQP.Client.IRpcServer.IContext
-RabbitMQ.AMQP.Client.IRpcServer.IContext.Message(object! body) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.IRpcServer.IContext.Message(byte[]! body) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.IRpcServer.IContext.Message(string! body) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IRpcServerBuilder
 RabbitMQ.AMQP.Client.IRpcServerBuilder.BuildAsync() -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IRpcServer!>!
 RabbitMQ.AMQP.Client.IRpcServerBuilder.CorrelationIdExtractor(System.Func<RabbitMQ.AMQP.Client.IMessage!, object!>? correlationIdExtractor) -> RabbitMQ.AMQP.Client.IRpcServerBuilder!

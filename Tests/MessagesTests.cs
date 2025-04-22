@@ -22,7 +22,7 @@ public class MessagesTests
         Assert.Equal("CorrelationId_2123", message.CorrelationId());
         Assert.Equal("ReplyTo_5123", message.ReplyTo());
         Assert.Equal("Subject_9123", message.Subject());
-        Assert.Equal("my_body", message.Body());
+        Assert.Equal("my_body", message.BodyAsString());
     }
 
     [Fact]

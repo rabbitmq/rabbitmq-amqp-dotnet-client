@@ -24,9 +24,18 @@ namespace RabbitMQ.AMQP.Client.Impl
             NativeMessage = new Message();
         }
 
-        public AmqpMessage(object body)
+        public AmqpMessage(byte[] body)
         {
-            NativeMessage = new Message(body);
+            NativeMessage = new Message();
+            NativeMessage.BodySection = new Data { Binary = body };
+        }
+
+        // This constructor is used for string body
+        // Like AmqpMessage(byte[] body) but for string with UTF8 encoding
+        public AmqpMessage(string body)
+        {
+            NativeMessage = new Message();
+            NativeMessage.BodySection = new Data() { Binary = System.Text.Encoding.UTF8.GetBytes(body) };
         }
 
         public AmqpMessage(Message nativeMessage)
@@ -245,9 +254,22 @@ namespace RabbitMQ.AMQP.Client.Impl
             return NativeMessage.MessageAnnotations[new Symbol(key)];
         }
 
-        public object Body()
+        public byte[] Body()
         {
-            return NativeMessage.Body;
+            return (byte[])NativeMessage.Body;
+        }
+
+        public string BodyAsString()
+        {
+            if (NativeMessage.BodySection is Data data)
+            {
+                return System.Text.Encoding.UTF8.GetString(data.Binary);
+            }
+            else
+            {
+                throw new InvalidOperationException("Body is not an Application Data");
+            }
+            
         }
 
         public IMessage Body(object body)
@@ -255,25 +277,17 @@ namespace RabbitMQ.AMQP.Client.Impl
             RestrictedDescribed bodySection;
             if (body is byte[] byteArray)
             {
-                bodySection = new Data
-                {
-                    Binary = byteArray
-                };
+                bodySection = new Data { Binary = byteArray };
             }
             else if (body is IList list)
             {
-                bodySection = new AmqpSequence
-                {
-                    List = list
-                };
+                bodySection = new AmqpSequence { List = list };
             }
             else
             {
-                bodySection = new AmqpValue
-                {
-                    Value = body
-                };
+                bodySection = new AmqpValue { Value = body };
             }
+
             NativeMessage.BodySection = bodySection;
             return this;
         }

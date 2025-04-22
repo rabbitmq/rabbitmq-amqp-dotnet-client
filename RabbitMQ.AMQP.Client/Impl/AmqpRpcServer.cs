@@ -166,7 +166,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private class RpcServerContext : IRpcServer.IContext
         {
-            public IMessage Message(object body) => new AmqpMessage(body);
+            public IMessage Message(byte[] body) => new AmqpMessage(body);
+            public IMessage Message(string body) => new AmqpMessage(body);
         }
 
         public override async Task CloseAsync()
