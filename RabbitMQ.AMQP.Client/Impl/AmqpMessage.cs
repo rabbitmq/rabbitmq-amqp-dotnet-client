@@ -24,14 +24,20 @@ namespace RabbitMQ.AMQP.Client.Impl
             NativeMessage = new Message();
         }
 
+        /// <summary>
+        /// Create a message with a body of type byte[] and BodySection of type Data.
+        /// </summary>
+        /// <param name="body"></param>
         public AmqpMessage(byte[] body)
         {
             NativeMessage = new Message();
             NativeMessage.BodySection = new Data { Binary = body };
         }
 
-        // This constructor is used for string body
-        // Like AmqpMessage(byte[] body) but for string with UTF8 encoding
+        /// <summary>
+        /// Create a message with a body of type string and BodySection of type Data.
+        /// The string is converted to a byte[] using UTF8 encoding.
+        /// </summary>
         public AmqpMessage(string body)
         {
             NativeMessage = new Message();

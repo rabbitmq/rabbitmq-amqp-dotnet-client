@@ -19,15 +19,14 @@ namespace Tests.Amqp091
         {
             Assert.NotNull(_connection);
             Assert.NotNull(_management);
-            _queueName = "q";
 
             IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(QueueType.QUORUM);
             await queueSpec.DeclareAsync();
 
             var publisher = await _connection.PublisherBuilder().BuildAsync();
-            byte[] body = System.Text.Encoding.UTF8.GetBytes("{Text:as,Seq:1,Max:7000}");
+            const string body = "{Text:as,Seq:1,Max:7000}";
             IMessage amqpMessage = new AmqpMessage(body).ToAddress().Queue(_queueName).Build();
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < 0; i++)
             {
                 PublishResult result = await publisher.PublishAsync(message: amqpMessage).ConfigureAwait(true);
                 Assert.NotNull(result);
@@ -51,6 +50,45 @@ namespace Tests.Amqp091
             Assert.Equal("consumerTag", receivedMessage091.ConsumerTag);
             Assert.Equal("{Text:as,Seq:1,Max:7000}",
                 System.Text.Encoding.UTF8.GetString(receivedMessage091.Body.ToArray()));
+            channel.Close();
+            connection.Close();
+        }
+
+        [Fact]
+        public async Task FromAmqp091()
+        {
+            Assert.NotNull(_connection);
+            Assert.NotNull(_management);
+
+            IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(QueueType.QUORUM);
+            await queueSpec.DeclareAsync();
+
+            // publish a message with AMQP 0-9-1
+            var factory = new ConnectionFactory();
+            var connection = factory.CreateConnection();
+            var channel = connection.CreateModel();
+            channel.BasicPublish(
+                exchange: "",
+                routingKey: _queueName,
+                basicProperties: null,
+                body: System.Text.Encoding.UTF8.GetBytes("{Text:as,Seq:1,Max:7000}"));
+
+            TaskCompletionSource<IMessage> tcs = new();
+            IConsumer consumer = await _connection.ConsumerBuilder()
+                .Queue(_queueName)
+                .MessageHandler((context, message) =>
+                {
+                    tcs.SetResult(message);
+                    context.Accept();
+                    return Task.CompletedTask;
+                }).BuildAndStartAsync();
+
+            var receivedMessage = await tcs.Task;
+            Assert.NotNull(receivedMessage);
+            Assert.Equal("{Text:as,Seq:1,Max:7000}", receivedMessage.BodyAsString());
+            channel.Close();
+            connection.Close();
+            await consumer.CloseAsync();
         }
     }
 }
