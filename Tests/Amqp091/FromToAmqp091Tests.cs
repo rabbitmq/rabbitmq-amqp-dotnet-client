@@ -26,7 +26,7 @@ namespace Tests.Amqp091
             var publisher = await _connection.PublisherBuilder().BuildAsync();
             const string body = "{Text:as,Seq:1,Max:7000}";
             IMessage amqpMessage = new AmqpMessage(body).ToAddress().Queue(_queueName).Build();
-            for (int i = 0; i < 0; i++)
+            for (int i = 0; i < 1; i++)
             {
                 PublishResult result = await publisher.PublishAsync(message: amqpMessage).ConfigureAwait(true);
                 Assert.NotNull(result);
