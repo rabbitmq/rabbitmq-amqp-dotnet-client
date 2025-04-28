@@ -57,7 +57,7 @@ namespace Tests.Rpc
 
             await p.PublishAsync(new AmqpMessage("test"));
             IMessage m = await WhenTcsCompletes(tcs);
-            Assert.Equal("pong", m.Body());
+            Assert.Equal("pong", m.BodyAsString());
             await rpcServer.CloseAsync();
         }
 
@@ -143,7 +143,7 @@ namespace Tests.Rpc
             Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
 
             IMessage m = await WhenTcsCompletes(tcs);
-            Assert.Equal("pong", m.Body());
+            Assert.Equal("pong", m.BodyAsString());
 
             await rpcServer.CloseAsync();
             await consumer.CloseAsync();
@@ -173,7 +173,7 @@ namespace Tests.Rpc
             IMessage message = new AmqpMessage("ping");
 
             IMessage response = await rpcClient.PublishAsync(message);
-            Assert.Equal("pong", response.Body());
+            Assert.Equal("pong", response.BodyAsString());
             await rpcClient.CloseAsync();
             await rpcServer.CloseAsync();
         }
@@ -209,7 +209,7 @@ namespace Tests.Rpc
             IMessage message = new AmqpMessage("ping");
 
             IMessage response = await rpcClient.PublishAsync(message);
-            Assert.Equal("pong", response.Body());
+            Assert.Equal("pong", response.BodyAsString());
             Assert.Equal(_correlationId, response.CorrelationId());
             await rpcClient.CloseAsync();
             await rpcServer.CloseAsync();
@@ -265,7 +265,7 @@ namespace Tests.Rpc
             while (i < 30)
             {
                 IMessage response = await rpcClient.PublishAsync(message);
-                Assert.Equal("pong", response.Body());
+                Assert.Equal("pong", response.BodyAsString());
                 // the server replies with the correlation id in the application properties
                 Assert.Equal($"{_correlationId}_{i}", response.Property("correlationId"));
                 Assert.Equal($"{_correlationId}_{i}", response.Properties()["correlationId"]);
@@ -324,7 +324,7 @@ namespace Tests.Rpc
                 {
                     IMessage message = new AmqpMessage("ping").Property("id", i1);
                     IMessage response = await rpcClient.PublishAsync(message);
-                    Assert.Equal("pong", response.Body());
+                    Assert.Equal("pong", response.BodyAsString());
                 }));
             }
 
@@ -376,7 +376,7 @@ namespace Tests.Rpc
 
             IMessage msg = new AmqpMessage("ping").Property("wait", 1);
             IMessage reply = await rpcClient.PublishAsync(msg);
-            Assert.Equal("pong", reply.Body());
+            Assert.Equal("pong", reply.BodyAsString());
 
             await Assert.ThrowsAsync<TimeoutException>(() => rpcClient.PublishAsync(
                 new AmqpMessage("ping").Property("wait", 700)));

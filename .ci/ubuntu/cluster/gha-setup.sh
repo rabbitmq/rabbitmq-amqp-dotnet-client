@@ -19,7 +19,7 @@ function run_docker_compose
     docker compose --file "$script_dir/docker-compose.yml" $@
 }
 
-readonly rabbitmq_image="${RABBITMQ_IMAGE:-rabbitmq:4.1.0-beta.4-management-alpine}"
+readonly rabbitmq_image="${RABBITMQ_IMAGE:-rabbitmq:4.1.0-management-alpine}"
 
 if [[ ! -v GITHUB_ACTIONS ]]
 then

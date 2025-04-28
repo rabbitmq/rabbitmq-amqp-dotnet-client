@@ -129,4 +129,5 @@ docs/temp/
 
 # ci logs
 .ci/ubuntu/log/*
+.ci/ubuntu/cluster/log/*
 

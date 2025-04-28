@@ -38,7 +38,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
 
         await WhenTcsCompletes(tcs);
         IMessage receivedMessage = await tcs.Task;
-        Assert.Equal("message_0", receivedMessage.Body());
+        Assert.Equal("message_0", receivedMessage.BodyAsString());
 
         await consumer.CloseAsync();
         consumer.Dispose();
@@ -69,7 +69,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
             {
                 try
                 {
-                    Assert.Equal("message_0", message.Body());
+                    Assert.Equal("message_0", message.BodyAsString());
                     Interlocked.Increment(ref consumed);
                     switch (consumed)
                     {
@@ -167,7 +167,7 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
             {
                 if (i % 2 == 0)
                 {
-                    Assert.Equal($"message_{i}", receivedMessagesFromTask[i].Body());
+                    Assert.Equal($"message_{i}", receivedMessagesFromTask[i].BodyAsString());
                 }
             }
         }
