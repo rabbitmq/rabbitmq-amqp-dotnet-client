@@ -10,7 +10,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageLicenseExpression>Apache-2.0 AND MPL-2.0</PackageLicenseExpression>
     <PackageOutputPath>../packages</PackageOutputPath>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <SignAssembly>True</SignAssembly>
@@ -27,9 +27,6 @@
     <None Remove="icon.png" />
     <Content Include="icon.png" PackagePath="" />
     <None Include="README.md" Pack="true" PackagePath="/" />
-    <None Include="$(MSBuildThisFileDirectory)../LICENSE" Pack="true" Visible="false" PackagePath="" />
-    <None Include="$(MSBuildThisFileDirectory)../LICENSE-APACHE2" Pack="true" Visible="false" PackagePath="" />
-    <None Include="$(MSBuildThisFileDirectory)../LICENSE-MPL-RabbitMQ" Pack="true" Visible="false" PackagePath="" />
     <InternalsVisibleTo Include="Tests" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
