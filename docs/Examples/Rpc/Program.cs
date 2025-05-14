@@ -45,7 +45,7 @@ IRpcServer rpcServer = await connection.RpcServerBuilder().RequestQueue(rpcQueue
     {
         try
         {
-            Trace.WriteLine(TraceLevel.Information, $"[Server] Message received: {message.Body()} ");
+            Trace.WriteLine(TraceLevel.Information, $"[Server] Message received: {message.BodyAsString()} ");
             IMessage reply = context.Message($"pong_{DateTime.Now}");
             return Task.FromResult(reply);
         }
@@ -68,7 +68,7 @@ for (int i = 0; i < messagesToSend; i++)
     {
         IMessage reply = await rpcClient.PublishAsync(
             new AmqpMessage($"ping_{DateTime.Now}"));
-        Trace.WriteLine(TraceLevel.Information, $"[Client] Reply received: {reply.Body()}");
+        Trace.WriteLine(TraceLevel.Information, $"[Client] Reply received: {reply.BodyAsString()}");
     }
     catch (Exception e)
     {
