@@ -53,7 +53,7 @@ IPublisher publisher = await connection.PublisherBuilder().Exchange(exchangeName
 IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).MessageHandler(
     (context, message) =>
     {
-        Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.Body()} received");
+        Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.BodyAsString()} received");
         context.Accept();
         return Task.CompletedTask;
     }
@@ -68,15 +68,15 @@ for (int i = 0; i < total; i++)
     switch (pr.Outcome.State)
     {
         case OutcomeState.Accepted:
-            Trace.WriteLine(TraceLevel.Information, $"[Publisher] Message: {message.Body()} confirmed");
+            Trace.WriteLine(TraceLevel.Information, $"[Publisher] Message: {message.BodyAsString()} confirmed");
             break;
         case OutcomeState.Released:
-            Trace.WriteLine(TraceLevel.Information, $"[Publisher] Message: {message.Body()} Released");
+            Trace.WriteLine(TraceLevel.Information, $"[Publisher] Message: {message.BodyAsString()} Released");
             break;
 
         case OutcomeState.Rejected:
             Trace.WriteLine(TraceLevel.Error,
-                $"[Publisher] Message: {message.Body()} Rejected with error: {pr.Outcome.Error}");
+                $"[Publisher] Message: {message.BodyAsString()} Rejected with error: {pr.Outcome.Error}");
             break;
         default:
             throw new ArgumentOutOfRangeException();
