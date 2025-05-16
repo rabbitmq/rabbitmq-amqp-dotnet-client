@@ -114,5 +114,30 @@ namespace RabbitMQ.AMQP.Client
         /// <param name="annotations">Message annotations to combine with existing ones.</param>
         ///</summary>
         void Requeue(Dictionary<string, object> annotations);
+
+
+        /// <summary>
+        /// Create a batch context to accumulate message contexts and settle them at once.
+        /// The message context the batch context is created from is <b>not</b> added to the batch
+        /// context.
+        /// @return the created batch context
+        /// </summary>
+        IBatchContext Batch(int batchSizeHint);
+    }
+
+
+    public interface IBatchContext : IContext
+    {
+        /// <summary>
+        /// Add a message context to the batch context.
+        /// @param context the message context to add
+        /// </summary>
+        void Add(IContext context);
+
+        /// <summary>
+        /// Get the current number of message contexts in the batch context.
+        /// @return current number of message contexts in the batch
+        /// </summary>
+        int Size();
     }
 }
