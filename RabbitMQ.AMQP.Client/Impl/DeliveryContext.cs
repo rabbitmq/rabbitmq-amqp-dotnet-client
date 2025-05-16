@@ -145,5 +145,41 @@ namespace RabbitMQ.AMQP.Client.Impl
                 _message.Dispose();
             }
         }
+
+        public IBatchContext Batch(int batchSizeHint) => throw new System.NotImplementedException();
+    }
+
+    public class BatchContext : IBatchContext
+    {
+        public void Accept()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void Discard()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void Discard(Dictionary<string, object> annotations)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void Requeue()
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void Requeue(Dictionary<string, object> annotations)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public IBatchContext Batch(int batchSizeHint) => throw new System.NotImplementedException();
+
+        public void Add(IContext context) => throw new System.NotImplementedException();
+
+        public int Size() => throw new System.NotImplementedException();
     }
 }

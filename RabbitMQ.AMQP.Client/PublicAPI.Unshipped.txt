@@ -124,6 +124,9 @@ RabbitMQ.AMQP.Client.IBackOffDelayPolicy.CurrentAttempt.get -> int
 RabbitMQ.AMQP.Client.IBackOffDelayPolicy.Delay() -> int
 RabbitMQ.AMQP.Client.IBackOffDelayPolicy.IsActive() -> bool
 RabbitMQ.AMQP.Client.IBackOffDelayPolicy.Reset() -> void
+RabbitMQ.AMQP.Client.IBatchContext
+RabbitMQ.AMQP.Client.IBatchContext.Add(RabbitMQ.AMQP.Client.IContext! context) -> void
+RabbitMQ.AMQP.Client.IBatchContext.Size() -> int
 RabbitMQ.AMQP.Client.IBindingSpecification
 RabbitMQ.AMQP.Client.IBindingSpecification.Argument(string! key, object! value) -> RabbitMQ.AMQP.Client.IBindingSpecification!
 RabbitMQ.AMQP.Client.IBindingSpecification.Arguments(System.Collections.Generic.Dictionary<string!, object!>! arguments) -> RabbitMQ.AMQP.Client.IBindingSpecification!
@@ -202,6 +205,7 @@ RabbitMQ.AMQP.Client.IConsumerBuilder.Stream() -> RabbitMQ.AMQP.Client.IConsumer
 RabbitMQ.AMQP.Client.IConsumerBuilder.SubscriptionListener(System.Action<RabbitMQ.AMQP.Client.IConsumerBuilder.ListenerContext!>! listenerContext) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IContext
 RabbitMQ.AMQP.Client.IContext.Accept() -> void
+RabbitMQ.AMQP.Client.IContext.Batch(int batchSizeHint) -> RabbitMQ.AMQP.Client.IBatchContext!
 RabbitMQ.AMQP.Client.IContext.Discard() -> void
 RabbitMQ.AMQP.Client.IContext.Discard(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> void
 RabbitMQ.AMQP.Client.IContext.Requeue() -> void
@@ -507,6 +511,16 @@ RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.InitialClusterSize(int initial
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.MaxAge(System.TimeSpan maxAge) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.MaxSegmentSizeBytes(RabbitMQ.AMQP.Client.ByteCapacity! maxSegmentSize) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.BatchContext
+RabbitMQ.AMQP.Client.Impl.BatchContext.Accept() -> void
+RabbitMQ.AMQP.Client.Impl.BatchContext.Add(RabbitMQ.AMQP.Client.IContext! context) -> void
+RabbitMQ.AMQP.Client.Impl.BatchContext.Batch(int batchSizeHint) -> RabbitMQ.AMQP.Client.IBatchContext!
+RabbitMQ.AMQP.Client.Impl.BatchContext.BatchContext() -> void
+RabbitMQ.AMQP.Client.Impl.BatchContext.Discard() -> void
+RabbitMQ.AMQP.Client.Impl.BatchContext.Discard(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> void
+RabbitMQ.AMQP.Client.Impl.BatchContext.Requeue() -> void
+RabbitMQ.AMQP.Client.Impl.BatchContext.Requeue(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> void
+RabbitMQ.AMQP.Client.Impl.BatchContext.Size() -> int
 RabbitMQ.AMQP.Client.Impl.BindingSpecification
 RabbitMQ.AMQP.Client.Impl.BindingSpecification.ArgsToMap() -> Amqp.Types.Map!
 RabbitMQ.AMQP.Client.Impl.BindingSpecification.BindingSpecification() -> void
