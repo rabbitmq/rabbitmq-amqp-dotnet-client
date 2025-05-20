@@ -19,19 +19,16 @@ namespace RabbitMQ.AMQP.Client.Impl
     {
         public Message NativeMessage { get; }
 
-        public AmqpMessage()
-        {
-            NativeMessage = new Message();
-        }
-
         /// <summary>
         /// Create a message with a body of type byte[] and BodySection of type Data.
+        /// Durable is set to true by default.
         /// </summary>
         /// <param name="body"></param>
         public AmqpMessage(byte[] body)
         {
             NativeMessage = new Message();
             NativeMessage.BodySection = new Data { Binary = body };
+            Durable(true);
         }
 
         /// <summary>
@@ -42,6 +39,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             NativeMessage = new Message();
             NativeMessage.BodySection = new Data() { Binary = System.Text.Encoding.UTF8.GetBytes(body) };
+            Durable(true);
         }
 
         public AmqpMessage(Message nativeMessage)
@@ -275,7 +273,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             {
                 throw new InvalidOperationException("Body is not an Application Data");
             }
-
         }
 
         public IMessage Body(object body)
@@ -296,6 +293,18 @@ namespace RabbitMQ.AMQP.Client.Impl
 
             NativeMessage.BodySection = bodySection;
             return this;
+        }
+
+        public IMessage Durable(bool durable)
+        {
+            EnsureHeader();
+            NativeMessage.Header.Durable = durable;
+            return this;
+        }
+
+        public bool Durable()
+        {
+            return NativeMessage.Header.Durable;
         }
 
         public IMessageAddressBuilder ToAddress()
@@ -327,6 +336,11 @@ namespace RabbitMQ.AMQP.Client.Impl
         private void EnsureAnnotations()
         {
             NativeMessage.MessageAnnotations ??= new MessageAnnotations();
+        }
+
+        private void EnsureHeader()
+        {
+            NativeMessage.Header ??= new Header();
         }
 
         private void ThrowIfApplicationPropertiesNotSet()
