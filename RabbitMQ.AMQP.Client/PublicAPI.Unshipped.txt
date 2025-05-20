@@ -256,6 +256,8 @@ RabbitMQ.AMQP.Client.IMessage.CorrelationId() -> object!
 RabbitMQ.AMQP.Client.IMessage.CorrelationId(object! id) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IMessage.CreationTime() -> System.DateTime
 RabbitMQ.AMQP.Client.IMessage.CreationTime(System.DateTime creationTime) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.IMessage.Durable() -> bool
+RabbitMQ.AMQP.Client.IMessage.Durable(bool durable) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IMessage.GroupId() -> string!
 RabbitMQ.AMQP.Client.IMessage.GroupId(string! groupId) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IMessage.GroupSequence() -> uint
@@ -390,7 +392,6 @@ RabbitMQ.AMQP.Client.Impl.AmqpManagement.Queue(string! name) -> RabbitMQ.AMQP.Cl
 RabbitMQ.AMQP.Client.Impl.AmqpMessage
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.AbsoluteExpiryTime() -> System.DateTime
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.AbsoluteExpiryTime(System.DateTime absoluteExpiryTime) -> RabbitMQ.AMQP.Client.IMessage!
-RabbitMQ.AMQP.Client.Impl.AmqpMessage.AmqpMessage() -> void
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.AmqpMessage(Amqp.Message! nativeMessage) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.AmqpMessage(byte[]! body) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.AmqpMessage(string! body) -> void
@@ -407,6 +408,8 @@ RabbitMQ.AMQP.Client.Impl.AmqpMessage.CorrelationId() -> object!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.CorrelationId(object! id) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.CreationTime() -> System.DateTime
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.CreationTime(System.DateTime creationTime) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.Impl.AmqpMessage.Durable() -> bool
+RabbitMQ.AMQP.Client.Impl.AmqpMessage.Durable(bool durable) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.GroupId() -> string!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.GroupId(string! groupId) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.GroupSequence() -> uint

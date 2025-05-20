@@ -3,6 +3,7 @@
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,8 +23,8 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         Assert.NotNull(_management);
 
         await Assert.ThrowsAsync<InvalidAddressException>(() =>
-            _connection.PublisherBuilder().Queue("queue_and_exchange_cant_set_together").
-                Exchange("queue_and_exchange_cant_set_together").BuildAsync());
+            _connection.PublisherBuilder().Queue("queue_and_exchange_cant_set_together")
+                .Exchange("queue_and_exchange_cant_set_together").BuildAsync());
 
         await _connection.CloseAsync();
         Assert.Empty(_connection.Publishers);
@@ -192,6 +193,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
                 publishOutcome = nextPublishResult.Outcome;
                 break;
             }
+
             await Task.Delay(TimeSpan.FromMilliseconds(100));
         }
 
@@ -243,6 +245,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
                 publishOutcome = nextPublishResult.Outcome;
                 break;
             }
+
             await Task.Delay(TimeSpan.FromMilliseconds(100));
         }
 
@@ -255,5 +258,57 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
 
         await publisher.CloseAsync();
         publisher.Dispose();
+    }
+
+    [Theory]
+    [InlineData(QueueType.QUORUM)]
+    [InlineData(QueueType.CLASSIC)]
+    public async Task MessageShouldBeDurableByDefault(QueueType queueType)
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IQueueSpecification queueSpec = _management.Queue(_queueName).Type(queueType);
+        await queueSpec.DeclareAsync();
+
+        IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
+        List<IMessage> messages = new();
+        TaskCompletionSource<List<IMessage>> tcs = new();
+        IConsumer consumer = await _connection.ConsumerBuilder()
+            .Queue(queueSpec)
+            .MessageHandler((context, message) =>
+            {
+                messages.Add(message);
+                context.Accept();
+                if (messages.Count == 2)
+                {
+                    tcs.SetResult(messages);
+                }
+
+                return Task.CompletedTask;
+            }).BuildAndStartAsync();
+
+        // the first message should be durable by default
+        AmqpMessage durable = new("Hello wold!");
+        PublishResult pr = await publisher.PublishAsync(durable);
+        Assert.Equal(OutcomeState.Accepted, pr.Outcome.State);
+        Assert.True(durable.Durable());
+
+        // the second message should be not durable set by the user
+
+        AmqpMessage notDurable = new("Hello wold!");
+        notDurable.Durable(false);
+        PublishResult pr2 = await publisher.PublishAsync(notDurable);
+        Assert.Equal(OutcomeState.Accepted, pr2.Outcome.State);
+        Assert.False(notDurable.Durable());
+        var r = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.True(r[0].Durable());
+        Assert.False(r[1].Durable());
+
+        await consumer.CloseAsync();
+        await publisher.CloseAsync();
+        await queueSpec.DeleteAsync();
+
+        Assert.Empty(_connection.Publishers);
     }
 }
