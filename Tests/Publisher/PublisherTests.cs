@@ -307,7 +307,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
 
         await consumer.CloseAsync();
         await publisher.CloseAsync();
-        publisher.Dispose();
+        await queueSpec.DeleteAsync();
 
         Assert.Empty(_connection.Publishers);
     }
