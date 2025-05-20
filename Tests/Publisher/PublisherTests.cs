@@ -273,7 +273,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
 
         IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
         List<IMessage> messages = new();
-        TaskCompletionSource tcs = new();
+        TaskCompletionSource<List<IMessage>> tcs = new();
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueSpec)
             .MessageHandler((context, message) =>
@@ -282,7 +282,7 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
                 context.Accept();
                 if (messages.Count == 2)
                 {
-                    tcs.SetResult();
+                    tcs.SetResult(messages);
                 }
 
                 return Task.CompletedTask;
@@ -301,9 +301,9 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         PublishResult pr2 = await publisher.PublishAsync(notDurable);
         Assert.Equal(OutcomeState.Accepted, pr2.Outcome.State);
         Assert.False(notDurable.Durable());
-        await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
-        Assert.True(messages[0].Durable());
-        Assert.False(messages[1].Durable());
+        var r = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.True(r[0].Durable());
+        Assert.False(r[1].Durable());
 
         await consumer.CloseAsync();
         await publisher.CloseAsync();
