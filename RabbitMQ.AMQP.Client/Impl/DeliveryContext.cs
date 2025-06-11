@@ -159,7 +159,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
     }
 
-    internal class BatchDeliveryContext : IBatchContext
+    ///<summary>
+    /// BatchDeliveryContext is a client side helper class that allows
+    /// accumulating multiple message contexts and settling them at once.
+    /// It is thread-safe and can be used from multiple threads.
+    /// </summary>
+    public class BatchDeliveryContext : IBatchContext
     {
         private readonly List<IContext> _contexts = new();
         private readonly SemaphoreSlim _semaphore = new(1, 1);
@@ -265,6 +270,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             _contexts.Add(context);
         }
 
-        public int Size() => _contexts.Count;
+        public int Count() => _contexts.Count;
     }
 }

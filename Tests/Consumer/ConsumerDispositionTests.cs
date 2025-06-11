@@ -2,6 +2,7 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
@@ -31,7 +32,7 @@ namespace Tests.Consumer
                 {
                     Assert.NotNull(batch);
                     batch.Add(context);
-                    if (batch.Size() != batchSize)
+                    if (batch.Count() != batchSize)
                     {
                         return Task.CompletedTask;
                     }
@@ -70,7 +71,7 @@ namespace Tests.Consumer
                 {
                     Assert.NotNull(batch);
                     batch.Add(context);
-                    if (batch.Size() != batchSize)
+                    if (batch.Count() != batchSize)
                     {
                         return Task.CompletedTask;
                     }
@@ -109,7 +110,7 @@ namespace Tests.Consumer
                 {
                     Assert.NotNull(batch);
                     batch.Add(context);
-                    if (batch.Size() != batchSize)
+                    if (batch.Count() != batchSize)
                     {
                         return Task.CompletedTask;
                     }
@@ -151,7 +152,7 @@ namespace Tests.Consumer
                 {
                     Assert.NotNull(batch);
                     batch.Add(context);
-                    if (batch.Size() != batchSize)
+                    if (batch.Count() != batchSize)
                     {
                         return Task.CompletedTask;
                     }
@@ -188,7 +189,7 @@ namespace Tests.Consumer
                 {
                     Assert.NotNull(batch);
                     batch.Add(context);
-                    if (batch.Size() != batchSize)
+                    if (batch.Count() != batchSize)
                     {
                         return Task.CompletedTask;
                     }
@@ -198,11 +199,13 @@ namespace Tests.Consumer
 
                     const string annotationKey1 = "x-opt-annotation1-key";
                     const string annotationValue1 = "annotation1-value";
-
+                    Assert.Equal(batchSize, batch.Count());
                     batch.Requeue(new Dictionary<string, object>()
                     {
                         { annotationKey, annotationValue }, { annotationKey1, annotationValue1 }
                     });
+                    Assert.Equal(0, batch.Count());
+                    
                     tcs.SetResult(true);
 
                     return Task.CompletedTask;
@@ -210,11 +213,54 @@ namespace Tests.Consumer
                 .BuildAndStartAsync();
 
             Assert.NotNull(consumer);
-            await tcs.Task;
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(20));
             await consumer.CloseAsync();
             await WaitUntilQueueMessageCount(queueSpec, 18);
-            Assert.Equal(0, consumer.UnsettledMessageCount);
             await queueSpec.DeleteAsync();
+        }
+
+        [Fact]
+        public async Task MixBatchAcceptAndDiscardDisposition()
+        {
+            Assert.NotNull(_connection);
+            Assert.NotNull(_management);
+
+            IQueueSpecification queueSpec = _management.Queue().Name(_queueName);
+            await queueSpec.DeclareAsync();
+            const int batchSize = 18;
+            await PublishAsync(queueSpec, batchSize * 2);
+            BatchDeliveryContext batch = new();
+            TaskCompletionSource<bool> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            bool acceptNext = true; // Flag to alternate between accept and discard
+            IConsumer consumer = await _connection.ConsumerBuilder()
+                .Queue(queueSpec)
+                .MessageHandler((context, _) =>
+                {
+                    Assert.NotNull(batch);
+                    batch.Add(context);
+                    if (batch.Count() == batchSize && acceptNext)
+                    {
+                        Assert.Equal(batchSize, batch.Count());
+                        batch.Accept();
+                        acceptNext = false; // Switch to discard next
+                    }
+                    else if (batch.Count() == batchSize && !acceptNext)
+                    {
+                        Assert.Equal(batchSize, batch.Count());
+                        batch.Discard();
+                        tcs.SetResult(true);
+                    }
+                    return Task.CompletedTask;
+                })
+                .BuildAndStartAsync();
+
+            Assert.NotNull(consumer);
+            await tcs.Task;
+
+            Assert.Equal(0, consumer.UnsettledMessageCount);
+            await WaitUntilQueueMessageCount(queueSpec, 0);
+            await queueSpec.DeleteAsync();
+            await consumer.CloseAsync();
         }
     }
 }

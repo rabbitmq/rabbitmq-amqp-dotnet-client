@@ -136,6 +136,6 @@ namespace RabbitMQ.AMQP.Client
         /// Get the current number of message contexts in the batch context.
         /// @return current number of message contexts in the batch
         /// </summary>
-        int Size();
+        int Count();
     }
 }
