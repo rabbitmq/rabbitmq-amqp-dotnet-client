@@ -169,6 +169,9 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly List<IContext> _contexts = new();
         private readonly SemaphoreSlim _semaphore = new(1, 1);
 
+        ///<summary>
+        /// Accept all messages in the batch context (AMQP 1.0 <c>accepted</c> outcome).
+        /// </summary>
         public void Accept()
         {
             _semaphore.Wait();
@@ -187,6 +190,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        ///<summary>
+        /// Discard all messages in the batch context (AMQP 1.0 <c>rejected</c> outcome).
+        /// </summary>
         public void Discard()
         {
             _semaphore.Wait();
@@ -205,6 +211,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        ///<summary>
+        /// Discard all messages in the batch context with annotations
+        /// </summary>
         public void Discard(Dictionary<string, object> annotations)
         {
             _semaphore.Wait();
@@ -225,6 +234,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        ///<summary>
+        /// Requeue all messages in the batch context (AMQP 1.0 <c>released</c> outcome).
+        /// </summary>
         public void Requeue()
         {
             _semaphore.Wait();
@@ -243,13 +255,14 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        ///<summary>
+        /// Requeue all messages in the batch context with annotations
+        /// </summary>
         public void Requeue(Dictionary<string, object> annotations)
         {
             _semaphore.Wait();
             try
             {
-                Utils.ValidateMessageAnnotations(annotations);
-
                 foreach (var context in _contexts)
                 {
                     context.Requeue(annotations);
@@ -265,11 +278,17 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IBatchContext Batch() => this;
 
+        ///<summary>
+        ///  Add a message context to the batch context.
+        /// </summary>
         public void Add(IContext context)
         {
             _contexts.Add(context);
         }
 
+        ///<summary>
+        /// Returns the number of message contexts in the batch context.
+        /// </summary>
         public int Count() => _contexts.Count;
     }
 }

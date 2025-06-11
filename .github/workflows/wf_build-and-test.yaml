@@ -26,6 +26,8 @@ jobs:
           key: ${{ runner.os }}-v0-nuget-${{ hashFiles('**/*.csproj','Directory.Packages.props') }}
           restore-keys: |
             ${{ runner.os }}-v0-nuget-
+      - name: Version
+        run:  dotnet --version
       - name: Build (Debug)
         run: dotnet build ${{ github.workspace }}\Build.csproj
       - name: Verify
