@@ -205,7 +205,7 @@ namespace Tests.Consumer
                         { annotationKey, annotationValue }, { annotationKey1, annotationValue1 }
                     });
                     Assert.Equal(0, batch.Count());
-                    
+
                     tcs.SetResult(true);
 
                     return Task.CompletedTask;
