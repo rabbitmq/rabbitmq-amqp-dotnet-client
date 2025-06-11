@@ -23,3 +23,5 @@ Inside the `docs/Examples` directory you can find examples of how to use the cli
 - Start the broker with `./.ci/ubuntu/one-node/gha-setup.sh start`. Note that this has been tested on Ubuntu 22 with docker.
 - Run the tests with ` dotnet test ./Build.csproj  --logger "console;verbosity=detailed"`
 - Stop RabbitMQ with `./.ci/ubuntu/one-node/gha-setup.sh stop`
+
+...
