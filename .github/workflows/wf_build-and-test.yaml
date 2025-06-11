@@ -11,7 +11,12 @@ jobs:
     env:
       NUGET_CERT_REVOCATION_MODE: offline
     steps:
-      - uses: actions/checkout@v4
+      - name: Clone repository
+        uses: actions/checkout@v4
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
       - uses: actions/cache@v4
         with:
           # Note: the cache path is relative to the workspace directory
@@ -26,6 +31,8 @@ jobs:
           key: ${{ runner.os }}-v0-nuget-${{ hashFiles('**/*.csproj','Directory.Packages.props') }}
           restore-keys: |
             ${{ runner.os }}-v0-nuget-
+      - name: Dotnet Version
+        run:  dotnet --version
       - name: Build (Debug)
         run: dotnet build ${{ github.workspace }}\Build.csproj
       - name: Verify
@@ -54,7 +61,12 @@ jobs:
   build-ubuntu:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Clone repository
+        uses: actions/checkout@v4
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json    
       - uses: actions/cache@v4
         with:
           path: |
@@ -63,6 +75,8 @@ jobs:
           key: ${{ runner.os }}-v0-nuget-${{ hashFiles('**/*.csproj','Directory.Packages.props') }}
           restore-keys: |
             ${{ runner.os }}-v0-nuget-
+      - name: Dotnet Version
+        run:  dotnet --version
       - name: Build (Debug)
         run: dotnet build ${{ github.workspace }}/Build.csproj
       - name: Verify
