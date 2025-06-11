@@ -11,7 +11,12 @@ jobs:
     env:
       NUGET_CERT_REVOCATION_MODE: offline
     steps:
+      - name: Clone repository
       - uses: actions/checkout@v4
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
       - uses: actions/cache@v4
         with:
           # Note: the cache path is relative to the workspace directory
@@ -56,7 +61,12 @@ jobs:
   build-ubuntu:
     runs-on: ubuntu-latest
     steps:
+      - name: Clone repository
       - uses: actions/checkout@v4
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json    
       - uses: actions/cache@v4
         with:
           path: |
