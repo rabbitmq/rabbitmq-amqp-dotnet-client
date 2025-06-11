@@ -115,16 +115,14 @@ namespace RabbitMQ.AMQP.Client
         ///</summary>
         void Requeue(Dictionary<string, object> annotations);
 
-
         /// <summary>
         /// Create a batch context to accumulate message contexts and settle them at once.
         /// The message context the batch context is created from is <b>not</b> added to the batch
         /// context.
         /// @return the created batch context
         /// </summary>
-        IBatchContext Batch(int batchSizeHint);
+        IBatchContext Batch();
     }
-
 
     public interface IBatchContext : IContext
     {

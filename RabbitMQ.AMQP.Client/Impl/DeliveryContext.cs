@@ -2,7 +2,9 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System;
 using System.Collections.Generic;
+using System.Threading;
 using Amqp;
 using Amqp.Types;
 
@@ -146,40 +148,123 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-        public IBatchContext Batch(int batchSizeHint) => throw new System.NotImplementedException();
+        public IBatchContext Batch()
+        {
+            if (_link.IsClosed)
+            {
+                throw new ConsumerException("Link is closed");
+            }
+
+            return new BatchDeliveryContext();
+        }
     }
 
-    public class BatchContext : IBatchContext
+    internal class BatchDeliveryContext : IBatchContext
     {
+        private readonly List<IContext> _contexts = new();
+        private readonly SemaphoreSlim _semaphore = new(1, 1);
+
         public void Accept()
         {
-            throw new System.NotImplementedException();
+            _semaphore.Wait();
+            try
+            {
+                foreach (var context in _contexts)
+                {
+                    context.Accept();
+                }
+
+                _contexts.Clear();
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
         public void Discard()
         {
-            throw new System.NotImplementedException();
+            _semaphore.Wait();
+            try
+            {
+                foreach (var context in _contexts)
+                {
+                    context.Discard();
+                }
+
+                _contexts.Clear();
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
         public void Discard(Dictionary<string, object> annotations)
         {
-            throw new System.NotImplementedException();
+            _semaphore.Wait();
+            try
+            {
+                Utils.ValidateMessageAnnotations(annotations);
+
+                foreach (var context in _contexts)
+                {
+                    context.Discard(annotations);
+                }
+
+                _contexts.Clear();
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
         public void Requeue()
         {
-            throw new System.NotImplementedException();
+            _semaphore.Wait();
+            try
+            {
+                foreach (var context in _contexts)
+                {
+                    context.Requeue();
+                }
+
+                _contexts.Clear();
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
         public void Requeue(Dictionary<string, object> annotations)
         {
-            throw new System.NotImplementedException();
+            _semaphore.Wait();
+            try
+            {
+                Utils.ValidateMessageAnnotations(annotations);
+
+                foreach (var context in _contexts)
+                {
+                    context.Requeue(annotations);
+                }
+
+                _contexts.Clear();
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
-        public IBatchContext Batch(int batchSizeHint) => throw new System.NotImplementedException();
+        public IBatchContext Batch() => this;
 
-        public void Add(IContext context) => throw new System.NotImplementedException();
+        public void Add(IContext context)
+        {
+            _contexts.Add(context);
+        }
 
-        public int Size() => throw new System.NotImplementedException();
+        public int Size() => _contexts.Count;
     }
 }
