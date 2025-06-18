@@ -171,6 +171,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         ///<summary>
         /// Accept all messages in the batch context (AMQP 1.0 <c>accepted</c> outcome).
+        /// Contexts are cleared after the operation.
         /// </summary>
         public void Accept()
         {
@@ -192,6 +193,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         ///<summary>
         /// Discard all messages in the batch context (AMQP 1.0 <c>rejected</c> outcome).
+        /// Contexts are cleared after the operation.
         /// </summary>
         public void Discard()
         {
@@ -213,6 +215,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         ///<summary>
         /// Discard all messages in the batch context with annotations
+        /// Contexts are cleared after the operation.
         /// </summary>
         public void Discard(Dictionary<string, object> annotations)
         {
@@ -236,6 +239,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         ///<summary>
         /// Requeue all messages in the batch context (AMQP 1.0 <c>released</c> outcome).
+        /// Contexts are cleared after the operation.
         /// </summary>
         public void Requeue()
         {
@@ -257,6 +261,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         ///<summary>
         /// Requeue all messages in the batch context with annotations
+        /// Contexts are cleared after the operation.
         /// </summary>
         public void Requeue(Dictionary<string, object> annotations)
         {
