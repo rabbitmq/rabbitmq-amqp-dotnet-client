@@ -250,6 +250,11 @@ namespace RabbitMQ.AMQP.Client
             return VersionCompare(CurrentVersion(brokerVersion), "4.1.0") >= 0;
         }
 
+        internal static bool Is4_2_OrMore(string brokerVersion)
+        {
+            return VersionCompare(CurrentVersion(brokerVersion), "4.2.0") >= 0;
+        }
+
         private static string CurrentVersion(string currentVersion)
         {
             // versions built from source: 3.7.0+rc.1.4.gedc5d96

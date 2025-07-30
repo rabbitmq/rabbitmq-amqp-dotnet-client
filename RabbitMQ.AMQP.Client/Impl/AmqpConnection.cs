@@ -40,6 +40,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private readonly Dictionary<string, object> _connectionProperties = new();
         private bool _areFilterExpressionsSupported = false;
+        private FeatureFlags _featureFlags = new FeatureFlags();
 
         /// <summary>
         /// _publishersDict contains all the publishers created by the connection.
@@ -90,6 +91,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             AmqpConnection connection = new(connectionSettings, metricsReporter);
             await connection.OpenAsync()
                 .ConfigureAwait(false);
+
             return connection;
         }
 
@@ -189,6 +191,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 .ConfigureAwait(false);
             await base.OpenAsync()
                 .ConfigureAwait(false);
+            _featureFlags.Validate();
         }
 
         public override async Task CloseAsync()
@@ -665,10 +668,11 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
 
             string brokerVersion = (string)_connectionProperties["version"];
-            if (false == Utils.Is4_0_OrMore(brokerVersion))
-            {
-                // TODO Java client throws exception here
-            }
+            _featureFlags.IsBrokerCompatible = Utils.Is4_0_OrMore(brokerVersion);
+
+            // check if the broker supports filter expressions
+            // this is a feature that was introduced in RabbitMQ 4.2.0
+            _featureFlags.IsSqlFeatureEnabled = Utils.Is4_2_OrMore(brokerVersion);
 
             _areFilterExpressionsSupported = Utils.SupportsFilterExpressions(brokerVersion);
         }
