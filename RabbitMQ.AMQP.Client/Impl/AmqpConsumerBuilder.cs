@@ -18,9 +18,12 @@ namespace RabbitMQ.AMQP.Client.Impl
     {
         public string Address { get; set; } = "";
         public int InitialCredits { get; set; } = 100; // TODO use constant, check with Java lib
+
         public Map Filters { get; set; } = new();
+
         // TODO is a MessageHandler *really* optional???
         public MessageHandler? Handler { get; set; }
+
         // TODO re-name to ListenerContextAction? Callback?
         public Action<IConsumerBuilder.ListenerContext>? ListenerContext = null;
     }
@@ -74,7 +77,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IConsumerBuilder.IStreamOptions Stream()
         {
             return new ConsumerBuilderStreamOptions(this, _configuration.Filters,
-                _amqpConnection.AreFilterExpressionsSupported);
+                _amqpConnection._featureFlags);
         }
 
         public async Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default)
@@ -104,21 +107,29 @@ namespace RabbitMQ.AMQP.Client.Impl
         private static readonly Regex s_offsetValidator = new Regex("^[0-9]+[YMDhms]$",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
+        // sql-filter
+        private const string SqlFilter = "sql-filter";
         private const string RmqStreamFilter = "rabbitmq:stream-filter";
         private const string RmqStreamOffsetSpec = "rabbitmq:stream-offset-spec";
+
         private const string RmqStreamMatchUnfiltered = "rabbitmq:stream-match-unfiltered";
+
+        // amqp:sql-filter
+        private const string AmqpSqlFilter = "amqp:sql-filter";
+
 
         private static readonly Symbol s_streamFilterSymbol = new(RmqStreamFilter);
         private static readonly Symbol s_streamOffsetSpecSymbol = new(RmqStreamOffsetSpec);
         private static readonly Symbol s_streamMatchUnfilteredSymbol = new(RmqStreamMatchUnfiltered);
+        private static readonly Symbol s_streamSqlFilterSymbol = new(AmqpSqlFilter);
 
         private readonly Map _filters;
-        private readonly bool _areFilterExpressionsSupported;
+        private readonly FeatureFlags _featureFlags;
 
-        protected StreamOptions(Map filters, bool areFilterExpressionsSupported)
+        protected StreamOptions(Map filters, FeatureFlags featureFlags)
         {
             _filters = filters;
-            _areFilterExpressionsSupported = areFilterExpressionsSupported;
+            _featureFlags = featureFlags;
         }
 
         public IConsumerBuilder.IStreamOptions Offset(long offset)
@@ -170,6 +181,24 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
+        public IConsumerBuilder.IStreamFilterOptions Sql(string sql)
+        {
+            if (string.IsNullOrWhiteSpace(sql))
+            {
+                throw new ArgumentNullException(nameof(sql));
+            }
+
+            if (false == _featureFlags.IsSqlFeatureEnabled)
+            {
+                throw new ConsumerException("SQL filter is not supported by the broker. " +
+                                            "The broker must be RabbitMQ 4.2 or later.");
+            }
+
+            _filters[SqlFilter] =
+                new DescribedValue(s_streamSqlFilterSymbol, sql);
+            return Filter();
+        }
+
         public abstract IConsumerBuilder Builder();
 
         private void SetOffsetSpecificationFilter(object value)
@@ -198,8 +227,8 @@ namespace RabbitMQ.AMQP.Client.Impl
     /// </summary>
     public class ListenerStreamOptions : StreamOptions
     {
-        public ListenerStreamOptions(Map filters, bool areFilterExpressionsSupported)
-            : base(filters, areFilterExpressionsSupported)
+        public ListenerStreamOptions(Map filters, FeatureFlags featureFlags)
+            : base(filters, featureFlags)
         {
         }
 
@@ -221,8 +250,8 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly IConsumerBuilder _consumerBuilder;
 
         public ConsumerBuilderStreamOptions(IConsumerBuilder consumerBuilder,
-            Map filters, bool areFilterExpressionsSupported)
-            : base(filters, areFilterExpressionsSupported)
+            Map filters, FeatureFlags featureFlags)
+            : base(filters, featureFlags)
         {
             _consumerBuilder = consumerBuilder;
         }
