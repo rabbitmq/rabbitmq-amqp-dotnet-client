@@ -260,7 +260,6 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         internal Connection? NativeConnection => _nativeConnection;
 
-
         // TODO this couples AmqpConnection with AmqpPublisher, yuck
         internal void AddPublisher(Guid id, IPublisher consumer)
         {
