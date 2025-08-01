@@ -117,7 +117,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         // amqp:sql-filter
         private const string AmqpSqlFilter = "amqp:sql-filter";
 
-
         private static readonly Symbol s_streamFilterSymbol = new(RmqStreamFilter);
         private static readonly Symbol s_streamOffsetSpecSymbol = new(RmqStreamOffsetSpec);
         private static readonly Symbol s_streamMatchUnfilteredSymbol = new(RmqStreamMatchUnfiltered);
