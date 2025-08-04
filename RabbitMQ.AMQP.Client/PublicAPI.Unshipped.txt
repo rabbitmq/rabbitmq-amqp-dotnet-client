@@ -113,6 +113,12 @@ RabbitMQ.AMQP.Client.ExchangeType.DIRECT = 0 -> RabbitMQ.AMQP.Client.ExchangeTyp
 RabbitMQ.AMQP.Client.ExchangeType.FANOUT = 1 -> RabbitMQ.AMQP.Client.ExchangeType
 RabbitMQ.AMQP.Client.ExchangeType.HEADERS = 3 -> RabbitMQ.AMQP.Client.ExchangeType
 RabbitMQ.AMQP.Client.ExchangeType.TOPIC = 2 -> RabbitMQ.AMQP.Client.ExchangeType
+RabbitMQ.AMQP.Client.FeatureFlags
+RabbitMQ.AMQP.Client.FeatureFlags.FeatureFlags() -> void
+RabbitMQ.AMQP.Client.FeatureFlags.IsBrokerCompatible.get -> bool
+RabbitMQ.AMQP.Client.FeatureFlags.IsFilterFeatureEnabled.get -> bool
+RabbitMQ.AMQP.Client.FeatureFlags.IsSqlFeatureEnabled.get -> bool
+RabbitMQ.AMQP.Client.FeatureFlags.Validate() -> void
 RabbitMQ.AMQP.Client.IAddressBuilder<T>
 RabbitMQ.AMQP.Client.IAddressBuilder<T>.Exchange(RabbitMQ.AMQP.Client.IExchangeSpecification! exchangeSpec) -> T
 RabbitMQ.AMQP.Client.IAddressBuilder<T>.Exchange(string! exchangeName) -> T
@@ -182,6 +188,7 @@ RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions.Property(string! key,
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions.PropertySymbol(string! key, string! value) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions!
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions.ReplyTo(string! replyTo) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions!
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions.ReplyToGroupId(string! groupId) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions!
+RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions.Sql(string! sql) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions!
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions.Stream() -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions.Subject(string! subject) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions!
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions.To(string! to) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions!
@@ -533,7 +540,7 @@ RabbitMQ.AMQP.Client.Impl.BindingSpecification._routingKey -> string!
 RabbitMQ.AMQP.Client.Impl.BindingSpecification._sourceName -> string!
 RabbitMQ.AMQP.Client.Impl.BindingSpecification._toQueue -> bool
 RabbitMQ.AMQP.Client.Impl.ConsumerBuilderStreamOptions
-RabbitMQ.AMQP.Client.Impl.ConsumerBuilderStreamOptions.ConsumerBuilderStreamOptions(RabbitMQ.AMQP.Client.IConsumerBuilder! consumerBuilder, Amqp.Types.Map! filters, bool areFilterExpressionsSupported) -> void
+RabbitMQ.AMQP.Client.Impl.ConsumerBuilderStreamOptions.ConsumerBuilderStreamOptions(RabbitMQ.AMQP.Client.IConsumerBuilder! consumerBuilder, Amqp.Types.Map! filters) -> void
 RabbitMQ.AMQP.Client.Impl.DefaultAddressBuilder<T>
 RabbitMQ.AMQP.Client.Impl.DefaultAddressBuilder<T>.Address() -> string!
 RabbitMQ.AMQP.Client.Impl.DefaultAddressBuilder<T>.DefaultAddressBuilder() -> void
@@ -557,7 +564,7 @@ RabbitMQ.AMQP.Client.Impl.DefaultQueueInfo.Type() -> RabbitMQ.AMQP.Client.QueueT
 RabbitMQ.AMQP.Client.Impl.FieldNotSetException
 RabbitMQ.AMQP.Client.Impl.FieldNotSetException.FieldNotSetException() -> void
 RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions
-RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions.ListenerStreamOptions(Amqp.Types.Map! filters, bool areFilterExpressionsSupported) -> void
+RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions.ListenerStreamOptions(Amqp.Types.Map! filters) -> void
 RabbitMQ.AMQP.Client.Impl.MessageAddressBuilder
 RabbitMQ.AMQP.Client.Impl.MessageAddressBuilder.Build() -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.Impl.MessageAddressBuilder.MessageAddressBuilder(RabbitMQ.AMQP.Client.IMessage! message) -> void
@@ -605,6 +612,7 @@ RabbitMQ.AMQP.Client.Impl.StreamFilterOptions.Property(string! key, object! valu
 RabbitMQ.AMQP.Client.Impl.StreamFilterOptions.PropertySymbol(string! key, string! value) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions!
 RabbitMQ.AMQP.Client.Impl.StreamFilterOptions.ReplyTo(string! replyTo) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions!
 RabbitMQ.AMQP.Client.Impl.StreamFilterOptions.ReplyToGroupId(string! groupId) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions!
+RabbitMQ.AMQP.Client.Impl.StreamFilterOptions.Sql(string! sql) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions!
 RabbitMQ.AMQP.Client.Impl.StreamFilterOptions.Stream() -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.Impl.StreamFilterOptions.StreamFilterOptions(RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions! streamOptions, Amqp.Types.Map! filters) -> void
 RabbitMQ.AMQP.Client.Impl.StreamFilterOptions.Subject(string! subject) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions!
@@ -618,7 +626,7 @@ RabbitMQ.AMQP.Client.Impl.StreamOptions.Offset(long offset) -> RabbitMQ.AMQP.Cli
 RabbitMQ.AMQP.Client.Impl.StreamOptions.Offset(RabbitMQ.AMQP.Client.StreamOffsetSpecification specification) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.Impl.StreamOptions.Offset(string! interval) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.Impl.StreamOptions.Offset(System.DateTime timestamp) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
-RabbitMQ.AMQP.Client.Impl.StreamOptions.StreamOptions(Amqp.Types.Map! filters, bool areFilterExpressionsSupported) -> void
+RabbitMQ.AMQP.Client.Impl.StreamOptions.StreamOptions(Amqp.Types.Map! filters) -> void
 RabbitMQ.AMQP.Client.InternalBugException
 RabbitMQ.AMQP.Client.InternalBugException.InternalBugException() -> void
 RabbitMQ.AMQP.Client.InternalBugException.InternalBugException(string! message) -> void

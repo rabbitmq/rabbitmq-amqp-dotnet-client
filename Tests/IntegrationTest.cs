@@ -38,7 +38,7 @@ public abstract partial class IntegrationTest : IAsyncLifetime
     private readonly bool _setupConnectionAndManagement;
     protected readonly ConnectionSettingsBuilder _connectionSettingBuilder;
 
-    protected bool _areFilterExpressionsSupported = false;
+    protected FeatureFlags? _featureFlags = null;
 
     public IntegrationTest(ITestOutputHelper testOutputHelper,
         bool setupConnectionAndManagement = true)
@@ -73,7 +73,7 @@ public abstract partial class IntegrationTest : IAsyncLifetime
             _connection = await AmqpConnection.CreateAsync(_connectionSettings);
             if (_connection is AmqpConnection amqpConnection)
             {
-                _areFilterExpressionsSupported = amqpConnection.AreFilterExpressionsSupported;
+                _featureFlags = amqpConnection._featureFlags;
             }
             _management = _connection.Management();
         }

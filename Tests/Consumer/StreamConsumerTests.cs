@@ -964,6 +964,6 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
 
     private void SkipIfNoFilterExpressions()
     {
-        Skip.IfNot(_areFilterExpressionsSupported, "At least RabbitMQ 4.1.0 required");
+        Skip.IfNot(_featureFlags is { IsFilterFeatureEnabled: true }, "At least RabbitMQ 4.1.0 required");
     }
 }

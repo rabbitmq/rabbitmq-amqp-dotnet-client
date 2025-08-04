@@ -4,10 +4,25 @@
 
 namespace RabbitMQ.AMQP.Client
 {
-    internal class FeatureFlags
+    public class FeatureFlags
     {
-        public bool IsSqlFeatureEnabled { get; set; } = false;
-        public bool IsBrokerCompatible { get; set; } = false;
+
+        /// <summary>
+        /// Check if filter feature is enabled.
+        /// Filter feature is available in RabbitMQ 4.1 and later.
+        /// </summary>
+        public bool IsFilterFeatureEnabled { get; internal set; } = false;
+
+        /// <summary>
+        /// Check if Sql feature is enabled.
+        /// Sql feature is available in RabbitMQ 4.2 and later.
+        /// </summary>
+        public bool IsSqlFeatureEnabled { get; internal set; } = false;
+        /// <summary>
+        /// Check if the client is compatible with the broker version.
+        /// The client requires RabbitMQ 4.0 or later to be compatible.
+        /// </summary>
+        public bool IsBrokerCompatible { get; internal set; } = false;
 
         public void Validate()
         {

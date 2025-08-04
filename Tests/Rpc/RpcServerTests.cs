@@ -16,8 +16,8 @@ namespace Tests.Rpc
     public class RpcServerTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
     {
         private string _requestQueueName = string.Empty;
-        private string _replyToName = $"queueReplyTo-{Now}-{Guid.NewGuid()}";
-        private string _correlationId = $"my-correlation-id-{Guid.NewGuid()}";
+        private readonly string _replyToName = $"queueReplyTo-{Now}-{Guid.NewGuid()}";
+        private readonly string _correlationId = $"my-correlation-id-{Guid.NewGuid()}";
 
         public override async Task InitializeAsync()
         {
