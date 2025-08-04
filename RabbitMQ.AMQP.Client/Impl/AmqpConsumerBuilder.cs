@@ -113,7 +113,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         private static readonly Regex s_offsetValidator = new Regex("^[0-9]+[YMDhms]$",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-
         private readonly Map _filters;
 
         protected StreamOptions(Map filters)
@@ -169,7 +168,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                 = new DescribedValue(Consts.s_streamMatchUnfilteredSymbol, matchUnfiltered);
             return this;
         }
-
 
         public abstract IConsumerBuilder Builder();
 
@@ -256,7 +254,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                 throw new ArgumentNullException(nameof(sql));
             }
 
-
             _filters[Consts.SqlFilter] =
                 new DescribedValue(Consts.s_streamSqlFilterSymbol, sql);
             return this;
@@ -315,7 +312,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         private StreamFilterOptions PropertyFilter(string propertyKey, object propertyValue)
         {
 
-
             DescribedValue propertiesFilterValue = Filter(Consts.AmqpPropertiesFilter);
             Map propertiesFilter = (Map)propertiesFilterValue.Value;
             // Note: you MUST use a symbol as the key
@@ -325,7 +321,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private StreamFilterOptions ApplicationPropertyFilter(string propertyKey, object propertyValue)
         {
-           
+
             DescribedValue applicationPropertiesFilterValue = Filter(Consts.AmqpApplicationPropertiesFilter);
             Map applicationPropertiesFilter = (Map)applicationPropertiesFilterValue.Value;
             // Note: do NOT put a symbol as the key

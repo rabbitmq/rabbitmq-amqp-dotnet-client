@@ -23,17 +23,15 @@ namespace RabbitMQ.AMQP.Client
         /// The default virtual host, <c>/</c>
         /// </summary>
         public const string DefaultVirtualHost = "/";
-        
+
         // amqp:sql-filter
         private const string AmqpSqlFilter = "amqp:sql-filter";
         internal static readonly Symbol s_streamSqlFilterSymbol = new(AmqpSqlFilter);
         internal const string SqlFilter = "SqlFilter";
-        
+
         internal const string AmqpPropertiesFilter = "amqp:properties-filter";
-        internal  const string AmqpApplicationPropertiesFilter = "amqp:application-properties-filter";
-        
-        
-        
+        internal const string AmqpApplicationPropertiesFilter = "amqp:application-properties-filter";
+
         // sql-filter
         private const string RmqStreamFilter = "rabbitmq:stream-filter";
         private const string RmqStreamOffsetSpec = "rabbitmq:stream-offset-spec";
@@ -42,8 +40,6 @@ namespace RabbitMQ.AMQP.Client
         internal static readonly Symbol s_streamFilterSymbol = new(RmqStreamFilter);
         internal static readonly Symbol s_streamOffsetSpecSymbol = new(RmqStreamOffsetSpec);
         internal static readonly Symbol s_streamMatchUnfilteredSymbol = new(RmqStreamMatchUnfiltered);
-
-
 
     }
 }
