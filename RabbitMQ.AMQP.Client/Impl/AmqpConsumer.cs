@@ -58,7 +58,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 // ListenerContext will override only the filters the selected filters.
                 if (_configuration.ListenerContext is not null)
                 {
-                    var listenerStreamOptions = new ListenerStreamOptions(_configuration.Filters, _amqpConnection._featureFlags);
+                    var listenerStreamOptions = new ListenerStreamOptions(_configuration.Filters);
                     var listenerContext = new IConsumerBuilder.ListenerContext(listenerStreamOptions);
                     _configuration.ListenerContext(listenerContext);
                 }

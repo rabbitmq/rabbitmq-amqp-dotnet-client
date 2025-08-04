@@ -101,13 +101,6 @@ namespace RabbitMQ.AMQP.Client
             /// <see cref="FilterMatchUnfiltered(bool)"/>
             IStreamFilterOptions Filter();
 
-            /// <summary>
-            /// <para>SQL filter expression.</para>
-            ///
-            /// </summary>
-            /// <para>Requires RabbitMQ 4.2 or more.</para>
-            /// Documentation: <see href="https://www.rabbitmq.com/docs/next/stream-filtering#sql-filter-expressions">SQL Filtering</see>
-            IStreamFilterOptions Sql(string sql);
 
             /// <summary>
             /// Return the consumer builder.
@@ -201,6 +194,16 @@ namespace RabbitMQ.AMQP.Client
             /// <param name="value">application property value</param>
             /// <returns><see cref="IStreamFilterOptions"/></returns>
             IStreamFilterOptions PropertySymbol(string key, string value);
+            
+            
+            /// <summary>
+            /// <para>SQL filter expression.</para>
+            ///
+            /// </summary>
+            /// <para>Requires RabbitMQ 4.2 or more.</para>
+            /// Documentation: <see href="https://www.rabbitmq.com/docs/next/stream-filtering#sql-filter-expressions">SQL Filtering</see>
+            IStreamFilterOptions Sql(string sql);
+
 
             /// <summary>
             /// Return the stream options.

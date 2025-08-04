@@ -9,7 +9,7 @@ readonly script_dir
 echo "[INFO] script_dir: '$script_dir'"
 
 
-readonly rabbitmq_image="${RABBITMQ_IMAGE:-pivotalrabbitmq/rabbitmq:main-otp27}"
+readonly rabbitmq_image="${RABBITMQ_IMAGE:- rabbitmq:4-management}"
 
 
 
