@@ -90,6 +90,7 @@ function start_rabbitmq
         --volume "$GITHUB_WORKSPACE/.ci/ubuntu/one-node/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro" \
         --volume "$GITHUB_WORKSPACE/.ci/certs:/etc/rabbitmq/certs:ro" \
         --volume "$GITHUB_WORKSPACE/.ci/ubuntu/one-node/advanced.config:/etc/rabbitmq/advanced.config:ro" \
+        --volume "$GITHUB_WORKSPACE/.ci/ubuntu/one-node/21-enable-management-collector.conf:/etc/rabbitmq/conf.d/21-enable-management-collector.conf:ro" \
         --volume "$GITHUB_WORKSPACE/.ci/ubuntu/log:/var/log/rabbitmq" \
         "$rabbitmq_image"
 }
