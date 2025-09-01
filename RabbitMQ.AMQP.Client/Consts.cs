@@ -27,7 +27,7 @@ namespace RabbitMQ.AMQP.Client
         // amqp:sql-filter
         private const string AmqpSqlFilter = "amqp:sql-filter";
         internal static readonly Symbol s_streamSqlFilterSymbol = new(AmqpSqlFilter);
-        internal const string SqlFilter = "SqlFilter";
+        internal const string SqlFilter = "sql-filter";
 
         internal const string AmqpPropertiesFilter = "amqp:properties-filter";
         internal const string AmqpApplicationPropertiesFilter = "amqp:application-properties-filter";

@@ -77,7 +77,8 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
             Assert.Equal(ClusterSize, queueInfo.Members().Count);
         }
 
-        Assert.NotNull(queueInfo.Leader());
+        // restore when https://github.com/rabbitmq/rabbitmq-server/pull/14438 will be merged
+        // Assert.NotNull(queueInfo.Leader());
         Assert.Equal(queueInfo.Durable(), durable);
         Assert.Equal(queueInfo.AutoDelete(), autoDelete);
         Assert.Equal(queueInfo.Exclusive(), exclusive);
