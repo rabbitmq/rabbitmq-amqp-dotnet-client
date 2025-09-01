@@ -86,7 +86,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 throw new ConsumerException("Message handler is not set");
             }
 
-            if (_configuration.Filters[Consts.SqlFilter] is not null &&
+            if (_configuration.Filters[Consts.s_sqlFilterSymbol] is not null &&
                 _amqpConnection._featureFlags.IsSqlFeatureEnabled == false)
             {
                 throw new ConsumerException("SQL filter is not supported by the connection." +
@@ -254,7 +254,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 throw new ArgumentNullException(nameof(sql));
             }
 
-            _filters[Consts.SqlFilter] =
+            _filters[Consts.s_sqlFilterSymbol] =
                 new DescribedValue(Consts.s_streamSqlFilterSymbol, sql);
             return this;
         }

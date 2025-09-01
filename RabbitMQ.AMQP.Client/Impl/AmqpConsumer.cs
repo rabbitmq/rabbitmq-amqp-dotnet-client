@@ -88,6 +88,12 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 // TODO configurable timeout
                 var waitSpan = TimeSpan.FromSeconds(5);
+
+                // TODO
+                // Even 10ms is enough to allow the links to establish,
+                // which tells me it allows the .NET runtime to process
+                await Task.Delay(10).ConfigureAwait(false);
+
                 _receiverLink = await attachCompletedTcs.Task.WaitAsync(waitSpan)
                     .ConfigureAwait(false);
 

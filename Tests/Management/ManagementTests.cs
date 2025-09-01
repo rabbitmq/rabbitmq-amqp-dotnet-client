@@ -454,6 +454,6 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         await queueSpec.DeclareAsync();
         await PublishAsync(queueSpec, 19);
         await WaitUntilQueueMessageCount(_queueName, 19);
-        await Assert.ThrowsAsync<BadRequestException>(() => queueSpec.PurgeAsync());
+        await Assert.ThrowsAsync<BadRequestException>(queueSpec.PurgeAsync);
     }
 }

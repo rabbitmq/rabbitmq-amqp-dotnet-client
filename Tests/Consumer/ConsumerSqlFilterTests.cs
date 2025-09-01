@@ -21,7 +21,7 @@ namespace Tests.Consumer
         // Example test method (to be implemented):
         [SkippableFact]
         [Trait("Category", "SqlFilter")]
-        public async Task TestSqlFilterFunctionality()
+        public async Task TestSqlFilterFunctionalityAsync()
         {
             Assert.NotNull(_connection);
             Assert.NotNull(_management);
@@ -37,7 +37,7 @@ namespace Tests.Consumer
                 new TaskCompletionSource<IMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
             IConsumer consumer = await _connection.ConsumerBuilder()
                 .Queue(_queueName)
-                .Stream().Filter().Sql("properties.user_id = 'John'").Stream().Offset(StreamOffsetSpecification.First)
+                .Stream().Filter().Sql("properties.subject LIKE '%John%'").Stream().Offset(StreamOffsetSpecification.First)
                 .Builder().MessageHandler((IContext ctx, IMessage msg) =>
                 {
                     tcs.SetResult(msg);
@@ -49,20 +49,22 @@ namespace Tests.Consumer
 
             IPublisher publisher = await _connection.PublisherBuilder().Queue(_queueName).BuildAsync();
 
-            var msgNotInTheFilter = new AmqpMessage("Test message for SQL filter")
-                .Property("user_id", "Gas"); // This property should not match the SQL filter
+            // var msgNotInTheFilter = new AmqpMessage("Test message for SQL filter")
+            //     .Property("user_id", "Gas"); // This property should not match the SQL filter
+            var msgNotInTheFilter = new AmqpMessage("Test message for SQL filter, should not match")
+                .Subject("Gas"); // This property should not match the SQL filter
             await publisher.PublishAsync(msgNotInTheFilter);
-            var msgInTheFilter = new AmqpMessage("Test message for NOT SQL filter")
-                .Property("user_id", "John"); // This property should match the SQL filter
+            var msgInTheFilter = new AmqpMessage("Test message for SQL filter")
+                .Subject("John"); // This property should match the SQL filter
             await publisher.PublishAsync(msgInTheFilter);
-            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10)).ConfigureAwait(false);
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
             Assert.Equal("Test message for SQL filter", tcs.Task.Result.BodyAsString());
-            Assert.Equal("John", tcs.Task.Result.Property("user_id"));
-            await consumer.CloseAsync().ConfigureAwait(false);
-            await publisher.CloseAsync().ConfigureAwait(false);
-            await q.DeleteAsync().ConfigureAwait(false);
-            await _connection.CloseAsync().ConfigureAwait(false);
+            Assert.Equal("John", tcs.Task.Result.Subject());
+            await consumer.CloseAsync();
+            await publisher.CloseAsync();
+            await q.DeleteAsync();
+            await _connection.CloseAsync();
         }
     }
 }
