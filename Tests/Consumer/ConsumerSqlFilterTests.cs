@@ -34,10 +34,11 @@ namespace Tests.Consumer
             IQueueSpecification q = _management.Queue(_queueName).Stream().Queue();
             await q.DeclareAsync();
             TaskCompletionSource<IMessage> tcs =
-                new TaskCompletionSource<IMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+                new(TaskCreationOptions.RunContinuationsAsynchronously);
             IConsumer consumer = await _connection.ConsumerBuilder()
                 .Queue(_queueName)
-                .Stream().Filter().Sql("properties.subject LIKE '%John%'").Stream().Offset(StreamOffsetSpecification.First)
+                .Stream().Filter().Sql("properties.subject LIKE '%John%'").Stream()
+                .Offset(StreamOffsetSpecification.First)
                 .Builder().MessageHandler((IContext ctx, IMessage msg) =>
                 {
                     tcs.SetResult(msg);
@@ -61,10 +62,60 @@ namespace Tests.Consumer
 
             Assert.Equal("Test message for SQL filter", tcs.Task.Result.BodyAsString());
             Assert.Equal("John", tcs.Task.Result.Subject());
+            Assert.Equal("Test message for SQL filter", tcs.Task.Result.BodyAsString());
             await consumer.CloseAsync();
             await publisher.CloseAsync();
             await q.DeleteAsync();
             await _connection.CloseAsync();
+        }
+
+        [SkippableTheory]
+        [Trait("Category", "SqlFilter")]
+        [InlineData("myP", "John")]
+        [InlineData("myP", "Doe")]
+        [InlineData("user_id", "Alice")]
+        [InlineData("user_id", "Bob")]
+        public async Task TestSqlFilterFunctionalityAsyncValues(string property, string value)
+        {
+            Assert.NotNull(_connection);
+            Assert.NotNull(_management);
+
+            // cast to AMQPConnection to use Skip.If
+            var amqpConnection = (_connection as AmqpConnection);
+            Skip.IfNot(amqpConnection is { _featureFlags.IsSqlFeatureEnabled: true },
+                "SQL filter is not supported by the connection.");
+            IQueueSpecification q = _management.Queue(_queueName).Stream().Queue();
+            await q.DeclareAsync();
+            TaskCompletionSource<IMessage> tcs =
+                new(TaskCreationOptions.RunContinuationsAsynchronously);
+            IConsumer consumer = await _connection.ConsumerBuilder()
+                .Queue(_queueName)
+                .Stream().Filter().Sql($"{property} LIKE '%{value}'").Stream()
+                .Offset(StreamOffsetSpecification.First)
+                .Builder().MessageHandler((IContext ctx, IMessage msg) =>
+                {
+                    tcs.SetResult(msg);
+                    // Here you would implement the logic to handle messages that match the SQL filter.
+                    // For example, you could validate that the message content matches expected SQL criteria.
+                    return Task.CompletedTask;
+                })
+                .BuildAndStartAsync();
+
+            IPublisher publisher = await _connection.PublisherBuilder().Queue(_queueName).BuildAsync();
+            await publisher.PublishAsync(new AmqpMessage($"NO")
+                .Property(property, "NO"));
+
+            await publisher.PublishAsync(new AmqpMessage($"with property_{property} value {value}")
+                .Property(property, value));
+
+            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Equal($"with property_{property} value {value}", tcs.Task.Result.BodyAsString());
+            Assert.Equal(value, tcs.Task.Result.Property(property));
+            await consumer.CloseAsync();
+            await publisher.CloseAsync();
+            await q.DeleteAsync();
+            await _connection.CloseAsync();
+
         }
     }
 }
