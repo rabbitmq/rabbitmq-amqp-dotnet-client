@@ -58,7 +58,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 // ListenerContext will override only the filters the selected filters.
                 if (_configuration.ListenerContext is not null)
                 {
-                    var listenerStreamOptions = new ListenerStreamOptions(_configuration.Filters, _amqpConnection.AreFilterExpressionsSupported);
+                    var listenerStreamOptions = new ListenerStreamOptions(_configuration.Filters);
                     var listenerContext = new IConsumerBuilder.ListenerContext(listenerStreamOptions);
                     _configuration.ListenerContext(listenerContext);
                 }
@@ -88,6 +88,12 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 // TODO configurable timeout
                 var waitSpan = TimeSpan.FromSeconds(5);
+
+                // TODO
+                // Even 10ms is enough to allow the links to establish,
+                // which tells me it allows the .NET runtime to process
+                await Task.Delay(10).ConfigureAwait(false);
+
                 _receiverLink = await attachCompletedTcs.Task.WaitAsync(waitSpan)
                     .ConfigureAwait(false);
 

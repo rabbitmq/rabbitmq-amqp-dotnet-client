@@ -18,9 +18,12 @@ namespace RabbitMQ.AMQP.Client.Impl
     {
         public string Address { get; set; } = "";
         public int InitialCredits { get; set; } = 100; // TODO use constant, check with Java lib
+
         public Map Filters { get; set; } = new();
+
         // TODO is a MessageHandler *really* optional???
         public MessageHandler? Handler { get; set; }
+
         // TODO re-name to ListenerContextAction? Callback?
         public Action<IConsumerBuilder.ListenerContext>? ListenerContext = null;
     }
@@ -73,8 +76,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IConsumerBuilder.IStreamOptions Stream()
         {
-            return new ConsumerBuilderStreamOptions(this, _configuration.Filters,
-                _amqpConnection.AreFilterExpressionsSupported);
+            return new ConsumerBuilderStreamOptions(this, _configuration.Filters);
         }
 
         public async Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default)
@@ -82,6 +84,13 @@ namespace RabbitMQ.AMQP.Client.Impl
             if (_configuration.Handler is null)
             {
                 throw new ConsumerException("Message handler is not set");
+            }
+
+            if (_configuration.Filters[Consts.s_sqlFilterSymbol] is not null &&
+                _amqpConnection._featureFlags.IsSqlFeatureEnabled == false)
+            {
+                throw new ConsumerException("SQL filter is not supported by the connection." +
+                                            "RabbitMQ 4.2.0 or later is required.");
             }
 
             AmqpConsumer consumer = new(_amqpConnection, _configuration, _metricsReporter);
@@ -104,27 +113,17 @@ namespace RabbitMQ.AMQP.Client.Impl
         private static readonly Regex s_offsetValidator = new Regex("^[0-9]+[YMDhms]$",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-        private const string RmqStreamFilter = "rabbitmq:stream-filter";
-        private const string RmqStreamOffsetSpec = "rabbitmq:stream-offset-spec";
-        private const string RmqStreamMatchUnfiltered = "rabbitmq:stream-match-unfiltered";
-
-        private static readonly Symbol s_streamFilterSymbol = new(RmqStreamFilter);
-        private static readonly Symbol s_streamOffsetSpecSymbol = new(RmqStreamOffsetSpec);
-        private static readonly Symbol s_streamMatchUnfilteredSymbol = new(RmqStreamMatchUnfiltered);
-
         private readonly Map _filters;
-        private readonly bool _areFilterExpressionsSupported;
 
-        protected StreamOptions(Map filters, bool areFilterExpressionsSupported)
+        protected StreamOptions(Map filters)
         {
             _filters = filters;
-            _areFilterExpressionsSupported = areFilterExpressionsSupported;
         }
 
         public IConsumerBuilder.IStreamOptions Offset(long offset)
         {
-            _filters[s_streamOffsetSpecSymbol] =
-                new DescribedValue(s_streamOffsetSpecSymbol, offset);
+            _filters[Consts.s_streamOffsetSpecSymbol] =
+                new DescribedValue(Consts.s_streamOffsetSpecSymbol, offset);
             return this;
         }
 
@@ -158,15 +157,15 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IConsumerBuilder.IStreamOptions FilterValues(params string[] values)
         {
-            _filters[s_streamFilterSymbol] =
-                new DescribedValue(s_streamFilterSymbol, values.ToList());
+            _filters[Consts.s_streamFilterSymbol] =
+                new DescribedValue(Consts.s_streamFilterSymbol, values.ToList());
             return this;
         }
 
         public IConsumerBuilder.IStreamOptions FilterMatchUnfiltered(bool matchUnfiltered)
         {
-            _filters[s_streamMatchUnfilteredSymbol]
-                = new DescribedValue(s_streamMatchUnfilteredSymbol, matchUnfiltered);
+            _filters[Consts.s_streamMatchUnfilteredSymbol]
+                = new DescribedValue(Consts.s_streamMatchUnfilteredSymbol, matchUnfiltered);
             return this;
         }
 
@@ -174,8 +173,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private void SetOffsetSpecificationFilter(object value)
         {
-            _filters[s_streamOffsetSpecSymbol]
-                = new DescribedValue(s_streamOffsetSpecSymbol, value);
+            _filters[Consts.s_streamOffsetSpecSymbol]
+                = new DescribedValue(Consts.s_streamOffsetSpecSymbol, value);
         }
 
         public IConsumerBuilder.IStreamFilterOptions Filter()
@@ -198,8 +197,8 @@ namespace RabbitMQ.AMQP.Client.Impl
     /// </summary>
     public class ListenerStreamOptions : StreamOptions
     {
-        public ListenerStreamOptions(Map filters, bool areFilterExpressionsSupported)
-            : base(filters, areFilterExpressionsSupported)
+        public ListenerStreamOptions(Map filters)
+            : base(filters)
         {
         }
 
@@ -221,8 +220,8 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly IConsumerBuilder _consumerBuilder;
 
         public ConsumerBuilderStreamOptions(IConsumerBuilder consumerBuilder,
-            Map filters, bool areFilterExpressionsSupported)
-            : base(filters, areFilterExpressionsSupported)
+            Map filters)
+            : base(filters)
         {
             _consumerBuilder = consumerBuilder;
         }
@@ -239,13 +238,25 @@ namespace RabbitMQ.AMQP.Client.Impl
     /// </summary>
     public class StreamFilterOptions : IConsumerBuilder.IStreamFilterOptions
     {
-        private IConsumerBuilder.IStreamOptions _streamOptions;
-        private Map _filters;
+        private readonly IConsumerBuilder.IStreamOptions _streamOptions;
+        private readonly Map _filters;
 
         public StreamFilterOptions(IConsumerBuilder.IStreamOptions streamOptions, Map filters)
         {
             _streamOptions = streamOptions;
             _filters = filters;
+        }
+
+        public IConsumerBuilder.IStreamFilterOptions Sql(string sql)
+        {
+            if (string.IsNullOrWhiteSpace(sql))
+            {
+                throw new ArgumentNullException(nameof(sql));
+            }
+
+            _filters[Consts.s_sqlFilterSymbol] =
+                new DescribedValue(Consts.s_streamSqlFilterSymbol, sql);
+            return this;
         }
 
         public IConsumerBuilder.IStreamOptions Stream()
@@ -300,9 +311,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private StreamFilterOptions PropertyFilter(string propertyKey, object propertyValue)
         {
-            const string AmqpPropertiesFilter = "amqp:properties-filter";
 
-            DescribedValue propertiesFilterValue = Filter(AmqpPropertiesFilter);
+            DescribedValue propertiesFilterValue = Filter(Consts.AmqpPropertiesFilter);
             Map propertiesFilter = (Map)propertiesFilterValue.Value;
             // Note: you MUST use a symbol as the key
             propertiesFilter.Add(new Symbol(propertyKey), propertyValue);
@@ -311,9 +321,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private StreamFilterOptions ApplicationPropertyFilter(string propertyKey, object propertyValue)
         {
-            const string AmqpApplicationPropertiesFilter = "amqp:application-properties-filter";
 
-            DescribedValue applicationPropertiesFilterValue = Filter(AmqpApplicationPropertiesFilter);
+            DescribedValue applicationPropertiesFilterValue = Filter(Consts.AmqpApplicationPropertiesFilter);
             Map applicationPropertiesFilter = (Map)applicationPropertiesFilterValue.Value;
             // Note: do NOT put a symbol as the key
             applicationPropertiesFilter.Add(propertyKey, propertyValue);

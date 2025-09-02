@@ -39,8 +39,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly IMetricsReporter? _metricsReporter;
 
         private readonly Dictionary<string, object> _connectionProperties = new();
-        private bool _areFilterExpressionsSupported = false;
-        private FeatureFlags _featureFlags = new FeatureFlags();
+        internal readonly FeatureFlags _featureFlags = new FeatureFlags();
 
         /// <summary>
         /// _publishersDict contains all the publishers created by the connection.
@@ -260,8 +259,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
 
         internal Connection? NativeConnection => _nativeConnection;
-
-        internal bool AreFilterExpressionsSupported => _areFilterExpressionsSupported;
 
         // TODO this couples AmqpConnection with AmqpPublisher, yuck
         internal void AddPublisher(Guid id, IPublisher consumer)
@@ -674,7 +671,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             // this is a feature that was introduced in RabbitMQ 4.2.0
             _featureFlags.IsSqlFeatureEnabled = Utils.Is4_2_OrMore(brokerVersion);
 
-            _areFilterExpressionsSupported = Utils.SupportsFilterExpressions(brokerVersion);
+            _featureFlags.IsFilterFeatureEnabled = Utils.SupportsFilterExpressions(brokerVersion);
         }
     }
 }
