@@ -9,4 +9,4 @@ This directory contains examples of how to use the RabbitMQ AMQP 1.0 .NET client
 - OpenTelemetry Integration [here](./OpenTelemetryIntegration/)
 - OAuth2 Example [here](./OAuth2)
 - Batch Disposition [here](./BatchDispositions)
-- Stream Filter[here](./StreamFilter)
+- Stream Filter [here](./StreamFilter)
