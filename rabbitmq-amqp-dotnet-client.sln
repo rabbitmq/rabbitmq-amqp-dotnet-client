@@ -37,6 +37,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OAuth2", "docs\Examples\OAu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BatchDispositions", "docs\Examples\BatchDispositions\BatchDispositions.csproj", "{1FF0D53E-B495-4810-8415-E27DED184C9E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StreamFilter", "docs\Examples\StreamFilter\StreamFilter.csproj", "{76B4C910-B9AB-479E-BA77-067CCE0CD37C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -79,6 +81,10 @@ Global
 		{1FF0D53E-B495-4810-8415-E27DED184C9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1FF0D53E-B495-4810-8415-E27DED184C9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1FF0D53E-B495-4810-8415-E27DED184C9E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76B4C910-B9AB-479E-BA77-067CCE0CD37C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76B4C910-B9AB-479E-BA77-067CCE0CD37C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76B4C910-B9AB-479E-BA77-067CCE0CD37C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76B4C910-B9AB-479E-BA77-067CCE0CD37C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -91,5 +97,6 @@ Global
 		{D74F49FC-2C9A-4227-8988-30925C509388} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 		{C1EA4B66-E60E-4945-A4C6-91B433F9BA65} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 		{1FF0D53E-B495-4810-8415-E27DED184C9E} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
+		{76B4C910-B9AB-479E-BA77-067CCE0CD37C} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 	EndGlobalSection
 EndGlobal

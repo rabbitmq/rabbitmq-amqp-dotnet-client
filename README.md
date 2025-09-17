@@ -9,7 +9,7 @@ The client is distributed via [NuGet](https://www.nuget.org/packages/RabbitMQ.AM
 
 ## Examples
 
-Inside the `docs/Examples` directory you can find examples of how to use the client.
+Inside the [docs/Examples](./docs/Examples) directory you can find examples of how to use the client.
 
 
 ## Documentation
