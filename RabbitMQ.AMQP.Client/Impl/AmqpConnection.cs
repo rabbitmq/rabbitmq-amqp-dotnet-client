@@ -124,21 +124,21 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
 
         /// <summary>
-        /// Create an <see cref="IRpcServerBuilder"/> instance for this connection.
+        /// Create an <see cref="IResponderBuilder"/> instance for this connection.
         /// </summary>
-        /// <returns><see cref="IRpcServerBuilder"/> instance for this connection.</returns>
-        public IRpcServerBuilder RpcServerBuilder()
+        /// <returns><see cref="IResponderBuilder"/> instance for this connection.</returns>
+        public IResponderBuilder ResponderBuilder()
         {
-            return new AmqpRpcServerBuilder(this);
+            return new AmqpResponderBuilder(this);
         }
 
         /// <summary>
-        /// Create an <see cref="IRpcClientBuilder"/> instance for this connection.
+        /// Create an <see cref="IRequesterBuilder"/> instance for this connection.
         /// </summary>
-        /// <returns><see cref="IRpcClientBuilder"/> instance for this connection.</returns>
-        public IRpcClientBuilder RpcClientBuilder()
+        /// <returns><see cref="IRequesterBuilder"/> instance for this connection.</returns>
+        public IRequesterBuilder RequesterBuilder()
         {
-            return new AmqpRpcClientBuilder(this);
+            return new AmqpRequesterBuilder(this);
         }
 
         /// <summary>

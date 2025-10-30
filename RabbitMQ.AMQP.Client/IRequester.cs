@@ -9,23 +9,23 @@ using System.Threading.Tasks;
 namespace RabbitMQ.AMQP.Client
 {
 
-    public interface IRpcClientAddressBuilder : IAddressBuilder<IRpcClientAddressBuilder>
+    public interface IRequesterAddressBuilder : IAddressBuilder<IRequesterAddressBuilder>
     {
-        IRpcClientBuilder RpcClient();
+        IRequesterBuilder Requester();
     }
 
     /// <summary>
     /// IRpcClientBuilder is the interface for creating an RPC client.
-    /// See also <seealso cref="IRpcClient"/> and <seealso cref="IRpcServerBuilder"/>
+    /// See also <seealso cref="IRequester"/> and <seealso cref="IResponderBuilder"/>
     /// </summary>
-    public interface IRpcClientBuilder
+    public interface IRequesterBuilder
     {
         /// <summary>
         /// Request address where the client sends requests.
         /// The server consumes requests from this address.
         /// </summary>
         /// <returns></returns>
-        IRpcClientAddressBuilder RequestAddress();
+        IRequesterAddressBuilder RequestAddress();
 
         /// <summary>
         /// The queue from which requests are consumed.
@@ -33,9 +33,9 @@ namespace RabbitMQ.AMQP.Client
         /// </summary>
         /// <param name="replyToQueueName"> The queue name</param>
         /// <returns></returns>
-        IRpcClientBuilder ReplyToQueue(string replyToQueueName);
+        IRequesterBuilder ReplyToQueue(string replyToQueueName);
 
-        IRpcClientBuilder ReplyToQueue(IQueueSpecification replyToQueue);
+        IRequesterBuilder ReplyToQueue(IQueueSpecification replyToQueue);
 
         /// <summary>
         /// Extracts the correlation id from the request message.
@@ -45,7 +45,7 @@ namespace RabbitMQ.AMQP.Client
         /// </summary>
         /// <param name="correlationIdExtractor"></param>
         /// <returns></returns>
-        IRpcClientBuilder CorrelationIdExtractor(Func<IMessage, object>? correlationIdExtractor);
+        IRequesterBuilder CorrelationIdExtractor(Func<IMessage, object>? correlationIdExtractor);
 
         /// <summary>
         /// Post processes the reply message before sending it to the server.
@@ -56,7 +56,7 @@ namespace RabbitMQ.AMQP.Client
         /// </summary>
         /// <param name="requestPostProcessor"></param>
         /// <returns></returns>
-        IRpcClientBuilder RequestPostProcessor(Func<IMessage, object, IMessage>? requestPostProcessor);
+        IRequesterBuilder RequestPostProcessor(Func<IMessage, object, IMessage>? requestPostProcessor);
 
         /// <summary>
         /// Client and Server must agree on the correlation id.
@@ -67,26 +67,26 @@ namespace RabbitMQ.AMQP.Client
         /// <param name="correlationIdSupplier"></param>
         /// <returns></returns>
 
-        IRpcClientBuilder CorrelationIdSupplier(Func<object>? correlationIdSupplier);
+        IRequesterBuilder CorrelationIdSupplier(Func<object>? correlationIdSupplier);
 
         /// <summary>
         /// The time to wait for a reply from the server.
         /// </summary>
         /// <param name="timeout"></param>
         /// <returns></returns>
-        IRpcClientBuilder Timeout(TimeSpan timeout);
+        IRequesterBuilder Timeout(TimeSpan timeout);
         /// <summary>
         ///  Build and return the RPC client.
         /// </summary>
         /// <returns></returns>
-        Task<IRpcClient> BuildAsync();
+        Task<IRequester> BuildAsync();
     }
 
     /// <summary>
     ///  IRpcClient is the interface for an RPC client.
-    /// See also <seealso cref="IRpcServer"/> and <seealso cref="IRpcClientBuilder"/>
+    /// See also <seealso cref="IResponder"/> and <seealso cref="IRequesterBuilder"/>
     /// </summary>
-    public interface IRpcClient : ILifeCycle
+    public interface IRequester : ILifeCycle
     {
         /// <summary>
         /// PublishAsync sends a request message to the server and blocks the thread until the response is received.

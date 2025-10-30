@@ -28,16 +28,16 @@ namespace RabbitMQ.AMQP.Client
         IConsumerBuilder ConsumerBuilder();
 
         /// <summary>
-        /// Create an <see cref="IRpcServerBuilder"/> instance for this connection.
+        /// Create an <see cref="IResponderBuilder"/> instance for this connection.
         /// </summary>
-        /// <returns><see cref="IRpcServerBuilder"/> instance for this connection.</returns>
-        IRpcServerBuilder RpcServerBuilder();
+        /// <returns><see cref="IResponderBuilder"/> instance for this connection.</returns>
+        IResponderBuilder ResponderBuilder();
 
         /// <summary>
-        /// Create an <see cref="IRpcClientBuilder"/> instance for this connection.
+        /// Create an <see cref="IRequesterBuilder"/> instance for this connection.
         /// </summary>
-        /// <returns><see cref="IRpcClientBuilder"/> instance for this connection.</returns>
-        IRpcClientBuilder RpcClientBuilder();
+        /// <returns><see cref="IRequesterBuilder"/> instance for this connection.</returns>
+        IRequesterBuilder RequesterBuilder();
 
         /// <summary>
         /// Get the properties for this connection.

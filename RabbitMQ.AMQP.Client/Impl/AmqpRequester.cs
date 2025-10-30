@@ -23,80 +23,80 @@ namespace RabbitMQ.AMQP.Client.Impl
         public Func<IMessage, object, IMessage>? RequestPostProcessor { get; set; }
     }
 
-    public class AmqpRpcClientBuilder : IRpcClientBuilder
+    public class AmqpRequesterBuilder : IRequesterBuilder
     {
-        private readonly RpcClientAddressBuilder _addressBuilder;
+        private readonly RequesterAddressBuilder _addressBuilder;
         private readonly AmqpConnection _connection;
         private readonly RpcClientConfiguration _configuration = new();
 
-        public AmqpRpcClientBuilder(AmqpConnection connection)
+        public AmqpRequesterBuilder(AmqpConnection connection)
         {
             _connection = connection;
-            _addressBuilder = new RpcClientAddressBuilder(this);
+            _addressBuilder = new RequesterAddressBuilder(this);
         }
 
-        public IRpcClientAddressBuilder RequestAddress()
+        public IRequesterAddressBuilder RequestAddress()
         {
             return _addressBuilder;
         }
 
-        public IRpcClientBuilder ReplyToQueue(string replyToQueueName)
+        public IRequesterBuilder ReplyToQueue(string replyToQueueName)
         {
             _configuration.ReplyToQueue = replyToQueueName;
             return this;
         }
 
-        public IRpcClientBuilder ReplyToQueue(IQueueSpecification replyToQueue)
+        public IRequesterBuilder ReplyToQueue(IQueueSpecification replyToQueue)
         {
             _configuration.ReplyToQueue = replyToQueue.QueueName;
             return this;
         }
 
-        public IRpcClientBuilder CorrelationIdExtractor(Func<IMessage, object>? correlationIdExtractor)
+        public IRequesterBuilder CorrelationIdExtractor(Func<IMessage, object>? correlationIdExtractor)
         {
             _configuration.CorrelationIdExtractor = correlationIdExtractor;
             return this;
         }
 
-        public IRpcClientBuilder RequestPostProcessor(Func<IMessage, object, IMessage>? requestPostProcessor)
+        public IRequesterBuilder RequestPostProcessor(Func<IMessage, object, IMessage>? requestPostProcessor)
         {
             _configuration.RequestPostProcessor = requestPostProcessor;
             return this;
         }
 
-        public IRpcClientBuilder CorrelationIdSupplier(Func<object>? correlationIdSupplier)
+        public IRequesterBuilder CorrelationIdSupplier(Func<object>? correlationIdSupplier)
         {
             _configuration.CorrelationIdSupplier = correlationIdSupplier;
             return this;
         }
 
-        public IRpcClientBuilder Timeout(TimeSpan timeout)
+        public IRequesterBuilder Timeout(TimeSpan timeout)
         {
             _configuration.Timeout = timeout;
             return this;
         }
 
-        public async Task<IRpcClient> BuildAsync()
+        public async Task<IRequester> BuildAsync()
         {
             _configuration.RequestAddress = _addressBuilder.Address();
             _configuration.Connection = _connection;
-            var rpcClient = new AmqpRpcClient(_configuration);
+            var rpcClient = new AmqpRequester(_configuration);
             await rpcClient.OpenAsync().ConfigureAwait(false);
             return rpcClient;
         }
     }
 
     /// <summary>
-    /// AmqpRpcClient is an implementation of <see cref="IRpcClient"/>.
+    /// AmqpRpcClient is an implementation of <see cref="IRequester"/>.
     /// It is a wrapper around <see cref="IPublisher"/> and <see cref="IConsumer"/> to create an RPC client over AMQP 1.0.
     /// even the PublishAsync is async the RPClient blocks the thread until the response is received.
     /// within the timeout.
     ///
     ///  The PublishAsync is thread-safe and can be called from multiple threads.
     ///
-    /// See also the server side <see cref="IRpcServer"/>.
+    /// See also the server side <see cref="IResponder"/>.
     /// </summary>
-    public class AmqpRpcClient : AbstractLifeCycle, IRpcClient
+    public class AmqpRequester : AbstractLifeCycle, IRequester
     {
         private readonly RpcClientConfiguration _configuration;
         private IConsumer? _consumer = null;
@@ -138,7 +138,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 .MessageId(correlationId);
         }
 
-        public AmqpRpcClient(RpcClientConfiguration configuration)
+        public AmqpRequester(RpcClientConfiguration configuration)
         {
             _configuration = configuration;
         }

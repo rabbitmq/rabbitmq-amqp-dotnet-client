@@ -124,16 +124,16 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
     }
 
-    public class RpcClientAddressBuilder : DefaultAddressBuilder<IRpcClientAddressBuilder>, IRpcClientAddressBuilder
+    public class RequesterAddressBuilder : DefaultAddressBuilder<IRequesterAddressBuilder>, IRequesterAddressBuilder
     {
-        readonly AmqpRpcClientBuilder _builder;
-        public RpcClientAddressBuilder(AmqpRpcClientBuilder builder)
+        readonly AmqpRequesterBuilder _builder;
+        public RequesterAddressBuilder(AmqpRequesterBuilder builder)
         {
             _builder = builder;
             _owner = this;
         }
 
-        public IRpcClientBuilder RpcClient()
+        public IRequesterBuilder Requester()
         {
             return _builder;
         }

@@ -16,7 +16,7 @@ namespace Tests.Rpc
         : IntegrationTest(testOutputHelper, setupConnectionAndManagement: false)
     {
         [Fact]
-        public async Task RpcServerAndClientShouldRecoverAfterKillConnection()
+        public async Task ResponderAndClientShouldRecoverAfterKillConnection()
         {
             Assert.Null(_connection);
             Assert.Null(_management);
@@ -38,7 +38,7 @@ namespace Tests.Rpc
 
             await requestQueue.DeclareAsync();
             int messagesReceived = 0;
-            IRpcServer rpcServer = await connection.RpcServerBuilder()
+            IResponder responder = await connection.ResponderBuilder()
                 .RequestQueue(rpcRequestQueueName)
                 .Handler((context, message) =>
                 {
@@ -55,8 +55,8 @@ namespace Tests.Rpc
 
             await clientReplyQueue.DeclareAsync();
 
-            IRpcClient rpcClient = await
-                connection.RpcClientBuilder().RequestAddress().Queue(requestQueue).RpcClient()
+            IRequester requester = await
+                connection.RequesterBuilder().RequestAddress().Queue(requestQueue).Requester()
                     .ReplyToQueue(clientReplyQueue).BuildAsync();
 
             int messagesConfirmed = 0;
@@ -65,7 +65,7 @@ namespace Tests.Rpc
                 IMessage request = new AmqpMessage("ping");
                 try
                 {
-                    IMessage response = await rpcClient.PublishAsync(request);
+                    IMessage response = await requester.PublishAsync(request);
                     messagesConfirmed++;
                     Assert.Equal("pong", response.BodyAsString());
                 }
@@ -91,8 +91,8 @@ namespace Tests.Rpc
             Assert.True(messagesReceived > 25);
             await requestQueue.DeleteAsync();
             await clientReplyQueue.DeleteAsync();
-            await rpcClient.CloseAsync();
-            await rpcServer.CloseAsync();
+            await requester.CloseAsync();
+            await responder.CloseAsync();
         }
     }
 }
