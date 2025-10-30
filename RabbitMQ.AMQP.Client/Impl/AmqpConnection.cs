@@ -670,7 +670,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             // check if the broker supports filter expressions
             // this is a feature that was introduced in RabbitMQ 4.2.0
             _featureFlags.IsSqlFeatureEnabled = Utils.Is4_2_OrMore(brokerVersion);
-            
+
             _featureFlags.IsDirectReplyToSupported = Utils.Is4_2_OrMore(brokerVersion);
 
             _featureFlags.IsFilterFeatureEnabled = Utils.SupportsFilterExpressions(brokerVersion);
