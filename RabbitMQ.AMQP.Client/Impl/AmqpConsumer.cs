@@ -14,6 +14,14 @@ using TraceLevel = Amqp.TraceLevel;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
+    static class ConsumerDefaults
+    {
+        public const int AttachTimeoutSeconds = 5;
+        public const int MessageReceiveTimeoutSeconds = 60;
+        public const int CloseTimeoutSeconds = 5;
+        public const int AttachDelayMilliseconds = 10;
+    }
+
     /// <summary>
     /// Implementation of <see cref="IConsumer"/>.
     /// </summary>
@@ -36,7 +44,8 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly ConsumerConfiguration _configuration;
         private readonly IMetricsReporter? _metricsReporter;
 
-        internal AmqpConsumer(AmqpConnection amqpConnection, ConsumerConfiguration configuration, IMetricsReporter? metricsReporter)
+        internal AmqpConsumer(AmqpConnection amqpConnection, ConsumerConfiguration configuration,
+            IMetricsReporter? metricsReporter)
         {
             _amqpConnection = amqpConnection;
             _configuration = configuration;
@@ -87,12 +96,12 @@ namespace RabbitMQ.AMQP.Client.Impl
                 var tmpReceiverLink = new ReceiverLink(session, _id.ToString(), attach, OnAttached);
 
                 // TODO configurable timeout
-                var waitSpan = TimeSpan.FromSeconds(5);
+                var waitSpan = TimeSpan.FromSeconds(ConsumerDefaults.AttachTimeoutSeconds);
 
                 // TODO
                 // Even 10ms is enough to allow the links to establish,
                 // which tells me it allows the .NET runtime to process
-                await Task.Delay(10).ConfigureAwait(false);
+                await Task.Delay(ConsumerDefaults.AttachDelayMilliseconds).ConfigureAwait(false);
 
                 _receiverLink = await attachCompletedTcs.Task.WaitAsync(waitSpan)
                     .ConfigureAwait(false);
@@ -102,27 +111,15 @@ namespace RabbitMQ.AMQP.Client.Impl
                     // TODO log this case?
                 }
 
-                if (_receiverLink is null)
-                {
-                    throw new ConsumerException($"{ToString()} Failed to create receiver link (null was returned)");
-                }
-                else if (_receiverLink.LinkState != LinkState.Attached)
-                {
-                    throw new ConsumerException(
-                        $"{ToString()} Failed to create receiver link. Link state is not attached, error: " +
-                        _receiverLink.Error?.ToString() ?? "Unknown error");
-                }
-                else
-                {
-                    _receiverLink.SetCredit(_configuration.InitialCredits);
+                ValidateReceiverLink();
+                _receiverLink.SetCredit(_configuration.InitialCredits);
 
-                    // TODO save / cancel task
-                    _ = Task.Run(ProcessMessages);
+                // TODO save / cancel task
+                _ = Task.Run(ProcessMessages);
 
-                    // TODO cancellation token
-                    await base.OpenAsync()
-                        .ConfigureAwait(false);
-                }
+                // TODO cancellation token
+                await base.OpenAsync()
+                    .ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -130,16 +127,24 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        private void ValidateReceiverLink()
+        {
+            if (_receiverLink is null)
+            {
+                throw new ConsumerException($"{ToString()} Receiver link creation failed (null was returned)");
+            }
+
+            if (_receiverLink.LinkState != LinkState.Attached)
+            {
+                var errorMessage = _receiverLink.Error?.ToString() ?? "Unknown error";
+                throw new ConsumerException($"{ToString()} Receiver link not attached. Error: {errorMessage}");
+            }
+        }
+
         private async Task ProcessMessages()
         {
             try
             {
-                if (_receiverLink is null)
-                {
-                    // TODO is this a serious error?
-                    return;
-                }
-
                 Stopwatch? stopwatch = null;
                 if (_metricsReporter is not null)
                 {
@@ -184,7 +189,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                         stopwatch.Stop();
                         _metricsReporter.Consumed(stopwatch.Elapsed);
                     }
-
                 }
             }
             catch (Exception e)
