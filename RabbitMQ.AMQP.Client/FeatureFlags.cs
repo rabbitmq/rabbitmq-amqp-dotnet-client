@@ -24,6 +24,13 @@ namespace RabbitMQ.AMQP.Client
         /// </summary>
         public bool IsBrokerCompatible { get; internal set; } = false;
 
+        /// <summary>
+        /// Check if Direct Reply-To is supported.
+        /// Direct Reply-To is available in RabbitMQ 4.2 and later.
+        /// see: https://www.rabbitmq.com/docs/direct-reply-to
+        /// </summary>
+        public bool IsDirectReplyToSupported { get; internal set; } = false;
+
         public void Validate()
         {
             if (!IsBrokerCompatible)

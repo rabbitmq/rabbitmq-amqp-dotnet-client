@@ -116,6 +116,7 @@ RabbitMQ.AMQP.Client.ExchangeType.TOPIC = 2 -> RabbitMQ.AMQP.Client.ExchangeType
 RabbitMQ.AMQP.Client.FeatureFlags
 RabbitMQ.AMQP.Client.FeatureFlags.FeatureFlags() -> void
 RabbitMQ.AMQP.Client.FeatureFlags.IsBrokerCompatible.get -> bool
+RabbitMQ.AMQP.Client.FeatureFlags.IsDirectReplyToSupported.get -> bool
 RabbitMQ.AMQP.Client.FeatureFlags.IsFilterFeatureEnabled.get -> bool
 RabbitMQ.AMQP.Client.FeatureFlags.IsSqlFeatureEnabled.get -> bool
 RabbitMQ.AMQP.Client.FeatureFlags.Validate() -> void
