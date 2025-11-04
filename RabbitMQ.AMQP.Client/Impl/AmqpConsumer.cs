@@ -38,6 +38,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly Guid _id = Guid.NewGuid();
 
         private ReceiverLink? _receiverLink;
+        private Attach? _attach;
 
         private PauseStatus _pauseStatus = PauseStatus.UNPAUSED;
         private readonly UnsettledMessageCounter _unsettledMessageCounter = new();
@@ -57,8 +58,8 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             try
             {
-                TaskCompletionSource<ReceiverLink> attachCompletedTcs =
-                    Utils.CreateTaskCompletionSource<ReceiverLink>();
+                TaskCompletionSource<(ReceiverLink, Attach)> attachCompletedTcs =
+                    Utils.CreateTaskCompletionSource<(ReceiverLink, Attach)>();
 
                 // this is an event to get the filters to the listener context
                 // it _must_ be here because in case of reconnect the original filters could be not valid anymore
@@ -72,14 +73,24 @@ namespace RabbitMQ.AMQP.Client.Impl
                     _configuration.ListenerContext(listenerContext);
                 }
 
-                Attach attach = Utils.CreateAttach(_configuration.Address, DeliveryMode.AtLeastOnce, _id,
-                    _configuration.Filters);
+                Attach attach;
+
+                if (_configuration.DirectReplyTo)
+                {
+                    attach = Utils.CreateDirectReplyToAttach(_id, _configuration.Filters);
+                }
+                else
+                {
+                    string address = AddressBuilderHelper.AddressBuilder().Queue(_configuration.Queue).Address();
+                    attach = Utils.CreateAttach(address, DeliveryMode.AtLeastOnce, _id,
+                        _configuration.Filters);
+                }
 
                 void OnAttached(ILink argLink, Attach argAttach)
                 {
                     if (argLink is ReceiverLink link)
                     {
-                        attachCompletedTcs.SetResult(link);
+                        attachCompletedTcs.SetResult((link, argAttach));
                     }
                     else
                     {
@@ -103,10 +114,10 @@ namespace RabbitMQ.AMQP.Client.Impl
                 // which tells me it allows the .NET runtime to process
                 await Task.Delay(ConsumerDefaults.AttachDelayMilliseconds).ConfigureAwait(false);
 
-                _receiverLink = await attachCompletedTcs.Task.WaitAsync(waitSpan)
+                (_receiverLink, _attach) = await attachCompletedTcs.Task.WaitAsync(waitSpan)
                     .ConfigureAwait(false);
 
-                if (false == Object.ReferenceEquals(_receiverLink, tmpReceiverLink))
+                if (!ReferenceEquals(_receiverLink, tmpReceiverLink))
                 {
                     // TODO log this case?
                 }
@@ -136,7 +147,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
             if (_receiverLink.LinkState != LinkState.Attached)
             {
-                var errorMessage = _receiverLink.Error?.ToString() ?? "Unknown error";
+                string errorMessage = _receiverLink.Error?.ToString() ?? "Unknown error";
                 throw new ConsumerException($"{ToString()} Receiver link not attached. Error: {errorMessage}");
             }
         }
@@ -245,6 +256,15 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// </summary>
         public long UnsettledMessageCount => _unsettledMessageCounter.Get();
 
+        public string? QueueAddress
+        {
+            get
+            {
+                string? x = _attach?.Source is not Source source ? null : source.Address;
+                return x;
+            }
+        }
+
         /// <summary>
         /// Request to receive messages again.
         /// </summary>
@@ -298,7 +318,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public override string ToString()
         {
-            return $"Consumer{{Address='{_configuration.Address}', " +
+            string address = AddressBuilderHelper.AddressBuilder().Queue(_configuration.Queue).Address();
+            return $"Consumer{{Address='{address}', " +
                    $"id={_id}, " +
                    $"Connection='{_amqpConnection}', " +
                    $"State='{State}'}}";

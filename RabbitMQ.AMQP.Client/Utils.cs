@@ -115,6 +115,47 @@ namespace RabbitMQ.AMQP.Client
             }
         }
 
+        internal static Attach CreateDirectReplyToAttach(Guid linkId, Map? sourceFilter = null)
+        {
+            // Attach{name='receiver-ID:f99ef5a7-7b91-48cb-a52e-d86e6f14f33b:3:2:1:1',
+            // handle=null, role=RECEIVER, sndSettleMode=SETTLED, rcvSettleMode=FIRST,
+            // source=Source{address='null', durable=NONE, expiryPolicy=LINK_DETACH, timeout=0,
+            // dynamic=true, dynamicNodeProperties=null, distributionMode=null, filter=null,
+            // defaultOutcome=Modified{deliveryFailed=true, undeliverableHere=false, messageAnnotations=null},
+            // outcomes=[amqp:accepted:list, amqp:rejected:list, amqp:released:list, amqp:modified:list],
+            // capabilities=[rabbitmq:volatile-queue]}, target=Target{address='null', durable=NONE,
+            // expiryPolicy=SESSION_END, timeout=0, dynamic=false, dynamicNodeProperties=null, capabilities=null},
+            // unsettled=null, incompleteUnsettled=null, initialDeliveryCount=null, maxMessageSize=null, offeredCapabilities=null,
+            // desiredCapabilities=null, properties=null}
+
+            var a = new Attach()
+            {
+                SndSettleMode = SenderSettleMode.Settled,
+                // LinkName = $"receiver-ID:{linkId.ToString()}",
+                RcvSettleMode = ReceiverSettleMode.First,
+                Source = new Source()
+                {
+                    Capabilities = new Symbol[] { new("rabbitmq:volatile-queue") },
+                    ExpiryPolicy = new Symbol("link-detach"),
+                    Dynamic = true,
+                    Timeout = 0,
+                    FilterSet = sourceFilter,
+                    DefaultOutcome = new Modified()
+                    {
+                        DeliveryFailed = true,
+                        UndeliverableHere = false,
+                    }
+                },
+                // Target = new Target()
+                // {
+                //     ExpiryPolicy = new Symbol("SESSION_END"),
+                //     Dynamic = false,
+                //     Durable = 0,
+                // },
+            };
+            return a;
+        }
+
         internal static Attach CreateAttach(string? address,
             DeliveryMode deliveryMode, Guid linkId, Map? sourceFilter = null)
         {

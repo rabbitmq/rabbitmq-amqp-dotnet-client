@@ -19,7 +19,18 @@ namespace RabbitMQ.AMQP.Client
     public interface IConsumerBuilder
     {
         IConsumerBuilder Queue(IQueueSpecification queueSpecification);
-        IConsumerBuilder Queue(string queueName);
+        IConsumerBuilder Queue(string? queueName);
+
+        /// <summary>
+        /// If direct reply-to is enabled, the client will use the direct reply-to feature of AMQP 1.0.
+        /// The server must also support direct reply-to.
+        /// This feature allows the server to send the reply directly to the client without going through a reply queue.
+        /// This can improve performance and reduce latency.
+        /// Default is false.
+        /// https://www.rabbitmq.com/docs/direct-reply-to
+        /// </summary>
+
+        IConsumerBuilder DirectReplyTo(bool directReplyTo);
 
         IConsumerBuilder MessageHandler(MessageHandler handler);
 

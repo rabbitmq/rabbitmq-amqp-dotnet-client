@@ -13,6 +13,9 @@ namespace RabbitMQ.AMQP.Client.Impl
     {
         public AmqpConnection Connection { get; set; } = null!;
         public string ReplyToQueue { get; set; } = "";
+
+        internal string ReplyToQueueAddress { get; set; } = "";
+
         public string RequestAddress { get; set; } = "";
         public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(10);
 
@@ -134,7 +137,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 return _configuration.RequestPostProcessor(request, correlationId);
             }
 
-            return request.ReplyTo(AddressBuilderHelper.AddressBuilder().Queue(_configuration.ReplyToQueue).Address())
+            return request.ReplyTo(_configuration.ReplyToQueueAddress)
                 .MessageId(correlationId);
         }
 
@@ -145,17 +148,20 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public override async Task OpenAsync()
         {
-            if (string.IsNullOrEmpty(_configuration.ReplyToQueue))
+            bool isDirectReplyToSupported = _configuration.Connection._featureFlags.IsDirectReplyToSupported;
+            string queueReplyTo = _configuration.ReplyToQueue;
+            if (string.IsNullOrEmpty(_configuration.ReplyToQueue) && !isDirectReplyToSupported)
             {
                 IQueueInfo queueInfo = await _configuration.Connection.Management().Queue().AutoDelete(true)
                     .Exclusive(true).DeclareAsync()
                     .ConfigureAwait(false);
-                _configuration.ReplyToQueue = queueInfo.Name();
+                queueReplyTo = queueInfo.Name();
             }
 
             _publisher = await _configuration.Connection.PublisherBuilder().BuildAsync().ConfigureAwait(false);
             _consumer = await _configuration.Connection.ConsumerBuilder()
-                .Queue(_configuration.ReplyToQueue)
+                .Queue(queueReplyTo)
+                .DirectReplyTo(isDirectReplyToSupported)
                 .MessageHandler((context, message) =>
                 {
                     // TODO MessageHandler funcs should catch all exceptions
@@ -165,9 +171,14 @@ namespace RabbitMQ.AMQP.Client.Impl
                     {
                         request.SetResult(message);
                     }
+
                     return Task.CompletedTask;
                 }).BuildAndStartAsync().ConfigureAwait(false);
 
+            if (_consumer.QueueAddress is not null)
+            {
+                _configuration.ReplyToQueueAddress = _consumer.QueueAddress;
+            }
             await base.OpenAsync().ConfigureAwait(false);
         }
 

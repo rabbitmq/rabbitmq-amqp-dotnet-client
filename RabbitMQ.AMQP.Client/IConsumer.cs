@@ -37,6 +37,11 @@ namespace RabbitMQ.AMQP.Client
         /// Returns the number of unsettled messages.
         /// </summary>
         long UnsettledMessageCount { get; }
+
+        /// <summary>
+        /// Returns queue address the consumer is consuming from.
+        /// </summary>
+        string? QueueAddress { get; }
     }
 
     public interface IContext

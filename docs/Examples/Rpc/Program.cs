@@ -40,7 +40,8 @@ await queueSpec.DeclareAsync();
 const int messagesToSend = 10_000_000;
 TaskCompletionSource<bool> tcs = new();
 int messagesReceived = 0;
-IResponder responder = await connection.ResponderBuilder().RequestQueue(rpcQueue).Handler(
+IResponder responder = await connection.ResponderBuilder().
+    RequestQueue(rpcQueue).Handler(
     (context, message) =>
     {
         try
@@ -59,8 +60,8 @@ IResponder responder = await connection.ResponderBuilder().RequestQueue(rpcQueue
     }
 ).BuildAsync();
 
-IRequester requester = await connection.RequesterBuilder().RequestAddress().Queue(rpcQueue).Requester().BuildAsync()
-    ;
+IRequester requester = await connection.RequesterBuilder().RequestAddress().
+        Queue(rpcQueue).Requester().BuildAsync();
 
 for (int i = 0; i < messagesToSend; i++)
 {

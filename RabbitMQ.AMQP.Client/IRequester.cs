@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.AMQP.Client
 {
-
     public interface IRequesterAddressBuilder : IAddressBuilder<IRequesterAddressBuilder>
     {
         IRequesterBuilder Requester();
@@ -66,7 +65,6 @@ namespace RabbitMQ.AMQP.Client
         /// </summary>
         /// <param name="correlationIdSupplier"></param>
         /// <returns></returns>
-
         IRequesterBuilder CorrelationIdSupplier(Func<object>? correlationIdSupplier);
 
         /// <summary>
@@ -75,6 +73,7 @@ namespace RabbitMQ.AMQP.Client
         /// <param name="timeout"></param>
         /// <returns></returns>
         IRequesterBuilder Timeout(TimeSpan timeout);
+
         /// <summary>
         ///  Build and return the RPC client.
         /// </summary>
