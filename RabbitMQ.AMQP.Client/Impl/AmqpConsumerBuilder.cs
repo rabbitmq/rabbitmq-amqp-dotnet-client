@@ -105,7 +105,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             if (_configuration.Filters[Consts.s_sqlFilterSymbol] is not null &&
                 !_amqpConnection._featureFlags.IsSqlFeatureEnabled)
             {
-                throw new NotSupportedException("SQL filter is not supported by the connection." +
+                throw new NotSupportedException("SQL filter is not supported by the connection. " +
                                                 "RabbitMQ 4.2.0 or later is required.");
             }
 
