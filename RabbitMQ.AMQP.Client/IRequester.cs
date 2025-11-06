@@ -105,6 +105,6 @@ namespace RabbitMQ.AMQP.Client
         /// - The server uses this address to send the reply message. with direct-reply-to
         /// </summary>
         /// <returns></returns>
-        public string ReplyToQueueAddress();
+        public string GetReplyToQueue();
     }
 }

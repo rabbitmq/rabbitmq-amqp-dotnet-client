@@ -14,7 +14,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         public AmqpConnection Connection { get; set; } = null!;
         public string ReplyToQueue { get; set; } = "";
 
-        public string RequestAddress { get; set; } = "";
         public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(10);
 
         public Func<object>? CorrelationIdSupplier { get; set; } = null;
@@ -79,7 +78,6 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public async Task<IRequester> BuildAsync()
         {
-            _configuration.RequestAddress = _addressBuilder.Address();
             _configuration.Connection = _connection;
             var rpcClient = new AmqpRequester(_configuration);
             await rpcClient.OpenAsync().ConfigureAwait(false);
@@ -135,7 +133,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 return _configuration.RequestPostProcessor(request, correlationId);
             }
 
-            string s = ReplyToQueueAddress();
+            string s = GetReplyToQueue();
             return request.ReplyTo(s)
                 .MessageId(correlationId);
         }
@@ -230,7 +228,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                 if (_publisher != null)
                 {
                     PublishResult pr = await _publisher.PublishAsync(
-                        message.To(_configuration.RequestAddress), cancellationToken).ConfigureAwait(false);
+                        message.To(AddressBuilderHelper.AddressBuilder().Queue(GetReplyToQueue()).Address()),
+                        cancellationToken).ConfigureAwait(false);
 
                     if (pr.Outcome.State != OutcomeState.Accepted)
                     {
@@ -250,14 +249,14 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-        public string ReplyToQueueAddress()
+        public string GetReplyToQueue()
         {
             if (_consumer == null)
             {
                 throw new InvalidOperationException("Requester is not opened");
             }
 
-            return _consumer.QueueAddress ??
+            return _consumer.Queue ??
                    throw new InvalidOperationException("ReplyToQueueAddress is not available");
         }
     }

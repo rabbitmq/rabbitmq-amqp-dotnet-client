@@ -256,12 +256,18 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// </summary>
         public long UnsettledMessageCount => _unsettledMessageCounter.Get();
 
-        public string? QueueAddress
+        public string Queue
         {
             get
             {
-                string? x = _attach?.Source is not Source source ? null : source.Address;
-                return x;
+                string? sourceAddress = _attach?.Source is not Source source ? null : source.Address;
+                if (sourceAddress is null)
+                {
+                    throw new InvalidOperationException(
+                        "_attach.Source.Address is null");
+                }
+
+                return AddressBuilderHelper.AddressBuilder().DecodeQueuePathSegment(sourceAddress);
             }
         }
 
@@ -318,7 +324,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public override string ToString()
         {
-            return $"Consumer{{Address='{QueueAddress}', " +
+            return $"Consumer{{Address='{Queue}', " +
                    $"id={_id}, " +
                    $"Connection='{_amqpConnection}', " +
                    $"State='{State}'}}";

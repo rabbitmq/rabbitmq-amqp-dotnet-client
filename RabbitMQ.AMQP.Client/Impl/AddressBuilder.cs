@@ -21,12 +21,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public T Exchange(string? exchangeName)
         {
             _exchange = exchangeName;
-            if (_owner == null)
-            {
-                throw new InvalidOperationException("Owner is null");
-            }
-
-            return _owner;
+            return _owner ?? throw new InvalidOperationException("Owner is null");
         }
 
         public T Queue(IQueueSpecification queueSpec) => Queue(queueSpec.QueueName);
@@ -34,23 +29,13 @@ namespace RabbitMQ.AMQP.Client.Impl
         public T Queue(string? queueName)
         {
             _queue = queueName;
-            if (_owner == null)
-            {
-                throw new InvalidOperationException("Owner is null");
-            }
-
-            return _owner;
+            return _owner ?? throw new InvalidOperationException("Owner is null");
         }
 
         public T Key(string? key)
         {
             _key = key;
-            if (_owner == null)
-            {
-                throw new InvalidOperationException("Owner is null");
-            }
-
-            return _owner;
+            return _owner ?? throw new InvalidOperationException("Owner is null");
         }
 
         public string Address()
@@ -85,12 +70,19 @@ namespace RabbitMQ.AMQP.Client.Impl
                 return "";
             }
 
-            if (string.IsNullOrEmpty(_queue))
-            {
-                throw new InvalidAddressException("Queue must be set");
-            }
+            return string.IsNullOrEmpty(_queue)
+                ? throw new InvalidAddressException("Queue must be set")
+                : $"/{Consts.Queues}/{Utils.EncodePathSegment(_queue)}";
+        }
 
-            return $"/{Consts.Queues}/{Utils.EncodePathSegment(_queue)}";
+        public string DecodeQueuePathSegment(string path)
+        {
+            string? v = Utils.DecodePathSegment(path);
+            return v == null
+                ? throw new InvalidAddressException("Invalid path segment")
+                :
+                // remove the /queues prefix to the path
+                v.Substring($"/{Consts.Queues}/".Length);
         }
     }
 
@@ -127,6 +119,7 @@ namespace RabbitMQ.AMQP.Client.Impl
     public class RequesterAddressBuilder : DefaultAddressBuilder<IRequesterAddressBuilder>, IRequesterAddressBuilder
     {
         readonly AmqpRequesterBuilder _builder;
+
         public RequesterAddressBuilder(AmqpRequesterBuilder builder)
         {
             _builder = builder;

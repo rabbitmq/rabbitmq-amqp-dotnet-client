@@ -191,6 +191,11 @@ namespace RabbitMQ.AMQP.Client
         {
             return PercentCodec.EncodePathSegment(url);
         }
+        
+        internal static string? DecodePathSegment(string url)
+        {
+            return PercentCodec.DecodePathSegment(url);
+        }
 
         internal static string EncodeHttpParameter(string url)
         {
@@ -374,7 +379,66 @@ namespace RabbitMQ.AMQP.Client
             s_unreserved['_'] = true;
             s_unreserved['~'] = true;
         }
+        
+        private static int HexValue(char ch)
+        {
+            return ch switch
+            {
+                >= '0' and <= '9' => ch - '0',
+                >= 'A' and <= 'F' => ch - 'A' + 10,
+                >= 'a' and <= 'f' => ch - 'a' + 10,
+                _ => -1
+            };
+        }
 
+
+        internal static string? DecodePathSegment(string? segment)
+        {
+            if (segment == null)
+            {
+                return null;
+            }
+        
+            var bytes = new List<byte>(segment.Length);
+            for (int i = 0; i < segment.Length; i++)
+            {
+                char c = segment[i];
+                if (c == '%')
+                {
+                    if (i + 2 >= segment.Length)
+                    {
+                        throw new FormatException("Invalid percent-encoding: incomplete escape sequence.");
+                    }
+        
+                    int hi = HexValue(segment[i + 1]);
+                    int lo = HexValue(segment[i + 2]);
+                    if (hi < 0 || lo < 0)
+                    {
+                        throw new FormatException($"Invalid percent-encoding: '{segment.Substring(i, 3)}'.");
+                    }
+        
+                    bytes.Add((byte)((hi << 4) | lo));
+                    i += 2;
+                }
+                else
+                {
+                    // Append UTF-8 encoding of the character (handles non-ASCII chars)
+                    if (c <= 0x7F)
+                    {
+                        bytes.Add((byte)c);
+                    }
+                    else
+                    {
+                        bytes.AddRange(Encoding.UTF8.GetBytes(new[] { c }));
+                    }
+                }
+            }
+        
+            return Encoding.UTF8.GetString(bytes.ToArray());
+        }
+        
+        
+        
         internal static string? EncodePathSegment(string? segment)
         {
             if (segment == null)
