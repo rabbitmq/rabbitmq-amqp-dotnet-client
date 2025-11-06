@@ -78,11 +78,13 @@ namespace RabbitMQ.AMQP.Client.Impl
         public string DecodeQueuePathSegment(string path)
         {
             string? v = Utils.DecodePathSegment(path);
-            return v == null
-                ? throw new InvalidAddressException("Invalid path segment")
-                :
-                // remove the /queues prefix to the path
-                v.Substring($"/{Consts.Queues}/".Length);
+            if (v == null)
+            {
+                throw new InvalidAddressException("Invalid path segment");
+            }
+            string prefix = $"/{Consts.Queues}/";
+            // Only remove the prefix if present; otherwise, return as-is
+            return v.StartsWith(prefix) ? v.Substring(prefix.Length) : v;
         }
     }
 
