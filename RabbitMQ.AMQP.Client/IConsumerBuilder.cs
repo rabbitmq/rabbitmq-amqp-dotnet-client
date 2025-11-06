@@ -29,7 +29,6 @@ namespace RabbitMQ.AMQP.Client
         /// Default is false.
         /// https://www.rabbitmq.com/docs/direct-reply-to
         /// </summary>
-
         IConsumerBuilder DirectReplyTo(bool directReplyTo);
 
         IConsumerBuilder MessageHandler(MessageHandler handler);
