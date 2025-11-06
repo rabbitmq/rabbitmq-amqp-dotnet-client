@@ -21,6 +21,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public Func<IMessage, object>? CorrelationIdExtractor { get; set; }
 
         public Func<IMessage, object, IMessage>? RequestPostProcessor { get; set; }
+        public string RequestAddress { get; set; } = "";
     }
 
     public class AmqpRequesterBuilder : IRequesterBuilder
@@ -78,6 +79,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public async Task<IRequester> BuildAsync()
         {
+            _configuration.RequestAddress = _addressBuilder.Address();
             _configuration.Connection = _connection;
             var rpcClient = new AmqpRequester(_configuration);
             await rpcClient.OpenAsync().ConfigureAwait(false);
@@ -228,7 +230,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 if (_publisher != null)
                 {
                     PublishResult pr = await _publisher.PublishAsync(
-                        message.To(AddressBuilderHelper.AddressBuilder().Queue(GetReplyToQueue()).Address()),
+                        message.To(_configuration.RequestAddress),
                         cancellationToken).ConfigureAwait(false);
 
                     if (pr.Outcome.State != OutcomeState.Accepted)

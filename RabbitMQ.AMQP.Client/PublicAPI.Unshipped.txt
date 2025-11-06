@@ -587,6 +587,8 @@ RabbitMQ.AMQP.Client.Impl.RequesterConfiguration.CorrelationIdSupplier.get -> Sy
 RabbitMQ.AMQP.Client.Impl.RequesterConfiguration.CorrelationIdSupplier.set -> void
 RabbitMQ.AMQP.Client.Impl.RequesterConfiguration.ReplyToQueue.get -> string!
 RabbitMQ.AMQP.Client.Impl.RequesterConfiguration.ReplyToQueue.set -> void
+RabbitMQ.AMQP.Client.Impl.RequesterConfiguration.RequestAddress.get -> string!
+RabbitMQ.AMQP.Client.Impl.RequesterConfiguration.RequestAddress.set -> void
 RabbitMQ.AMQP.Client.Impl.RequesterConfiguration.RequesterConfiguration() -> void
 RabbitMQ.AMQP.Client.Impl.RequesterConfiguration.RequestPostProcessor.get -> System.Func<RabbitMQ.AMQP.Client.IMessage!, object!, RabbitMQ.AMQP.Client.IMessage!>?
 RabbitMQ.AMQP.Client.Impl.RequesterConfiguration.RequestPostProcessor.set -> void

@@ -177,6 +177,12 @@ namespace Tests.Rpc
 
             IMessage response = await requester.PublishAsync(message);
             Assert.Equal("pong", response.BodyAsString());
+
+            Assert.Contains(
+                _connection is AmqpConnection { _featureFlags.IsDirectReplyToSupported: true }
+                    ? "amq.rabbitmq.reply-to"
+                    : "client.gen-", requester.GetReplyToQueue());
+
             await requester.CloseAsync();
             await responder.CloseAsync();
         }
@@ -214,6 +220,8 @@ namespace Tests.Rpc
             IMessage response = await requester.PublishAsync(message);
             Assert.Equal("pong", response.BodyAsString());
             Assert.Equal(_correlationId, response.CorrelationId());
+            Assert.Contains(replyTo.Name(), requester.GetReplyToQueue());
+
             await requester.CloseAsync();
             await responder.CloseAsync();
         }

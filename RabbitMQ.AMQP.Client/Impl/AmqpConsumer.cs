@@ -261,13 +261,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             get
             {
                 string? sourceAddress = _attach?.Source is not Source source ? null : source.Address;
-                if (sourceAddress is null)
-                {
-                    throw new InvalidOperationException(
-                        "_attach.Source.Address is null");
-                }
-
-                return AddressBuilderHelper.AddressBuilder().DecodeQueuePathSegment(sourceAddress);
+                return sourceAddress is null ? "" : AddressBuilderHelper.AddressBuilder().DecodeQueuePathSegment(sourceAddress);
             }
         }
 
