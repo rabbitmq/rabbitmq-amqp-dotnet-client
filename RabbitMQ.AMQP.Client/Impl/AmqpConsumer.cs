@@ -116,13 +116,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 (_receiverLink, _attach) = await attachCompletedTcs.Task.WaitAsync(waitSpan)
                     .ConfigureAwait(false);
-
-                if (!ReferenceEquals(_receiverLink, tmpReceiverLink))
-                {
-                    // TODO log this case?
-                }
-
                 ValidateReceiverLink();
+
                 _receiverLink.SetCredit(_configuration.InitialCredits);
 
                 // TODO save / cancel task

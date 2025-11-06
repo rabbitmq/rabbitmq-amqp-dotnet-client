@@ -12,7 +12,7 @@ namespace Tests.DirectReply
 {
     public class DirectReplyTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
     {
-        [Fact]
+        [SkippableFact]
         public async Task ValidateDirectReplyQName()
         {
             Assert.NotNull(_connection);
