@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.AMQP.Client
 {
-
     /// <summary>
     /// IRpcServerBuilder is the interface for creating an RPC server.
     /// The RPC server consumes requests from a queue and sends replies to a reply queue.
@@ -22,6 +21,7 @@ namespace RabbitMQ.AMQP.Client
         /// <param name="requestQueue"></param>
         /// <returns></returns>
         IResponderBuilder RequestQueue(string requestQueue);
+
         IResponderBuilder RequestQueue(IQueueSpecification requestQueue);
 
         /// <summary>
@@ -32,7 +32,6 @@ namespace RabbitMQ.AMQP.Client
         /// </summary>
         /// <param name="correlationIdExtractor"></param>
         /// <returns></returns>
-
         IResponderBuilder CorrelationIdExtractor(Func<IMessage, object>? correlationIdExtractor);
 
         /// <summary>
@@ -67,7 +66,7 @@ namespace RabbitMQ.AMQP.Client
     public delegate Task<IMessage> RpcHandler(IResponder.IContext context, IMessage request);
 
     /// <summary>
-    /// IRpcServer interface for creating an RPC server.
+    /// IResponder interface for creating an RPC server.
     /// The RPC is simulated by sending a request message and receiving a reply message.
     /// Where the client sends the queue where wants to receive the reply.
     /// RPC client ---> request queue ---> RPC server ---> reply queue ---> RPC client
@@ -75,7 +74,6 @@ namespace RabbitMQ.AMQP.Client
     /// </summary>
     public interface IResponder : ILifeCycle
     {
-
         public interface IContext
         {
             IMessage Message(byte[] body);

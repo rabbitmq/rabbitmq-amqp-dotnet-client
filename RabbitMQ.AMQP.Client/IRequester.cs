@@ -97,5 +97,14 @@ namespace RabbitMQ.AMQP.Client
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns></returns>
         Task<IMessage> PublishAsync(IMessage message, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// The ReplyTo queue address can be created by:
+        /// - the client providing a specific queue name
+        /// - the client creating a temporary queue
+        /// - The server uses this address to send the reply message. with direct-reply-to
+        /// </summary>
+        /// <returns></returns>
+        public string ReplyToQueueAddress();
     }
 }

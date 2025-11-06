@@ -9,12 +9,10 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
-    public class RpcClientConfiguration
+    public class RequesterConfiguration
     {
         public AmqpConnection Connection { get; set; } = null!;
         public string ReplyToQueue { get; set; } = "";
-
-        internal string ReplyToQueueAddress { get; set; } = "";
 
         public string RequestAddress { get; set; } = "";
         public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(10);
@@ -30,7 +28,7 @@ namespace RabbitMQ.AMQP.Client.Impl
     {
         private readonly RequesterAddressBuilder _addressBuilder;
         private readonly AmqpConnection _connection;
-        private readonly RpcClientConfiguration _configuration = new();
+        private readonly RequesterConfiguration _configuration = new();
 
         public AmqpRequesterBuilder(AmqpConnection connection)
         {
@@ -101,7 +99,7 @@ namespace RabbitMQ.AMQP.Client.Impl
     /// </summary>
     public class AmqpRequester : AbstractLifeCycle, IRequester
     {
-        private readonly RpcClientConfiguration _configuration;
+        private readonly RequesterConfiguration _configuration;
         private IConsumer? _consumer = null;
         private IPublisher? _publisher = null;
         private readonly ConcurrentDictionary<object, TaskCompletionSource<IMessage>> _pendingRequests = new();
@@ -137,19 +135,32 @@ namespace RabbitMQ.AMQP.Client.Impl
                 return _configuration.RequestPostProcessor(request, correlationId);
             }
 
-            return request.ReplyTo(_configuration.ReplyToQueueAddress)
+            string s = ReplyToQueueAddress();
+            return request.ReplyTo(s)
                 .MessageId(correlationId);
         }
 
-        public AmqpRequester(RpcClientConfiguration configuration)
+        public AmqpRequester(RequesterConfiguration configuration)
         {
             _configuration = configuration;
         }
 
+        /// <summary>
+        /// OpenAsync initializes the Requester by creating the necessary publisher and consumer.
+        /// The DirectReplyTo feature is applied if supported by the server and no explicit reply-to queue is set.
+        /// The AmqpRequester is an opinionated wrapper to simulate RPC over AMQP 1.0.
+        /// Even when the DirectReplyTo is supported the wrapper can decide to don't use it when
+        /// the user has explicitly set a reply-to queue.
+        /// </summary>
+        /// <returns></returns>
         public override async Task OpenAsync()
         {
             bool isDirectReplyToSupported = _configuration.Connection._featureFlags.IsDirectReplyToSupported;
+
             string queueReplyTo = _configuration.ReplyToQueue;
+            // if the queue is not set it means we need to create a temporary queue as reply-to
+            // only if direct-reply-to is not supported. In case of isDirectReplyToSupported the server 
+            // will create the server side temporary queue.
             if (string.IsNullOrEmpty(_configuration.ReplyToQueue) && !isDirectReplyToSupported)
             {
                 IQueueInfo queueInfo = await _configuration.Connection.Management().Queue().AutoDelete(true)
@@ -158,10 +169,19 @@ namespace RabbitMQ.AMQP.Client.Impl
                 queueReplyTo = queueInfo.Name();
             }
 
+            // we can apply DirectReplyTo only if the _configuration.ReplyToQueue is not set 
+            // and the server support DirectReplyTo feature
+            // AmqpRequester is a wrapper to simulate RPC over AMQP 1.0
+            // canApplyDirectReplyTo is an opinionated optimization to avoid creating temporary queues
+            // unless _configuration.ReplyToQueue is explicitly set by the user.
+            // The user is always free to create custom Requester and Responder 
+            bool canApplyDirectReplyTo = isDirectReplyToSupported &&
+                                         string.IsNullOrEmpty(_configuration.ReplyToQueue);
+
             _publisher = await _configuration.Connection.PublisherBuilder().BuildAsync().ConfigureAwait(false);
             _consumer = await _configuration.Connection.ConsumerBuilder()
                 .Queue(queueReplyTo)
-                .DirectReplyTo(isDirectReplyToSupported)
+                .DirectReplyTo(canApplyDirectReplyTo)
                 .MessageHandler((context, message) =>
                 {
                     // TODO MessageHandler funcs should catch all exceptions
@@ -175,10 +195,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                     return Task.CompletedTask;
                 }).BuildAndStartAsync().ConfigureAwait(false);
 
-            if (_consumer.QueueAddress is not null)
-            {
-                _configuration.ReplyToQueueAddress = _consumer.QueueAddress;
-            }
             await base.OpenAsync().ConfigureAwait(false);
         }
 
@@ -232,6 +248,17 @@ namespace RabbitMQ.AMQP.Client.Impl
             {
                 _semaphore.Release();
             }
+        }
+
+        public string ReplyToQueueAddress()
+        {
+            if (_consumer == null)
+            {
+                throw new InvalidOperationException("Requester is not opened");
+            }
+
+            return _consumer.QueueAddress ??
+                   throw new InvalidOperationException("ReplyToQueueAddress is not available");
         }
     }
 }

@@ -8,7 +8,7 @@ using Amqp;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
-    public class RpcConfiguration
+    public class ResponderConfiguration
     {
         public AmqpConnection Connection { get; set; } = null!;
         public RpcHandler? Handler { get; set; }
@@ -22,7 +22,7 @@ namespace RabbitMQ.AMQP.Client.Impl
     /// </summary>
     public class AmqpResponderBuilder : IResponderBuilder
     {
-        readonly RpcConfiguration _configuration = new();
+        readonly ResponderConfiguration _configuration = new();
 
         public AmqpResponderBuilder(AmqpConnection connection)
         {
@@ -73,7 +73,7 @@ namespace RabbitMQ.AMQP.Client.Impl
     /// </summary>
     public class AmqpResponder : AbstractLifeCycle, IResponder
     {
-        private readonly RpcConfiguration _configuration;
+        private readonly ResponderConfiguration _configuration;
         private IPublisher? _publisher = null;
         private IConsumer? _consumer = null;
 
@@ -107,7 +107,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 : reply.CorrelationId(correlationId);
         }
 
-        public AmqpResponder(RpcConfiguration configuration)
+        public AmqpResponder(ResponderConfiguration configuration)
         {
             _configuration = configuration;
         }

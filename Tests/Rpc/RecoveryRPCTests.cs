@@ -15,8 +15,16 @@ namespace Tests.Rpc
     public class RecoveryRpcTests(ITestOutputHelper testOutputHelper)
         : IntegrationTest(testOutputHelper, setupConnectionAndManagement: false)
     {
-        [Fact]
-        public async Task ResponderAndClientShouldRecoverAfterKillConnection()
+        /// <summary>
+        /// Test the automatic recovery of a requester and responder after the connection is killed.
+        /// 
+        /// </summary>
+        /// <param name="useReplyToQueue">with True the test provides reply-queue externally.
+        /// With False the test uses DirectReply feature  </param>
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ResponderAndClientShouldRecoverAfterKillConnection(bool useReplyToQueue)
         {
             Assert.Null(_connection);
             Assert.Null(_management);
@@ -48,16 +56,19 @@ namespace Tests.Rpc
                 })
                 .BuildAsync();
 
-            string replyQueueName = $"rpc-server-client-recovery-reply-queue-{DateTime.Now}";
-
-            IQueueSpecification clientReplyQueue = management.Queue(replyQueueName)
-                .Type(QueueType.CLASSIC).AutoDelete(true).Exclusive(true);
-
-            await clientReplyQueue.DeclareAsync();
+            string replyQueueName = "";
+            IQueueSpecification? clientReplyQueue = null;
+            if (useReplyToQueue)
+            {
+                replyQueueName = $"rpc-server-client-recovery-reply-queue-{DateTime.Now}";
+                clientReplyQueue = management.Queue(replyQueueName)
+                    .Type(QueueType.CLASSIC).AutoDelete(true).Exclusive(true);
+                await clientReplyQueue.DeclareAsync();
+            }
 
             IRequester requester = await
                 connection.RequesterBuilder().RequestAddress().Queue(requestQueue).Requester()
-                    .ReplyToQueue(clientReplyQueue).BuildAsync();
+                    .ReplyToQueue(replyQueueName).BuildAsync();
 
             int messagesConfirmed = 0;
             for (int i = 0; i < 50; i++)
@@ -81,16 +92,19 @@ namespace Tests.Rpc
 
                 if (i % 25 == 0)
                 {
-                    await WaitUntilConnectionIsKilled(containerId);
+                    await WaitUntilConnectionIsKilledAndOpen(containerId);
                     await Task.Delay(500);
-                    await WaitUntilQueueExistsAsync(clientReplyQueue.QueueName);
                 }
             }
 
             Assert.True(messagesConfirmed > 25);
             Assert.True(messagesReceived > 25);
             await requestQueue.DeleteAsync();
-            await clientReplyQueue.DeleteAsync();
+            if (clientReplyQueue != null)
+            {
+                await clientReplyQueue.DeleteAsync();
+            }
+
             await requester.CloseAsync();
             await responder.CloseAsync();
         }

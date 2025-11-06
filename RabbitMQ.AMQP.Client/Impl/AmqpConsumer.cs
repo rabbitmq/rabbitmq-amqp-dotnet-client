@@ -167,7 +167,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                     stopwatch?.Restart();
 
                     // TODO the timeout waiting for messages should be configurable
-                    TimeSpan timeout = TimeSpan.FromSeconds(60);
+                    TimeSpan timeout = TimeSpan.FromSeconds(ConsumerDefaults.MessageReceiveTimeoutSeconds);
                     Message? nativeMessage = await _receiverLink.ReceiveAsync(timeout)
                         .ConfigureAwait(false);
 
@@ -302,7 +302,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             try
             {
                 // TODO global timeout for closing, other async actions?
-                await _receiverLink.CloseAsync(TimeSpan.FromSeconds(5))
+                await _receiverLink.CloseAsync(TimeSpan.FromSeconds(ConsumerDefaults.CloseTimeoutSeconds))
                     .ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -318,8 +318,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public override string ToString()
         {
-            string address = AddressBuilderHelper.AddressBuilder().Queue(_configuration.Queue).Address();
-            return $"Consumer{{Address='{address}', " +
+            return $"Consumer{{Address='{QueueAddress}', " +
                    $"id={_id}, " +
                    $"Connection='{_amqpConnection}', " +
                    $"State='{State}'}}";
