@@ -30,7 +30,6 @@ namespace Tests.DirectReply
             Assert.Contains("amq.rabbitmq.reply-to", consumer.Queue);
         }
 
-
         [Fact]
         public async Task UseDirectReplyToReceiveAMessage()
         {

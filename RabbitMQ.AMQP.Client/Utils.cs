@@ -191,7 +191,7 @@ namespace RabbitMQ.AMQP.Client
         {
             return PercentCodec.EncodePathSegment(url);
         }
-        
+
         internal static string? DecodePathSegment(string url)
         {
             return PercentCodec.DecodePathSegment(url);
@@ -379,7 +379,7 @@ namespace RabbitMQ.AMQP.Client
             s_unreserved['_'] = true;
             s_unreserved['~'] = true;
         }
-        
+
         private static int HexValue(char ch)
         {
             return ch switch
@@ -391,14 +391,13 @@ namespace RabbitMQ.AMQP.Client
             };
         }
 
-
         internal static string? DecodePathSegment(string? segment)
         {
             if (segment == null)
             {
                 return null;
             }
-        
+
             var bytes = new List<byte>(segment.Length);
             for (int i = 0; i < segment.Length; i++)
             {
@@ -409,14 +408,14 @@ namespace RabbitMQ.AMQP.Client
                     {
                         throw new FormatException("Invalid percent-encoding: incomplete escape sequence.");
                     }
-        
+
                     int hi = HexValue(segment[i + 1]);
                     int lo = HexValue(segment[i + 2]);
                     if (hi < 0 || lo < 0)
                     {
                         throw new FormatException($"Invalid percent-encoding: '{segment.Substring(i, 3)}'.");
                     }
-        
+
                     bytes.Add((byte)((hi << 4) | lo));
                     i += 2;
                 }
@@ -433,12 +432,10 @@ namespace RabbitMQ.AMQP.Client
                     }
                 }
             }
-        
+
             return Encoding.UTF8.GetString(bytes.ToArray());
         }
-        
-        
-        
+
         internal static string? EncodePathSegment(string? segment)
         {
             if (segment == null)
