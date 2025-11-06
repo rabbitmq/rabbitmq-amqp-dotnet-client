@@ -138,9 +138,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             void OutcomeCallback(ILink sender, Message inMessage, Outcome outcome, object state)
             {
                 // Note: sometimes `inMessage` is null 🤔
-                Debug.Assert(Object.ReferenceEquals(this, state));
+                Debug.Assert(ReferenceEquals(this, state));
 
-                if (false == Object.ReferenceEquals(_senderLink, sender))
+                if (!ReferenceEquals(_senderLink, sender))
                 {
                     // TODO log this case?
                 }

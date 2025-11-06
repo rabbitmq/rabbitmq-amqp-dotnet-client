@@ -39,7 +39,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly IMetricsReporter? _metricsReporter;
 
         private readonly Dictionary<string, object> _connectionProperties = new();
-        internal readonly FeatureFlags _featureFlags = new FeatureFlags();
+        internal readonly FeatureFlags _featureFlags = new();
 
         /// <summary>
         /// _publishersDict contains all the publishers created by the connection.
@@ -124,21 +124,21 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
 
         /// <summary>
-        /// Create an <see cref="IRpcServerBuilder"/> instance for this connection.
+        /// Create an <see cref="IResponderBuilder"/> instance for this connection.
         /// </summary>
-        /// <returns><see cref="IRpcServerBuilder"/> instance for this connection.</returns>
-        public IRpcServerBuilder RpcServerBuilder()
+        /// <returns><see cref="IResponderBuilder"/> instance for this connection.</returns>
+        public IResponderBuilder ResponderBuilder()
         {
-            return new AmqpRpcServerBuilder(this);
+            return new AmqpResponderBuilder(this);
         }
 
         /// <summary>
-        /// Create an <see cref="IRpcClientBuilder"/> instance for this connection.
+        /// Create an <see cref="IRequesterBuilder"/> instance for this connection.
         /// </summary>
-        /// <returns><see cref="IRpcClientBuilder"/> instance for this connection.</returns>
-        public IRpcClientBuilder RpcClientBuilder()
+        /// <returns><see cref="IRequesterBuilder"/> instance for this connection.</returns>
+        public IRequesterBuilder RequesterBuilder()
         {
-            return new AmqpRpcClientBuilder(this);
+            return new AmqpRequesterBuilder(this);
         }
 
         /// <summary>
@@ -670,6 +670,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             // check if the broker supports filter expressions
             // this is a feature that was introduced in RabbitMQ 4.2.0
             _featureFlags.IsSqlFeatureEnabled = Utils.Is4_2_OrMore(brokerVersion);
+
+            _featureFlags.IsDirectReplyToSupported = Utils.Is4_2_OrMore(brokerVersion);
 
             _featureFlags.IsFilterFeatureEnabled = Utils.SupportsFilterExpressions(brokerVersion);
         }

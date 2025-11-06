@@ -1,4 +1,4 @@
-ARG RABBITMQ_DOCKER_TAG=rabbitmq:4.1.0-beta.4-management-alpine
+ARG RABBITMQ_DOCKER_TAG=rabbitmq:4.2-management-alpine
 
 FROM ${RABBITMQ_DOCKER_TAG}
 

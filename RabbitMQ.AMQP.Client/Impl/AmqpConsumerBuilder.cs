@@ -16,13 +16,24 @@ namespace RabbitMQ.AMQP.Client.Impl
     /// </summary>
     internal sealed class ConsumerConfiguration
     {
-        public string Address { get; set; } = "";
+
+        public string? Queue { get; set; } = null;
         public int InitialCredits { get; set; } = 100; // TODO use constant, check with Java lib
 
         public Map Filters { get; set; } = new();
 
         // TODO is a MessageHandler *really* optional???
         public MessageHandler? Handler { get; set; }
+
+        /// <summary>
+        /// If direct reply-to is enabled, the client will use the direct reply-to feature of AMQP 1.0.
+        /// The server must also support direct reply-to.
+        /// This feature allows the server to send the reply directly to the client without going through a reply queue.
+        /// This can improve performance and reduce latency.
+        /// Default is false.
+        /// https://www.rabbitmq.com/docs/direct-reply-to
+        /// </summary>
+        public bool DirectReplyTo { get; set; }
 
         // TODO re-name to ListenerContextAction? Callback?
         public Action<IConsumerBuilder.ListenerContext>? ListenerContext = null;
@@ -49,16 +60,21 @@ namespace RabbitMQ.AMQP.Client.Impl
             return Queue(queueSpec.QueueName);
         }
 
-        public IConsumerBuilder Queue(string queueName)
+        public IConsumerBuilder Queue(string? queueName)
         {
-            string address = AddressBuilderHelper.AddressBuilder().Queue(queueName).Address();
-            _configuration.Address = address;
+            _configuration.Queue = queueName;
             return this;
         }
 
         public IConsumerBuilder MessageHandler(MessageHandler handler)
         {
             _configuration.Handler = handler;
+            return this;
+        }
+
+        public IConsumerBuilder DirectReplyTo(bool directReplyTo)
+        {
+            _configuration.DirectReplyTo = directReplyTo;
             return this;
         }
 
@@ -87,10 +103,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
 
             if (_configuration.Filters[Consts.s_sqlFilterSymbol] is not null &&
-                _amqpConnection._featureFlags.IsSqlFeatureEnabled == false)
+                !_amqpConnection._featureFlags.IsSqlFeatureEnabled)
             {
-                throw new ConsumerException("SQL filter is not supported by the connection." +
-                                            "RabbitMQ 4.2.0 or later is required.");
+                throw new NotSupportedException("SQL filter is not supported by the connection. " +
+                                                "RabbitMQ 4.2.0 or later is required.");
             }
 
             AmqpConsumer consumer = new(_amqpConnection, _configuration, _metricsReporter);

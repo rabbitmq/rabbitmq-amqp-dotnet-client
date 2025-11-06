@@ -15,8 +15,16 @@ namespace Tests.Rpc
     public class RecoveryRpcTests(ITestOutputHelper testOutputHelper)
         : IntegrationTest(testOutputHelper, setupConnectionAndManagement: false)
     {
-        [Fact]
-        public async Task RpcServerAndClientShouldRecoverAfterKillConnection()
+        /// <summary>
+        /// Test the automatic recovery of a requester and responder after the connection is killed.
+        /// 
+        /// </summary>
+        /// <param name="useReplyToQueue">with True the test provides reply-queue externally.
+        /// With False the test uses DirectReply feature  </param>
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ResponderAndClientShouldRecoverAfterKillConnection(bool useReplyToQueue)
         {
             Assert.Null(_connection);
             Assert.Null(_management);
@@ -38,7 +46,7 @@ namespace Tests.Rpc
 
             await requestQueue.DeclareAsync();
             int messagesReceived = 0;
-            IRpcServer rpcServer = await connection.RpcServerBuilder()
+            IResponder responder = await connection.ResponderBuilder()
                 .RequestQueue(rpcRequestQueueName)
                 .Handler((context, message) =>
                 {
@@ -48,16 +56,19 @@ namespace Tests.Rpc
                 })
                 .BuildAsync();
 
-            string replyQueueName = $"rpc-server-client-recovery-reply-queue-{DateTime.Now}";
+            string replyQueueName = "";
+            IQueueSpecification? clientReplyQueue = null;
+            if (useReplyToQueue)
+            {
+                replyQueueName = $"rpc-server-client-recovery-reply-queue-{DateTime.Now}";
+                clientReplyQueue = management.Queue(replyQueueName)
+                    .Type(QueueType.CLASSIC).AutoDelete(true).Exclusive(true);
+                await clientReplyQueue.DeclareAsync();
+            }
 
-            IQueueSpecification clientReplyQueue = management.Queue(replyQueueName)
-                .Type(QueueType.CLASSIC).AutoDelete(true).Exclusive(true);
-
-            await clientReplyQueue.DeclareAsync();
-
-            IRpcClient rpcClient = await
-                connection.RpcClientBuilder().RequestAddress().Queue(requestQueue).RpcClient()
-                    .ReplyToQueue(clientReplyQueue).BuildAsync();
+            IRequester requester = await
+                connection.RequesterBuilder().RequestAddress().Queue(requestQueue).Requester()
+                    .ReplyToQueue(replyQueueName).BuildAsync();
 
             int messagesConfirmed = 0;
             for (int i = 0; i < 50; i++)
@@ -65,7 +76,7 @@ namespace Tests.Rpc
                 IMessage request = new AmqpMessage("ping");
                 try
                 {
-                    IMessage response = await rpcClient.PublishAsync(request);
+                    IMessage response = await requester.PublishAsync(request);
                     messagesConfirmed++;
                     Assert.Equal("pong", response.BodyAsString());
                 }
@@ -81,18 +92,21 @@ namespace Tests.Rpc
 
                 if (i % 25 == 0)
                 {
-                    await WaitUntilConnectionIsKilled(containerId);
+                    await WaitUntilConnectionIsKilledAndOpen(containerId);
                     await Task.Delay(500);
-                    await WaitUntilQueueExistsAsync(clientReplyQueue.QueueName);
                 }
             }
 
             Assert.True(messagesConfirmed > 25);
             Assert.True(messagesReceived > 25);
             await requestQueue.DeleteAsync();
-            await clientReplyQueue.DeleteAsync();
-            await rpcClient.CloseAsync();
-            await rpcServer.CloseAsync();
+            if (clientReplyQueue != null)
+            {
+                await clientReplyQueue.DeleteAsync();
+            }
+
+            await requester.CloseAsync();
+            await responder.CloseAsync();
         }
     }
 }

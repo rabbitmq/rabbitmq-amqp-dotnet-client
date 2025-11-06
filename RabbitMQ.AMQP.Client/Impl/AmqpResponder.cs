@@ -8,7 +8,7 @@ using Amqp;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
-    public class RpcConfiguration
+    public class ResponderConfiguration
     {
         public AmqpConnection Connection { get; set; } = null!;
         public RpcHandler? Handler { get; set; }
@@ -20,60 +20,60 @@ namespace RabbitMQ.AMQP.Client.Impl
     /// <summary>
     ///  AmqpRpcServerBuilder is a builder for creating an AMQP RPC server.
     /// </summary>
-    public class AmqpRpcServerBuilder : IRpcServerBuilder
+    public class AmqpResponderBuilder : IResponderBuilder
     {
-        readonly RpcConfiguration _configuration = new();
+        readonly ResponderConfiguration _configuration = new();
 
-        public AmqpRpcServerBuilder(AmqpConnection connection)
+        public AmqpResponderBuilder(AmqpConnection connection)
         {
             _configuration.Connection = connection;
         }
 
-        public IRpcServerBuilder RequestQueue(string requestQueue)
+        public IResponderBuilder RequestQueue(string requestQueue)
         {
             _configuration.RequestQueue = requestQueue;
             return this;
         }
 
-        public IRpcServerBuilder RequestQueue(IQueueSpecification requestQueue)
+        public IResponderBuilder RequestQueue(IQueueSpecification requestQueue)
         {
             _configuration.RequestQueue = requestQueue.QueueName;
             return this;
         }
 
-        public IRpcServerBuilder CorrelationIdExtractor(Func<IMessage, object>? correlationIdExtractor)
+        public IResponderBuilder CorrelationIdExtractor(Func<IMessage, object>? correlationIdExtractor)
         {
             _configuration.CorrelationIdExtractor = correlationIdExtractor;
             return this;
         }
 
-        public IRpcServerBuilder ReplyPostProcessor(Func<IMessage, object, IMessage>? replyPostProcessor)
+        public IResponderBuilder ReplyPostProcessor(Func<IMessage, object, IMessage>? replyPostProcessor)
         {
             _configuration.ReplyPostProcessor = replyPostProcessor;
             return this;
         }
 
-        public IRpcServerBuilder Handler(RpcHandler handler)
+        public IResponderBuilder Handler(RpcHandler handler)
         {
             _configuration.Handler = handler;
             return this;
         }
 
-        public async Task<IRpcServer> BuildAsync()
+        public async Task<IResponder> BuildAsync()
         {
-            AmqpRpcServer amqpRpcServer = new(_configuration);
-            await amqpRpcServer.OpenAsync().ConfigureAwait(false);
-            return amqpRpcServer;
+            AmqpResponder amqpResponder = new(_configuration);
+            await amqpResponder.OpenAsync().ConfigureAwait(false);
+            return amqpResponder;
         }
     }
 
     /// <summary>
-    /// AmqpRpcServer implements the <see cref="IRpcServer"/> interface.
+    /// AmqpRpcServer implements the <see cref="IResponder"/> interface.
     /// With the RpcClient you can create an RPC communication over AMQP 1.0.
     /// </summary>
-    public class AmqpRpcServer : AbstractLifeCycle, IRpcServer
+    public class AmqpResponder : AbstractLifeCycle, IResponder
     {
-        private readonly RpcConfiguration _configuration;
+        private readonly ResponderConfiguration _configuration;
         private IPublisher? _publisher = null;
         private IConsumer? _consumer = null;
 
@@ -107,7 +107,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 : reply.CorrelationId(correlationId);
         }
 
-        public AmqpRpcServer(RpcConfiguration configuration)
+        public AmqpResponder(ResponderConfiguration configuration)
         {
             _configuration = configuration;
         }
@@ -164,7 +164,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             await base.OpenAsync().ConfigureAwait(false);
         }
 
-        private class RpcServerContext : IRpcServer.IContext
+        private class RpcServerContext : IResponder.IContext
         {
             public IMessage Message(byte[] body) => new AmqpMessage(body);
             public IMessage Message(string body) => new AmqpMessage(body);

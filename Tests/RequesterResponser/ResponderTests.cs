@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 
 namespace Tests.Rpc
 {
-    public class RpcServerTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
+    public class ResponderTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
     {
         private string _requestQueueName = string.Empty;
         private readonly string _replyToName = $"queueReplyTo-{Now}-{Guid.NewGuid()}";
@@ -34,20 +34,13 @@ namespace Tests.Rpc
         }
 
         [Fact]
-        public async Task MockRpcServerPingPong()
+        public async Task MockResponderPingPong()
         {
             Assert.NotNull(_connection);
             TaskCompletionSource<IMessage> tcs = CreateTaskCompletionSource<IMessage>();
 
-            Task<IMessage> RpcHandler(IRpcServer.IContext context, IMessage request)
-            {
-                IMessage reply = context.Message("pong");
-                tcs.SetResult(reply);
-                return Task.FromResult(reply);
-            }
-
-            IRpcServer rpcServer = await _connection.RpcServerBuilder()
-                .Handler(RpcHandler)
+            IResponder responder = await _connection.ResponderBuilder()
+                .Handler(Handler)
                 .RequestQueue(_requestQueueName)
                 .BuildAsync();
 
@@ -58,29 +51,31 @@ namespace Tests.Rpc
             await p.PublishAsync(new AmqpMessage("test"));
             IMessage m = await WhenTcsCompletes(tcs);
             Assert.Equal("pong", m.BodyAsString());
-            await rpcServer.CloseAsync();
+            await responder.CloseAsync();
+            return;
+
+            Task<IMessage> Handler(IResponder.IContext context, IMessage request)
+            {
+                IMessage reply = context.Message("pong");
+                tcs.SetResult(reply);
+                return Task.FromResult(reply);
+            }
         }
 
         [Fact]
-        public async Task RpcServerValidateStateChange()
+        public async Task ResponderValidateStateChange()
         {
             Assert.NotNull(_connection);
 
             List<(State, State)> states = [];
             TaskCompletionSource<int> tcs = CreateTaskCompletionSource<int>();
 
-            static Task<IMessage> RpcHandler(IRpcServer.IContext context, IMessage request)
-            {
-                IMessage m = context.Message(request.Body());
-                return Task.FromResult(m);
-            }
-
-            IRpcServer rpcServer = await _connection.RpcServerBuilder()
-                .Handler(RpcHandler)
+            IResponder responder = await _connection.ResponderBuilder()
+                .Handler(Handler)
                 .RequestQueue(_requestQueueName)
                 .BuildAsync();
 
-            rpcServer.ChangeState += (sender, fromState, toState, e) =>
+            responder.ChangeState += (sender, fromState, toState, e) =>
             {
                 states.Add((fromState, toState));
                 if (states.Count == 2)
@@ -89,7 +84,7 @@ namespace Tests.Rpc
                 }
             };
 
-            await rpcServer.CloseAsync();
+            await responder.CloseAsync();
 
             int count = await WhenTcsCompletes(tcs);
             Assert.Equal(2, count);
@@ -97,6 +92,13 @@ namespace Tests.Rpc
             Assert.Equal(State.Closing, states[0].Item2);
             Assert.Equal(State.Closing, states[1].Item1);
             Assert.Equal(State.Closed, states[1].Item2);
+            return;
+
+            static Task<IMessage> Handler(IResponder.IContext context, IMessage request)
+            {
+                IMessage m = context.Message(request.Body());
+                return Task.FromResult(m);
+            }
         }
 
         /// <summary>
@@ -108,7 +110,7 @@ namespace Tests.Rpc
             Assert.NotNull(_connection);
             Assert.NotNull(_management);
 
-            IRpcServer rpcServer = await _connection.RpcServerBuilder()
+            IResponder responder = await _connection.ResponderBuilder()
                 .Handler(PongRpcHandler)
                 .RequestQueue(_requestQueueName)
                 .BuildAsync();
@@ -119,13 +121,6 @@ namespace Tests.Rpc
             await replyQueueSpec.DeclareAsync();
 
             TaskCompletionSource<IMessage> tcs = CreateTaskCompletionSource<IMessage>();
-
-            Task MessageHandler(IContext context, IMessage message)
-            {
-                context.Accept();
-                tcs.SetResult(message);
-                return Task.CompletedTask;
-            }
 
             IConsumer consumer = await _connection.ConsumerBuilder()
                 .Queue(replyQueueSpec)
@@ -145,9 +140,17 @@ namespace Tests.Rpc
             IMessage m = await WhenTcsCompletes(tcs);
             Assert.Equal("pong", m.BodyAsString());
 
-            await rpcServer.CloseAsync();
+            await responder.CloseAsync();
             await consumer.CloseAsync();
             await publisher.CloseAsync();
+            return;
+
+            Task MessageHandler(IContext context, IMessage msg)
+            {
+                context.Accept();
+                tcs.SetResult(msg);
+                return Task.CompletedTask;
+            }
         }
 
         /// <summary>
@@ -155,39 +158,45 @@ namespace Tests.Rpc
         /// with the ReplyToQueue method
         /// </summary>
         [Fact]
-        public async Task RpcServerClientPingPongWithDefault()
+        public async Task ResponderRequesterPingPongWithDefault()
         {
             Assert.NotNull(_connection);
 
-            IRpcServer rpcServer = await _connection.RpcServerBuilder()
+            IResponder responder = await _connection.ResponderBuilder()
                 .Handler(PongRpcHandler)
                 .RequestQueue(_requestQueueName)
                 .BuildAsync();
 
-            IRpcClient rpcClient = await _connection.RpcClientBuilder()
+            IRequester requester = await _connection.RequesterBuilder()
                 .RequestAddress()
                 .Queue(_requestQueueName)
-                .RpcClient()
+                .Requester()
                 .BuildAsync();
 
             IMessage message = new AmqpMessage("ping");
 
-            IMessage response = await rpcClient.PublishAsync(message);
+            IMessage response = await requester.PublishAsync(message);
             Assert.Equal("pong", response.BodyAsString());
-            await rpcClient.CloseAsync();
-            await rpcServer.CloseAsync();
+
+            Assert.Contains(
+                _connection is AmqpConnection { _featureFlags.IsDirectReplyToSupported: true }
+                    ? "amq.rabbitmq.reply-to"
+                    : "client.gen-", requester.GetReplyToQueue());
+
+            await requester.CloseAsync();
+            await responder.CloseAsync();
         }
 
         /// <summary>
-        /// In this test the client has to use the ReplyToQueue provided by the user
+        /// In this test the Requester has to use the ReplyToQueue provided by the user
         /// </summary>
         [Fact]
-        public async Task RpcServerClientPingPongWithCustomReplyToQueueAndCorrelationIdSupplier()
+        public async Task ResponderRequesterPingPongWithCustomReplyToQueueAndCorrelationIdSupplier()
         {
             Assert.NotNull(_connection);
             Assert.NotNull(_management);
 
-            IRpcServer rpcServer = await _connection.RpcServerBuilder()
+            IResponder responder = await _connection.ResponderBuilder()
                 .Handler(PongRpcHandler)
                 .RequestQueue(_requestQueueName)
                 .BuildAsync();
@@ -197,10 +206,10 @@ namespace Tests.Rpc
                 .AutoDelete(true)
                 .DeclareAsync();
 
-            IRpcClient rpcClient = await _connection.RpcClientBuilder()
+            IRequester requester = await _connection.RequesterBuilder()
                 .RequestAddress()
                 .Queue(_requestQueueName)
-                .RpcClient()
+                .Requester()
                 .CorrelationIdSupplier(() => _correlationId)
                 .CorrelationIdExtractor(message => message.CorrelationId())
                 .ReplyToQueue(replyTo.Name())
@@ -208,11 +217,13 @@ namespace Tests.Rpc
 
             IMessage message = new AmqpMessage("ping");
 
-            IMessage response = await rpcClient.PublishAsync(message);
+            IMessage response = await requester.PublishAsync(message);
             Assert.Equal("pong", response.BodyAsString());
             Assert.Equal(_correlationId, response.CorrelationId());
-            await rpcClient.CloseAsync();
-            await rpcServer.CloseAsync();
+            Assert.Contains(replyTo.Name(), requester.GetReplyToQueue());
+
+            await requester.CloseAsync();
+            await responder.CloseAsync();
         }
 
         /// <summary>
@@ -223,12 +234,12 @@ namespace Tests.Rpc
         /// </summary>
         /// <exception cref="InvalidOperationException"></exception>
         [Fact]
-        public async Task RpcServerClientOverridingTheRequestAndResponsePostProcessor()
+        public async Task ResponderRequesterOverridingTheRequestAndResponsePostProcessor()
         {
             Assert.NotNull(_connection);
             Assert.NotNull(_management);
 
-            IRpcServer rpcServer = await _connection.RpcServerBuilder()
+            IResponder responder = await _connection.ResponderBuilder()
                 .Handler(PongRpcHandler)
                 .RequestQueue(_requestQueueName)
                 .CorrelationIdExtractor(message => message.Property("correlationId"))
@@ -243,10 +254,10 @@ namespace Tests.Rpc
 
             int correlationIdCounter = 0;
 
-            IRpcClient rpcClient = await _connection.RpcClientBuilder()
+            IRequester requester = await _connection.RequesterBuilder()
                 .RequestAddress()
                 .Queue(_requestQueueName)
-                .RpcClient()
+                .Requester()
                 .ReplyToQueue(replyTo.Name())
                 // replace the correlation id creation with a custom function
                 .CorrelationIdSupplier(() => $"{_correlationId}_{Interlocked.Increment(ref correlationIdCounter)}")
@@ -264,7 +275,7 @@ namespace Tests.Rpc
             int i = 1;
             while (i < 30)
             {
-                IMessage response = await rpcClient.PublishAsync(message);
+                IMessage response = await requester.PublishAsync(message);
                 Assert.Equal("pong", response.BodyAsString());
                 // the server replies with the correlation id in the application properties
                 Assert.Equal($"{_correlationId}_{i}", response.Property("correlationId"));
@@ -273,12 +284,12 @@ namespace Tests.Rpc
                 i++;
             }
 
-            await rpcClient.CloseAsync();
-            await rpcServer.CloseAsync();
+            await requester.CloseAsync();
+            await responder.CloseAsync();
         }
 
         [Fact]
-        public async Task RpcClientMultiThreadShouldBeSafe()
+        public async Task RequesterMultiThreadShouldBeSafe()
         {
             Assert.NotNull(_connection);
             const int messagesToSend = 99;
@@ -286,7 +297,7 @@ namespace Tests.Rpc
             TaskCompletionSource<bool> tcs = CreateTaskCompletionSource();
             List<IMessage> messagesReceived = [];
 
-            Task<IMessage> RpcHandler(IRpcServer.IContext context, IMessage request)
+            Task<IMessage> RpcHandler(IResponder.IContext context, IMessage request)
             {
                 try
                 {
@@ -303,14 +314,14 @@ namespace Tests.Rpc
                 }
             }
 
-            IRpcServer rpcServer = await _connection.RpcServerBuilder()
+            IResponder responder = await _connection.ResponderBuilder()
                 .Handler(RpcHandler)
                 .RequestQueue(_requestQueueName)
                 .BuildAsync();
 
-            IRpcClient rpcClient = await _connection.RpcClientBuilder().RequestAddress()
+            IRequester requester = await _connection.RequesterBuilder().RequestAddress()
                 .Queue(_requestQueueName)
-                .RpcClient()
+                .Requester()
                 .BuildAsync();
 
             List<Task> tasks = [];
@@ -323,7 +334,7 @@ namespace Tests.Rpc
                 tasks.Add(Task.Run(async () =>
                 {
                     IMessage message = new AmqpMessage("ping").Property("id", i1);
-                    IMessage response = await rpcClient.PublishAsync(message);
+                    IMessage response = await requester.PublishAsync(message);
                     Assert.Equal("pong", response.BodyAsString());
                 }));
             }
@@ -342,19 +353,19 @@ namespace Tests.Rpc
                 Assert.Contains(messagesReceived, m => m.Property("id").Equals(i));
             }
 
-            await rpcServer.CloseAsync();
-            await rpcClient.CloseAsync();
+            await responder.CloseAsync();
+            await requester.CloseAsync();
         }
 
         /// <summary>
         /// The RPC client `PublishAsync` should raise a timeout exception if the server does not reply within the timeout
         /// </summary>
         [Fact]
-        public async Task RpcClientShouldRaiseTimeoutError()
+        public async Task RequesterShouldRaiseTimeoutError()
         {
             Assert.NotNull(_connection);
 
-            static async Task<IMessage> RpcHandler(IRpcServer.IContext context, IMessage request)
+            static async Task<IMessage> RpcHandler(IResponder.IContext context, IMessage request)
             {
                 IMessage reply = context.Message("pong");
                 object millisecondsToWait = request.Property("wait");
@@ -362,30 +373,30 @@ namespace Tests.Rpc
                 return reply;
             }
 
-            IRpcServer rpcServer = await _connection.RpcServerBuilder()
+            IResponder responder = await _connection.ResponderBuilder()
                 .Handler(RpcHandler)
                 .RequestQueue(_requestQueueName)
                 .BuildAsync();
 
-            IRpcClient rpcClient = await _connection.RpcClientBuilder()
+            IRequester requester = await _connection.RequesterBuilder()
                 .RequestAddress()
                 .Queue(_requestQueueName)
-                .RpcClient()
+                .Requester()
                 .Timeout(TimeSpan.FromMilliseconds(300))
                 .BuildAsync();
 
             IMessage msg = new AmqpMessage("ping").Property("wait", 1);
-            IMessage reply = await rpcClient.PublishAsync(msg);
+            IMessage reply = await requester.PublishAsync(msg);
             Assert.Equal("pong", reply.BodyAsString());
 
-            await Assert.ThrowsAsync<TimeoutException>(() => rpcClient.PublishAsync(
+            await Assert.ThrowsAsync<TimeoutException>(() => requester.PublishAsync(
                 new AmqpMessage("ping").Property("wait", 700)));
 
-            await rpcClient.CloseAsync();
-            await rpcServer.CloseAsync();
+            await requester.CloseAsync();
+            await responder.CloseAsync();
         }
 
-        private static Task<IMessage> PongRpcHandler(IRpcServer.IContext context, IMessage request)
+        private static Task<IMessage> PongRpcHandler(IResponder.IContext context, IMessage request)
         {
             IMessage reply = context.Message("pong");
             return Task.FromResult(reply);

@@ -9,11 +9,11 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
-    public class RpcClientConfiguration
+    public class RequesterConfiguration
     {
         public AmqpConnection Connection { get; set; } = null!;
         public string ReplyToQueue { get; set; } = "";
-        public string RequestAddress { get; set; } = "";
+
         public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(10);
 
         public Func<object>? CorrelationIdSupplier { get; set; } = null;
@@ -21,84 +21,85 @@ namespace RabbitMQ.AMQP.Client.Impl
         public Func<IMessage, object>? CorrelationIdExtractor { get; set; }
 
         public Func<IMessage, object, IMessage>? RequestPostProcessor { get; set; }
+        public string RequestAddress { get; set; } = "";
     }
 
-    public class AmqpRpcClientBuilder : IRpcClientBuilder
+    public class AmqpRequesterBuilder : IRequesterBuilder
     {
-        private readonly RpcClientAddressBuilder _addressBuilder;
+        private readonly RequesterAddressBuilder _addressBuilder;
         private readonly AmqpConnection _connection;
-        private readonly RpcClientConfiguration _configuration = new();
+        private readonly RequesterConfiguration _configuration = new();
 
-        public AmqpRpcClientBuilder(AmqpConnection connection)
+        public AmqpRequesterBuilder(AmqpConnection connection)
         {
             _connection = connection;
-            _addressBuilder = new RpcClientAddressBuilder(this);
+            _addressBuilder = new RequesterAddressBuilder(this);
         }
 
-        public IRpcClientAddressBuilder RequestAddress()
+        public IRequesterAddressBuilder RequestAddress()
         {
             return _addressBuilder;
         }
 
-        public IRpcClientBuilder ReplyToQueue(string replyToQueueName)
+        public IRequesterBuilder ReplyToQueue(string replyToQueueName)
         {
             _configuration.ReplyToQueue = replyToQueueName;
             return this;
         }
 
-        public IRpcClientBuilder ReplyToQueue(IQueueSpecification replyToQueue)
+        public IRequesterBuilder ReplyToQueue(IQueueSpecification replyToQueue)
         {
             _configuration.ReplyToQueue = replyToQueue.QueueName;
             return this;
         }
 
-        public IRpcClientBuilder CorrelationIdExtractor(Func<IMessage, object>? correlationIdExtractor)
+        public IRequesterBuilder CorrelationIdExtractor(Func<IMessage, object>? correlationIdExtractor)
         {
             _configuration.CorrelationIdExtractor = correlationIdExtractor;
             return this;
         }
 
-        public IRpcClientBuilder RequestPostProcessor(Func<IMessage, object, IMessage>? requestPostProcessor)
+        public IRequesterBuilder RequestPostProcessor(Func<IMessage, object, IMessage>? requestPostProcessor)
         {
             _configuration.RequestPostProcessor = requestPostProcessor;
             return this;
         }
 
-        public IRpcClientBuilder CorrelationIdSupplier(Func<object>? correlationIdSupplier)
+        public IRequesterBuilder CorrelationIdSupplier(Func<object>? correlationIdSupplier)
         {
             _configuration.CorrelationIdSupplier = correlationIdSupplier;
             return this;
         }
 
-        public IRpcClientBuilder Timeout(TimeSpan timeout)
+        public IRequesterBuilder Timeout(TimeSpan timeout)
         {
             _configuration.Timeout = timeout;
             return this;
         }
 
-        public async Task<IRpcClient> BuildAsync()
+        public async Task<IRequester> BuildAsync()
         {
             _configuration.RequestAddress = _addressBuilder.Address();
             _configuration.Connection = _connection;
-            var rpcClient = new AmqpRpcClient(_configuration);
+            var rpcClient = new AmqpRequester(_configuration);
             await rpcClient.OpenAsync().ConfigureAwait(false);
             return rpcClient;
         }
     }
 
     /// <summary>
-    /// AmqpRpcClient is an implementation of <see cref="IRpcClient"/>.
+    /// AmqpRpcClient is an implementation of <see cref="IRequester"/>.
     /// It is a wrapper around <see cref="IPublisher"/> and <see cref="IConsumer"/> to create an RPC client over AMQP 1.0.
     /// even the PublishAsync is async the RPClient blocks the thread until the response is received.
     /// within the timeout.
     ///
     ///  The PublishAsync is thread-safe and can be called from multiple threads.
     ///
-    /// See also the server side <see cref="IRpcServer"/>.
+    /// See also the server side <see cref="IResponder"/>.
     /// </summary>
-    public class AmqpRpcClient : AbstractLifeCycle, IRpcClient
+    public class AmqpRequester : AbstractLifeCycle, IRequester
     {
-        private readonly RpcClientConfiguration _configuration;
+        private readonly RequesterConfiguration _configuration;
         private IConsumer? _consumer = null;
         private IPublisher? _publisher = null;
         private readonly ConcurrentDictionary<object, TaskCompletionSource<IMessage>> _pendingRequests = new();
@@ -134,28 +135,53 @@ namespace RabbitMQ.AMQP.Client.Impl
                 return _configuration.RequestPostProcessor(request, correlationId);
             }
 
-            return request.ReplyTo(AddressBuilderHelper.AddressBuilder().Queue(_configuration.ReplyToQueue).Address())
+            string s = GetReplyToQueue();
+            return request.ReplyTo(AddressBuilderHelper.AddressBuilder().Queue(s).Address())
                 .MessageId(correlationId);
         }
 
-        public AmqpRpcClient(RpcClientConfiguration configuration)
+        public AmqpRequester(RequesterConfiguration configuration)
         {
             _configuration = configuration;
         }
 
+        /// <summary>
+        /// OpenAsync initializes the Requester by creating the necessary publisher and consumer.
+        /// The DirectReplyTo feature is applied if supported by the server and no explicit reply-to queue is set.
+        /// The AmqpRequester is an opinionated wrapper to simulate RPC over AMQP 1.0.
+        /// Even when the DirectReplyTo is supported the wrapper can decide to don't use it when
+        /// the user has explicitly set a reply-to queue.
+        /// </summary>
+        /// <returns></returns>
         public override async Task OpenAsync()
         {
-            if (string.IsNullOrEmpty(_configuration.ReplyToQueue))
+            bool isDirectReplyToSupported = _configuration.Connection._featureFlags.IsDirectReplyToSupported;
+
+            string queueReplyTo = _configuration.ReplyToQueue;
+            // if the queue is not set it means we need to create a temporary queue as reply-to
+            // only if direct-reply-to is not supported. In case of isDirectReplyToSupported the server 
+            // will create the server side temporary queue.
+            if (string.IsNullOrEmpty(_configuration.ReplyToQueue) && !isDirectReplyToSupported)
             {
                 IQueueInfo queueInfo = await _configuration.Connection.Management().Queue().AutoDelete(true)
                     .Exclusive(true).DeclareAsync()
                     .ConfigureAwait(false);
-                _configuration.ReplyToQueue = queueInfo.Name();
+                queueReplyTo = queueInfo.Name();
             }
+
+            // we can apply DirectReplyTo only if the _configuration.ReplyToQueue is not set 
+            // and the server support DirectReplyTo feature
+            // AmqpRequester is a wrapper to simulate RPC over AMQP 1.0
+            // canApplyDirectReplyTo is an opinionated optimization to avoid creating temporary queues
+            // unless _configuration.ReplyToQueue is explicitly set by the user.
+            // The user is always free to create custom Requester and Responder 
+            bool canApplyDirectReplyTo = isDirectReplyToSupported &&
+                                         string.IsNullOrEmpty(_configuration.ReplyToQueue);
 
             _publisher = await _configuration.Connection.PublisherBuilder().BuildAsync().ConfigureAwait(false);
             _consumer = await _configuration.Connection.ConsumerBuilder()
-                .Queue(_configuration.ReplyToQueue)
+                .Queue(queueReplyTo)
+                .DirectReplyTo(canApplyDirectReplyTo)
                 .MessageHandler((context, message) =>
                 {
                     // TODO MessageHandler funcs should catch all exceptions
@@ -165,6 +191,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                     {
                         request.SetResult(message);
                     }
+
                     return Task.CompletedTask;
                 }).BuildAndStartAsync().ConfigureAwait(false);
 
@@ -203,7 +230,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                 if (_publisher != null)
                 {
                     PublishResult pr = await _publisher.PublishAsync(
-                        message.To(_configuration.RequestAddress), cancellationToken).ConfigureAwait(false);
+                        message.To(_configuration.RequestAddress),
+                        cancellationToken).ConfigureAwait(false);
 
                     if (pr.Outcome.State != OutcomeState.Accepted)
                     {
@@ -221,6 +249,17 @@ namespace RabbitMQ.AMQP.Client.Impl
             {
                 _semaphore.Release();
             }
+        }
+
+        public string GetReplyToQueue()
+        {
+            if (_consumer == null)
+            {
+                throw new InvalidOperationException("Requester is not opened");
+            }
+
+            return _consumer.Queue ??
+                   throw new InvalidOperationException("ReplyToQueueAddress is not available");
         }
     }
 }

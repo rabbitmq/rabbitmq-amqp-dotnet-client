@@ -115,6 +115,47 @@ namespace RabbitMQ.AMQP.Client
             }
         }
 
+        internal static Attach CreateDirectReplyToAttach(Guid linkId, Map? sourceFilter = null)
+        {
+            // Attach{name='receiver-ID:f99ef5a7-7b91-48cb-a52e-d86e6f14f33b:3:2:1:1',
+            // handle=null, role=RECEIVER, sndSettleMode=SETTLED, rcvSettleMode=FIRST,
+            // source=Source{address='null', durable=NONE, expiryPolicy=LINK_DETACH, timeout=0,
+            // dynamic=true, dynamicNodeProperties=null, distributionMode=null, filter=null,
+            // defaultOutcome=Modified{deliveryFailed=true, undeliverableHere=false, messageAnnotations=null},
+            // outcomes=[amqp:accepted:list, amqp:rejected:list, amqp:released:list, amqp:modified:list],
+            // capabilities=[rabbitmq:volatile-queue]}, target=Target{address='null', durable=NONE,
+            // expiryPolicy=SESSION_END, timeout=0, dynamic=false, dynamicNodeProperties=null, capabilities=null},
+            // unsettled=null, incompleteUnsettled=null, initialDeliveryCount=null, maxMessageSize=null, offeredCapabilities=null,
+            // desiredCapabilities=null, properties=null}
+
+            var a = new Attach()
+            {
+                SndSettleMode = SenderSettleMode.Settled,
+                // LinkName = $"receiver-ID:{linkId.ToString()}",
+                RcvSettleMode = ReceiverSettleMode.First,
+                Source = new Source()
+                {
+                    Capabilities = new Symbol[] { new("rabbitmq:volatile-queue") },
+                    ExpiryPolicy = new Symbol("link-detach"),
+                    Dynamic = true,
+                    Timeout = 0,
+                    FilterSet = sourceFilter,
+                    DefaultOutcome = new Modified()
+                    {
+                        DeliveryFailed = true,
+                        UndeliverableHere = false,
+                    }
+                },
+                // Target = new Target()
+                // {
+                //     ExpiryPolicy = new Symbol("SESSION_END"),
+                //     Dynamic = false,
+                //     Durable = 0,
+                // },
+            };
+            return a;
+        }
+
         internal static Attach CreateAttach(string? address,
             DeliveryMode deliveryMode, Guid linkId, Map? sourceFilter = null)
         {
@@ -149,6 +190,11 @@ namespace RabbitMQ.AMQP.Client
         internal static string? EncodePathSegment(string url)
         {
             return PercentCodec.EncodePathSegment(url);
+        }
+
+        internal static string? DecodePathSegment(string url)
+        {
+            return PercentCodec.DecodePathSegment(url);
         }
 
         internal static string EncodeHttpParameter(string url)
@@ -332,6 +378,62 @@ namespace RabbitMQ.AMQP.Client
             s_unreserved['.'] = true;
             s_unreserved['_'] = true;
             s_unreserved['~'] = true;
+        }
+
+        private static int HexValue(char ch)
+        {
+            return ch switch
+            {
+                >= '0' and <= '9' => ch - '0',
+                >= 'A' and <= 'F' => ch - 'A' + 10,
+                >= 'a' and <= 'f' => ch - 'a' + 10,
+                _ => -1
+            };
+        }
+
+        internal static string? DecodePathSegment(string? segment)
+        {
+            if (segment == null)
+            {
+                return null;
+            }
+
+            var bytes = new List<byte>(segment.Length);
+            for (int i = 0; i < segment.Length; i++)
+            {
+                char c = segment[i];
+                if (c == '%')
+                {
+                    if (i + 2 >= segment.Length)
+                    {
+                        throw new FormatException("Invalid percent-encoding: incomplete escape sequence.");
+                    }
+
+                    int hi = HexValue(segment[i + 1]);
+                    int lo = HexValue(segment[i + 2]);
+                    if (hi < 0 || lo < 0)
+                    {
+                        throw new FormatException($"Invalid percent-encoding: '{segment.Substring(i, 3)}'.");
+                    }
+
+                    bytes.Add((byte)((hi << 4) | lo));
+                    i += 2;
+                }
+                else
+                {
+                    // Append UTF-8 encoding of the character (handles non-ASCII chars)
+                    if (c <= 0x7F)
+                    {
+                        bytes.Add((byte)c);
+                    }
+                    else
+                    {
+                        bytes.AddRange(Encoding.UTF8.GetBytes(new[] { c }));
+                    }
+                }
+            }
+
+            return Encoding.UTF8.GetString(bytes.ToArray());
         }
 
         internal static string? EncodePathSegment(string? segment)

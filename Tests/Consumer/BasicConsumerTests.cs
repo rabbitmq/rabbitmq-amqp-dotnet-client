@@ -371,17 +371,13 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
 
         IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder()
             .Queue(doesNotExist)
-            .MessageHandler((context, message) =>
-            {
-                return Task.CompletedTask;
-            }
-        );
+            .MessageHandler((context, message) => Task.CompletedTask);
 
         // TODO these are timeout exceptions under the hood, compare
         // with the Java client
         ConsumerException ex = await Assert.ThrowsAsync<ConsumerException>(
             () => consumerBuilder.BuildAndStartAsync());
-        Assert.Contains(doesNotExist, ex.Message);
+        Assert.Contains("amqp:not-found", ex.Message);
     }
 
     [Fact]

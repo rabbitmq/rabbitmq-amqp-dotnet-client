@@ -40,7 +40,8 @@ await queueSpec.DeclareAsync();
 const int messagesToSend = 10_000_000;
 TaskCompletionSource<bool> tcs = new();
 int messagesReceived = 0;
-IRpcServer rpcServer = await connection.RpcServerBuilder().RequestQueue(rpcQueue).Handler(
+IResponder responder = await connection.ResponderBuilder().
+    RequestQueue(rpcQueue).Handler(
     (context, message) =>
     {
         try
@@ -59,14 +60,14 @@ IRpcServer rpcServer = await connection.RpcServerBuilder().RequestQueue(rpcQueue
     }
 ).BuildAsync();
 
-IRpcClient rpcClient = await connection.RpcClientBuilder().RequestAddress().Queue(rpcQueue).RpcClient().BuildAsync()
-    ;
+IRequester requester = await connection.RequesterBuilder().RequestAddress().
+        Queue(rpcQueue).Requester().BuildAsync();
 
 for (int i = 0; i < messagesToSend; i++)
 {
     try
     {
-        IMessage reply = await rpcClient.PublishAsync(
+        IMessage reply = await requester.PublishAsync(
             new AmqpMessage($"ping_{DateTime.Now}"));
         Trace.WriteLine(TraceLevel.Information, $"[Client] Reply received: {reply.BodyAsString()}");
     }
@@ -82,8 +83,8 @@ for (int i = 0; i < messagesToSend; i++)
 
 await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
 
-await rpcClient.CloseAsync();
-await rpcServer.CloseAsync();
+await requester.CloseAsync();
+await responder.CloseAsync();
 await queueSpec.DeleteAsync();
 await environment.CloseAsync();
 Trace.WriteLine(TraceLevel.Information, "Bye!");
