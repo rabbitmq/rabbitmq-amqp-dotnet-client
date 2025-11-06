@@ -134,7 +134,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
 
             string s = GetReplyToQueue();
-            return request.ReplyTo(s)
+            return request.ReplyTo(AddressBuilderHelper.AddressBuilder().Queue(s).Address())
                 .MessageId(correlationId);
         }
 
