@@ -30,18 +30,18 @@ IEnvironment environment = AmqpEnvironment.Create(
 IConnection connection = await environment.CreateConnectionAsync();
 Trace.WriteLine(TraceLevel.Information, $"Connected to the broker {connection} successfully");
 
-const string rpcQueue = "amqp10.net-rpc-queue";
-
 IManagement management = connection.Management();
 
-IQueueSpecification queueSpec = management.Queue(rpcQueue).Type(QueueType.QUORUM);
+const string requestQueue = "amqp10.net-request-queue";
+
+IQueueSpecification queueSpec = management.Queue(requestQueue).Type(QueueType.QUORUM);
 await queueSpec.DeclareAsync();
 
 const int messagesToSend = 10_000_000;
 TaskCompletionSource<bool> tcs = new();
 int messagesReceived = 0;
 IResponder responder = await connection.ResponderBuilder().
-    RequestQueue(rpcQueue).Handler(
+    RequestQueue(requestQueue).Handler(
     (context, message) =>
     {
         try
@@ -61,15 +61,15 @@ IResponder responder = await connection.ResponderBuilder().
 ).BuildAsync();
 
 IRequester requester = await connection.RequesterBuilder().RequestAddress().
-        Queue(rpcQueue).Requester().BuildAsync();
+        Queue(requestQueue).Requester().BuildAsync();
 
 for (int i = 0; i < messagesToSend; i++)
 {
     try
     {
-        IMessage reply = await requester.PublishAsync(
+        IMessage response = await requester.PublishAsync(
             new AmqpMessage($"ping_{DateTime.Now}"));
-        Trace.WriteLine(TraceLevel.Information, $"[Client] Reply received: {reply.BodyAsString()}");
+        Trace.WriteLine(TraceLevel.Information, $"[Client] Response received: {response.BodyAsString()}");
     }
     catch (Exception e)
     {
