@@ -11,14 +11,14 @@ namespace RabbitMQ.AMQP.Client.Impl
     public class ResponderConfiguration
     {
         public AmqpConnection Connection { get; set; } = null!;
-        public RpcHandler? Handler { get; set; }
+        public ResponderHandler? Handler { get; set; }
         public string RequestQueue { get; set; } = "";
         public Func<IMessage, object>? CorrelationIdExtractor { get; set; }
         public Func<IMessage, object, IMessage>? ReplyPostProcessor { get; set; }
     }
 
     /// <summary>
-    ///  AmqpRpcServerBuilder is a builder for creating an AMQP RPC server.
+    ///  AmqpResponderBuilder is a builder for creating an AMQP RPC server.
     /// </summary>
     public class AmqpResponderBuilder : IResponderBuilder
     {
@@ -53,7 +53,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public IResponderBuilder Handler(RpcHandler handler)
+        public IResponderBuilder Handler(ResponderHandler handler)
         {
             _configuration.Handler = handler;
             return this;
@@ -68,8 +68,8 @@ namespace RabbitMQ.AMQP.Client.Impl
     }
 
     /// <summary>
-    /// AmqpRpcServer implements the <see cref="IResponder"/> interface.
-    /// With the RpcClient you can create an RPC communication over AMQP 1.0.
+    /// AmqpResponder implements the <see cref="IResponder"/> interface.
+    /// With the AmqpRequester you can create an RPC communication over AMQP 1.0.
     /// </summary>
     public class AmqpResponder : AbstractLifeCycle, IResponder
     {
@@ -121,7 +121,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                     context.Accept();
                     if (_configuration.Handler != null)
                     {
-                        IMessage reply = await _configuration.Handler(new RpcServerContext(), request)
+                        IMessage reply = await _configuration.Handler(new ResponderContext(), request)
                             .ConfigureAwait(false);
 
                         if (request.ReplyTo() != "")
@@ -130,7 +130,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                         }
                         else
                         {
-                            Trace.WriteLine(TraceLevel.Error, "[RPC server] No reply-to address in request");
+                            Trace.WriteLine(TraceLevel.Error, "[Responder] No reply-to address in request");
                         }
 
                         object correlationId = ExtractCorrelationId(request);
@@ -145,7 +145,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                                 catch (Exception e)
                                 {
                                     Trace.WriteLine(TraceLevel.Error,
-                                        $"[RPC server] Failed to send reply: {e.Message}");
+                                        $"[Responder] Failed to send reply: {e.Message}");
                                     return false;
                                 }
                             },
@@ -164,7 +164,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             await base.OpenAsync().ConfigureAwait(false);
         }
 
-        private class RpcServerContext : IResponder.IContext
+        private class ResponderContext : IResponder.IContext
         {
             public IMessage Message(byte[] body) => new AmqpMessage(body);
             public IMessage Message(string body) => new AmqpMessage(body);

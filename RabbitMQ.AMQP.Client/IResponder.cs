@@ -50,7 +50,7 @@ namespace RabbitMQ.AMQP.Client
         /// </summary>
         /// <param name="handler"></param>
         /// <returns></returns>
-        IResponderBuilder Handler(RpcHandler handler);
+        IResponderBuilder Handler(ResponderHandler handler);
 
         /// <summary>
         /// Build and return the RPC server.
@@ -63,7 +63,7 @@ namespace RabbitMQ.AMQP.Client
     /// Event handler for handling RPC requests.
     /// </summary>
     // TODO cancellation token
-    public delegate Task<IMessage> RpcHandler(IResponder.IContext context, IMessage request);
+    public delegate Task<IMessage> ResponderHandler(IResponder.IContext context, IMessage request);
 
     /// <summary>
     /// IResponder interface for creating an RPC server.

@@ -81,14 +81,14 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             _configuration.RequestAddress = _addressBuilder.Address();
             _configuration.Connection = _connection;
-            var rpcClient = new AmqpRequester(_configuration);
-            await rpcClient.OpenAsync().ConfigureAwait(false);
-            return rpcClient;
+            var amqpRequester = new AmqpRequester(_configuration);
+            await amqpRequester.OpenAsync().ConfigureAwait(false);
+            return amqpRequester;
         }
     }
 
     /// <summary>
-    /// AmqpRpcClient is an implementation of <see cref="IRequester"/>.
+    /// AmqpRequester is an implementation of <see cref="IRequester"/>.
     /// It is a wrapper around <see cref="IPublisher"/> and <see cref="IConsumer"/> to create an RPC client over AMQP 1.0.
     /// even the PublishAsync is async the RPClient blocks the thread until the response is received.
     /// within the timeout.
