@@ -17,7 +17,7 @@ Trace.TraceListener = (l, f, a) =>
     consoleListener.WriteLine($"[{DateTime.Now}] [{l}] - {f}");
 
 Trace.WriteLine(TraceLevel.Information, "Starting the example...");
-const string containerId = "rpc-example-connection";
+const string containerId = "request-response-example-connection";
 
 var recoveryConfiguration = new RecoveryConfiguration();
 recoveryConfiguration.Topology(true);

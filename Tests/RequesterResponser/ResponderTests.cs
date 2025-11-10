@@ -11,7 +11,7 @@ using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Tests.Rpc
+namespace Tests.RequesterResponser
 {
     public class ResponderTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
     {
@@ -111,7 +111,7 @@ namespace Tests.Rpc
             Assert.NotNull(_management);
 
             IResponder responder = await _connection.ResponderBuilder()
-                .Handler(PongRpcHandler)
+                .Handler(PongResponderHandler)
                 .RequestQueue(_requestQueueName)
                 .BuildAsync();
 
@@ -163,7 +163,7 @@ namespace Tests.Rpc
             Assert.NotNull(_connection);
 
             IResponder responder = await _connection.ResponderBuilder()
-                .Handler(PongRpcHandler)
+                .Handler(PongResponderHandler)
                 .RequestQueue(_requestQueueName)
                 .BuildAsync();
 
@@ -197,7 +197,7 @@ namespace Tests.Rpc
             Assert.NotNull(_management);
 
             IResponder responder = await _connection.ResponderBuilder()
-                .Handler(PongRpcHandler)
+                .Handler(PongResponderHandler)
                 .RequestQueue(_requestQueueName)
                 .BuildAsync();
 
@@ -240,7 +240,7 @@ namespace Tests.Rpc
             Assert.NotNull(_management);
 
             IResponder responder = await _connection.ResponderBuilder()
-                .Handler(PongRpcHandler)
+                .Handler(PongResponderHandler)
                 .RequestQueue(_requestQueueName)
                 .CorrelationIdExtractor(message => message.Property("correlationId"))
                 .ReplyPostProcessor((reply, replyCorrelationId) => reply.Property("correlationId",
@@ -297,7 +297,7 @@ namespace Tests.Rpc
             TaskCompletionSource<bool> tcs = CreateTaskCompletionSource();
             List<IMessage> messagesReceived = [];
 
-            Task<IMessage> RpcHandler(IResponder.IContext context, IMessage request)
+            Task<IMessage> ResponderHandler(IResponder.IContext context, IMessage request)
             {
                 try
                 {
@@ -315,7 +315,7 @@ namespace Tests.Rpc
             }
 
             IResponder responder = await _connection.ResponderBuilder()
-                .Handler(RpcHandler)
+                .Handler(ResponderHandler)
                 .RequestQueue(_requestQueueName)
                 .BuildAsync();
 
@@ -358,14 +358,14 @@ namespace Tests.Rpc
         }
 
         /// <summary>
-        /// The RPC client `PublishAsync` should raise a timeout exception if the server does not reply within the timeout
+        /// The Requester `PublishAsync` should raise a timeout exception if the server does not reply within the timeout
         /// </summary>
         [Fact]
         public async Task RequesterShouldRaiseTimeoutError()
         {
             Assert.NotNull(_connection);
 
-            static async Task<IMessage> RpcHandler(IResponder.IContext context, IMessage request)
+            static async Task<IMessage> RequesterHandler(IResponder.IContext context, IMessage request)
             {
                 IMessage reply = context.Message("pong");
                 object millisecondsToWait = request.Property("wait");
@@ -374,7 +374,7 @@ namespace Tests.Rpc
             }
 
             IResponder responder = await _connection.ResponderBuilder()
-                .Handler(RpcHandler)
+                .Handler(RequesterHandler)
                 .RequestQueue(_requestQueueName)
                 .BuildAsync();
 
@@ -396,7 +396,7 @@ namespace Tests.Rpc
             await responder.CloseAsync();
         }
 
-        private static Task<IMessage> PongRpcHandler(IResponder.IContext context, IMessage request)
+        private static Task<IMessage> PongResponderHandler(IResponder.IContext context, IMessage request)
         {
             IMessage reply = context.Message("pong");
             return Task.FromResult(reply);

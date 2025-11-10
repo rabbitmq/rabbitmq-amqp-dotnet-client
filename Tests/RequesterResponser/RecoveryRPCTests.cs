@@ -10,7 +10,7 @@ using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Tests.Rpc
+namespace Tests.RequesterResponser
 {
     public class RecoveryRpcTests(ITestOutputHelper testOutputHelper)
         : IntegrationTest(testOutputHelper, setupConnectionAndManagement: false)

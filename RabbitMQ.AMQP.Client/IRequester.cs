@@ -14,7 +14,7 @@ namespace RabbitMQ.AMQP.Client
     }
 
     /// <summary>
-    /// IRpcClientBuilder is the interface for creating an RPC client.
+    /// IRequesterBuilder is the interface for creating an RPC client.
     /// See also <seealso cref="IRequester"/> and <seealso cref="IResponderBuilder"/>
     /// </summary>
     public interface IRequesterBuilder
