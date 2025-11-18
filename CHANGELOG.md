@@ -1,0 +1,17 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [[0.4.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v0.4.0)]
+
+## 0.4.0 - 2025-18-11
+- [Release 0.4.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v0.4.0)
+
+### Added
+- Implement direct reply to feature by @Gsantomaggio in [#135](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/135)
+
+### Changed
+- Update the request and response example by @Gsantomaggio in [#136](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/136)
+
+### Breaking changes
+- Rename RpcClient to Requester and RpcServer to Responder by @Gsantomaggio in [#135](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/135)
