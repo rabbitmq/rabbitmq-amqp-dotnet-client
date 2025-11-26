@@ -78,6 +78,20 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        // sessions count 
+        internal int GetSessionsCount()
+        {
+            _semaphoreSlim.Wait();
+            try
+            {
+                return _sessions.Count;
+            }
+            finally
+            {
+                _semaphoreSlim.Release();
+            }
+        }
+
         // Note: these values come from Amqp.NET
         static Begin GetDefaultBegin()
         {
