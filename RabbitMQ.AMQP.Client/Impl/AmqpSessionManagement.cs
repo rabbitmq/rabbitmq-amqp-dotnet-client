@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Amqp;
 using Amqp.Framing;
@@ -15,7 +16,11 @@ namespace RabbitMQ.AMQP.Client.Impl
     {
         private readonly AmqpConnection _amqpConnection;
         private readonly int _maxSessionsPerItem;
+
         private readonly ConcurrentBag<Session> _sessions = new();
+
+        // lock during session creation
+        private readonly SemaphoreSlim _semaphoreSlim = new(1);
 
         internal AmqpSessionManagement(AmqpConnection amqpConnection, int maxSessionsPerItem)
         {
@@ -26,33 +31,51 @@ namespace RabbitMQ.AMQP.Client.Impl
         // TODO cancellation token
         internal async Task<Session> GetOrCreateSessionAsync()
         {
-            Session rv;
+            await _semaphoreSlim.WaitAsync(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
+            try
+            {
+                Session rv;
 
-            if (_sessions.Count >= _maxSessionsPerItem)
-            {
-                rv = _sessions.First();
-            }
-            else
-            {
-                TaskCompletionSource<ISession> sessionBeginTcs = Utils.CreateTaskCompletionSource<ISession>();
-                void OnBegin(ISession session, Begin peerBegin)
+                if (_sessions.Count >= _maxSessionsPerItem)
                 {
-                    sessionBeginTcs.SetResult(session);
+                    rv = _sessions.First();
+                }
+                else
+                {
+                    TaskCompletionSource<ISession> sessionBeginTcs = Utils.CreateTaskCompletionSource<ISession>();
+
+                    void OnBegin(ISession session, Begin peerBegin)
+                    {
+                        sessionBeginTcs.SetResult(session);
+                    }
+
+                    rv = new Session(_amqpConnection.NativeConnection, GetDefaultBegin(), OnBegin);
+                    // TODO cancellation token
+                    ISession awaitedSession =
+                        await sessionBeginTcs.Task.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+                    _sessions.Add(rv);
                 }
 
-                rv = new Session(_amqpConnection.NativeConnection, GetDefaultBegin(), OnBegin);
-                // TODO cancellation token
-                ISession awaitedSession = await sessionBeginTcs.Task.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
-                _sessions.Add(rv);
+                return rv;
             }
-
-            return rv;
+            finally
+            {
+                _semaphoreSlim.Release();
+            }
         }
 
         internal void ClearSessions()
         {
-            // TODO close open sessions?
-            _sessions.Clear();
+            _semaphoreSlim.Wait();
+            try
+            {
+                // TODO close open sessions?
+                _sessions.Clear();
+            }
+            finally
+            {
+                _semaphoreSlim.Release();
+            }
         }
 
         // Note: these values come from Amqp.NET
