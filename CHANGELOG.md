@@ -15,3 +15,11 @@ All notable changes to this project will be documented in this file.
 
 ### Breaking changes
 - Rename RpcClient to Requester and RpcServer to Responder by @Gsantomaggio in [#135](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/135)
+
+
+## 0.4.1 - 2025-16-12
+- [Release 0.4.1](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v0.4.1)
+
+### Fix
+- Fix multi-tread creation session in [#139](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/139)
+
