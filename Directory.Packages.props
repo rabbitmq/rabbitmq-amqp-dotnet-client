@@ -5,6 +5,7 @@
   <ItemGroup>
     <!-- RabbitMQ.Amqp.Client -->
     <PackageVersion Include="AMQPNetLite.Core" Version="2.4.11" />
+    <PackageVersion Include="AMQPNetLite.WebSockets" Version="2.4.11" />
     <PackageVersion Include="OpenTelemetry" Version="1.10.0" />
     <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.10.0" />
     <PackageVersion Include="RabbitMQ.Client" Version="6.8.1" />
