@@ -39,6 +39,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BatchDispositions", "docs\E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StreamFilter", "docs\Examples\StreamFilter\StreamFilter.csproj", "{76B4C910-B9AB-479E-BA77-067CCE0CD37C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebSockets", "docs\Examples\WebSockets\WebSockets.csproj", "{7C02823E-7B1C-468D-9549-1DDE1438F862}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -85,6 +87,10 @@ Global
 		{76B4C910-B9AB-479E-BA77-067CCE0CD37C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{76B4C910-B9AB-479E-BA77-067CCE0CD37C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{76B4C910-B9AB-479E-BA77-067CCE0CD37C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C02823E-7B1C-468D-9549-1DDE1438F862}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C02823E-7B1C-468D-9549-1DDE1438F862}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C02823E-7B1C-468D-9549-1DDE1438F862}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C02823E-7B1C-468D-9549-1DDE1438F862}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -98,5 +104,6 @@ Global
 		{C1EA4B66-E60E-4945-A4C6-91B433F9BA65} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 		{1FF0D53E-B495-4810-8415-E27DED184C9E} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 		{76B4C910-B9AB-479E-BA77-067CCE0CD37C} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
+		{7C02823E-7B1C-468D-9549-1DDE1438F862} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 	EndGlobalSection
 EndGlobal
