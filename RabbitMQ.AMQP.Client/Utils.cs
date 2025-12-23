@@ -228,7 +228,9 @@ namespace RabbitMQ.AMQP.Client
         internal static bool IsValidScheme(string scheme)
         {
             if (scheme.Equals("amqp", StringComparison.InvariantCultureIgnoreCase) ||
-                scheme.Equals("amqps", StringComparison.InvariantCultureIgnoreCase))
+                scheme.Equals("amqps", StringComparison.InvariantCultureIgnoreCase) ||
+                scheme.Equals("ws", StringComparison.InvariantCultureIgnoreCase) ||
+                scheme.Equals("wss", StringComparison.InvariantCultureIgnoreCase))
             {
                 return true;
             }

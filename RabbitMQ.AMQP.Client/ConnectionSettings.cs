@@ -81,7 +81,7 @@ namespace RabbitMQ.AMQP.Client
             }
             else
             {
-                throw new ArgumentOutOfRangeException(nameof(scheme), "scheme must be 'amqp' or 'amqps'");
+                throw new ArgumentOutOfRangeException(nameof(scheme), "scheme must be 'amqp', 'amqps', 'ws' or 'wss'");
             }
         }
 
@@ -214,6 +214,7 @@ namespace RabbitMQ.AMQP.Client
         private readonly uint _maxFrameSize = Consts.DefaultMaxFrameSize;
         private readonly TlsSettings? _tlsSettings;
         private readonly IRecoveryConfiguration _recoveryConfiguration = new RecoveryConfiguration();
+        private readonly string _webSocketPath = "/";
 
         public ConnectionSettings(Uri uri,
             string? containerId = null,
@@ -231,9 +232,10 @@ namespace RabbitMQ.AMQP.Client
             string scheme = uri.Scheme;
             if (false == Utils.IsValidScheme(scheme))
             {
-                throw new ArgumentOutOfRangeException("uri.Scheme", "Uri scheme must be 'amqp' or 'amqps'");
+                throw new ArgumentOutOfRangeException("uri.Scheme", "Uri scheme must be 'amqp', 'amqps', 'ws' or 'wss'");
             }
 
+            _webSocketPath = string.IsNullOrWhiteSpace(uri.AbsolutePath) ? "/" : uri.AbsolutePath;
             _address = InitAddress(uri.Host, uri.Port, user, password, scheme);
             _tlsSettings = InitTlsSettings();
         }
@@ -242,14 +244,14 @@ namespace RabbitMQ.AMQP.Client
         {
             if (_oAuth2Options is not null)
             {
-                return new Address(host, port, "", _oAuth2Options.Token, "/", scheme);
+                return new Address(host, port, "", _oAuth2Options.Token, _webSocketPath, scheme);
             }
 
             return new Address(host,
                 port: port,
                 user: user,
                 password: password,
-                path: "/",
+                path: _webSocketPath,
                 scheme: scheme);
         }
 
@@ -274,9 +276,10 @@ namespace RabbitMQ.AMQP.Client
         {
             if (false == Utils.IsValidScheme(scheme))
             {
-                throw new ArgumentOutOfRangeException(nameof(scheme), "scheme must be 'amqp' or 'amqps'");
+                throw new ArgumentOutOfRangeException(nameof(scheme), "scheme must be 'amqp', 'amqps', 'ws' or 'wss'");
             }
 
+            _webSocketPath = "/"; // For TCP transports the path value is ignored by AMQP .Net Lite, so keeping it set to "/" preserves current behavior.
             _address = InitAddress(host, port, user, password, scheme);
             if (virtualHost is not null)
             {
@@ -507,7 +510,7 @@ namespace RabbitMQ.AMQP.Client
                 string scheme = uri.Scheme;
                 if (false == Utils.IsValidScheme(scheme))
                 {
-                    throw new ArgumentOutOfRangeException("uri.Scheme", "Uri scheme must be 'amqp' or 'amqps'");
+                    throw new ArgumentOutOfRangeException("uri.Scheme", "Uri scheme must be 'amqp', 'amqps', 'ws' or 'wss'");
                 }
 
                 (string? user, string? password) = ProcessUserInfo(uri);

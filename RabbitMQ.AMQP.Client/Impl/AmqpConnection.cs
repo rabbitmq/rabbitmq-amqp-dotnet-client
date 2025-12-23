@@ -361,7 +361,16 @@ namespace RabbitMQ.AMQP.Client.Impl
                     open.MaxFrameSize = _connectionSettings.MaxFrameSize;
                 }
 
-                var cf = new ConnectionFactory();
+                ConnectionFactory cf;
+
+                if (_connectionSettings.Scheme.Equals("ws", StringComparison.OrdinalIgnoreCase) || _connectionSettings.Scheme.Equals("wss", StringComparison.OrdinalIgnoreCase))
+                {
+                    cf = new ConnectionFactory(new TransportProvider[] { new WebSocketTransportFactory() });
+                }
+                else
+                {
+                    cf = new ConnectionFactory();
+                }
 
                 if (_connectionSettings is { UseSsl: true, TlsSettings: not null })
                 {
