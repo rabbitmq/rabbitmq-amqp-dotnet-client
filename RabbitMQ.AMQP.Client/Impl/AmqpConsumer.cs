@@ -83,7 +83,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 {
                     string address = AddressBuilderHelper.AddressBuilder().Queue(_configuration.Queue).Address();
                     attach = Utils.CreateAttach(address, DeliveryMode.AtLeastOnce, _id,
-                        _configuration.Filters);
+                        _configuration.Filters, _configuration.PreSettled);
                 }
 
                 void OnAttached(ILink argLink, Attach argAttach)
@@ -176,10 +176,18 @@ namespace RabbitMQ.AMQP.Client.Impl
                         continue;
                     }
 
-                    _unsettledMessageCounter.Increment();
+                    IContext context = _configuration.PreSettled switch
+                    {
+                        true => new PreSettledDeliveryContext(),
+                        false => new DeliveryContext(_receiverLink, nativeMessage, _unsettledMessageCounter,
+                            _metricsReporter)
+                    };
 
-                    IContext context = new DeliveryContext(_receiverLink, nativeMessage,
-                        _unsettledMessageCounter, _metricsReporter);
+                    if (!_configuration.PreSettled)
+                    {
+                        _unsettledMessageCounter.Increment();
+                    }
+
                     var amqpMessage = new AmqpMessage(nativeMessage);
 
                     // TODO catch exceptions thrown by handlers,
@@ -256,7 +264,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             get
             {
                 string? sourceAddress = _attach?.Source is not Source source ? null : source.Address;
-                return sourceAddress is null ? "" : AddressBuilderHelper.AddressBuilder().DecodeQueuePathSegment(sourceAddress);
+                return sourceAddress is null
+                    ? ""
+                    : AddressBuilderHelper.AddressBuilder().DecodeQueuePathSegment(sourceAddress);
             }
         }
 

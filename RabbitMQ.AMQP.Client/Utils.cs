@@ -140,11 +140,7 @@ namespace RabbitMQ.AMQP.Client
                     Dynamic = true,
                     Timeout = 0,
                     FilterSet = sourceFilter,
-                    DefaultOutcome = new Modified()
-                    {
-                        DeliveryFailed = true,
-                        UndeliverableHere = false,
-                    }
+                    DefaultOutcome = new Modified() { DeliveryFailed = true, UndeliverableHere = false, }
                 },
                 // Target = new Target()
                 // {
@@ -157,14 +153,25 @@ namespace RabbitMQ.AMQP.Client
         }
 
         internal static Attach CreateAttach(string? address,
-            DeliveryMode deliveryMode, Guid linkId, Map? sourceFilter = null)
+            DeliveryMode deliveryMode, Guid linkId, Map? sourceFilter = null, bool preSettled = false)
         {
+            SenderSettleMode sndSettleMode = deliveryMode == DeliveryMode.AtMostOnce
+                ? SenderSettleMode.Settled
+                : SenderSettleMode.Unsettled;
+
+            ReceiverSettleMode rcvSettleMode = ReceiverSettleMode.First;
+
+            if (preSettled)
+            {
+                // Pre-settled mode: AT_MOST_ONCE with auto-settle
+                sndSettleMode = SenderSettleMode.Settled;
+                rcvSettleMode = ReceiverSettleMode.Second;
+            }
+
             var attach = new Attach
             {
-                SndSettleMode = deliveryMode == DeliveryMode.AtMostOnce
-                    ? SenderSettleMode.Settled
-                    : SenderSettleMode.Unsettled,
-                RcvSettleMode = ReceiverSettleMode.First,
+                SndSettleMode = sndSettleMode,
+                RcvSettleMode = rcvSettleMode,
                 LinkName = linkId.ToString(),
                 // Role = true,
                 Target = new Target()
@@ -280,6 +287,7 @@ namespace RabbitMQ.AMQP.Client
                     throw new TimeoutException("Timeout waiting for condition to be met");
                 }
             }
+
             callBack(true, backOffTimeSpan);
         }
 
@@ -310,16 +318,19 @@ namespace RabbitMQ.AMQP.Client
             {
                 currentVersion = currentVersion.Substring(0, currentVersion.IndexOf("+"));
             }
+
             // alpha (snapshot) versions: 3.7.0~alpha.449-1
             if (currentVersion.Contains("~"))
             {
                 currentVersion = currentVersion.Substring(0, currentVersion.IndexOf("~"));
             }
+
             // alpha (snapshot) versions: 3.7.1-alpha.40
             if (currentVersion.Contains("-"))
             {
                 currentVersion = currentVersion.Substring(0, currentVersion.IndexOf("-"));
             }
+
             return currentVersion;
         }
 

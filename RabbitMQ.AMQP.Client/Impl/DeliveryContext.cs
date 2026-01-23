@@ -296,4 +296,37 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// </summary>
         public int Count() => _contexts.Count;
     }
+
+    public class PreSettledDeliveryContext : IContext
+    {
+        public void Accept()
+        {
+            throw new InvalidOperationException("Cannot accept a pre-settled delivery context.");
+        }
+
+        public void Discard()
+        {
+            throw new InvalidOperationException("Cannot discard a pre-settled delivery context.");
+        }
+
+        public void Discard(Dictionary<string, object> annotations)
+        {
+            throw new InvalidOperationException("Cannot discard a pre-settled delivery context.");
+        }
+
+        public void Requeue()
+        {
+            throw new InvalidOperationException("Cannot requeue a pre-settled delivery context.");
+        }
+
+        public void Requeue(Dictionary<string, object> annotations)
+        {
+            throw new InvalidOperationException("Cannot requeue a pre-settled delivery context.");
+        }
+
+        public IBatchContext Batch()
+        {
+            throw new InvalidOperationException("Cannot create a batch context from a pre-settled delivery context.");
+        }
+    }
 }

@@ -209,6 +209,7 @@ RabbitMQ.AMQP.Client.IConsumerBuilder.ListenerContext
 RabbitMQ.AMQP.Client.IConsumerBuilder.ListenerContext.ListenerContext(RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions! streamOptions) -> void
 RabbitMQ.AMQP.Client.IConsumerBuilder.ListenerContext.StreamOptions.get -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.IConsumerBuilder.MessageHandler(RabbitMQ.AMQP.Client.MessageHandler! handler) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
+RabbitMQ.AMQP.Client.IConsumerBuilder.PreSettled(bool preSettled) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.Queue(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpecification) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.Queue(string? queueName) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.Stream() -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
@@ -375,6 +376,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.BuildAndStartAsync(System.Threadin
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.DirectReplyTo(bool directReplyTo) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.InitialCredits(int initialCredits) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.MessageHandler(RabbitMQ.AMQP.Client.MessageHandler! handler) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
+RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.PreSettled(bool preSettled) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.Queue(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpec) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.Queue(string? queueName) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.Stream() -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
@@ -575,6 +577,14 @@ RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions.ListenerStreamOptions(Amqp.Types
 RabbitMQ.AMQP.Client.Impl.MessageAddressBuilder
 RabbitMQ.AMQP.Client.Impl.MessageAddressBuilder.Build() -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.Impl.MessageAddressBuilder.MessageAddressBuilder(RabbitMQ.AMQP.Client.IMessage! message) -> void
+RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext
+RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Accept() -> void
+RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Batch() -> RabbitMQ.AMQP.Client.IBatchContext!
+RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Discard() -> void
+RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Discard(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> void
+RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.PreSettledDeliveryContext() -> void
+RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Requeue() -> void
+RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Requeue(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> void
 RabbitMQ.AMQP.Client.Impl.RequesterAddressBuilder
 RabbitMQ.AMQP.Client.Impl.RequesterAddressBuilder.Requester() -> RabbitMQ.AMQP.Client.IRequesterBuilder!
 RabbitMQ.AMQP.Client.Impl.RequesterAddressBuilder.RequesterAddressBuilder(RabbitMQ.AMQP.Client.Impl.AmqpRequesterBuilder! builder) -> void

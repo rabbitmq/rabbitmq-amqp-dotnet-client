@@ -35,6 +35,13 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// </summary>
         public bool DirectReplyTo { get; set; }
 
+        /// <summary>
+        /// If pre-settled is enabled, the receiver will use ReceiverSettleMode.Second,
+        /// meaning messages are pre-settled and the receiver does not need to explicitly settle them.
+        /// Default is false.
+        /// </summary>
+        public bool PreSettled { get; set; }
+
         // TODO re-name to ListenerContextAction? Callback?
         public Action<IConsumerBuilder.ListenerContext>? ListenerContext = null;
     }
@@ -81,6 +88,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IConsumerBuilder InitialCredits(int initialCredits)
         {
             _configuration.InitialCredits = initialCredits;
+            return this;
+        }
+
+        public IConsumerBuilder PreSettled(bool preSettled)
+        {
+            _configuration.PreSettled = preSettled;
             return this;
         }
 
