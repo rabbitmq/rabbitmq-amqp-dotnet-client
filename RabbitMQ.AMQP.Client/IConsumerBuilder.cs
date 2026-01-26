@@ -36,6 +36,13 @@ namespace RabbitMQ.AMQP.Client
         IConsumerBuilder InitialCredits(int initialCredits);
 
         /// <summary>
+        /// If pre-settled is enabled, the receiver will use ReceiverSettleMode.Second,
+        /// meaning messages are pre-settled and the receiver does not need to explicitly settle them.
+        /// Default is false.
+        /// </summary>
+        IConsumerBuilder PreSettled(bool preSettled);
+
+        /// <summary>
         /// SubscriptionListener interface callback to add behavior before a subscription is created.
         /// This callback is meant for stream consumers:
         /// it can be used to dynamically set the offset the consumer attaches to in the stream.

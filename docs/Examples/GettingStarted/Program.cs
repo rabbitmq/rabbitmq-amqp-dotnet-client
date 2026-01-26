@@ -2,6 +2,18 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+// RabbitMQ AMQP 1.0 client: https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client
+// This client is a wrapper over the AMQP.Net Lite library:
+// - It is meant to be used with RabbitMQ 4.x.
+// - It provides an AMQP 1.0 implementation of the RabbitMQ concepts such as exchanges,
+// queues, bindings, publishers, and consumers.
+// - It provides management APIs to manage RabbitMQ topology via AMQP 1.0.
+// - It provides connection recovery and publisher confirms.
+// - It provides tracing and metrics capabilities.
+// RabbitMQ AMQP 1.0 info: https://www.rabbitmq.com/docs/amqp
+// RabbitMQ AMQP 1.0 .NET Example - Getting Started
+// Full path example: https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/tree/main/docs/Examples/GettingStarted
+
 using System.Diagnostics;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
