@@ -155,17 +155,21 @@ namespace RabbitMQ.AMQP.Client
         internal static Attach CreateAttach(string? address,
             DeliveryMode deliveryMode, Guid linkId, Map? sourceFilter = null, bool preSettled = false)
         {
-            SenderSettleMode sndSettleMode = deliveryMode == DeliveryMode.AtMostOnce
-                ? SenderSettleMode.Settled
-                : SenderSettleMode.Unsettled;
-
-            ReceiverSettleMode rcvSettleMode = ReceiverSettleMode.First;
+            SenderSettleMode sndSettleMode;
+            ReceiverSettleMode rcvSettleMode;
 
             if (preSettled)
             {
-                // Pre-settled mode: AT_MOST_ONCE with auto-settle
+                // Pre-settled mode: AT_MOST_ONCE with auto-settle. In this mode, deliveryMode is ignored.
                 sndSettleMode = SenderSettleMode.Settled;
                 rcvSettleMode = ReceiverSettleMode.Second;
+            }
+            else
+            {
+                sndSettleMode = deliveryMode == DeliveryMode.AtMostOnce
+                    ? SenderSettleMode.Settled
+                    : SenderSettleMode.Unsettled;
+                rcvSettleMode = ReceiverSettleMode.First;
             }
 
             var attach = new Attach
