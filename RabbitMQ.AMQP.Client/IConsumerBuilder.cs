@@ -15,32 +15,41 @@ namespace RabbitMQ.AMQP.Client
         Next
     }
 
+    /// <summary>
+    ///   ConsumerFeature defines the features available for Classic and Quorum queue consumers.
+    /// </summary>
+    public enum ConsumerFeature
+    {
+        // DefaultSettle: means that the consumer will be created with the default settings.
+        // message settle mode will be the default one (explicit settle)
+        // via Context. See IContext for more details on message settlement.
+        DefaultSettle,
+
+        // DirectReplyTo: Enables Direct Reply-To consumer behavior.
+        // Feature in RabbitMQ, allowing for simplified request-reply messaging patterns.
+        // Docs: https://www.rabbitmq.com/docs/direct-reply-to#usage-amqp
+        // Default is false.
+        DirectReplyTo,
+
+        // Presettled: Deliveries are pre-settled.
+        // When enabled, messages are automatically settled when received,
+        // meaning they cannot be redelivered if processing fails.
+        // Default is false
+        PreSettled,
+    }
+
     // TODO IAddressBuilder<IConsumerBuilder>?
     public interface IConsumerBuilder
     {
         IConsumerBuilder Queue(IQueueSpecification queueSpecification);
         IConsumerBuilder Queue(string? queueName);
 
-        /// <summary>
-        /// If direct reply-to is enabled, the client will use the direct reply-to feature of AMQP 1.0.
-        /// The server must also support direct reply-to.
-        /// This feature allows the server to send the reply directly to the client without going through a reply queue.
-        /// This can improve performance and reduce latency.
-        /// Default is false.
-        /// https://www.rabbitmq.com/docs/direct-reply-to
-        /// </summary>
-        IConsumerBuilder DirectReplyTo(bool directReplyTo);
-
         IConsumerBuilder MessageHandler(MessageHandler handler);
 
         IConsumerBuilder InitialCredits(int initialCredits);
 
-        /// <summary>
-        /// If pre-settled is enabled, the receiver will use ReceiverSettleMode.Second,
-        /// meaning messages are pre-settled and the receiver does not need to explicitly settle them.
-        /// Default is false.
-        /// </summary>
-        IConsumerBuilder PreSettled(bool preSettled);
+        // See: ConsumerFeature for more details on the features that can be enabled for the consumer.
+        IConsumerBuilder Feature(ConsumerFeature feature);
 
         /// <summary>
         /// SubscriptionListener interface callback to add behavior before a subscription is created.
