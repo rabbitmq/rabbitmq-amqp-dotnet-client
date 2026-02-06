@@ -23,18 +23,17 @@ namespace RabbitMQ.AMQP.Client
         // DefaultSettle: means that the consumer will be created with the default settings.
         // message settle mode will be the default one (explicit settle)
         // via Context. See IContext for more details on message settlement.
+        // DefaultSettle is the default behavior if no feature is specified.
         DefaultSettle,
 
         // DirectReplyTo: Enables Direct Reply-To consumer behavior.
         // Feature in RabbitMQ, allowing for simplified request-reply messaging patterns.
         // Docs: https://www.rabbitmq.com/docs/direct-reply-to#usage-amqp
-        // Default is false.
         DirectReplyTo,
 
         // Presettled: Deliveries are pre-settled.
         // When enabled, messages are automatically settled when received,
         // meaning they cannot be redelivered if processing fails.
-        // Default is false
         PreSettled,
     }
 
@@ -48,7 +47,8 @@ namespace RabbitMQ.AMQP.Client
 
         IConsumerBuilder InitialCredits(int initialCredits);
 
-        // See: ConsumerFeature for more details on the features that can be enabled for the consumer.
+        // See: ConsumerFeature for more details on the feature that can be enabled for the consumer.
+        // Feature is exclusive, only one feature can be enabled for a consumer. If no feature is specified, the consumer will be created with the default settings.
         IConsumerBuilder Feature(ConsumerFeature feature);
 
         /// <summary>

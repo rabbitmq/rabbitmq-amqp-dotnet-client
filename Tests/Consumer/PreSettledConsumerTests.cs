@@ -347,7 +347,7 @@ public class PreSettledConsumerTests(ITestOutputHelper testOutputHelper) : Integ
         int receivedCount = 0;
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueSpec)
-            .Feature(ConsumerFeature.DefaultSettle)// Explicitly avoid pre-settled feature
+            .Feature(ConsumerFeature.DefaultSettle) // Explicitly avoid pre-settled feature
             .MessageHandler((context, message) =>
             {
                 receivedCount++;
