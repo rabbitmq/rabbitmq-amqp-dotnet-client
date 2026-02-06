@@ -20,15 +20,16 @@ namespace RabbitMQ.AMQP.Client
     /// </summary>
     public enum ConsumerFeature
     {
-        // DefaultSettle: means that the consumer will be created with the default settings.
+        // ExplicitSettle: means that the consumer will be created with the default settings.
         // message settle mode will be the default one (explicit settle)
         // via Context. See IContext for more details on message settlement.
-        // DefaultSettle is the default behavior if no feature is specified.
-        DefaultSettle,
+        // ExplicitSettle is the default behavior if no feature is specified.
+        ExplicitSettle,
 
         // DirectReplyTo: Enables Direct Reply-To consumer behavior.
         // Feature in RabbitMQ, allowing for simplified request-reply messaging patterns.
         // Docs: https://www.rabbitmq.com/docs/direct-reply-to#usage-amqp
+        // with DirectReplyTo presettled is by default. 
         DirectReplyTo,
 
         // Presettled: Deliveries are pre-settled.

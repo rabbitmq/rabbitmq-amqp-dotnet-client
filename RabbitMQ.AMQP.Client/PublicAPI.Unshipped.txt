@@ -105,8 +105,8 @@ RabbitMQ.AMQP.Client.Consts
 RabbitMQ.AMQP.Client.ConsumerException
 RabbitMQ.AMQP.Client.ConsumerException.ConsumerException(string! message) -> void
 RabbitMQ.AMQP.Client.ConsumerFeature
-RabbitMQ.AMQP.Client.ConsumerFeature.DefaultSettle = 0 -> RabbitMQ.AMQP.Client.ConsumerFeature
 RabbitMQ.AMQP.Client.ConsumerFeature.DirectReplyTo = 1 -> RabbitMQ.AMQP.Client.ConsumerFeature
+RabbitMQ.AMQP.Client.ConsumerFeature.ExplicitSettle = 0 -> RabbitMQ.AMQP.Client.ConsumerFeature
 RabbitMQ.AMQP.Client.ConsumerFeature.PreSettled = 2 -> RabbitMQ.AMQP.Client.ConsumerFeature
 RabbitMQ.AMQP.Client.Error
 RabbitMQ.AMQP.Client.Error.Description.get -> string?

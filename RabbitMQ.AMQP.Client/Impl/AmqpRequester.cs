@@ -179,7 +179,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                                          string.IsNullOrEmpty(_configuration.ReplyToQueue);
             ConsumerFeature consumerFeature = canApplyDirectReplyTo
                 ? ConsumerFeature.DirectReplyTo
-                : ConsumerFeature.DefaultSettle;
+                : ConsumerFeature.ExplicitSettle;
 
             _publisher = await _configuration.Connection.PublisherBuilder().BuildAsync().ConfigureAwait(false);
             _consumer = await _configuration.Connection.ConsumerBuilder()

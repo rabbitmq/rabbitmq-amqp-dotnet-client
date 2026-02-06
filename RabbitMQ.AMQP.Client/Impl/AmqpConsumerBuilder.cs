@@ -24,7 +24,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         // TODO is a MessageHandler *really* optional???
         public MessageHandler? Handler { get; set; }
 
-        public ConsumerFeature Feature { get; set; } = ConsumerFeature.DefaultSettle;
+        public ConsumerFeature Feature { get; set; } = ConsumerFeature.ExplicitSettle;
 
         // TODO re-name to ListenerContextAction? Callback?
         public Action<IConsumerBuilder.ListenerContext>? ListenerContext = null;
