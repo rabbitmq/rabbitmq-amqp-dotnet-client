@@ -27,7 +27,7 @@ public class PreSettledConsumerTests(ITestOutputHelper testOutputHelper) : Integ
         TaskCompletionSource<IMessage> tcs = new();
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueSpec)
-            .Feature(ConsumerFeature.PreSettled)
+            .SettleStrategy(ConsumerSettleStrategy.PreSettled)
             .MessageHandler((context, message) =>
             {
                 // With PreSettled, messages are already settled, so we don't need to call Accept()
@@ -64,7 +64,7 @@ public class PreSettledConsumerTests(ITestOutputHelper testOutputHelper) : Integ
         TaskCompletionSource<InvalidOperationException> tcs = new();
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueSpec)
-            .Feature(ConsumerFeature.PreSettled)
+            .SettleStrategy(ConsumerSettleStrategy.PreSettled)
             .MessageHandler((context, message) =>
             {
                 try
@@ -104,7 +104,7 @@ public class PreSettledConsumerTests(ITestOutputHelper testOutputHelper) : Integ
         TaskCompletionSource<InvalidOperationException> tcs = new();
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueSpec)
-            .Feature(ConsumerFeature.PreSettled)
+            .SettleStrategy(ConsumerSettleStrategy.PreSettled)
             .MessageHandler((context, message) =>
             {
                 try
@@ -144,7 +144,7 @@ public class PreSettledConsumerTests(ITestOutputHelper testOutputHelper) : Integ
         TaskCompletionSource<InvalidOperationException> tcs = new();
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueSpec)
-            .Feature(ConsumerFeature.PreSettled)
+            .SettleStrategy(ConsumerSettleStrategy.PreSettled)
             .MessageHandler((context, message) =>
             {
                 try
@@ -185,7 +185,7 @@ public class PreSettledConsumerTests(ITestOutputHelper testOutputHelper) : Integ
         TaskCompletionSource<InvalidOperationException> tcs = new();
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueSpec)
-            .Feature(ConsumerFeature.PreSettled)
+            .SettleStrategy(ConsumerSettleStrategy.PreSettled)
             .MessageHandler((context, message) =>
             {
                 try
@@ -225,7 +225,7 @@ public class PreSettledConsumerTests(ITestOutputHelper testOutputHelper) : Integ
         TaskCompletionSource<InvalidOperationException> tcs = new();
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueSpec)
-            .Feature(ConsumerFeature.PreSettled)
+            .SettleStrategy(ConsumerSettleStrategy.PreSettled)
             .MessageHandler((context, message) =>
             {
                 try
@@ -266,7 +266,7 @@ public class PreSettledConsumerTests(ITestOutputHelper testOutputHelper) : Integ
         TaskCompletionSource<InvalidOperationException> tcs = new();
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueSpec)
-            .Feature(ConsumerFeature.PreSettled)
+            .SettleStrategy(ConsumerSettleStrategy.PreSettled)
             .MessageHandler((context, message) =>
             {
                 try
@@ -308,7 +308,7 @@ public class PreSettledConsumerTests(ITestOutputHelper testOutputHelper) : Integ
         int receivedCount = 0;
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueSpec)
-            .Feature(ConsumerFeature.PreSettled)
+            .SettleStrategy(ConsumerSettleStrategy.PreSettled)
             .MessageHandler((context, message) =>
             {
                 receivedCount++;
@@ -347,7 +347,7 @@ public class PreSettledConsumerTests(ITestOutputHelper testOutputHelper) : Integ
         int receivedCount = 0;
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueSpec)
-            .Feature(ConsumerFeature.ExplicitSettle) // Explicitly avoid pre-settled feature
+            .SettleStrategy(ConsumerSettleStrategy.ExplicitSettle) // Explicitly avoid pre-settled feature
             .MessageHandler((context, message) =>
             {
                 receivedCount++;
@@ -387,7 +387,7 @@ public class PreSettledConsumerTests(ITestOutputHelper testOutputHelper) : Integ
         int receivedCount = 0;
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(queueSpec)
-            .Feature(ConsumerFeature.PreSettled)
+            .SettleStrategy(ConsumerSettleStrategy.PreSettled)
             .MessageHandler((context, message) =>
             {
                 receivedCount++;

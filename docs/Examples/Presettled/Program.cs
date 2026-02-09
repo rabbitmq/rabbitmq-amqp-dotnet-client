@@ -64,7 +64,7 @@ await Task.Delay(TimeSpan.FromMilliseconds(200)).ConfigureAwait(false);
 
 // create consumer to receive the presettled messages
 IConsumer consumer = await connection.ConsumerBuilder()
-    .Feature(ConsumerFeature.PreSettled) // indicate that messages are presettled. Like auto-acknowledge
+    .SettleStrategy(ConsumerSettleStrategy.PreSettled) // indicate that messages are presettled. Like auto-acknowledge
     .Queue(queueName).MessageHandler((context, message) =>
         {
             Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.BodyAsString()} received");

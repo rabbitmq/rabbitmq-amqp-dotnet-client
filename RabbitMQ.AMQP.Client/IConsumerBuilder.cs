@@ -18,7 +18,7 @@ namespace RabbitMQ.AMQP.Client
     /// <summary>
     ///   ConsumerFeature defines the features available for Classic and Quorum queue consumers.
     /// </summary>
-    public enum ConsumerFeature
+    public enum ConsumerSettleStrategy
     {
         // ExplicitSettle: means that the consumer will be created with the default settings.
         // message settle mode will be the default one (explicit settle)
@@ -50,7 +50,7 @@ namespace RabbitMQ.AMQP.Client
 
         // See: ConsumerFeature for more details on the feature that can be enabled for the consumer.
         // Feature is exclusive, only one feature can be enabled for a consumer. If no feature is specified, the consumer will be created with the default settings.
-        IConsumerBuilder Feature(ConsumerFeature feature);
+        IConsumerBuilder SettleStrategy(ConsumerSettleStrategy settleStrategy);
 
         /// <summary>
         /// SubscriptionListener interface callback to add behavior before a subscription is created.
