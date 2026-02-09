@@ -16,7 +16,7 @@ namespace RabbitMQ.AMQP.Client
     }
 
     /// <summary>
-    ///   ConsumerFeature defines the features available for Classic and Quorum queue consumers.
+    ///   ConsumerSettleStrategy defines the features available for Classic and Quorum queue consumers.
     /// </summary>
     public enum ConsumerSettleStrategy
     {
@@ -48,7 +48,7 @@ namespace RabbitMQ.AMQP.Client
 
         IConsumerBuilder InitialCredits(int initialCredits);
 
-        // See: ConsumerFeature for more details on the feature that can be enabled for the consumer.
+        // See: ConsumerSettleStrategy for more details on the feature that can be enabled for the consumer.
         // Feature is exclusive, only one feature can be enabled for a consumer. If no feature is specified, the consumer will be created with the default settings.
         IConsumerBuilder SettleStrategy(ConsumerSettleStrategy settleStrategy);
 
