@@ -47,7 +47,7 @@ namespace RabbitMQ.AMQP.Client
         IConsumerBuilder MessageHandler(MessageHandler handler);
 
         IConsumerBuilder InitialCredits(int initialCredits);
-        
+
         /// <summary>
         /// SettleStrategy: ConsumerSettleStrategy for more details on the Consumer Settle that can be enabled for the consumer.
         /// </summary>
