@@ -23,7 +23,7 @@ namespace Tests.DirectReply
                 "DirectReply is not supported by the connection.");
 
             IConsumer consumer = await _connection.ConsumerBuilder()
-                .DirectReplyTo(true)
+                .SettleStrategy(ConsumerSettleStrategy.DirectReplyTo)
                 .MessageHandler((IContext _, IMessage _) => Task.CompletedTask)
                 .BuildAndStartAsync();
 
@@ -42,7 +42,7 @@ namespace Tests.DirectReply
                 "DirectReply is not supported by the connection.");
 
             IConsumer consumer = await _connection.ConsumerBuilder()
-                .DirectReplyTo(true)
+                .SettleStrategy(ConsumerSettleStrategy.DirectReplyTo)
                 .MessageHandler((IContext _, IMessage msg) =>
                 {
                     tcs.SetResult(msg);

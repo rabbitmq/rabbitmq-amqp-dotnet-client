@@ -104,6 +104,10 @@ RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.VirtualHost(string! virtualHost) 
 RabbitMQ.AMQP.Client.Consts
 RabbitMQ.AMQP.Client.ConsumerException
 RabbitMQ.AMQP.Client.ConsumerException.ConsumerException(string! message) -> void
+RabbitMQ.AMQP.Client.ConsumerSettleStrategy
+RabbitMQ.AMQP.Client.ConsumerSettleStrategy.DirectReplyTo = 1 -> RabbitMQ.AMQP.Client.ConsumerSettleStrategy
+RabbitMQ.AMQP.Client.ConsumerSettleStrategy.ExplicitSettle = 0 -> RabbitMQ.AMQP.Client.ConsumerSettleStrategy
+RabbitMQ.AMQP.Client.ConsumerSettleStrategy.PreSettled = 2 -> RabbitMQ.AMQP.Client.ConsumerSettleStrategy
 RabbitMQ.AMQP.Client.Error
 RabbitMQ.AMQP.Client.Error.Description.get -> string?
 RabbitMQ.AMQP.Client.Error.Error(string? errorCode, string? description) -> void
@@ -176,7 +180,6 @@ RabbitMQ.AMQP.Client.IConsumer.Unpause() -> void
 RabbitMQ.AMQP.Client.IConsumer.UnsettledMessageCount.get -> long
 RabbitMQ.AMQP.Client.IConsumerBuilder
 RabbitMQ.AMQP.Client.IConsumerBuilder.BuildAndStartAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConsumer!>!
-RabbitMQ.AMQP.Client.IConsumerBuilder.DirectReplyTo(bool directReplyTo) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.InitialCredits(int initialCredits) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions.AbsoluteExpiryTime(System.DateTime absoluteExpiryTime) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions!
@@ -209,9 +212,9 @@ RabbitMQ.AMQP.Client.IConsumerBuilder.ListenerContext
 RabbitMQ.AMQP.Client.IConsumerBuilder.ListenerContext.ListenerContext(RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions! streamOptions) -> void
 RabbitMQ.AMQP.Client.IConsumerBuilder.ListenerContext.StreamOptions.get -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.IConsumerBuilder.MessageHandler(RabbitMQ.AMQP.Client.MessageHandler! handler) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
-RabbitMQ.AMQP.Client.IConsumerBuilder.PreSettled(bool preSettled) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.Queue(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpecification) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.Queue(string? queueName) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
+RabbitMQ.AMQP.Client.IConsumerBuilder.SettleStrategy(RabbitMQ.AMQP.Client.ConsumerSettleStrategy settleStrategy) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.Stream() -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.IConsumerBuilder.SubscriptionListener(System.Action<RabbitMQ.AMQP.Client.IConsumerBuilder.ListenerContext!>! listenerContext) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IContext
@@ -373,12 +376,11 @@ RabbitMQ.AMQP.Client.Impl.AmqpConsumer.UnsettledMessageCount.get -> long
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.AmqpConsumerBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection, RabbitMQ.AMQP.Client.IMetricsReporter? metricsReporter) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.BuildAndStartAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConsumer!>!
-RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.DirectReplyTo(bool directReplyTo) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.InitialCredits(int initialCredits) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.MessageHandler(RabbitMQ.AMQP.Client.MessageHandler! handler) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
-RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.PreSettled(bool preSettled) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.Queue(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpec) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.Queue(string? queueName) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
+RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.SettleStrategy(RabbitMQ.AMQP.Client.ConsumerSettleStrategy settleStrategy) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.Stream() -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.SubscriptionListener(System.Action<RabbitMQ.AMQP.Client.IConsumerBuilder.ListenerContext!>! context) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpEnvironment

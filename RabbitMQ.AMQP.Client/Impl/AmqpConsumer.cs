@@ -75,7 +75,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 Attach attach;
 
-                if (_configuration.DirectReplyTo)
+                if (_configuration.SettleStrategy == ConsumerSettleStrategy.DirectReplyTo)
                 {
                     attach = Utils.CreateDirectReplyToAttach(_id, _configuration.Filters);
                 }
@@ -83,7 +83,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 {
                     string address = AddressBuilderHelper.AddressBuilder().Queue(_configuration.Queue).Address();
                     attach = Utils.CreateAttach(address, DeliveryMode.AtLeastOnce, _id,
-                        _configuration.Filters, _configuration.PreSettled);
+                        _configuration.Filters, _configuration.SettleStrategy == ConsumerSettleStrategy.PreSettled);
                 }
 
                 void OnAttached(ILink argLink, Attach argAttach)
@@ -176,14 +176,14 @@ namespace RabbitMQ.AMQP.Client.Impl
                         continue;
                     }
 
-                    IContext context = _configuration.PreSettled switch
+                    IContext context = _configuration.SettleStrategy switch
                     {
-                        true => new PreSettledDeliveryContext(),
-                        false => new DeliveryContext(_receiverLink, nativeMessage, _unsettledMessageCounter,
+                        ConsumerSettleStrategy.PreSettled => new PreSettledDeliveryContext(),
+                        _ => new DeliveryContext(_receiverLink, nativeMessage, _unsettledMessageCounter,
                             _metricsReporter)
                     };
 
-                    if (!_configuration.PreSettled)
+                    if (_configuration.SettleStrategy != ConsumerSettleStrategy.PreSettled)
                     {
                         _unsettledMessageCounter.Increment();
                     }

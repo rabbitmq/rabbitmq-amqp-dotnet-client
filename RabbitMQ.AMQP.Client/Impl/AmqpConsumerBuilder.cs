@@ -16,7 +16,6 @@ namespace RabbitMQ.AMQP.Client.Impl
     /// </summary>
     internal sealed class ConsumerConfiguration
     {
-
         public string? Queue { get; set; } = null;
         public int InitialCredits { get; set; } = 100; // TODO use constant, check with Java lib
 
@@ -25,22 +24,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         // TODO is a MessageHandler *really* optional???
         public MessageHandler? Handler { get; set; }
 
-        /// <summary>
-        /// If direct reply-to is enabled, the client will use the direct reply-to feature of AMQP 1.0.
-        /// The server must also support direct reply-to.
-        /// This feature allows the server to send the reply directly to the client without going through a reply queue.
-        /// This can improve performance and reduce latency.
-        /// Default is false.
-        /// https://www.rabbitmq.com/docs/direct-reply-to
-        /// </summary>
-        public bool DirectReplyTo { get; set; }
-
-        /// <summary>
-        /// If pre-settled is enabled, the receiver will use ReceiverSettleMode.Second,
-        /// meaning messages are pre-settled and the receiver does not need to explicitly settle them.
-        /// Default is false.
-        /// </summary>
-        public bool PreSettled { get; set; }
+        public ConsumerSettleStrategy SettleStrategy { get; set; } = ConsumerSettleStrategy.ExplicitSettle;
 
         // TODO re-name to ListenerContextAction? Callback?
         public Action<IConsumerBuilder.ListenerContext>? ListenerContext = null;
@@ -79,21 +63,15 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public IConsumerBuilder DirectReplyTo(bool directReplyTo)
-        {
-            _configuration.DirectReplyTo = directReplyTo;
-            return this;
-        }
-
         public IConsumerBuilder InitialCredits(int initialCredits)
         {
             _configuration.InitialCredits = initialCredits;
             return this;
         }
 
-        public IConsumerBuilder PreSettled(bool preSettled)
+        public IConsumerBuilder SettleStrategy(ConsumerSettleStrategy settleStrategy)
         {
-            _configuration.PreSettled = preSettled;
+            _configuration.SettleStrategy = settleStrategy;
             return this;
         }
 
@@ -340,7 +318,6 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private StreamFilterOptions PropertyFilter(string propertyKey, object propertyValue)
         {
-
             DescribedValue propertiesFilterValue = Filter(Consts.AmqpPropertiesFilter);
             Map propertiesFilter = (Map)propertiesFilterValue.Value;
             // Note: you MUST use a symbol as the key
@@ -350,7 +327,6 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private StreamFilterOptions ApplicationPropertyFilter(string propertyKey, object propertyValue)
         {
-
             DescribedValue applicationPropertiesFilterValue = Filter(Consts.AmqpApplicationPropertiesFilter);
             Map applicationPropertiesFilter = (Map)applicationPropertiesFilterValue.Value;
             // Note: do NOT put a symbol as the key

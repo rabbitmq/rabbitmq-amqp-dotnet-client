@@ -177,11 +177,14 @@ namespace RabbitMQ.AMQP.Client.Impl
             // The user is always free to create custom Requester and Responder 
             bool canApplyDirectReplyTo = isDirectReplyToSupported &&
                                          string.IsNullOrEmpty(_configuration.ReplyToQueue);
+            ConsumerSettleStrategy consumerSettleStrategy = canApplyDirectReplyTo
+                ? ConsumerSettleStrategy.DirectReplyTo
+                : ConsumerSettleStrategy.ExplicitSettle;
 
             _publisher = await _configuration.Connection.PublisherBuilder().BuildAsync().ConfigureAwait(false);
             _consumer = await _configuration.Connection.ConsumerBuilder()
                 .Queue(queueReplyTo)
-                .DirectReplyTo(canApplyDirectReplyTo)
+                .SettleStrategy(consumerSettleStrategy)
                 .MessageHandler((context, message) =>
                 {
                     // TODO MessageHandler funcs should catch all exceptions
