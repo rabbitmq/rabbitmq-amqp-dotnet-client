@@ -186,20 +186,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public QueueType QueueType
-        {
-            get
-            {
-                if (!_queueArguments.ContainsKey("x-queue-type"))
-                {
-                    return QueueType.CLASSIC;
-                }
-
-                string type = (string)_queueArguments["x-queue-type"];
-                return (QueueType)Enum.Parse(typeof(QueueType), type.ToUpperInvariant());
-            }
-        }
-
         public IQueueSpecification DeadLetterExchange(string dlx)
         {
             _queueArguments["x-dead-letter-exchange"] = dlx;
@@ -307,7 +293,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public async Task<IQueueInfo> DeclareAsync()
         {
-            if (QueueType is QueueType.QUORUM or QueueType.STREAM)
+            if (_queueArguments["x-queue-type"] is QueueType.QUORUM or QueueType.STREAM)
             {
                 // mandatory arguments for quorum queues and streams
                 Exclusive(false).AutoDelete(false);
