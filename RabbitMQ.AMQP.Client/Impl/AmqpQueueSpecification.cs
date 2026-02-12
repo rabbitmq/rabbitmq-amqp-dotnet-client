@@ -180,24 +180,15 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public Dictionary<object, object> QueueArguments => _queueArguments;
 
+        /// <summary>
+        /// <param name="queueType">The type of the queue</param>
+        /// If not set, the default is empty, which means  the declaration will create a classic queue.
+        /// <returns>The current <see cref="IQueueSpecification"/></returns>
+        /// </summary>
         public IQueueSpecification Type(QueueType queueType)
         {
             _queueArguments["x-queue-type"] = queueType.ToString().ToLower();
             return this;
-        }
-
-        public QueueType QueueType
-        {
-            get
-            {
-                if (!_queueArguments.ContainsKey("x-queue-type"))
-                {
-                    return QueueType.CLASSIC;
-                }
-
-                string type = (string)_queueArguments["x-queue-type"];
-                return (QueueType)Enum.Parse(typeof(QueueType), type.ToUpperInvariant());
-            }
         }
 
         public IQueueSpecification DeadLetterExchange(string dlx)
@@ -307,7 +298,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public async Task<IQueueInfo> DeclareAsync()
         {
-            if (QueueType is QueueType.QUORUM or QueueType.STREAM)
+            if (_queueArguments["x-queue-type"] is QueueType.QUORUM or QueueType.STREAM)
             {
                 // mandatory arguments for quorum queues and streams
                 Exclusive(false).AutoDelete(false);

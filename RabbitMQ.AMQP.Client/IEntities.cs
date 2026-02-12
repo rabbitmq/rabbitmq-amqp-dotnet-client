@@ -61,7 +61,6 @@ namespace RabbitMQ.AMQP.Client
         public Dictionary<object, object> QueueArguments { get; }
         IQueueSpecification Arguments(Dictionary<object, object> queueArguments);
 
-        public QueueType QueueType { get; }
         IQueueSpecification Type(QueueType queueType);
 
         IQueueSpecification DeadLetterExchange(string dlx);

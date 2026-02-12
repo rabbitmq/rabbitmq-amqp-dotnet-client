@@ -488,7 +488,6 @@ RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.OverflowStrategy(RabbitMQ.AMQP.
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.PurgeAsync() -> System.Threading.Tasks.Task<ulong>!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.QueueArguments.get -> System.Collections.Generic.Dictionary<object!, object!>!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.QueueName.get -> string!
-RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.QueueType.get -> RabbitMQ.AMQP.Client.QueueType
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.Quorum() -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.SingleActiveConsumer(bool singleActiveConsumer) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.Stream() -> RabbitMQ.AMQP.Client.IStreamSpecification!
@@ -688,7 +687,6 @@ RabbitMQ.AMQP.Client.IQueueSpecification.OverflowStrategy(RabbitMQ.AMQP.Client.O
 RabbitMQ.AMQP.Client.IQueueSpecification.PurgeAsync() -> System.Threading.Tasks.Task<ulong>!
 RabbitMQ.AMQP.Client.IQueueSpecification.QueueArguments.get -> System.Collections.Generic.Dictionary<object!, object!>!
 RabbitMQ.AMQP.Client.IQueueSpecification.QueueName.get -> string!
-RabbitMQ.AMQP.Client.IQueueSpecification.QueueType.get -> RabbitMQ.AMQP.Client.QueueType
 RabbitMQ.AMQP.Client.IQueueSpecification.Quorum() -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
 RabbitMQ.AMQP.Client.IQueueSpecification.SingleActiveConsumer(bool singleActiveConsumer) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IQueueSpecification.Stream() -> RabbitMQ.AMQP.Client.IStreamSpecification!
