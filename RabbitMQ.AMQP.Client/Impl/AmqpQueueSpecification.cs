@@ -180,6 +180,11 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public Dictionary<object, object> QueueArguments => _queueArguments;
 
+        /// <summary>
+        /// <param name="queueType">The type of the queue</param>
+        /// If not set, the default is empty, which means  the declaration will create a classic queue.
+        /// <returns>The current <see cref="IQueueSpecification"/></returns>
+        /// </summary>
         public IQueueSpecification Type(QueueType queueType)
         {
             _queueArguments["x-queue-type"] = queueType.ToString().ToLower();
