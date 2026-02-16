@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[0.51.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v0.51.0)]
+
+## 0.51.0 - 2026-16-02
+- [Release 0.51.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v0.51.0)
+
+### Added
+- Implement PreSettled consumer feature by @Gsantomaggio in [#143](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/143)
+
+### Changed
+- Change consumer options to unify all the AMQP 1.0 clients' interfaces by @Gsantomaggio in [#144](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/144)
+- Remove default value by @Gsantomaggio in [#145](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/145)
+
+### Breaking changes
+- Minor breaking change in [#144](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/144): consumer options unified across all AMQP 1.0 clients. Use `SettleStrategy(ConsumerSettleStrategy....)` on the consumer builder to define the settle strategy:
+
+```csharp
+IConsumer consumer = await connection.ConsumerBuilder()
+    .SettleStrategy(ConsumerSettleStrategy....) // define the Settle Strategy
+    .BuildAsync();
+```
+
+
 ## [[0.50.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v0.50.0)]
 
 ## 0.50.0 - 2026-14-01
