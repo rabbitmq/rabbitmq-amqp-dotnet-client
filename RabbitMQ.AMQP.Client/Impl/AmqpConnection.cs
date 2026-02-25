@@ -36,6 +36,10 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IConnectionBuilder ConnectionSettings(ConnectionSettings connectionSettings)
         {
+            if (connectionSettings is null)
+            {
+                throw new ArgumentNullException(nameof(connectionSettings));
+            }
             _connectionSettings = connectionSettings;
             return this;
         }
