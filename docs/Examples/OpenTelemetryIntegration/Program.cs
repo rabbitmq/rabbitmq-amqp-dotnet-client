@@ -77,13 +77,6 @@ IPublisher publisher = await connection.PublisherBuilder()
     .Key(routingKey)
     .BuildAsync();
 
-static Task MessageHandler(IContext context, IMessage message)
-{
-    Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.Body()} received");
-    context.Accept();
-    return Task.CompletedTask;
-}
-
 IConsumer consumer = await connection.ConsumerBuilder()
     .Queue(queueName)
     .MessageHandler(MessageHandler)
@@ -126,3 +119,11 @@ await exchangeSpec.DeleteAsync();
 await environment.CloseAsync();
 
 Trace.WriteLine(TraceLevel.Information, "Example closed successfully");
+return;
+
+static Task MessageHandler(IContext context, IMessage message)
+{
+    Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.BodyAsString()} received");
+    context.Accept();
+    return Task.CompletedTask;
+}

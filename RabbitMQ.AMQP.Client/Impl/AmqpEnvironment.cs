@@ -50,6 +50,8 @@ namespace RabbitMQ.AMQP.Client.Impl
         public async Task<IConnection> CreateConnectionAsync(ConnectionSettings connectionSettings,
             CancellationToken cancellationToken)
         {
+            // code duplication with AmqpConnectionBuilder.CreateConnectionAsync, but this is necessary to maintain the contract of the deprecated CreateConnectionAsync methods
+            // it will be removed once the deprecated methods are removed
             IConnection c = await AmqpConnection.CreateAsync(connectionSettings, cancellationToken, _metricsReporter)
                 .ConfigureAwait(false);
             c.Id = Interlocked.Increment(ref _sequentialId);
