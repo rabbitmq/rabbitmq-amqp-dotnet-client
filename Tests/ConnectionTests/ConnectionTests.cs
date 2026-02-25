@@ -2,6 +2,7 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
@@ -62,4 +63,36 @@ public class ConnectionTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         await Assert.ThrowsAsync<AmqpNotOpenException>(async () =>
             await _management.Queue().Name("ThrowAmqpClosedExceptionWhenItemIsClosed").DeclareAsync());
     }
+
+    // override the connection setting to the connection 
+    [Fact]
+    public async Task CreateAConnectionWithOverriddenConnectionSettings()
+    {
+        string connectionName = "ConnectionWithOverriddenSettings_" + Guid.NewGuid();
+        IEnvironment environment = AmqpEnvironment.Create(ConnectionSettingsBuilder.Create().ContainerId(connectionName).Build());
+        Assert.NotNull(environment);
+        IConnection connection = await environment.ConnectionBuilder()
+            .CreateConnectionAsync();
+        await WaitUntilConnectionIsOpen(connectionName);
+        // create another connection with different connection settings, but it should not override the first connection's container id
+        string connectionName2 = "ConnectionWithOverriddenSettings2_" + Guid.NewGuid();
+        IConnection connection2 = await environment.ConnectionBuilder()
+            .ConnectionSettings(ConnectionSettingsBuilder.Create().ContainerId(connectionName2).Build())
+            .CreateConnectionAsync();
+        await WaitUntilConnectionIsOpen(connectionName2);
+        Assert.NotNull(connection2);
+        // now create another connection with wrong password settings, and it should raise exception, but it should not affect the existing connections
+        await Assert.ThrowsAsync<ConnectionException>(async () =>
+            await environment.ConnectionBuilder()
+                .ConnectionSettings(ConnectionSettingsBuilder.Create().Password("wrong_password").Build())
+                .CreateConnectionAsync());
+
+        // just to be sure the existing connections are still open and working, we can check the state of the connections, and it should be open
+        await WaitUntilConnectionIsOpen(connectionName);
+        await WaitUntilConnectionIsOpen(connectionName2);
+        await connection2.CloseAsync();
+        await connection.CloseAsync();
+        await environment.CloseAsync();
+    }
+
 }

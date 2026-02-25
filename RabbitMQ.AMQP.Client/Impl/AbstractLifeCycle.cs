@@ -3,6 +3,7 @@
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Amqp;
 
@@ -19,7 +20,7 @@ namespace RabbitMQ.AMQP.Client.Impl
     {
         protected bool _disposed;
 
-        public virtual Task OpenAsync()
+        public virtual Task OpenAsync(CancellationToken cancellationToken)
         {
             OnNewStatus(State.Open, null);
             return Task.CompletedTask;
@@ -110,7 +111,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 await Task.Delay(randomWait)
                     .ConfigureAwait(false);
 
-                await OpenAsync()
+                await OpenAsync(CancellationToken.None)
                     .ConfigureAwait(false);
 
                 Trace.WriteLine(TraceLevel.Information,

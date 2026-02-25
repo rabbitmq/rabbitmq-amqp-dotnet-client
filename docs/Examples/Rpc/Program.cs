@@ -27,7 +27,7 @@ IEnvironment environment = AmqpEnvironment.Create(
         .RecoveryConfiguration(recoveryConfiguration)
         .Build());
 
-IConnection connection = await environment.CreateConnectionAsync();
+IConnection connection = await environment.ConnectionBuilder().CreateConnectionAsync(CancellationToken.None);
 Trace.WriteLine(TraceLevel.Information, $"Connected to the broker {connection} successfully");
 
 IManagement management = connection.Management();
@@ -58,7 +58,7 @@ IResponder responder = await connection.ResponderBuilder().
             }
         }
     }
-).BuildAsync();
+).BuildAsync(CancellationToken.None);
 
 IRequester requester = await connection.RequesterBuilder().RequestAddress().
         Queue(requestQueue).Requester().BuildAsync();
