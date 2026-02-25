@@ -77,7 +77,8 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// Create a new <see cref="IConnection"/> instance, using the <see cref="IEnvironment"/> <see cref="ConnectionSettings"/>.
         /// </summary>
         /// <returns><see cref="Task{IConnection}"/> instance.</returns>
-        [Obsolete(" Use ConnectionBuilder() instead, which allows passing a cancellation token and connection settings.")]
+        [Obsolete(
+            " Use ConnectionBuilder() instead, which allows passing a cancellation token and connection settings.")]
         public Task<IConnection> CreateConnectionAsync()
         {
             return ConnectionSettings is null
@@ -85,10 +86,13 @@ namespace RabbitMQ.AMQP.Client.Impl
                 : CreateConnectionAsync(ConnectionSettings, CancellationToken.None);
         }
 
-        [Obsolete(" Use ConnectionBuilder() instead, which allows passing a cancellation token and connection settings.")]
-        public Task<IConnection> CreateConnectionAsync(ConnectionSettings connectionSettings) => CreateConnectionAsync(connectionSettings, CancellationToken.None);
+        [Obsolete(
+            " Use ConnectionBuilder() instead, which allows passing a cancellation token and connection settings.")]
+        public Task<IConnection> CreateConnectionAsync(ConnectionSettings connectionSettings) =>
+            CreateConnectionAsync(connectionSettings, CancellationToken.None);
 
-        public IConnectionBuilder ConnectionBuilder() => new AmqpConnectionBuilder(this);
+        public IConnectionBuilder ConnectionBuilder() =>
+            new AmqpConnectionBuilder(this).MetricsReporter(_metricsReporter);
 
         /// <summary>
         /// Close this environment and its resources.
@@ -99,6 +103,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             return Task.WhenAll(_connections.Values.Select(c => c.CloseAsync()));
         }
+
         public ConnectionSettings ConnectionSettings { get; }
 
         public IList<IConnection> Connections => _connections.Values.ToList();

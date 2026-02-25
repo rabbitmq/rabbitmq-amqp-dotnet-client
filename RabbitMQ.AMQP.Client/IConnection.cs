@@ -15,7 +15,7 @@ namespace RabbitMQ.AMQP.Client
         /// </summary>
         /// <param name="metricsReporter">The <see cref="IMetricsReporter"/> instance to use for this connection.</param>
         /// <returns>The current <see cref="IConnectionBuilder"/> instance for chaining.</returns>
-        public IConnectionBuilder MetricsReporter(IMetricsReporter metricsReporter);
+        public IConnectionBuilder MetricsReporter(IMetricsReporter? metricsReporter);
 
         /// <summary>
         /// Set the <see cref="ConnectionSettings"/> for this connection.

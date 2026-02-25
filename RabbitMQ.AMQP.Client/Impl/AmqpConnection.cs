@@ -28,7 +28,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             _connectionSettings = amqpEnvironment.ConnectionSettings;
         }
 
-        public IConnectionBuilder MetricsReporter(IMetricsReporter metricsReporter)
+        public IConnectionBuilder MetricsReporter(IMetricsReporter? metricsReporter)
         {
             _metricsReporter = metricsReporter;
             return this;
