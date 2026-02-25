@@ -77,7 +77,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public async Task<IRequester> BuildAsync(CancellationToken cancellationToken)
+        public async Task<IRequester> BuildAsync(CancellationToken cancellationToken = default)
         {
             _configuration.RequestAddress = _addressBuilder.Address();
             _configuration.Connection = _connection;

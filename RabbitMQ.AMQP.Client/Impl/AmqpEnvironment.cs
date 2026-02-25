@@ -12,12 +12,8 @@ using System.Threading.Tasks;
 namespace RabbitMQ.AMQP.Client.Impl
 {
     /// <summary>
-    /// <para>
-    ///   <see cref="AmqpEnvironment"/> is the implementation of <see cref="IEnvironment"/>.
-    /// </para>
-    /// <para>
-    ///   The <see cref="CreateConnectionAsync()"/> method allows creating <see cref="IConnection"/> instances.
-    /// </para>
+    /// <see cref="AmqpEnvironment"/> is the implementation of <see cref="IEnvironment"/>.
+    /// Use <see cref="ConnectionBuilder"/> to create <see cref="IConnection"/> instances.
     /// </summary>
     public class AmqpEnvironment : IEnvironment
     {
@@ -104,8 +100,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             return Task.WhenAll(_connections.Values.Select(c => c.CloseAsync()));
         }
 
-        public ConnectionSettings ConnectionSettings { get; }
+        internal ConnectionSettings ConnectionSettings { get; }
 
-        public IList<IConnection> Connections => _connections.Values.ToList();
+        internal IList<IConnection> Connections => _connections.Values.ToList();
     }
 }

@@ -395,8 +395,6 @@ RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.SubscriptionListener(System.Action
 RabbitMQ.AMQP.Client.Impl.AmqpEnvironment
 RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.CloseAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.ConnectionBuilder() -> RabbitMQ.AMQP.Client.IConnectionBuilder!
-RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.Connections.get -> System.Collections.Generic.IList<RabbitMQ.AMQP.Client.IConnection!>!
-RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.ConnectionSettings.get -> RabbitMQ.AMQP.Client.ConnectionSettings!
 RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.CreateConnectionAsync() -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
 RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.CreateConnectionAsync(RabbitMQ.AMQP.Client.ConnectionSettings! connectionSettings) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
 RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.CreateConnectionAsync(RabbitMQ.AMQP.Client.ConnectionSettings! connectionSettings, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!

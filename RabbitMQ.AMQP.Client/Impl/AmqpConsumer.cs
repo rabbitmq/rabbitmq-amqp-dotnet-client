@@ -123,7 +123,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                 // TODO save / cancel task
                 _ = Task.Run(ProcessMessages, cancellationToken);
 
-                // TODO cancellation token
                 await base.OpenAsync(cancellationToken)
                     .ConfigureAwait(false);
             }

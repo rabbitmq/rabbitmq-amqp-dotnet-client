@@ -20,6 +20,8 @@ namespace RabbitMQ.AMQP.Client
         /// <summary>
         /// Set the <see cref="ConnectionSettings"/> for this connection.
         /// </summary>
+        /// <param name="connectionSettings">The connection settings to use.</param>
+        /// <returns>The current <see cref="IConnectionBuilder"/> instance for chaining.</returns>
         public IConnectionBuilder ConnectionSettings(ConnectionSettings connectionSettings);
 
         /// <summary>

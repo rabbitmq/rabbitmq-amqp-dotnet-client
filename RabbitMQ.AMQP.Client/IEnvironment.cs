@@ -10,6 +10,7 @@ namespace RabbitMQ.AMQP.Client
     /// <summary>
     /// <para>
     ///   The <see cref="IEnvironment"/> is the main entry point to a node or a cluster of nodes.
+    ///   Use <see cref="ConnectionBuilder"/> to create <see cref="IConnection"/> instances.
     /// </para>
     /// <para>
     ///   <see cref="IEnvironment"/> instances are expected to be thread-safe.
@@ -17,7 +18,9 @@ namespace RabbitMQ.AMQP.Client
     /// </summary>
     public interface IEnvironment
     {
-
+        /// <summary>
+        /// Returns a builder for creating <see cref="IConnection"/> instances with optional settings and cancellation support.
+        /// </summary>
         public IConnectionBuilder ConnectionBuilder();
 
         /// <summary>

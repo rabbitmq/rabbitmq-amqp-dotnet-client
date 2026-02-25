@@ -231,7 +231,6 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public override async Task OpenAsync(CancellationToken cancellationToken)
         {
-            // TODO cancellation token
             await OpenConnectionAsync(cancellationToken)
                 .ConfigureAwait(false);
             await base.OpenAsync(cancellationToken)
