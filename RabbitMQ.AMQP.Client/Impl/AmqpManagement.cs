@@ -139,7 +139,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// <summary>
         /// Open the management session.
         /// </summary>
-        public override async Task OpenAsync()
+        public override async Task OpenAsync(CancellationToken cancellationToken)
         {
             if (State == State.Open)
             {
@@ -158,11 +158,11 @@ namespace RabbitMQ.AMQP.Client.Impl
                 .ConfigureAwait(false);
 
             // TODO do something with this task?
-            _ = Task.Run(ProcessResponses);
+            _ = Task.Run(ProcessResponses, cancellationToken);
 
             _managementSession.AddClosedCallback(OnManagementSessionClosed);
 
-            await base.OpenAsync()
+            await base.OpenAsync(cancellationToken)
                 .ConfigureAwait(false);
         }
 

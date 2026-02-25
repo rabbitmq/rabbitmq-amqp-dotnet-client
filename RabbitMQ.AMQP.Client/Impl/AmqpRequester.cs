@@ -77,12 +77,12 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public async Task<IRequester> BuildAsync()
+        public async Task<IRequester> BuildAsync(CancellationToken cancellationToken)
         {
             _configuration.RequestAddress = _addressBuilder.Address();
             _configuration.Connection = _connection;
             var amqpRequester = new AmqpRequester(_configuration);
-            await amqpRequester.OpenAsync().ConfigureAwait(false);
+            await amqpRequester.OpenAsync(cancellationToken).ConfigureAwait(false);
             return amqpRequester;
         }
     }
@@ -153,7 +153,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// the user has explicitly set a reply-to queue.
         /// </summary>
         /// <returns></returns>
-        public override async Task OpenAsync()
+        public override async Task OpenAsync(CancellationToken cancellationToken)
         {
             bool isDirectReplyToSupported = _configuration.Connection._featureFlags.IsDirectReplyToSupported;
 
@@ -181,7 +181,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 ? ConsumerSettleStrategy.DirectReplyTo
                 : ConsumerSettleStrategy.ExplicitSettle;
 
-            _publisher = await _configuration.Connection.PublisherBuilder().BuildAsync().ConfigureAwait(false);
+            _publisher = await _configuration.Connection.PublisherBuilder().BuildAsync(cancellationToken).ConfigureAwait(false);
             _consumer = await _configuration.Connection.ConsumerBuilder()
                 .Queue(queueReplyTo)
                 .SettleStrategy(consumerSettleStrategy)
@@ -196,9 +196,9 @@ namespace RabbitMQ.AMQP.Client.Impl
                     }
 
                     return Task.CompletedTask;
-                }).BuildAndStartAsync().ConfigureAwait(false);
+                }).BuildAndStartAsync(cancellationToken).ConfigureAwait(false);
 
-            await base.OpenAsync().ConfigureAwait(false);
+            await base.OpenAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public override async Task CloseAsync()

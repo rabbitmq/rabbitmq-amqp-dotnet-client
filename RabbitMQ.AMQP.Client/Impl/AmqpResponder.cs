@@ -3,6 +3,7 @@
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Amqp;
 
@@ -59,10 +60,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public async Task<IResponder> BuildAsync()
+        public async Task<IResponder> BuildAsync(CancellationToken cancellationToken = default)
         {
             AmqpResponder amqpResponder = new(_configuration);
-            await amqpResponder.OpenAsync().ConfigureAwait(false);
+            await amqpResponder.OpenAsync(cancellationToken).ConfigureAwait(false);
             return amqpResponder;
         }
     }
@@ -112,9 +113,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             _configuration = configuration;
         }
 
-        public override async Task OpenAsync()
+        public override async Task OpenAsync(CancellationToken cancellationToken)
         {
-            _publisher = await _configuration.Connection.PublisherBuilder().BuildAsync().ConfigureAwait(false);
+            _publisher = await _configuration.Connection.PublisherBuilder().BuildAsync(cancellationToken).ConfigureAwait(false);
 
             _consumer = await _configuration.Connection.ConsumerBuilder().MessageHandler(async (context, request) =>
                 {
@@ -158,10 +159,10 @@ namespace RabbitMQ.AMQP.Client.Impl
                             }, 5).ConfigureAwait(false);
                     }
                 })
-                .Queue(_configuration.RequestQueue).BuildAndStartAsync()
+                .Queue(_configuration.RequestQueue).BuildAndStartAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            await base.OpenAsync().ConfigureAwait(false);
+            await base.OpenAsync(cancellationToken).ConfigureAwait(false);
         }
 
         private class ResponderContext : IResponder.IContext

@@ -52,7 +52,7 @@ const string containerId = "HA-Client-Connection";
 
 IEnvironment environment = AmqpEnvironment.Create(ConnectionSettingsBuilder.Create().ContainerId(containerId).Build());
 
-IConnection connection = await environment.CreateConnectionAsync();
+IConnection connection = await environment.ConnectionBuilder().CreateConnectionAsync();
 
 connection.ChangeState += (sender, fromState, toState, e) =>
 {

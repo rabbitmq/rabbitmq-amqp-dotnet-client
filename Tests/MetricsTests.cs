@@ -41,7 +41,7 @@ public class MetricsTests : IntegrationTest, IMeterFactory
 
         _connectionSettings = _connectionSettingBuilder.Build();
         IEnvironment environment = AmqpEnvironment.Create(_connectionSettings, _metricsReporter);
-        _connection = await environment.CreateConnectionAsync();
+        _connection = await environment.ConnectionBuilder().CreateConnectionAsync();
         _management = _connection.Management();
     }
 

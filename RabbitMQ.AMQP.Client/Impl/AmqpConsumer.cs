@@ -54,7 +54,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             _amqpConnection.AddConsumer(_id, this);
         }
 
-        public override async Task OpenAsync()
+        public override async Task OpenAsync(CancellationToken cancellationToken)
         {
             try
             {
@@ -112,7 +112,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 // TODO
                 // Even 10ms is enough to allow the links to establish,
                 // which tells me it allows the .NET runtime to process
-                await Task.Delay(ConsumerDefaults.AttachDelayMilliseconds).ConfigureAwait(false);
+                await Task.Delay(ConsumerDefaults.AttachDelayMilliseconds, cancellationToken).ConfigureAwait(false);
 
                 (_receiverLink, _attach) = await attachCompletedTcs.Task.WaitAsync(waitSpan)
                     .ConfigureAwait(false);
@@ -121,10 +121,10 @@ namespace RabbitMQ.AMQP.Client.Impl
                 _receiverLink.SetCredit(_configuration.InitialCredits);
 
                 // TODO save / cancel task
-                _ = Task.Run(ProcessMessages);
+                _ = Task.Run(ProcessMessages, cancellationToken);
 
                 // TODO cancellation token
-                await base.OpenAsync()
+                await base.OpenAsync(cancellationToken)
                     .ConfigureAwait(false);
             }
             catch (Exception e)

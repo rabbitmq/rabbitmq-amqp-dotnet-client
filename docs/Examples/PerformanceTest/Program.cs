@@ -26,7 +26,7 @@ const string containerId = "performance-test-connection";
 
 IEnvironment environment = AmqpEnvironment.Create(ConnectionSettingsBuilder.Create().ContainerId(containerId).Build());
 
-IConnection connection = await environment.CreateConnectionAsync().ConfigureAwait(false);
+IConnection connection = await environment.ConnectionBuilder().CreateConnectionAsync().ConfigureAwait(false);
 
 Trace.WriteLine(TraceLevel.Information, "Connected");
 
