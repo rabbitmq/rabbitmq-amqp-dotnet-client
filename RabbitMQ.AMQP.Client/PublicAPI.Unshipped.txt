@@ -516,7 +516,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpRequester.GetReplyToQueue() -> string!
 RabbitMQ.AMQP.Client.Impl.AmqpRequester.PublishAsync(RabbitMQ.AMQP.Client.IMessage! message, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IMessage!>!
 RabbitMQ.AMQP.Client.Impl.AmqpRequesterBuilder
 RabbitMQ.AMQP.Client.Impl.AmqpRequesterBuilder.AmqpRequesterBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection) -> void
-RabbitMQ.AMQP.Client.Impl.AmqpRequesterBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IRequester!>!
+RabbitMQ.AMQP.Client.Impl.AmqpRequesterBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IRequester!>!
 RabbitMQ.AMQP.Client.Impl.AmqpRequesterBuilder.CorrelationIdExtractor(System.Func<RabbitMQ.AMQP.Client.IMessage!, object!>? correlationIdExtractor) -> RabbitMQ.AMQP.Client.IRequesterBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpRequesterBuilder.CorrelationIdSupplier(System.Func<object!>? correlationIdSupplier) -> RabbitMQ.AMQP.Client.IRequesterBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpRequesterBuilder.ReplyToQueue(RabbitMQ.AMQP.Client.IQueueSpecification! replyToQueue) -> RabbitMQ.AMQP.Client.IRequesterBuilder!
