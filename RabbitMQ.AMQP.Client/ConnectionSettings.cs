@@ -25,6 +25,9 @@ namespace RabbitMQ.AMQP.Client
         }
     }
 
+    /// <summary>
+    ///  ConnectionSettingsBuilder is a builder for creating <see cref="ConnectionSettings"/> instances.
+    /// </summary>
     public class ConnectionSettingsBuilder
     {
         private string _host = "localhost";
@@ -202,7 +205,8 @@ namespace RabbitMQ.AMQP.Client
     }
 
     // <summary>
-    // Represents a network address.
+    // ConnectionSettings represents a network address and associated settings for connecting to an AMQP broker. 
+    // It contains also <cref ="IRecoveryConfiguration"/> by default uses <see cref="RecoveryConfiguration"/>.
     // </summary>
     public class ConnectionSettings : IEquatable<ConnectionSettings>
     {
