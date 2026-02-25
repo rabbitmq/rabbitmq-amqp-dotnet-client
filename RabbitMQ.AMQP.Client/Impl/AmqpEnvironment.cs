@@ -78,7 +78,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// </summary>
         /// <returns><see cref="Task{IConnection}"/> instance.</returns>
         [Obsolete(
-            " Use ConnectionBuilder() instead, which allows passing a cancellation token and connection settings.")]
+            "Use ConnectionBuilder() instead, which allows passing a cancellation token and connection settings.")]
         public Task<IConnection> CreateConnectionAsync()
         {
             return ConnectionSettings is null
@@ -87,7 +87,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
 
         [Obsolete(
-            " Use ConnectionBuilder() instead, which allows passing a cancellation token and connection settings.")]
+            "Use ConnectionBuilder() instead, which allows passing a cancellation token and connection settings.")]
         public Task<IConnection> CreateConnectionAsync(ConnectionSettings connectionSettings) =>
             CreateConnectionAsync(connectionSettings, CancellationToken.None);
 

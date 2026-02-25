@@ -23,7 +23,7 @@ namespace RabbitMQ.AMQP.Client
         public IConnectionBuilder ConnectionSettings(ConnectionSettings connectionSettings);
 
         /// <summary>
-        /// CreateConnection the connection asynchronously.
+        /// Create the connection asynchronously.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token to cancel the build operation.</param>
         /// <returns>A task that represents the asynchronous build operation. The task result contains the built <see cref="IConnection"/> instance.</returns>

@@ -28,11 +28,11 @@ namespace RabbitMQ.AMQP.Client
         Task CloseAsync();
 
         // Deprecated: use ConnectionBuilder().CreateConnectionAsync() instead, which allows passing a cancellation token and connection settings.
-        [Obsolete(" Use ConnectionBuilder() instead, which allows passing a cancellation token and connection settings.")]
+        [Obsolete("Use ConnectionBuilder() instead, which allows passing a cancellation token and connection settings.")]
         Task<IConnection> CreateConnectionAsync();
 
         // Deprecated: use ConnectionBuilder().CreateConnectionAsync() instead, which allows passing a cancellation token and connection settings.
-        [Obsolete(" Use ConnectionBuilder() instead, which allows passing a cancellation token and connection settings.")]
+        [Obsolete("Use ConnectionBuilder() instead, which allows passing a cancellation token and connection settings.")]
         Task<IConnection> CreateConnectionAsync(ConnectionSettings connectionSettings);
     }
 }
