@@ -3,36 +3,10 @@
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace RabbitMQ.AMQP.Client
 {
-    public partial interface IConnectionBuilder
-    {
-        /// <summary>
-        /// Set the <see cref="IMetricsReporter"/> for this connection.
-        /// </summary>
-        /// <param name="metricsReporter">The <see cref="IMetricsReporter"/> instance to use for this connection.</param>
-        /// <returns>The current <see cref="IConnectionBuilder"/> instance for chaining.</returns>
-        public IConnectionBuilder MetricsReporter(IMetricsReporter? metricsReporter);
-
-        /// <summary>
-        /// Set the <see cref="ConnectionSettings"/> for this connection.
-        /// </summary>
-        /// <param name="connectionSettings">The connection settings to use.</param>
-        /// <returns>The current <see cref="IConnectionBuilder"/> instance for chaining.</returns>
-        public IConnectionBuilder ConnectionSettings(ConnectionSettings connectionSettings);
-
-        /// <summary>
-        /// Create the connection asynchronously.
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token to cancel the build operation.</param>
-        /// <returns>A task that represents the asynchronous build operation. The task result contains the built <see cref="IConnection"/> instance.</returns>
-        public Task<IConnection> CreateConnectionAsync(CancellationToken cancellationToken = default);
-
-    }
-
     public interface IConnection : ILifeCycle
     {
         /// <summary>

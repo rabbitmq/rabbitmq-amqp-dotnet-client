@@ -43,7 +43,7 @@ const string containerId = "getting-started-Connection";
 IEnvironment environment = AmqpEnvironment.Create(
     ConnectionSettingsBuilder.Create().ContainerId(containerId).Build(), metricsReporter);
 
-IConnection connection = await environment.ConnectionBuilder().CreateConnectionAsync();
+IConnection connection = await environment.CreateConnectionAsync();
 
 Trace.WriteLine(TraceLevel.Information, $"Connected to the broker {connection} successfully");
 
@@ -76,6 +76,13 @@ IPublisher publisher = await connection.PublisherBuilder()
     .Exchange(exchangeName)
     .Key(routingKey)
     .BuildAsync();
+
+static Task MessageHandler(IContext context, IMessage message)
+{
+    Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.Body()} received");
+    context.Accept();
+    return Task.CompletedTask;
+}
 
 IConsumer consumer = await connection.ConsumerBuilder()
     .Queue(queueName)
@@ -119,11 +126,3 @@ await exchangeSpec.DeleteAsync();
 await environment.CloseAsync();
 
 Trace.WriteLine(TraceLevel.Information, "Example closed successfully");
-return;
-
-static Task MessageHandler(IContext context, IMessage message)
-{
-    Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.BodyAsString()} received");
-    context.Accept();
-    return Task.CompletedTask;
-}

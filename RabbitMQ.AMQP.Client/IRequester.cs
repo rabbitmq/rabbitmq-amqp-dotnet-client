@@ -78,7 +78,7 @@ namespace RabbitMQ.AMQP.Client
         ///  Build and return the RPC client.
         /// </summary>
         /// <returns></returns>
-        Task<IRequester> BuildAsync(CancellationToken cancellationToken = default);
+        Task<IRequester> BuildAsync();
     }
 
     /// <summary>
