@@ -48,8 +48,15 @@ for (int i = 0; i < 3; i++)
 const string containerId = "affinity-id-2";
 const string queue1Name = $"{queueName}_1";
 IConnection connectionAffinityQ1 = await environment
-    .CreateConnectionAsync(ConnectionSettingsBuilder.From(defaultSettings).ContainerId(containerId)
-        .Affinity(new DefaultAffinity("queue1Name", Operation.Publish)).Build()).ConfigureAwait(false);
+    .CreateConnectionAsync(ConnectionSettingsBuilder.From(defaultSettings)
+        // Override the default URI selector with a custom one that implements a round-robin strategy
+        // to select the next URI from the list for each new connection attempt.
+        // This avoids where the default selector randomly selects the same URI.
+        // Not strictly necessary, but it is a way to see another interesting feature of the client,
+        // the ability to plug in custom URI selectors.
+        .UriSelector(new SequentialSelector())
+        .ContainerId(containerId)
+        .Affinity(new DefaultAffinity(queue1Name, Operation.Publish)).Build()).ConfigureAwait(false);
 
 Trace.WriteLine(TraceLevel.Information, $"Connected to the broker {connectionAffinityQ1} successfully");
 
@@ -111,3 +118,19 @@ for (int i = 0; i < 3; i++)
 await environment.CloseAsync().ConfigureAwait(false);
 
 Trace.WriteLine(TraceLevel.Information, "Example closed successfully");
+
+internal class SequentialSelector : IUriSelector
+{
+    private int _lastIndex = -1;
+
+    public Uri Select(ICollection<Uri> uris)
+    {
+        if (uris == null || uris.Count == 0)
+        {
+            throw new ArgumentException("URIs collection cannot be null or empty.");
+        }
+
+        _lastIndex = (_lastIndex + 1) % uris.Count;
+        return uris.ElementAt(_lastIndex);
+    }
+}

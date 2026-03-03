@@ -88,9 +88,9 @@ namespace RabbitMQ.AMQP.Client
 
                 try
                 {
-                    var s = await connection.Management().GetQueueInfoAsync(connectionSettings.Affinity.Queue())
+                    var queueInfo = await connection.Management().GetQueueInfoAsync(connectionSettings.Affinity.Queue())
                         .ConfigureAwait(false);
-                    if (s.Leader() == serverName!)
+                    if (queueInfo.Leader() == serverName!)
                     {
                         return connection;
                     }
