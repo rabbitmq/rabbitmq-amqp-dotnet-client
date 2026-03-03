@@ -381,7 +381,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             Utils.ValidatePositive("x-max-age", (long)maxAge.TotalMilliseconds,
                 (long)_parent._tenYears.TotalMilliseconds);
-            _parent._queueArguments["x-max-age"] = $"{maxAge.Seconds}s";
+            _parent._queueArguments["x-max-age"] = $"{maxAge.TotalSeconds}s";
             return this;
         }
 
