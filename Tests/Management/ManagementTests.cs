@@ -155,7 +155,7 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
             .MaxLengthBytes(ByteCapacity.Kb(1024))
             .LeaderLocator(LeaderLocatorStrategy.Balanced)
             .Stream()
-            .MaxAge(TimeSpan.FromSeconds(10))
+            .MaxAge(TimeSpan.FromMinutes(10))
             .MaxSegmentSizeBytes(ByteCapacity.Kb(1024))
             .InitialClusterSize(1)
             .FileSizePerChunk(ByteCapacity.Kb(1024))
@@ -163,7 +163,7 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
             .DeclareAsync();
 
         Assert.Equal(_queueName, queueInfo.Name());
-        Assert.Equal("10s", queueInfo.Arguments()["x-max-age"]);
+        Assert.Equal("600s", queueInfo.Arguments()["x-max-age"]);
         Assert.Equal(1024000L, queueInfo.Arguments()["x-stream-max-segment-size-bytes"]);
         Assert.Equal(1, queueInfo.Arguments()["x-initial-cluster-size"]);
         Assert.Equal("balanced", queueInfo.Arguments()["x-queue-leader-locator"]);
