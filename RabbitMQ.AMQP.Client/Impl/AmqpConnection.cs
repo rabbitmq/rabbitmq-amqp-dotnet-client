@@ -16,6 +16,7 @@ using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
+
     /// <summary>
     /// <see cref="AmqpConnection"/> is the concrete implementation of <see cref="IConnection"/>.
     /// It is a wrapper around the Microsoft AMQP.Net Lite <see cref="Amqp.Connection"/> class.
@@ -87,6 +88,18 @@ namespace RabbitMQ.AMQP.Client.Impl
         public static async Task<IConnection> CreateAsync(ConnectionSettings connectionSettings,
             IMetricsReporter? metricsReporter = default)
         {
+            if (connectionSettings.Affinity is not null)
+            {
+                IConnection? affinityConnection = await AffinityUtils.TryToFindUriNode(connectionSettings, metricsReporter)
+                     .ConfigureAwait(false);
+
+                if (affinityConnection is not null)
+                {
+                    return affinityConnection;
+                }
+
+            }
+
             AmqpConnection connection = new(connectionSettings, metricsReporter);
             await connection.OpenAsync()
                 .ConfigureAwait(false);
@@ -325,7 +338,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-        private AmqpConnection(ConnectionSettings connectionSettings, IMetricsReporter? metricsReporter)
+        internal AmqpConnection(ConnectionSettings connectionSettings, IMetricsReporter? metricsReporter)
         {
             _connectionSettings = connectionSettings;
             _metricsReporter = metricsReporter;

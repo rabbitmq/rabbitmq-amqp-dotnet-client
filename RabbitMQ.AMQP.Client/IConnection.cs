@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.AMQP.Client
 {
+
     public interface IConnection : ILifeCycle
     {
         /// <summary>

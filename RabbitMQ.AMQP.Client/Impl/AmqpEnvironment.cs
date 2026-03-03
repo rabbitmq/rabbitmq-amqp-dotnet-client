@@ -14,9 +14,6 @@ namespace RabbitMQ.AMQP.Client.Impl
     /// <para>
     ///   <see cref="AmqpEnvironment"/> is the implementation of <see cref="IEnvironment"/>.
     /// </para>
-    /// <para>
-    ///   The <see cref="CreateConnectionAsync()"/> method allows creating <see cref="IConnection"/> instances.
-    /// </para>
     /// </summary>
     public class AmqpEnvironment : IEnvironment
     {
@@ -75,12 +72,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// <returns><see cref="Task{IConnection}"/> instance.</returns>
         public Task<IConnection> CreateConnectionAsync()
         {
-            if (ConnectionSettings is null)
-            {
-                throw new ConnectionException("Connection settings are not set");
-            }
-
-            return CreateConnectionAsync(ConnectionSettings);
+            return ConnectionSettings is null ? throw new ConnectionException("Connection settings are not set") : CreateConnectionAsync(ConnectionSettings);
         }
 
         /// <summary>

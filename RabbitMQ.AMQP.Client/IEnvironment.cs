@@ -11,7 +11,7 @@ namespace RabbitMQ.AMQP.Client
     ///   The <see cref="IEnvironment"/> is the main entry point to a node or a cluster of nodes.
     /// </para>
     /// <para>
-    ///   The <see cref="CreateConnectionAsync()"/> method allows creating <see cref="IConnection"/> instances.
+    ///   The CreateConnectionAsync(IAffinity affinity)  method allows creating <see cref="IConnection"/> instances.
     ///   An application is expected to maintain a single <see cref="IEnvironment"/> instance and to close that instance
     ///   upon application exit.
     /// </para>
@@ -26,6 +26,7 @@ namespace RabbitMQ.AMQP.Client
         /// </summary>
         /// <param name="connectionSettings"></param>
         /// <returns><see cref="Task{IConnection}"/> instance.</returns>
+
         public Task<IConnection> CreateConnectionAsync(ConnectionSettings connectionSettings);
 
         /// <summary>

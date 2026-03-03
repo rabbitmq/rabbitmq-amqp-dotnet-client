@@ -61,4 +61,15 @@ namespace RabbitMQ.AMQP.Client
         {
         }
     }
+
+    /// <summary>
+    ///  Thrown when management response code is 404, not found.
+    /// </summary>
+    public class ResourceNotFoundException : Exception
+    {
+        public ResourceNotFoundException(string message) : base(message)
+        {
+        }
+    }
+
 }

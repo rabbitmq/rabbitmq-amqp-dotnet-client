@@ -14,3 +14,6 @@ rabbitmq-server-start:
 
 rabbitmq-server-stop:
 	 ./.ci/ubuntu/one-node/gha-setup.sh stop
+
+rabbitmq-cluster-start:
+	 ./.ci/ubuntu/cluster/gha-setup.sh start pull
