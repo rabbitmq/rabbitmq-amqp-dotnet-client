@@ -32,7 +32,7 @@ const string containerId = "getting-started-Connection";
 IEnvironment environment = AmqpEnvironment.Create(
     ConnectionSettingsBuilder.Create().ContainerId(containerId).Build());
 
-IConnection connection = await environment.ConnectionBuilder().CreateConnectionAsync();
+IConnection connection = await environment.CreateConnectionAsync();
 
 Trace.WriteLine(TraceLevel.Information, $"Connected to the broker {connection} successfully");
 

@@ -42,6 +42,8 @@ namespace RabbitMQ.AMQP.Client.Impl
         internal const int Code204 = 204;
         internal const int Code409 = 409;
         internal const int Code400 = 400;
+        internal const int Code404 = 404;
+
         internal const string Put = "PUT";
         internal const string Get = "GET";
         internal const string Post = "POST";
@@ -100,9 +102,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             // TODO: validate queueName?
             // TODO: encodePathSegment(queues)
             string path = $"/{Consts.Queues}/{Utils.EncodePathSegment(queueName)}";
-            string method = AmqpManagement.Get;
             int[] expectedResponseCodes = new int[] { AmqpManagement.Code200 };
-            Message response = await RequestAsync(path, method, expectedResponseCodes, null, cancellationToken)
+            Message response = await RequestAsync(path, Get, expectedResponseCodes, null, cancellationToken)
                 .ConfigureAwait(false);
 
             return new DefaultQueueInfo((Map)response.Body);
@@ -139,7 +140,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// <summary>
         /// Open the management session.
         /// </summary>
-        public override async Task OpenAsync(CancellationToken cancellationToken)
+        public override async Task OpenAsync()
         {
             if (State == State.Open)
             {
@@ -158,11 +159,11 @@ namespace RabbitMQ.AMQP.Client.Impl
                 .ConfigureAwait(false);
 
             // TODO do something with this task?
-            _ = Task.Run(ProcessResponses, cancellationToken);
+            _ = Task.Run(ProcessResponses);
 
             _managementSession.AddClosedCallback(OnManagementSessionClosed);
 
-            await base.OpenAsync(cancellationToken)
+            await base.OpenAsync()
                 .ConfigureAwait(false);
         }
 
@@ -399,6 +400,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                     throw new PreconditionFailedException($"{receivedMessage.Body}, response code: {responseCode}");
                 case Code400:
                     throw new BadRequestException($"{receivedMessage.Body}, response code: {responseCode}");
+                case Code404:
+                    throw new ResourceNotFoundException($"{receivedMessage.Body}, response code: {responseCode}");
             }
 
             // Check if the correlationId is the same as the messageId

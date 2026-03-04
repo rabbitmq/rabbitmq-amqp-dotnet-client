@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
@@ -37,7 +36,7 @@ public class ClusterTests(ITestOutputHelper testOutputHelper)
         var amqpEnv = (AmqpEnvironment)env;
 
         // Note: by using _connection, the test will dispose the object on teardown
-        _connection = await env.ConnectionBuilder().CreateConnectionAsync(CancellationToken.None);
+        _connection = await env.CreateConnectionAsync();
         Assert.NotNull(_connection);
 
         Assert.NotEmpty(amqpEnv.Connections);

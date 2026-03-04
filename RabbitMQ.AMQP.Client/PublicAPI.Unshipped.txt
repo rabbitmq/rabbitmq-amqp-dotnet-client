@@ -20,26 +20,27 @@ override RabbitMQ.AMQP.Client.ConnectionSettings.GetHashCode() -> int
 override RabbitMQ.AMQP.Client.ConnectionSettings.ToString() -> string!
 override RabbitMQ.AMQP.Client.Error.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.AmqpConnection.CloseAsync() -> System.Threading.Tasks.Task!
-override RabbitMQ.AMQP.Client.Impl.AmqpConnection.OpenAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+override RabbitMQ.AMQP.Client.Impl.AmqpConnection.OpenAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpConnection.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.AmqpConsumer.CloseAsync() -> System.Threading.Tasks.Task!
-override RabbitMQ.AMQP.Client.Impl.AmqpConsumer.OpenAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+override RabbitMQ.AMQP.Client.Impl.AmqpConsumer.OpenAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpConsumer.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.AmqpManagement.CloseAsync() -> System.Threading.Tasks.Task!
-override RabbitMQ.AMQP.Client.Impl.AmqpManagement.OpenAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+override RabbitMQ.AMQP.Client.Impl.AmqpManagement.OpenAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpManagement.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.AmqpPublisher.CloseAsync() -> System.Threading.Tasks.Task!
-override RabbitMQ.AMQP.Client.Impl.AmqpPublisher.OpenAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+override RabbitMQ.AMQP.Client.Impl.AmqpPublisher.OpenAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpPublisher.ToString() -> string!
 override RabbitMQ.AMQP.Client.Impl.AmqpRequester.CloseAsync() -> System.Threading.Tasks.Task!
-override RabbitMQ.AMQP.Client.Impl.AmqpRequester.OpenAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+override RabbitMQ.AMQP.Client.Impl.AmqpRequester.OpenAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.AmqpResponder.CloseAsync() -> System.Threading.Tasks.Task!
-override RabbitMQ.AMQP.Client.Impl.AmqpResponder.OpenAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+override RabbitMQ.AMQP.Client.Impl.AmqpResponder.OpenAsync() -> System.Threading.Tasks.Task!
 override RabbitMQ.AMQP.Client.Impl.ConsumerBuilderStreamOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 override RabbitMQ.AMQP.Client.Impl.ListenerStreamOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 override RabbitMQ.AMQP.Client.RecoveryConfiguration.ToString() -> string!
 override RabbitMQ.AMQP.Client.SaslMechanism.Equals(object? obj) -> bool
 override RabbitMQ.AMQP.Client.SaslMechanism.GetHashCode() -> int
+RabbitMQ.AMQP.Client.AffinityUtils
 RabbitMQ.AMQP.Client.BackOffDelayPolicy
 RabbitMQ.AMQP.Client.BackOffDelayPolicy.BackOffDelayPolicy() -> void
 RabbitMQ.AMQP.Client.BackOffDelayPolicy.BackOffDelayPolicy(int maxAttempt) -> void
@@ -59,14 +60,15 @@ RabbitMQ.AMQP.Client.ClassicQueueVersion
 RabbitMQ.AMQP.Client.ClassicQueueVersion.V1 = 0 -> RabbitMQ.AMQP.Client.ClassicQueueVersion
 RabbitMQ.AMQP.Client.ClassicQueueVersion.V2 = 1 -> RabbitMQ.AMQP.Client.ClassicQueueVersion
 RabbitMQ.AMQP.Client.ClusterConnectionSettings
-RabbitMQ.AMQP.Client.ClusterConnectionSettings.ClusterConnectionSettings(System.Collections.Generic.IEnumerable<System.Uri!>! uris, RabbitMQ.AMQP.Client.IUriSelector? uriSelector = null, string? containerId = null, RabbitMQ.AMQP.Client.SaslMechanism? saslMechanism = null, RabbitMQ.AMQP.Client.IRecoveryConfiguration? recoveryConfiguration = null, uint? maxFrameSize = null, RabbitMQ.AMQP.Client.TlsSettings? tlsSettings = null, RabbitMQ.AMQP.Client.OAuth2Options? oAuth2Options = null) -> void
+RabbitMQ.AMQP.Client.ClusterConnectionSettings.ClusterConnectionSettings(System.Collections.Generic.IEnumerable<System.Uri!>! uris, RabbitMQ.AMQP.Client.IUriSelector? uriSelector = null, string? containerId = null, RabbitMQ.AMQP.Client.SaslMechanism? saslMechanism = null, RabbitMQ.AMQP.Client.IRecoveryConfiguration? recoveryConfiguration = null, uint? maxFrameSize = null, RabbitMQ.AMQP.Client.TlsSettings? tlsSettings = null, RabbitMQ.AMQP.Client.OAuth2Options? oAuth2Options = null, RabbitMQ.AMQP.Client.IAffinity? affinity = null) -> void
 RabbitMQ.AMQP.Client.ConnectionException
 RabbitMQ.AMQP.Client.ConnectionException.ConnectionException(string! message) -> void
 RabbitMQ.AMQP.Client.ConnectionException.ConnectionException(string! message, System.Exception! innerException) -> void
 RabbitMQ.AMQP.Client.ConnectionSettings
-RabbitMQ.AMQP.Client.ConnectionSettings.ConnectionSettings(string! scheme, string! host, int port, string? user = null, string? password = null, string? virtualHost = null, string! containerId = "", RabbitMQ.AMQP.Client.SaslMechanism? saslMechanism = null, RabbitMQ.AMQP.Client.IRecoveryConfiguration? recoveryConfiguration = null, uint? maxFrameSize = null, RabbitMQ.AMQP.Client.TlsSettings? tlsSettings = null, RabbitMQ.AMQP.Client.OAuth2Options? oAuth2Options = null) -> void
-RabbitMQ.AMQP.Client.ConnectionSettings.ConnectionSettings(string? containerId = null, RabbitMQ.AMQP.Client.SaslMechanism? saslMechanism = null, RabbitMQ.AMQP.Client.IRecoveryConfiguration? recoveryConfiguration = null, uint? maxFrameSize = null, RabbitMQ.AMQP.Client.TlsSettings? tlsSettings = null, RabbitMQ.AMQP.Client.OAuth2Options? oAuth2Options = null) -> void
-RabbitMQ.AMQP.Client.ConnectionSettings.ConnectionSettings(System.Uri! uri, string? containerId = null, RabbitMQ.AMQP.Client.SaslMechanism? saslMechanism = null, RabbitMQ.AMQP.Client.IRecoveryConfiguration? recoveryConfiguration = null, uint? maxFrameSize = null, RabbitMQ.AMQP.Client.TlsSettings? tlsSettings = null, RabbitMQ.AMQP.Client.OAuth2Options? oAuth2Options = null) -> void
+RabbitMQ.AMQP.Client.ConnectionSettings.Affinity.get -> RabbitMQ.AMQP.Client.IAffinity?
+RabbitMQ.AMQP.Client.ConnectionSettings.ConnectionSettings(string! scheme, string! host, int port, string? user = null, string? password = null, string? virtualHost = null, string! containerId = "", RabbitMQ.AMQP.Client.SaslMechanism? saslMechanism = null, RabbitMQ.AMQP.Client.IRecoveryConfiguration? recoveryConfiguration = null, uint? maxFrameSize = null, RabbitMQ.AMQP.Client.TlsSettings? tlsSettings = null, RabbitMQ.AMQP.Client.OAuth2Options? oAuth2Options = null, RabbitMQ.AMQP.Client.IAffinity? affinity = null) -> void
+RabbitMQ.AMQP.Client.ConnectionSettings.ConnectionSettings(string? containerId = null, RabbitMQ.AMQP.Client.SaslMechanism? saslMechanism = null, RabbitMQ.AMQP.Client.IRecoveryConfiguration? recoveryConfiguration = null, uint? maxFrameSize = null, RabbitMQ.AMQP.Client.TlsSettings? tlsSettings = null, RabbitMQ.AMQP.Client.OAuth2Options? oAuth2Options = null, RabbitMQ.AMQP.Client.IAffinity? affinity = null) -> void
+RabbitMQ.AMQP.Client.ConnectionSettings.ConnectionSettings(System.Uri! uri, string? containerId = null, RabbitMQ.AMQP.Client.SaslMechanism? saslMechanism = null, RabbitMQ.AMQP.Client.IRecoveryConfiguration? recoveryConfiguration = null, uint? maxFrameSize = null, RabbitMQ.AMQP.Client.TlsSettings? tlsSettings = null, RabbitMQ.AMQP.Client.OAuth2Options? oAuth2Options = null, RabbitMQ.AMQP.Client.IAffinity? affinity = null) -> void
 RabbitMQ.AMQP.Client.ConnectionSettings.ContainerId.get -> string!
 RabbitMQ.AMQP.Client.ConnectionSettings.Host.get -> string!
 RabbitMQ.AMQP.Client.ConnectionSettings.InitAddress(string! host, int port, string? user, string? password, string! scheme) -> Amqp.Address!
@@ -84,6 +86,7 @@ RabbitMQ.AMQP.Client.ConnectionSettings.VirtualHost.get -> string!
 RabbitMQ.AMQP.Client.ConnectionSettings._address -> Amqp.Address!
 RabbitMQ.AMQP.Client.ConnectionSettings._virtualHost -> string!
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder
+RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.Affinity(RabbitMQ.AMQP.Client.IAffinity? affinity) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.Build() -> RabbitMQ.AMQP.Client.ConnectionSettings!
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.ConnectionSettingsBuilder() -> void
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.ContainerId(string! containerId) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
@@ -108,6 +111,11 @@ RabbitMQ.AMQP.Client.ConsumerSettleStrategy
 RabbitMQ.AMQP.Client.ConsumerSettleStrategy.DirectReplyTo = 1 -> RabbitMQ.AMQP.Client.ConsumerSettleStrategy
 RabbitMQ.AMQP.Client.ConsumerSettleStrategy.ExplicitSettle = 0 -> RabbitMQ.AMQP.Client.ConsumerSettleStrategy
 RabbitMQ.AMQP.Client.ConsumerSettleStrategy.PreSettled = 2 -> RabbitMQ.AMQP.Client.ConsumerSettleStrategy
+RabbitMQ.AMQP.Client.DefaultAffinity
+RabbitMQ.AMQP.Client.DefaultAffinity.Attempts() -> uint
+RabbitMQ.AMQP.Client.DefaultAffinity.DefaultAffinity(string! queue, RabbitMQ.AMQP.Client.Operation operation, uint tentatives = 10) -> void
+RabbitMQ.AMQP.Client.DefaultAffinity.Operation() -> RabbitMQ.AMQP.Client.Operation
+RabbitMQ.AMQP.Client.DefaultAffinity.Queue() -> string!
 RabbitMQ.AMQP.Client.Error
 RabbitMQ.AMQP.Client.Error.Description.get -> string?
 RabbitMQ.AMQP.Client.Error.Error(string? errorCode, string? description) -> void
@@ -130,6 +138,10 @@ RabbitMQ.AMQP.Client.IAddressBuilder<T>.Exchange(string! exchangeName) -> T
 RabbitMQ.AMQP.Client.IAddressBuilder<T>.Key(string! key) -> T
 RabbitMQ.AMQP.Client.IAddressBuilder<T>.Queue(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpec) -> T
 RabbitMQ.AMQP.Client.IAddressBuilder<T>.Queue(string! queueName) -> T
+RabbitMQ.AMQP.Client.IAffinity
+RabbitMQ.AMQP.Client.IAffinity.Attempts() -> uint
+RabbitMQ.AMQP.Client.IAffinity.Operation() -> RabbitMQ.AMQP.Client.Operation
+RabbitMQ.AMQP.Client.IAffinity.Queue() -> string!
 RabbitMQ.AMQP.Client.IBackOffDelayPolicy
 RabbitMQ.AMQP.Client.IBackOffDelayPolicy.CurrentAttempt.get -> int
 RabbitMQ.AMQP.Client.IBackOffDelayPolicy.Delay() -> int
@@ -173,10 +185,6 @@ RabbitMQ.AMQP.Client.IConnection.Publishers.get -> System.Collections.Generic.IE
 RabbitMQ.AMQP.Client.IConnection.RefreshTokenAsync(string! token) -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.IConnection.RequesterBuilder() -> RabbitMQ.AMQP.Client.IRequesterBuilder!
 RabbitMQ.AMQP.Client.IConnection.ResponderBuilder() -> RabbitMQ.AMQP.Client.IResponderBuilder!
-RabbitMQ.AMQP.Client.IConnectionBuilder
-RabbitMQ.AMQP.Client.IConnectionBuilder.ConnectionSettings(RabbitMQ.AMQP.Client.ConnectionSettings! connectionSettings) -> RabbitMQ.AMQP.Client.IConnectionBuilder!
-RabbitMQ.AMQP.Client.IConnectionBuilder.CreateConnectionAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
-RabbitMQ.AMQP.Client.IConnectionBuilder.MetricsReporter(RabbitMQ.AMQP.Client.IMetricsReporter? metricsReporter) -> RabbitMQ.AMQP.Client.IConnectionBuilder!
 RabbitMQ.AMQP.Client.IConsumer
 RabbitMQ.AMQP.Client.IConsumer.Pause() -> void
 RabbitMQ.AMQP.Client.IConsumer.Queue.get -> string!
@@ -237,7 +245,6 @@ RabbitMQ.AMQP.Client.IEntitySpecification.DeclareAsync() -> System.Threading.Tas
 RabbitMQ.AMQP.Client.IEntitySpecification.DeleteAsync() -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.IEnvironment
 RabbitMQ.AMQP.Client.IEnvironment.CloseAsync() -> System.Threading.Tasks.Task!
-RabbitMQ.AMQP.Client.IEnvironment.ConnectionBuilder() -> RabbitMQ.AMQP.Client.IConnectionBuilder!
 RabbitMQ.AMQP.Client.IEnvironment.CreateConnectionAsync() -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
 RabbitMQ.AMQP.Client.IEnvironment.CreateConnectionAsync(RabbitMQ.AMQP.Client.ConnectionSettings! connectionSettings) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
 RabbitMQ.AMQP.Client.IExchangeSpecification
@@ -373,10 +380,6 @@ RabbitMQ.AMQP.Client.Impl.AmqpConnection.Publishers.get -> System.Collections.Ge
 RabbitMQ.AMQP.Client.Impl.AmqpConnection.RefreshTokenAsync(string! token) -> System.Threading.Tasks.Task!
 RabbitMQ.AMQP.Client.Impl.AmqpConnection.RequesterBuilder() -> RabbitMQ.AMQP.Client.IRequesterBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConnection.ResponderBuilder() -> RabbitMQ.AMQP.Client.IResponderBuilder!
-RabbitMQ.AMQP.Client.Impl.AmqpConnectionBuilder
-RabbitMQ.AMQP.Client.Impl.AmqpConnectionBuilder.ConnectionSettings(RabbitMQ.AMQP.Client.ConnectionSettings! connectionSettings) -> RabbitMQ.AMQP.Client.IConnectionBuilder!
-RabbitMQ.AMQP.Client.Impl.AmqpConnectionBuilder.CreateConnectionAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
-RabbitMQ.AMQP.Client.Impl.AmqpConnectionBuilder.MetricsReporter(RabbitMQ.AMQP.Client.IMetricsReporter? metricsReporter) -> RabbitMQ.AMQP.Client.IConnectionBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer.Pause() -> void
 RabbitMQ.AMQP.Client.Impl.AmqpConsumer.Queue.get -> string!
@@ -394,10 +397,8 @@ RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.Stream() -> RabbitMQ.AMQP.Client.I
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.SubscriptionListener(System.Action<RabbitMQ.AMQP.Client.IConsumerBuilder.ListenerContext!>! context) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpEnvironment
 RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.CloseAsync() -> System.Threading.Tasks.Task!
-RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.ConnectionBuilder() -> RabbitMQ.AMQP.Client.IConnectionBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.CreateConnectionAsync() -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
 RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.CreateConnectionAsync(RabbitMQ.AMQP.Client.ConnectionSettings! connectionSettings) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
-RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.CreateConnectionAsync(RabbitMQ.AMQP.Client.ConnectionSettings! connectionSettings, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.AmqpExchangeSpecification(RabbitMQ.AMQP.Client.Impl.AmqpManagement! management) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpExchangeSpecification.Argument(string! key, object! value) -> RabbitMQ.AMQP.Client.IExchangeSpecification!
@@ -516,7 +517,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpRequester.GetReplyToQueue() -> string!
 RabbitMQ.AMQP.Client.Impl.AmqpRequester.PublishAsync(RabbitMQ.AMQP.Client.IMessage! message, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IMessage!>!
 RabbitMQ.AMQP.Client.Impl.AmqpRequesterBuilder
 RabbitMQ.AMQP.Client.Impl.AmqpRequesterBuilder.AmqpRequesterBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection) -> void
-RabbitMQ.AMQP.Client.Impl.AmqpRequesterBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IRequester!>!
+RabbitMQ.AMQP.Client.Impl.AmqpRequesterBuilder.BuildAsync() -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IRequester!>!
 RabbitMQ.AMQP.Client.Impl.AmqpRequesterBuilder.CorrelationIdExtractor(System.Func<RabbitMQ.AMQP.Client.IMessage!, object!>? correlationIdExtractor) -> RabbitMQ.AMQP.Client.IRequesterBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpRequesterBuilder.CorrelationIdSupplier(System.Func<object!>? correlationIdSupplier) -> RabbitMQ.AMQP.Client.IRequesterBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpRequesterBuilder.ReplyToQueue(RabbitMQ.AMQP.Client.IQueueSpecification! replyToQueue) -> RabbitMQ.AMQP.Client.IRequesterBuilder!
@@ -528,7 +529,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpResponder
 RabbitMQ.AMQP.Client.Impl.AmqpResponder.AmqpResponder(RabbitMQ.AMQP.Client.Impl.ResponderConfiguration! configuration) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpResponderBuilder
 RabbitMQ.AMQP.Client.Impl.AmqpResponderBuilder.AmqpResponderBuilder(RabbitMQ.AMQP.Client.Impl.AmqpConnection! connection) -> void
-RabbitMQ.AMQP.Client.Impl.AmqpResponderBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IResponder!>!
+RabbitMQ.AMQP.Client.Impl.AmqpResponderBuilder.BuildAsync() -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IResponder!>!
 RabbitMQ.AMQP.Client.Impl.AmqpResponderBuilder.CorrelationIdExtractor(System.Func<RabbitMQ.AMQP.Client.IMessage!, object!>? correlationIdExtractor) -> RabbitMQ.AMQP.Client.IResponderBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpResponderBuilder.Handler(RabbitMQ.AMQP.Client.ResponderHandler! handler) -> RabbitMQ.AMQP.Client.IResponderBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpResponderBuilder.ReplyPostProcessor(System.Func<RabbitMQ.AMQP.Client.IMessage!, object!, RabbitMQ.AMQP.Client.IMessage!>? replyPostProcessor) -> RabbitMQ.AMQP.Client.IResponderBuilder!
@@ -721,7 +722,7 @@ RabbitMQ.AMQP.Client.IRequester.PublishAsync(RabbitMQ.AMQP.Client.IMessage! mess
 RabbitMQ.AMQP.Client.IRequesterAddressBuilder
 RabbitMQ.AMQP.Client.IRequesterAddressBuilder.Requester() -> RabbitMQ.AMQP.Client.IRequesterBuilder!
 RabbitMQ.AMQP.Client.IRequesterBuilder
-RabbitMQ.AMQP.Client.IRequesterBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IRequester!>!
+RabbitMQ.AMQP.Client.IRequesterBuilder.BuildAsync() -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IRequester!>!
 RabbitMQ.AMQP.Client.IRequesterBuilder.CorrelationIdExtractor(System.Func<RabbitMQ.AMQP.Client.IMessage!, object!>? correlationIdExtractor) -> RabbitMQ.AMQP.Client.IRequesterBuilder!
 RabbitMQ.AMQP.Client.IRequesterBuilder.CorrelationIdSupplier(System.Func<object!>? correlationIdSupplier) -> RabbitMQ.AMQP.Client.IRequesterBuilder!
 RabbitMQ.AMQP.Client.IRequesterBuilder.ReplyToQueue(RabbitMQ.AMQP.Client.IQueueSpecification! replyToQueue) -> RabbitMQ.AMQP.Client.IRequesterBuilder!
@@ -734,7 +735,7 @@ RabbitMQ.AMQP.Client.IResponder.IContext
 RabbitMQ.AMQP.Client.IResponder.IContext.Message(byte[]! body) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IResponder.IContext.Message(string! body) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IResponderBuilder
-RabbitMQ.AMQP.Client.IResponderBuilder.BuildAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IResponder!>!
+RabbitMQ.AMQP.Client.IResponderBuilder.BuildAsync() -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IResponder!>!
 RabbitMQ.AMQP.Client.IResponderBuilder.CorrelationIdExtractor(System.Func<RabbitMQ.AMQP.Client.IMessage!, object!>? correlationIdExtractor) -> RabbitMQ.AMQP.Client.IResponderBuilder!
 RabbitMQ.AMQP.Client.IResponderBuilder.Handler(RabbitMQ.AMQP.Client.ResponderHandler! handler) -> RabbitMQ.AMQP.Client.IResponderBuilder!
 RabbitMQ.AMQP.Client.IResponderBuilder.ReplyPostProcessor(System.Func<RabbitMQ.AMQP.Client.IMessage!, object!, RabbitMQ.AMQP.Client.IMessage!>? replyPostProcessor) -> RabbitMQ.AMQP.Client.IResponderBuilder!
@@ -771,6 +772,9 @@ RabbitMQ.AMQP.Client.OAuth2Options
 RabbitMQ.AMQP.Client.OAuth2Options.OAuth2Options(string! token) -> void
 RabbitMQ.AMQP.Client.OAuth2Options.Token.get -> string!
 RabbitMQ.AMQP.Client.OAuth2Options.Token.set -> void
+RabbitMQ.AMQP.Client.Operation
+RabbitMQ.AMQP.Client.Operation.Consume = 1 -> RabbitMQ.AMQP.Client.Operation
+RabbitMQ.AMQP.Client.Operation.Publish = 0 -> RabbitMQ.AMQP.Client.Operation
 RabbitMQ.AMQP.Client.OutcomeState
 RabbitMQ.AMQP.Client.OutcomeState.Accepted = 0 -> RabbitMQ.AMQP.Client.OutcomeState
 RabbitMQ.AMQP.Client.OutcomeState.Rejected = 1 -> RabbitMQ.AMQP.Client.OutcomeState
@@ -810,6 +814,8 @@ RabbitMQ.AMQP.Client.RecoveryConfiguration.IsActivated() -> bool
 RabbitMQ.AMQP.Client.RecoveryConfiguration.IsTopologyActive() -> bool
 RabbitMQ.AMQP.Client.RecoveryConfiguration.RecoveryConfiguration() -> void
 RabbitMQ.AMQP.Client.RecoveryConfiguration.Topology(bool activated) -> RabbitMQ.AMQP.Client.IRecoveryConfiguration!
+RabbitMQ.AMQP.Client.ResourceNotFoundException
+RabbitMQ.AMQP.Client.ResourceNotFoundException.ResourceNotFoundException(string! message) -> void
 RabbitMQ.AMQP.Client.ResponderHandler
 RabbitMQ.AMQP.Client.SaslMechanism
 RabbitMQ.AMQP.Client.SaslMechanism.Equals(RabbitMQ.AMQP.Client.SaslMechanism? other) -> bool
@@ -837,6 +843,7 @@ RabbitMQ.AMQP.Client.TlsSettings.RemoteCertificateValidationCallback.get -> Syst
 RabbitMQ.AMQP.Client.TlsSettings.RemoteCertificateValidationCallback.set -> void
 RabbitMQ.AMQP.Client.TlsSettings.TlsSettings() -> void
 RabbitMQ.AMQP.Client.TlsSettings.TlsSettings(System.Security.Authentication.SslProtocols protocols) -> void
+static RabbitMQ.AMQP.Client.AffinityUtils.TryToFindUriNode(RabbitMQ.AMQP.Client.ConnectionSettings! connectionSettings, RabbitMQ.AMQP.Client.IMetricsReporter? metricsReporter) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection?>!
 static RabbitMQ.AMQP.Client.ByteCapacity.B(long bytes) -> RabbitMQ.AMQP.Client.ByteCapacity!
 static RabbitMQ.AMQP.Client.ByteCapacity.explicit operator RabbitMQ.AMQP.Client.ByteCapacity!(string! value) -> RabbitMQ.AMQP.Client.ByteCapacity!
 static RabbitMQ.AMQP.Client.ByteCapacity.Gb(long gigabytes) -> RabbitMQ.AMQP.Client.ByteCapacity!
@@ -848,12 +855,13 @@ static RabbitMQ.AMQP.Client.ByteCapacity.Tb(long terabytes) -> RabbitMQ.AMQP.Cli
 static RabbitMQ.AMQP.Client.ConnectionSettings.ProcessUriSegmentsForVirtualHost(System.Uri! uri) -> string!
 static RabbitMQ.AMQP.Client.ConnectionSettings.ProcessUserInfo(System.Uri! uri) -> (string? user, string? password)
 static RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.Create() -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
+static RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.From(RabbitMQ.AMQP.Client.ConnectionSettings! settings) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
 static RabbitMQ.AMQP.Client.Impl.AddressBuilderHelper.AddressBuilder() -> RabbitMQ.AMQP.Client.Impl.AddressBuilder!
-static RabbitMQ.AMQP.Client.Impl.AmqpConnection.CreateAsync(RabbitMQ.AMQP.Client.ConnectionSettings! connectionSettings, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken), RabbitMQ.AMQP.Client.IMetricsReporter? metricsReporter = null) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
+static RabbitMQ.AMQP.Client.Impl.AmqpConnection.CreateAsync(RabbitMQ.AMQP.Client.ConnectionSettings! connectionSettings, RabbitMQ.AMQP.Client.IMetricsReporter? metricsReporter = null) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
 static RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.Create(RabbitMQ.AMQP.Client.ConnectionSettings! connectionSettings, RabbitMQ.AMQP.Client.IMetricsReporter? metricsReporter = null) -> RabbitMQ.AMQP.Client.IEnvironment!
 static RabbitMQ.AMQP.Client.InternalBugException.CreateAndThrow(string! message) -> void
 static readonly RabbitMQ.AMQP.Client.SaslMechanism.Anonymous -> RabbitMQ.AMQP.Client.SaslMechanism!
 static readonly RabbitMQ.AMQP.Client.SaslMechanism.External -> RabbitMQ.AMQP.Client.SaslMechanism!
 static readonly RabbitMQ.AMQP.Client.SaslMechanism.Plain -> RabbitMQ.AMQP.Client.SaslMechanism!
 virtual RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.Dispose(bool disposing) -> void
-virtual RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.OpenAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+virtual RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.OpenAsync() -> System.Threading.Tasks.Task!

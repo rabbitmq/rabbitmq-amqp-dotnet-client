@@ -16,55 +16,6 @@ using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
-    public class AmqpConnectionBuilder : IConnectionBuilder
-    {
-        private IMetricsReporter? _metricsReporter;
-        private AmqpEnvironment _amqpEnvironment;
-        private ConnectionSettings _connectionSettings;
-
-        internal AmqpConnectionBuilder(AmqpEnvironment amqpEnvironment)
-        {
-            _amqpEnvironment = amqpEnvironment;
-            _connectionSettings = amqpEnvironment.ConnectionSettings;
-        }
-
-        public IConnectionBuilder MetricsReporter(IMetricsReporter? metricsReporter)
-        {
-            _metricsReporter = metricsReporter;
-            return this;
-        }
-
-        public IConnectionBuilder ConnectionSettings(ConnectionSettings connectionSettings)
-        {
-            if (connectionSettings is null)
-            {
-                throw new ArgumentNullException(nameof(connectionSettings));
-            }
-            _connectionSettings = connectionSettings;
-            return this;
-        }
-
-        public async Task<IConnection> CreateConnectionAsync(CancellationToken cancellationToken = default)
-        {
-            var c = await AmqpConnection.CreateAsync(_connectionSettings, cancellationToken, _metricsReporter)
-                .ConfigureAwait(false);
-            c.Id = Interlocked.Increment(ref this._amqpEnvironment._sequentialId);
-            this._amqpEnvironment._connections.TryAdd(c.Id, c);
-            c.ChangeState += (sender, previousState, currentState, failureCause) =>
-            {
-                if (currentState != State.Closed)
-                {
-                    return;
-                }
-
-                if (sender is IConnection connection)
-                {
-                    _amqpEnvironment._connections.TryRemove(connection.Id, out _);
-                }
-            };
-            return c;
-        }
-    }
 
     /// <summary>
     /// <see cref="AmqpConnection"/> is the concrete implementation of <see cref="IConnection"/>.
@@ -130,16 +81,27 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// </para>
         /// </summary>
         /// <param name="connectionSettings"></param>
-        /// <param name="cancellationToken"></param>
         /// <param name="metricsReporter"></param>
         /// <returns></returns>
         // TODO to play nicely with IoC containers, we should not have static Create methods
         // TODO rename to CreateAndOpenAsync
         public static async Task<IConnection> CreateAsync(ConnectionSettings connectionSettings,
-            CancellationToken cancellationToken = default, IMetricsReporter? metricsReporter = null)
+            IMetricsReporter? metricsReporter = default)
         {
+            if (connectionSettings.Affinity is not null)
+            {
+                IConnection? affinityConnection = await AffinityUtils.TryToFindUriNode(connectionSettings, metricsReporter)
+                     .ConfigureAwait(false);
+
+                if (affinityConnection is not null)
+                {
+                    return affinityConnection;
+                }
+
+            }
+
             AmqpConnection connection = new(connectionSettings, metricsReporter);
-            await connection.OpenAsync(cancellationToken)
+            await connection.OpenAsync()
                 .ConfigureAwait(false);
 
             return connection;
@@ -233,11 +195,13 @@ namespace RabbitMQ.AMQP.Client.Impl
             _connectionSettings.UpdateOAuthPassword(token);
         }
 
-        public override async Task OpenAsync(CancellationToken cancellationToken)
+        // TODO cancellation token
+        public override async Task OpenAsync()
         {
-            await OpenConnectionAsync(cancellationToken)
+            // TODO cancellation token
+            await OpenConnectionAsync(CancellationToken.None)
                 .ConfigureAwait(false);
-            await base.OpenAsync(cancellationToken)
+            await base.OpenAsync()
                 .ConfigureAwait(false);
             _featureFlags.Validate();
         }
@@ -374,7 +338,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-        private AmqpConnection(ConnectionSettings connectionSettings, IMetricsReporter? metricsReporter)
+        internal AmqpConnection(ConnectionSettings connectionSettings, IMetricsReporter? metricsReporter)
         {
             _connectionSettings = connectionSettings;
             _metricsReporter = metricsReporter;
@@ -412,8 +376,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 ConnectionFactory cf;
 
-                if (_connectionSettings.Scheme.Equals("ws", StringComparison.OrdinalIgnoreCase) ||
-                    _connectionSettings.Scheme.Equals("wss", StringComparison.OrdinalIgnoreCase))
+                if (_connectionSettings.Scheme.Equals("ws", StringComparison.OrdinalIgnoreCase) || _connectionSettings.Scheme.Equals("wss", StringComparison.OrdinalIgnoreCase))
                 {
                     cf = new ConnectionFactory(new TransportProvider[] { new WebSocketTransportFactory() });
                 }
@@ -479,7 +442,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                         $"{ToString()} connection failed., error: {_nativeConnection.Error}");
                 }
 
-                await _management.OpenAsync(cancellationToken)
+                await _management.OpenAsync()
                     .ConfigureAwait(false);
 
                 _closedCallback = BuildClosedCallback();

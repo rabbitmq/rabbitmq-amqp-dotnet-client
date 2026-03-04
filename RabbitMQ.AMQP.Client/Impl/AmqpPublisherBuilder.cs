@@ -74,7 +74,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             AmqpPublisher publisher = new(_connection, address, _metricsReporter);
 
             // TODO pass cancellationToken
-            await publisher.OpenAsync(cancellationToken)
+            await publisher.OpenAsync()
                 .ConfigureAwait(false);
 
             return publisher;

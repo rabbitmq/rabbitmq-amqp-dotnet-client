@@ -9,13 +9,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Implement PreSettled consumer feature by @Gsantomaggio in [#143](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/143)
-- Connection builder: `IEnvironment.ConnectionBuilder()` returns `IConnectionBuilder` with `ConnectionSettings()`, `MetricsReporter()`, and `CreateConnectionAsync(CancellationToken)` for creating connections with cancellation and per-connection settings.
 
 ### Changed
 - Change consumer options to unify all the AMQP 1.0 clients' interfaces by @Gsantomaggio in [#144](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/144)
 - Remove default value by @Gsantomaggio in [#145](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/145)
-- `IEnvironment.CreateConnectionAsync()` and `CreateConnectionAsync(ConnectionSettings)` are obsolete; use `ConnectionBuilder().ConnectionSettings(...).CreateConnectionAsync(cancellationToken)` instead.
-- `OpenAsync` and builder `BuildAsync` methods now accept an optional `CancellationToken`.
 
 ### Breaking changes
 - Minor breaking change in [#144](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/144): consumer options unified across all AMQP 1.0 clients. Use `SettleStrategy(ConsumerSettleStrategy....)` on the consumer builder to define the settle strategy:

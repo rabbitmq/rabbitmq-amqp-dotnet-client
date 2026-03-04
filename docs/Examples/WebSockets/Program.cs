@@ -25,7 +25,7 @@ var cs = new ConnectionSettings(new Uri(amqpConnectionString));
 IEnvironment environment = AmqpEnvironment.Create(cs);
 
 // open a connection from the environment setting
-IConnection connection = await environment.ConnectionBuilder().CreateConnectionAsync().ConfigureAwait(false);
+IConnection connection = await environment.CreateConnectionAsync().ConfigureAwait(false);
 IManagement management = connection.Management();
 await management.Queue("ws-queue").Type(QueueType.QUORUM).DeclareAsync().ConfigureAwait(false);
 

@@ -25,9 +25,6 @@ namespace RabbitMQ.AMQP.Client
         }
     }
 
-    /// <summary>
-    ///  ConnectionSettingsBuilder is a builder for creating <see cref="ConnectionSettings"/> instances.
-    /// </summary>
     public class ConnectionSettingsBuilder
     {
         private string _host = "localhost";
@@ -40,11 +37,65 @@ namespace RabbitMQ.AMQP.Client
         private uint _maxFrameSize = Consts.DefaultMaxFrameSize;
         private SaslMechanism _saslMechanism = Client.SaslMechanism.Anonymous;
         private IRecoveryConfiguration _recoveryConfiguration = new RecoveryConfiguration();
+        private IAffinity? _affinity = null;
         private TlsSettings? _tlsSettings = null;
         private Uri? _uri;
         private List<Uri>? _uris;
         private IUriSelector? _uriSelector;
         private OAuth2Options? _oAuth2Options;
+
+        /// <summary>
+        /// From creates a new ConnectionSettingsBuilder from an existing ConnectionSettings instance.
+        /// It copies all the properties from the given ConnectionSettings instance to the new ConnectionSettingsBuilder instance.
+        /// It can be used to create a new ConnectionSettings instance that is similar to an existing one,
+        /// but with some properties changed.
+        /// </summary>
+        /// <param name="settings"> settings where to start</param>
+        /// <returns></returns>
+        public static ConnectionSettingsBuilder From(ConnectionSettings settings)
+        {
+            if (settings is ClusterConnectionSettings clusterConnectionSettings)
+            {
+                return new ConnectionSettingsBuilder()
+                {
+                    _uris = clusterConnectionSettings.Addresses.Select(a =>
+                        new UriBuilder()
+                        {
+                            Scheme = a.Scheme,
+                            Host = a.Host,
+                            Port = a.Port,
+                            UserName = a.User,
+                            Password = a.Password,
+                            Path = a.Path
+                        }.Uri).ToList(),
+                    _uriSelector = clusterConnectionSettings.UriSelector,
+                    _containerId = clusterConnectionSettings.ContainerId,
+                    _saslMechanism = clusterConnectionSettings.SaslMechanism,
+                    _recoveryConfiguration = clusterConnectionSettings.Recovery,
+                    _maxFrameSize = clusterConnectionSettings.MaxFrameSize,
+                    _tlsSettings = clusterConnectionSettings.TlsSettings,
+                    _oAuth2Options = clusterConnectionSettings.OAuth2Options,
+                    _affinity = settings.Affinity
+                };
+            }
+
+            return new ConnectionSettingsBuilder()
+            {
+                _host = settings.Host,
+                _port = settings.Port,
+                _user = settings.User,
+                _password = settings.Password,
+                _scheme = settings.Scheme,
+                _containerId = settings.ContainerId,
+                _virtualHost = settings.VirtualHost,
+                _maxFrameSize = settings.MaxFrameSize,
+                _saslMechanism = settings.SaslMechanism,
+                _recoveryConfiguration = settings.Recovery,
+                _affinity = settings.Affinity,
+                _tlsSettings = settings.TlsSettings,
+                _oAuth2Options = settings.OAuth2Options,
+            };
+        }
 
         public static ConnectionSettingsBuilder Create()
         {
@@ -131,6 +182,12 @@ namespace RabbitMQ.AMQP.Client
             return this;
         }
 
+        public ConnectionSettingsBuilder Affinity(IAffinity? affinity)
+        {
+            _affinity = affinity;
+            return this;
+        }
+
         public ConnectionSettingsBuilder TlsSettings(TlsSettings tlsSettings)
         {
             _tlsSettings = tlsSettings;
@@ -174,7 +231,8 @@ namespace RabbitMQ.AMQP.Client
                     _recoveryConfiguration,
                     _maxFrameSize,
                     _tlsSettings,
-                    _oAuth2Options);
+                    _oAuth2Options,
+                    _affinity);
             }
 
             if (_uris is not null)
@@ -184,7 +242,7 @@ namespace RabbitMQ.AMQP.Client
                     _containerId, _saslMechanism,
                     _recoveryConfiguration,
                     _maxFrameSize,
-                    _tlsSettings, _oAuth2Options);
+                    _tlsSettings, _oAuth2Options, _affinity);
             }
 
             return new ConnectionSettings(_scheme, _host, _port, _user,
@@ -192,7 +250,7 @@ namespace RabbitMQ.AMQP.Client
                 _containerId, _saslMechanism,
                 _recoveryConfiguration,
                 _maxFrameSize,
-                _tlsSettings, _oAuth2Options);
+                _tlsSettings, _oAuth2Options, _affinity);
         }
 
         private void ValidateUris()
@@ -205,8 +263,7 @@ namespace RabbitMQ.AMQP.Client
     }
 
     // <summary>
-    // ConnectionSettings represents a network address and associated settings for connecting to an AMQP broker. 
-    // It contains also <cref ="IRecoveryConfiguration"/> by default uses <see cref="RecoveryConfiguration"/>.
+    // Represents a network address.
     // </summary>
     public class ConnectionSettings : IEquatable<ConnectionSettings>
     {
@@ -218,6 +275,7 @@ namespace RabbitMQ.AMQP.Client
         private readonly uint _maxFrameSize = Consts.DefaultMaxFrameSize;
         private readonly TlsSettings? _tlsSettings;
         private readonly IRecoveryConfiguration _recoveryConfiguration = new RecoveryConfiguration();
+        private readonly IAffinity? _affinity = null;
         private readonly string _webSocketPath = "/";
 
         public ConnectionSettings(Uri uri,
@@ -226,8 +284,11 @@ namespace RabbitMQ.AMQP.Client
             IRecoveryConfiguration? recoveryConfiguration = null,
             uint? maxFrameSize = null,
             TlsSettings? tlsSettings = null,
-            OAuth2Options? oAuth2Options = null)
-            : this(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings, oAuth2Options)
+            OAuth2Options? oAuth2Options = null,
+            IAffinity? affinity = null
+        )
+            : this(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings, oAuth2Options,
+                affinity)
         {
             (string? user, string? password) = ProcessUserInfo(uri);
 
@@ -236,12 +297,14 @@ namespace RabbitMQ.AMQP.Client
             string scheme = uri.Scheme;
             if (false == Utils.IsValidScheme(scheme))
             {
-                throw new ArgumentOutOfRangeException("uri.Scheme", "Uri scheme must be 'amqp', 'amqps', 'ws' or 'wss'");
+                throw new ArgumentOutOfRangeException("uri.Scheme",
+                    "Uri scheme must be 'amqp', 'amqps', 'ws' or 'wss'");
             }
 
             _webSocketPath = string.IsNullOrWhiteSpace(uri.AbsolutePath) ? "/" : uri.AbsolutePath;
             _address = InitAddress(uri.Host, uri.Port, user, password, scheme);
             _tlsSettings = InitTlsSettings();
+            _affinity = affinity;
         }
 
         protected Address InitAddress(string host, int port, string? user, string? password, string scheme)
@@ -261,7 +324,8 @@ namespace RabbitMQ.AMQP.Client
 
         internal void UpdateOAuthPassword(string? password)
         {
-            _address = new Address(_address.Host, _address.Port, _address.User, password, _address.Path, _address.Scheme);
+            _address = new Address(_address.Host, _address.Port, _address.User, password, _address.Path,
+                _address.Scheme);
         }
 
         public ConnectionSettings(string scheme,
@@ -275,15 +339,18 @@ namespace RabbitMQ.AMQP.Client
             IRecoveryConfiguration? recoveryConfiguration = null,
             uint? maxFrameSize = null,
             TlsSettings? tlsSettings = null,
-            OAuth2Options? oAuth2Options = null)
-            : this(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings, oAuth2Options)
+            OAuth2Options? oAuth2Options = null,
+            IAffinity? affinity = null)
+            : this(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings, oAuth2Options,
+                affinity)
         {
             if (false == Utils.IsValidScheme(scheme))
             {
                 throw new ArgumentOutOfRangeException(nameof(scheme), "scheme must be 'amqp', 'amqps', 'ws' or 'wss'");
             }
 
-            _webSocketPath = "/"; // For TCP transports the path value is ignored by AMQP .Net Lite, so keeping it set to "/" preserves current behavior.
+            _webSocketPath =
+                "/"; // For TCP transports the path value is ignored by AMQP .Net Lite, so keeping it set to "/" preserves current behavior.
             _address = InitAddress(host, port, user, password, scheme);
             if (virtualHost is not null)
             {
@@ -299,7 +366,9 @@ namespace RabbitMQ.AMQP.Client
             IRecoveryConfiguration? recoveryConfiguration = null,
             uint? maxFrameSize = null,
             TlsSettings? tlsSettings = null,
-            OAuth2Options? oAuth2Options = null)
+            OAuth2Options? oAuth2Options = null,
+            IAffinity? affinity = null
+        )
         {
             if (containerId is not null)
             {
@@ -334,6 +403,7 @@ namespace RabbitMQ.AMQP.Client
             }
 
             _tlsSettings = tlsSettings;
+            _affinity = affinity;
         }
 
         public string Host => _address.Host;
@@ -350,7 +420,10 @@ namespace RabbitMQ.AMQP.Client
         public TlsSettings? TlsSettings => _tlsSettings;
         public IRecoveryConfiguration Recovery => _recoveryConfiguration;
 
+        public IAffinity? Affinity => _affinity;
+
         internal virtual Address Address => _address;
+        internal OAuth2Options? OAuth2Options => _oAuth2Options;
 
         internal virtual IList<Address> Addresses => new[] { _address };
 
@@ -490,8 +563,10 @@ namespace RabbitMQ.AMQP.Client
             IRecoveryConfiguration? recoveryConfiguration = null,
             uint? maxFrameSize = null,
             TlsSettings? tlsSettings = null,
-            OAuth2Options? oAuth2Options = null)
-            : base(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings, oAuth2Options)
+            OAuth2Options? oAuth2Options = null,
+            IAffinity? affinity = null)
+            : base(containerId, saslMechanism, recoveryConfiguration, maxFrameSize, tlsSettings, oAuth2Options,
+                affinity)
         {
             _uris = uris.ToList();
             if (_uris.Count == 0)
@@ -514,7 +589,8 @@ namespace RabbitMQ.AMQP.Client
                 string scheme = uri.Scheme;
                 if (false == Utils.IsValidScheme(scheme))
                 {
-                    throw new ArgumentOutOfRangeException("uri.Scheme", "Uri scheme must be 'amqp', 'amqps', 'ws' or 'wss'");
+                    throw new ArgumentOutOfRangeException("uri.Scheme",
+                        "Uri scheme must be 'amqp', 'amqps', 'ws' or 'wss'");
                 }
 
                 (string? user, string? password) = ProcessUserInfo(uri);
@@ -596,6 +672,7 @@ namespace RabbitMQ.AMQP.Client
             }
         }
 
+        internal IUriSelector? UriSelector => _uriSelector;
         internal override IList<Address> Addresses => _uriToAddress.Values.ToList();
     }
 
