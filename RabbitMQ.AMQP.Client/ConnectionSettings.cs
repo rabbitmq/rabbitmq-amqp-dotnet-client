@@ -44,6 +44,14 @@ namespace RabbitMQ.AMQP.Client
         private IUriSelector? _uriSelector;
         private OAuth2Options? _oAuth2Options;
 
+        /// <summary>
+        /// From creates a new ConnectionSettingsBuilder from an existing ConnectionSettings instance.
+        /// It copies all the properties from the given ConnectionSettings instance to the new ConnectionSettingsBuilder instance.
+        /// It can be used to create a new ConnectionSettings instance that is similar to an existing one,
+        /// but with some properties changed.
+        /// </summary>
+        /// <param name="settings"> settings where to start</param>
+        /// <returns></returns>
         public static ConnectionSettingsBuilder From(ConnectionSettings settings)
         {
             if (settings is ClusterConnectionSettings clusterConnectionSettings)
@@ -663,6 +671,7 @@ namespace RabbitMQ.AMQP.Client
                 return _uriToAddress[uri];
             }
         }
+
         internal IUriSelector? UriSelector => _uriSelector;
         internal override IList<Address> Addresses => _uriToAddress.Values.ToList();
     }

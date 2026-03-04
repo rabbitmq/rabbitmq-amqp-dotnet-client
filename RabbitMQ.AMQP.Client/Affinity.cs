@@ -22,13 +22,30 @@ namespace RabbitMQ.AMQP.Client
     /// </summary>
     public interface IAffinity
     {
+        /// <summary>
+        /// Queue where to apply the affinity. T
+        /// The connection will try to find the node that has this queue for the given operation.
+        /// </summary>
+        /// <returns></returns>
         string Queue();
 
+        /// <summary>
+        /// Operation to apply the affinity to. It can be either publish or consume.
+        /// </summary>
+        /// <returns></returns>
         Operation Operation();
 
-        uint Tentatives();
+        /// <summary>
+        /// Attempts to find the node that has the queue for the given operation
+        /// before giving up and returning null.
+        /// </summary>
+        /// <returns></returns>
+        uint Attempts();
     }
 
+    /// <summary>
+    /// DefaultAffinity is the default implementation of the IAffinity interface.
+    /// </summary>
     public class DefaultAffinity : IAffinity
     {
         private readonly string _queue;
@@ -52,7 +69,7 @@ namespace RabbitMQ.AMQP.Client
             return _operation;
         }
 
-        public uint Tentatives() => _tentatives;
+        public uint Attempts() => _tentatives;
     }
 
     public static class AffinityUtils
@@ -85,11 +102,11 @@ namespace RabbitMQ.AMQP.Client
                 return null;
             }
 
-            for (int i = 0; i < connectionSettings.Affinity.Tentatives(); i++)
+            for (int i = 0; i < connectionSettings.Affinity.Attempts(); i++)
             {
                 Trace.WriteLine(TraceLevel.Information,
                     $"Trying to find the node that has the queue {connectionSettings.Affinity.Queue()} for the operation {connectionSettings.Affinity.Operation()}, " +
-                    $"attempt {i + 1}/{connectionSettings.Affinity.Tentatives()}");
+                    $"attempt {i + 1}/{connectionSettings.Affinity.Attempts()}");
                 // loop through the nodes and find the one that has the queue
                 AmqpConnection connection = new(connectionSettings, metricsReporter);
                 bool keepConnection = false;

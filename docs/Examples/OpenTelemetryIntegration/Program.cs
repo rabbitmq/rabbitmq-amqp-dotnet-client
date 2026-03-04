@@ -79,7 +79,7 @@ IPublisher publisher = await connection.PublisherBuilder()
 
 static Task MessageHandler(IContext context, IMessage message)
 {
-    Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.Body()} received");
+    Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.BodyAsString()} received");
     context.Accept();
     return Task.CompletedTask;
 }

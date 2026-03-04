@@ -112,10 +112,10 @@ RabbitMQ.AMQP.Client.ConsumerSettleStrategy.DirectReplyTo = 1 -> RabbitMQ.AMQP.C
 RabbitMQ.AMQP.Client.ConsumerSettleStrategy.ExplicitSettle = 0 -> RabbitMQ.AMQP.Client.ConsumerSettleStrategy
 RabbitMQ.AMQP.Client.ConsumerSettleStrategy.PreSettled = 2 -> RabbitMQ.AMQP.Client.ConsumerSettleStrategy
 RabbitMQ.AMQP.Client.DefaultAffinity
+RabbitMQ.AMQP.Client.DefaultAffinity.Attempts() -> uint
 RabbitMQ.AMQP.Client.DefaultAffinity.DefaultAffinity(string! queue, RabbitMQ.AMQP.Client.Operation operation, uint tentatives = 10) -> void
 RabbitMQ.AMQP.Client.DefaultAffinity.Operation() -> RabbitMQ.AMQP.Client.Operation
 RabbitMQ.AMQP.Client.DefaultAffinity.Queue() -> string!
-RabbitMQ.AMQP.Client.DefaultAffinity.Tentatives() -> uint
 RabbitMQ.AMQP.Client.Error
 RabbitMQ.AMQP.Client.Error.Description.get -> string?
 RabbitMQ.AMQP.Client.Error.Error(string? errorCode, string? description) -> void
@@ -139,9 +139,9 @@ RabbitMQ.AMQP.Client.IAddressBuilder<T>.Key(string! key) -> T
 RabbitMQ.AMQP.Client.IAddressBuilder<T>.Queue(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpec) -> T
 RabbitMQ.AMQP.Client.IAddressBuilder<T>.Queue(string! queueName) -> T
 RabbitMQ.AMQP.Client.IAffinity
+RabbitMQ.AMQP.Client.IAffinity.Attempts() -> uint
 RabbitMQ.AMQP.Client.IAffinity.Operation() -> RabbitMQ.AMQP.Client.Operation
 RabbitMQ.AMQP.Client.IAffinity.Queue() -> string!
-RabbitMQ.AMQP.Client.IAffinity.Tentatives() -> uint
 RabbitMQ.AMQP.Client.IBackOffDelayPolicy
 RabbitMQ.AMQP.Client.IBackOffDelayPolicy.CurrentAttempt.get -> int
 RabbitMQ.AMQP.Client.IBackOffDelayPolicy.Delay() -> int
