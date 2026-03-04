@@ -80,8 +80,9 @@ namespace RabbitMQ.AMQP.Client
         {
             if (connectionSettings.Affinity == null)
             {
-                // raise an exception or return a default value if the affinity is not set in the connection settings
-                throw new NullReferenceException("Affinity is not set in the connection settings");
+                Trace.WriteLine(TraceLevel.Warning, "Affinity is not specified in the connection settings, " +
+                                                    "the affinity connection will not be created.");
+                return null;
             }
 
             for (int i = 0; i < connectionSettings.Affinity.Tentatives(); i++)
