@@ -125,7 +125,7 @@ namespace RabbitMQ.AMQP.Client
 
                     try
                     {
-                        var queueInfo = await connection.Management().GetQueueInfoAsync(connectionSettings.Affinity.Queue())
+                        var queueInfo = await connection.Management().GetQueueInfoAsync(connectionSettings.Affinity.Queue(), cancellationToken)
                             .ConfigureAwait(false);
 
                         // there are no replicas for the queue,
@@ -191,7 +191,7 @@ namespace RabbitMQ.AMQP.Client
                         await connection.CloseAsync().ConfigureAwait(false);
                     }
                 }
-                await Task.Delay(300).ConfigureAwait(false);
+                await Task.Delay(300, cancellationToken).ConfigureAwait(false);
             }
 
             return null;
