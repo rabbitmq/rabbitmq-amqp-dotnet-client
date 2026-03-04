@@ -20,6 +20,7 @@ Inside the [docs/Examples](./docs/Examples) directory you can find examples of h
 
 ## How to Run
 
-- Start the broker with `./.ci/ubuntu/one-node/gha-setup.sh start`. Note that this has been tested on Ubuntu 22 with docker.
-- Run the tests with ` dotnet test ./Build.csproj  --logger "console;verbosity=detailed"`
-- Stop RabbitMQ with `./.ci/ubuntu/one-node/gha-setup.sh stop`
+- Start single node with `make rabbitmq-server-start`. Note that this has been tested on Ubuntu 22 with docker.
+- Start cluster three nodes with `make rabbitmq-cluster-start`. Note that this has been tested on Ubuntu 22 with docker.
+- Run the tests with ` make test`
+- Running the cluster covers more features 
