@@ -152,7 +152,7 @@ public class EnvironmentTests(ITestOutputHelper testOutputHelper)
         IEnvironment env = AmqpEnvironment.Create(ConnectionSettingsBuilder.Create().Build());
 
         using var cts = new CancellationTokenSource();
-        await cts.CancelAsync();
+        cts.Cancel();
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
             async () => await env.CreateConnectionAsync(cts.Token));
