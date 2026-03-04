@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Amqp;
 using RabbitMQ.AMQP.Client.Impl;
 
 namespace RabbitMQ.AMQP.Client
@@ -12,25 +13,33 @@ namespace RabbitMQ.AMQP.Client
     public enum Operation
     {
         Publish,
-        // TODO: Consume
+        Consume
     }
 
+    /// <summary>
+    /// IAffinity the interface to define node affinity for a connection.
+    /// It is used to find the node that has the queue for the given operation.
+    /// </summary>
     public interface IAffinity
     {
         string Queue();
 
         Operation Operation();
+
+        uint Tentatives();
     }
 
     public class DefaultAffinity : IAffinity
     {
         private readonly string _queue;
         private readonly Operation _operation;
+        private readonly uint _tentatives;
 
-        public DefaultAffinity(string queue, Operation operation)
+        public DefaultAffinity(string queue, Operation operation, uint tentatives = 10)
         {
             _queue = queue;
             _operation = operation;
+            _tentatives = tentatives;
         }
 
         public string Queue()
@@ -42,6 +51,8 @@ namespace RabbitMQ.AMQP.Client
         {
             return _operation;
         }
+
+        public uint Tentatives() => _tentatives;
     }
 
     public static class AffinityUtils
@@ -67,14 +78,17 @@ namespace RabbitMQ.AMQP.Client
         public static async Task<IConnection?> TryToFindUriNode(ConnectionSettings connectionSettings,
             IMetricsReporter? metricsReporter)
         {
-            for (int i = 0; i < 10; i++)
+            if (connectionSettings.Affinity == null)
             {
-                if (connectionSettings.Affinity == null)
-                {
-                    // raise an exception or return a default value if the affinity is not set in the connection settings
-                    throw new NullReferenceException("Affinity is not set in the connection settings");
-                }
+                // raise an exception or return a default value if the affinity is not set in the connection settings
+                throw new NullReferenceException("Affinity is not set in the connection settings");
+            }
 
+            for (int i = 0; i < connectionSettings.Affinity.Tentatives(); i++)
+            {
+                Trace.WriteLine(TraceLevel.Information,
+                    $"Trying to find the node that has the queue {connectionSettings.Affinity.Queue()} for the operation {connectionSettings.Affinity.Operation()}, " +
+                    $"attempt {i + 1}/{connectionSettings.Affinity.Tentatives()}");
                 // loop through the nodes and find the one that has the queue
                 AmqpConnection connection = new(connectionSettings, metricsReporter);
                 await connection.OpenAsync()
@@ -82,26 +96,68 @@ namespace RabbitMQ.AMQP.Client
 
                 if (!TryExtractServerNameFromProperties(connection, out string? serverName))
                 {
-                    // raise an exception or return a default value if the server name cannot be extracted from the connection properties
-                    throw new KeyNotFoundException("Cannot extract server name from connection properties");
+                    await connection.CloseAsync().ConfigureAwait(false);
+                    Trace.WriteLine(TraceLevel.Warning, $"can't extract server name from connection properties, " +
+                                                        $"the connection will be closed. properties: {string.Join(", ", connection.Properties)}");
+
+                    return null;
                 }
 
                 try
                 {
                     var queueInfo = await connection.Management().GetQueueInfoAsync(connectionSettings.Affinity.Queue())
                         .ConfigureAwait(false);
-                    if (queueInfo.Leader() == serverName!)
+
+                    // there are no replicas for the queue,
+                    // which means the queue is only on one node,
+                    // we can return the current connection directly.
+                    if (queueInfo.Members().Count == 0)
                     {
+                        Trace.WriteLine(TraceLevel.Verbose,
+                            $"The queue {connectionSettings.Affinity.Queue()} is found on the node {serverName}, " +
+                            $"no members found, the current connection will be returned.");
+
                         return connection;
+                    }
+
+                    switch (connectionSettings.Affinity.Operation())
+                    {
+                        case Operation.Publish:
+                            if (queueInfo.Leader() == serverName!)
+                            {
+                                Trace.WriteLine(TraceLevel.Verbose,
+                                    $"The queue {connectionSettings.Affinity.Queue()} is found on the node {serverName}, " +
+                                    $"the current connection will be returned.");
+                                return connection;
+                            }
+
+                            break;
+                        case Operation.Consume:
+
+                            if (queueInfo.Leader() != serverName!)
+                            {
+                                Trace.WriteLine(TraceLevel.Verbose,
+                                    $"The queue {connectionSettings.Affinity.Queue()} is found on the node {serverName} as a follower, " +
+                                    $"the current connection will be returned.");
+
+                                return connection;
+                            }
+
+                            break;
+
+                        default:
+                            throw new ArgumentOutOfRangeException();
                     }
                 }
                 catch (ResourceNotFoundException)
                 {
+                    Trace.WriteLine(TraceLevel.Verbose,
+                        $"The queue {connectionSettings.Affinity.Queue()} is not found on the node {serverName}, " +
+                        $"the current connection will be returned. This might be because the queue is not created yet");
+
                     // resource not found, which means the queue does not exist. 
-                    // we can go ahead and return null. the caller can decide what to do.
-                    // affinity is a best effort feature, so if we cannot find the node with the queue,
-                    // we can just return null and let the caller handle it. it can use the default settings.
-                    return null;
+                    // we can go ahead and return the current connection.
+                    return connection;
                 }
 
                 await connection.CloseAsync().ConfigureAwait(false);

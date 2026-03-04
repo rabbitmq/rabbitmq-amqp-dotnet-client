@@ -13,7 +13,9 @@
 // RabbitMQ AMQP 1.0 info: https://www.rabbitmq.com/docs/amqp
 // RabbitMQ AMQP 1.0 .NET Example - Node Affinity
 // Full path example: https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/tree/main/docs/Examples/Affinity
-
+// to Run this example you need to have a RabbitMQ cluster
+// with 3 nodes running locally and the queues created in the example should be mirrored across the cluster.
+// run: make rabbitmq-cluster-start in this repository.
 using System.Diagnostics;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
@@ -38,16 +40,21 @@ IEnvironment environment = AmqpEnvironment.Create(defaultSettings);
 // so it can be created in any node of the cluster and then we can use it to test the affinity connection
 IConnection connection = await environment.CreateConnectionAsync().ConfigureAwait(false);
 IManagement management = connection.Management();
-const string queueName = "q_amqp10-affinity-test";
+const string baseQname = "q_amqp10-affinity-test";
+const string queue1Name = $"{baseQname}_1";
+
+// create three queues with the same name on each node of the cluster,
+// with quorum type to make sure they are mirrored across the cluster.
+// In this example we use only the queue with suffix _1,
+// but the other two queues are there to increase the chances of seeing the affinity in action,
+// by having multiple queues with the same name across the cluster.
 for (int i = 0; i < 3; i++)
 {
-    IQueueSpecification queueSpec = management.Queue($"{queueName}_{i}").Type(QueueType.QUORUM);
+    IQueueSpecification queueSpec = management.Queue($"{baseQname}_{i}").Type(QueueType.QUORUM);
     await queueSpec.DeclareAsync().ConfigureAwait(false);
 }
 
-const string containerId = "affinity-id-2";
-const string queue1Name = $"{queueName}_1";
-IConnection connectionAffinityQ1 = await environment
+IConnection publishConnectionAffinityQ1 = await environment
     .CreateConnectionAsync(ConnectionSettingsBuilder.From(defaultSettings)
         // Override the default URI selector with a custom one that implements a round-robin strategy
         // to select the next URI from the list for each new connection attempt.
@@ -55,20 +62,24 @@ IConnection connectionAffinityQ1 = await environment
         // Not strictly necessary, but it is a way to see another interesting feature of the client,
         // the ability to plug in custom URI selectors.
         .UriSelector(new SequentialSelector())
-        .ContainerId(containerId)
+        .ContainerId("publisher-affinity-id-1")
         .Affinity(new DefaultAffinity(queue1Name, Operation.Publish)).Build()).ConfigureAwait(false);
 
-Trace.WriteLine(TraceLevel.Information, $"Connected to the broker {connectionAffinityQ1} successfully");
+Trace.WriteLine(TraceLevel.Information, $"Connected to the broker {publishConnectionAffinityQ1} successfully");
 
 // ------------------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------------------
-IPublisher publisher = await connectionAffinityQ1.PublisherBuilder().Queue(queue1Name)
+IPublisher publisher = await publishConnectionAffinityQ1.PublisherBuilder().Queue(queue1Name)
     .BuildAsync().ConfigureAwait(false);
 
-IConsumer consumer = await connection.ConsumerBuilder().Queue(queue1Name).MessageHandler((context, message) =>
+// ------------------------------------------------------------------------------------
+IConnection consumeConnectionAffinityQ1 = await environment
+    .CreateConnectionAsync(ConnectionSettingsBuilder.From(defaultSettings)
+        .UriSelector(new SequentialSelector())
+        .ContainerId("consumer-affinity-id-1")
+        .Affinity(new DefaultAffinity(queue1Name, Operation.Consume)).Build()).ConfigureAwait(false);
+
+// in case of cluster the consumer connection should go in a replica node, not the leader node,
+IConsumer consumer = await consumeConnectionAffinityQ1.ConsumerBuilder().Queue(queue1Name).MessageHandler((context, message) =>
     {
         Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.BodyAsString()} received");
         context.Accept();
@@ -111,7 +122,7 @@ consumer.Dispose();
 
 for (int i = 0; i < 3; i++)
 {
-    IQueueSpecification queueSpec = management.Queue($"{queueName}_{i}").Type(QueueType.QUORUM);
+    IQueueSpecification queueSpec = management.Queue($"{baseQname}_{i}").Type(QueueType.QUORUM);
     await queueSpec.DeleteAsync().ConfigureAwait(false);
 }
 

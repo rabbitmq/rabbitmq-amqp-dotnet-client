@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using EasyNetQ.Management.Client.Model;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
@@ -41,12 +40,31 @@ namespace Tests.Affinity
             Assert.NotNull(_management);
             IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(QueueType.QUORUM);
             await queueSpec.DeclareAsync();
-            const Operation operation = Operation.Publish;
-            IConnection connectionAffinity = await AmqpConnection.CreateAsync(ConnectionSettingsBuilder.Create()
-                .Affinity(new DefaultAffinity(_queueName, operation)).Build());
-            Assert.NotNull(connectionAffinity);
+            IConnection connectionAffinityP = await AmqpConnection.CreateAsync(ConnectionSettingsBuilder.Create()
+                .Affinity(new DefaultAffinity(_queueName, Operation.Publish)).Build());
+            Assert.NotNull(connectionAffinityP);
+            IQueueInfo queueInfo = await connectionAffinityP.Management().GetQueueInfoAsync(_queueName);
+            string? leaderQueueNode = queueInfo.Leader();
+            Assert.NotNull(leaderQueueNode);
+
+            IConnection connectionAffinityC = await AmqpConnection.CreateAsync(ConnectionSettingsBuilder.Create()
+                .Affinity(new DefaultAffinity(_queueName, Operation.Consume)).Build());
+            Assert.NotNull(connectionAffinityC);
+            if (!IsCluster)
+            {
+                Assert.True(connectionAffinityP.Properties.TryGetValue("node", out object? nodeName) ||
+                            connectionAffinityP.Properties.TryGetValue("server", out nodeName));
+                Assert.Equal(leaderQueueNode, nodeName);
+
+                // in single node, both publish and consume connections should be connected to the same node, as there is only one node.
+                Assert.True(connectionAffinityC.Properties.TryGetValue("node", out object? nodeNameC) ||
+                            connectionAffinityC.Properties.TryGetValue("server", out nodeNameC));
+                Assert.Equal(leaderQueueNode, nodeNameC);
+            }
+
             await queueSpec.DeleteAsync();
-            await connectionAffinity.CloseAsync();
+            await connectionAffinityC.CloseAsync();
+            await connectionAffinityP.CloseAsync();
         }
 
         /// <summary>
@@ -98,8 +116,9 @@ namespace Tests.Affinity
             IQueueSpecification queueSpec = management.Queue(_queueName).Type(QueueType.QUORUM);
             await queueSpec.DeclareAsync().ConfigureAwait(false);
 
-            IConnection connectionAffinity = await environment.CreateConnectionAsync(ConnectionSettingsBuilder
-                // Create another Builder starting from the default settings, so it has the same list of URIs and other settings as the default one,
+            IConnection connectionAffinityP = await environment.CreateConnectionAsync(ConnectionSettingsBuilder
+                // Create another Builder starting from the default settings,
+                // so it has the same list of URIs and other settings as the default one,
                 // except for the affinity and URI selector that we are going to override.
                 .From(defaultSettings)
                 // Override the default URI selector with a custom one that implements a round-robin strategy
@@ -110,16 +129,29 @@ namespace Tests.Affinity
                 .UriSelector(new SequentialSelector())
                 // Define the affinity to the queue we just created, with the publish operation.
                 .Affinity(new DefaultAffinity(_queueName, Operation.Publish)).Build()).ConfigureAwait(false);
-            Assert.NotNull(connectionAffinity);
+            Assert.NotNull(connectionAffinityP);
 
-            IQueueInfo queueInfo = await connectionAffinity.Management().GetQueueInfoAsync(_queueName).ConfigureAwait(false);
-            string? serverName = queueInfo.Leader();
-            Assert.NotNull(serverName);
-            Assert.True(connectionAffinity.Properties.TryGetValue("node", out object? nodeName) || connectionAffinity.Properties.TryGetValue("server", out nodeName));
-            Assert.Equal(serverName, nodeName);
+            IQueueInfo queueInfo =
+                await connectionAffinityP.Management().GetQueueInfoAsync(_queueName).ConfigureAwait(false);
+            string? leaderQueueNode = queueInfo.Leader();
+            Assert.NotNull(leaderQueueNode);
+            Assert.True(connectionAffinityP.Properties.TryGetValue("node", out object? nodeName) ||
+                        connectionAffinityP.Properties.TryGetValue("server", out nodeName));
+            Assert.Equal(leaderQueueNode, nodeName);
+            IConnection connectionAffinityC = await environment.CreateConnectionAsync(ConnectionSettingsBuilder
+                .From(defaultSettings)
+                .UriSelector(new SequentialSelector())
+                // Define the affinity to the queue we just created, with the Consume operation.
+                // the result node should not be the leader node, as the consume operation should be handled by any node that has a replica of the queue,
+                // not necessarily the leader.
+                .Affinity(new DefaultAffinity(_queueName, Operation.Consume)).Build()).ConfigureAwait(false);
+            Assert.NotNull(connectionAffinityC);
+            Assert.True(connectionAffinityC.Properties.TryGetValue("node", out object? nodeNameC) ||
+                        connectionAffinityC.Properties.TryGetValue("server", out nodeNameC));
+            Assert.NotEqual(leaderQueueNode, nodeNameC);
+
             await queueSpec.DeleteAsync().ConfigureAwait(false);
             await environment.CloseAsync().ConfigureAwait(false);
-
         }
     }
 
