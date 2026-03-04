@@ -51,13 +51,15 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// ConnectionSettingsBuilder.From(defaultSettings) .WithAffinity(new DefaultAffinity("myQueue", Operation.Publish)).Build()
         /// </code>
         /// </summary>
-        /// In standard use cases, the default settings of the environment should be sufficient for creating a connection, so the parameterless <see cref="CreateConnectionAsync()"/> method is a
+        /// In standard use cases, the default settings of the environment should be sufficient for creating a connection, so the parameterless CreateConnectionAsync() method is a
         /// convenient way to create a connection without having to pass the settings explicitly.
         /// <param name="connectionSettings"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns><see cref="Task{IConnection}"/> instance.</returns>
-        public async Task<IConnection> CreateConnectionAsync(ConnectionSettings connectionSettings)
+        public async Task<IConnection> CreateConnectionAsync(ConnectionSettings connectionSettings,
+            CancellationToken cancellationToken = default)
         {
-            IConnection c = await AmqpConnection.CreateAsync(connectionSettings, _metricsReporter)
+            IConnection c = await AmqpConnection.CreateAsync(connectionSettings, _metricsReporter, cancellationToken)
                 .ConfigureAwait(false);
             c.Id = Interlocked.Increment(ref _sequentialId);
             _connections.TryAdd(c.Id, c);
@@ -83,12 +85,13 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// In most of the cases the default settings of the environment should be sufficient for creating a connection, so this method is a convenient
         ///  way to create a connection without having to pass the settings explicitly.
         /// </summary>
+        /// <param name="cancellationToken"></param>
         /// <returns><see cref="Task{IConnection}"/> instance.</returns>
-        public Task<IConnection> CreateConnectionAsync()
+        public Task<IConnection> CreateConnectionAsync(CancellationToken cancellationToken = default)
         {
             return ConnectionSettings is null
                 ? throw new ConnectionException("Connection settings are not set")
-                : CreateConnectionAsync(ConnectionSettings);
+                : CreateConnectionAsync(ConnectionSettings, cancellationToken);
         }
 
         /// <summary>
