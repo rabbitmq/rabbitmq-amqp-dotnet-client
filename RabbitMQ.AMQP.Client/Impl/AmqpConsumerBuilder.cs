@@ -102,8 +102,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
             AmqpConsumer consumer = new(_amqpConnection, _configuration, _metricsReporter);
 
-            // TODO pass cancellationToken
-            await consumer.OpenAsync()
+            await consumer.OpenAsync(cancellationToken)
                 .ConfigureAwait(false);
 
             return consumer;
