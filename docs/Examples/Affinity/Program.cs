@@ -43,11 +43,11 @@ IManagement management = connection.Management();
 const string baseQname = "q_amqp10-affinity-test";
 const string queue1Name = $"{baseQname}_1";
 
-// create three queues with the same name on each node of the cluster,
-// with quorum type to make sure they are mirrored across the cluster.
+// create three quorum queues with distinct suffixed names (baseQname_0, baseQname_1, baseQname_2),
+// each of which is replicated across the cluster because it is a quorum queue.
 // In this example we use only the queue with suffix _1,
 // but the other two queues are there to increase the chances of seeing the affinity in action,
-// by having multiple queues with the same name across the cluster.
+// by having multiple quorum queues distributed across the cluster.
 for (int i = 0; i < 3; i++)
 {
     IQueueSpecification queueSpec = management.Queue($"{baseQname}_{i}").Type(QueueType.QUORUM);
