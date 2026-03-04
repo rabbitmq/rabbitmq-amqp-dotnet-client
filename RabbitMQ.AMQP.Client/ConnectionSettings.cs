@@ -85,6 +85,7 @@ namespace RabbitMQ.AMQP.Client
                 _recoveryConfiguration = settings.Recovery,
                 _affinity = settings.Affinity,
                 _tlsSettings = settings.TlsSettings,
+                _oAuth2Options = settings.OAuth2Options,
             };
         }
 
