@@ -91,76 +91,88 @@ namespace RabbitMQ.AMQP.Client
                     $"attempt {i + 1}/{connectionSettings.Affinity.Tentatives()}");
                 // loop through the nodes and find the one that has the queue
                 AmqpConnection connection = new(connectionSettings, metricsReporter);
-                await connection.OpenAsync()
-                    .ConfigureAwait(false);
-
-                if (!TryExtractServerNameFromProperties(connection, out string? serverName))
-                {
-                    await connection.CloseAsync().ConfigureAwait(false);
-                    Trace.WriteLine(TraceLevel.Warning, $"can't extract server name from connection properties, " +
-                                                        $"the connection will be closed. properties: {string.Join(", ", connection.Properties)}");
-
-                    return null;
-                }
-
+                bool keepConnection = false;
                 try
                 {
-                    var queueInfo = await connection.Management().GetQueueInfoAsync(connectionSettings.Affinity.Queue())
+                    await connection.OpenAsync()
                         .ConfigureAwait(false);
 
-                    // there are no replicas for the queue,
-                    // which means the queue is only on one node,
-                    // we can return the current connection directly.
-                    if (queueInfo.Members().Count == 0)
+                    if (!TryExtractServerNameFromProperties(connection, out string? serverName))
+                    {
+                        Trace.WriteLine(TraceLevel.Warning, $"can't extract server name from connection properties, " +
+                                                            $"the connection will be closed. properties: {string.Join(", ", connection.Properties)}");
+
+                        return null;
+                    }
+
+                    try
+                    {
+                        var queueInfo = await connection.Management().GetQueueInfoAsync(connectionSettings.Affinity.Queue())
+                            .ConfigureAwait(false);
+
+                        // there are no replicas for the queue,
+                        // which means the queue is only on one node,
+                        // we can return the current connection directly.
+                        if (queueInfo.Members().Count == 0)
+                        {
+                            Trace.WriteLine(TraceLevel.Verbose,
+                                $"The queue {connectionSettings.Affinity.Queue()} is found on the node {serverName}, " +
+                                $"no members found, the current connection will be returned.");
+
+                            keepConnection = true;
+                            return connection;
+                        }
+
+                        switch (connectionSettings.Affinity.Operation())
+                        {
+                            case Operation.Publish:
+                                if (queueInfo.Leader() == serverName!)
+                                {
+                                    Trace.WriteLine(TraceLevel.Verbose,
+                                        $"The queue {connectionSettings.Affinity.Queue()} is found on the node {serverName}, " +
+                                        $"the current connection will be returned.");
+                                    keepConnection = true;
+                                    return connection;
+                                }
+
+                                break;
+                            case Operation.Consume:
+
+                                if (queueInfo.Leader() != serverName!)
+                                {
+                                    Trace.WriteLine(TraceLevel.Verbose,
+                                        $"The queue {connectionSettings.Affinity.Queue()} is found on the node {serverName} as a follower, " +
+                                        $"the current connection will be returned.");
+
+                                    keepConnection = true;
+                                    return connection;
+                                }
+
+                                break;
+
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
+                    }
+                    catch (ResourceNotFoundException)
                     {
                         Trace.WriteLine(TraceLevel.Verbose,
-                            $"The queue {connectionSettings.Affinity.Queue()} is found on the node {serverName}, " +
-                            $"no members found, the current connection will be returned.");
+                            $"The queue {connectionSettings.Affinity.Queue()} is not found on the node {serverName}, " +
+                            $"the current connection will be returned. This might be because the queue is not created yet");
 
+                        // resource not found, which means the queue does not exist. 
+                        // we can go ahead and return the current connection.
+                        keepConnection = true;
                         return connection;
                     }
-
-                    switch (connectionSettings.Affinity.Operation())
+                }
+                finally
+                {
+                    if (!keepConnection)
                     {
-                        case Operation.Publish:
-                            if (queueInfo.Leader() == serverName!)
-                            {
-                                Trace.WriteLine(TraceLevel.Verbose,
-                                    $"The queue {connectionSettings.Affinity.Queue()} is found on the node {serverName}, " +
-                                    $"the current connection will be returned.");
-                                return connection;
-                            }
-
-                            break;
-                        case Operation.Consume:
-
-                            if (queueInfo.Leader() != serverName!)
-                            {
-                                Trace.WriteLine(TraceLevel.Verbose,
-                                    $"The queue {connectionSettings.Affinity.Queue()} is found on the node {serverName} as a follower, " +
-                                    $"the current connection will be returned.");
-
-                                return connection;
-                            }
-
-                            break;
-
-                        default:
-                            throw new ArgumentOutOfRangeException();
+                        await connection.CloseAsync().ConfigureAwait(false);
                     }
                 }
-                catch (ResourceNotFoundException)
-                {
-                    Trace.WriteLine(TraceLevel.Verbose,
-                        $"The queue {connectionSettings.Affinity.Queue()} is not found on the node {serverName}, " +
-                        $"the current connection will be returned. This might be because the queue is not created yet");
-
-                    // resource not found, which means the queue does not exist. 
-                    // we can go ahead and return the current connection.
-                    return connection;
-                }
-
-                await connection.CloseAsync().ConfigureAwait(false);
                 await Task.Delay(300).ConfigureAwait(false);
             }
 
