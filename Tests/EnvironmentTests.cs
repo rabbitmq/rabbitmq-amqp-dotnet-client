@@ -3,6 +3,7 @@
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
@@ -104,6 +105,58 @@ public class EnvironmentTests(ITestOutputHelper testOutputHelper)
         await WaitUntilConnectionIsClosed(envConnectionName3);
 
         Assert.Empty(amqpEnv.Connections);
+        await env.CloseAsync();
+    }
+
+    [Fact]
+    public async Task CreateConnectionWithCancellationToken()
+    {
+        IEnvironment env = AmqpEnvironment.Create(ConnectionSettingsBuilder.Create().Build());
+        var amqpEnv = (AmqpEnvironment)env;
+
+        using var cts = new CancellationTokenSource();
+        IConnection connection = await env.CreateConnectionAsync(cts.Token);
+
+        Assert.NotNull(connection);
+        Assert.NotEmpty(amqpEnv.Connections);
+        await env.CloseAsync();
+        Assert.Equal(State.Closed, connection.State);
+        Assert.Empty(amqpEnv.Connections);
+    }
+
+    [Fact]
+    public async Task CreateConnectionWithConnectionSettingsAndCancellationToken()
+    {
+        string envConnectionName = "EnvironmentConnection_" + Guid.NewGuid();
+
+        IEnvironment env = AmqpEnvironment.Create(
+            ConnectionSettingsBuilder.Create().ContainerId(envConnectionName).Build());
+        var amqpEnv = (AmqpEnvironment)env;
+
+        using var cts = new CancellationTokenSource();
+        IConnection connection = await env.CreateConnectionAsync(
+            ConnectionSettingsBuilder.Create().ContainerId(envConnectionName).Build(),
+            cts.Token);
+
+        Assert.NotNull(connection);
+        await WaitUntilConnectionIsOpen(envConnectionName);
+        Assert.NotEmpty(amqpEnv.Connections);
+        await env.CloseAsync();
+        Assert.Equal(State.Closed, connection.State);
+        Assert.Empty(amqpEnv.Connections);
+    }
+
+    [Fact]
+    public async Task CreateConnectionWithAlreadyCancelledTokenShouldThrow()
+    {
+        IEnvironment env = AmqpEnvironment.Create(ConnectionSettingsBuilder.Create().Build());
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            async () => await env.CreateConnectionAsync(cts.Token));
+
         await env.CloseAsync();
     }
 }

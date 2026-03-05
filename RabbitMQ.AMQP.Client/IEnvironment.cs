@@ -2,6 +2,7 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RabbitMQ.AMQP.Client
@@ -11,8 +12,8 @@ namespace RabbitMQ.AMQP.Client
     ///   The <see cref="IEnvironment"/> is the main entry point to a node or a cluster of nodes.
     /// </para>
     /// <para>
-    ///   The <see cref="CreateConnectionAsync(ConnectionSettings)"/> and parameterless
-    ///   <see cref="CreateConnectionAsync()"/> methods allow creating <see cref="IConnection"/> instances.
+    ///   The CreateConnectionAsync(ConnectionSettings) and parameterless
+    ///   CreateConnectionAsync() methods allow creating <see cref="IConnection"/> instances.
     ///   Connection affinity can be configured via <see cref="ConnectionSettings.Affinity"/>, typically using
     ///   a <c>ConnectionSettingsBuilder.Affinity(...)</c> call when constructing the settings.
     ///   An application is expected to maintain a single <see cref="IEnvironment"/> instance and to close that instance
@@ -28,15 +29,18 @@ namespace RabbitMQ.AMQP.Client
         /// Create a new <see cref="IConnection"/> with the given connection settings.
         /// </summary>
         /// <param name="connectionSettings"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns><see cref="Task{IConnection}"/> instance.</returns>
 
-        public Task<IConnection> CreateConnectionAsync(ConnectionSettings connectionSettings);
+        public Task<IConnection> CreateConnectionAsync(ConnectionSettings connectionSettings,
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create a new <see cref="IConnection"/> with the default connection settings.
         /// </summary>
+        /// <param name="cancellationToken"></param>
         /// <returns><see cref="Task{IConnection}"/> instance.</returns>
-        public Task<IConnection> CreateConnectionAsync();
+        public Task<IConnection> CreateConnectionAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Close this environment and its resources.

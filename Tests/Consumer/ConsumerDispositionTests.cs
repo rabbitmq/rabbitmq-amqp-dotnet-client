@@ -22,6 +22,7 @@ namespace Tests.Consumer
 
             IQueueSpecification queueSpec = _management.Queue().Name(_queueName);
             await queueSpec.DeclareAsync();
+            await WaitForQueueReplicas(_queueName);
             const int batchSize = 18;
             await PublishAsync(queueSpec, batchSize);
             BatchDeliveryContext batch = new();

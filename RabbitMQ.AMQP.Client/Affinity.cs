@@ -3,7 +3,7 @@
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
-using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Amqp;
 using RabbitMQ.AMQP.Client.Impl;
@@ -93,7 +93,7 @@ namespace RabbitMQ.AMQP.Client
         }
 
         public static async Task<IConnection?> TryToFindUriNode(ConnectionSettings connectionSettings,
-            IMetricsReporter? metricsReporter)
+            IMetricsReporter? metricsReporter, CancellationToken cancellationToken = default)
         {
             if (connectionSettings.Affinity == null)
             {
@@ -112,7 +112,7 @@ namespace RabbitMQ.AMQP.Client
                 bool keepConnection = false;
                 try
                 {
-                    await connection.OpenAsync()
+                    await connection.OpenAsync(cancellationToken)
                         .ConfigureAwait(false);
 
                     if (!TryExtractServerNameFromProperties(connection, out string? serverName))
@@ -125,7 +125,7 @@ namespace RabbitMQ.AMQP.Client
 
                     try
                     {
-                        var queueInfo = await connection.Management().GetQueueInfoAsync(connectionSettings.Affinity.Queue())
+                        var queueInfo = await connection.Management().GetQueueInfoAsync(connectionSettings.Affinity.Queue(), cancellationToken)
                             .ConfigureAwait(false);
 
                         // there are no replicas for the queue,
@@ -191,7 +191,7 @@ namespace RabbitMQ.AMQP.Client
                         await connection.CloseAsync().ConfigureAwait(false);
                     }
                 }
-                await Task.Delay(300).ConfigureAwait(false);
+                await Task.Delay(300, cancellationToken).ConfigureAwait(false);
             }
 
             return null;

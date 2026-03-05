@@ -16,7 +16,6 @@ using Amqp.Types;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
-
     /// <summary>
     /// <see cref="AmqpConnection"/> is the concrete implementation of <see cref="IConnection"/>.
     /// It is a wrapper around the Microsoft AMQP.Net Lite <see cref="Amqp.Connection"/> class.
@@ -82,26 +81,28 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// </summary>
         /// <param name="connectionSettings"></param>
         /// <param name="metricsReporter"></param>
+        /// <param name="cancellationToken"></param>
         /// <returns></returns>
         // TODO to play nicely with IoC containers, we should not have static Create methods
         // TODO rename to CreateAndOpenAsync
         public static async Task<IConnection> CreateAsync(ConnectionSettings connectionSettings,
-            IMetricsReporter? metricsReporter = default)
+            IMetricsReporter? metricsReporter = default,
+            CancellationToken cancellationToken = default)
         {
             if (connectionSettings.Affinity is not null)
             {
-                IConnection? affinityConnection = await AffinityUtils.TryToFindUriNode(connectionSettings, metricsReporter)
-                     .ConfigureAwait(false);
+                IConnection? affinityConnection = await AffinityUtils
+                    .TryToFindUriNode(connectionSettings, metricsReporter, cancellationToken)
+                    .ConfigureAwait(false);
 
                 if (affinityConnection is not null)
                 {
                     return affinityConnection;
                 }
-
             }
 
             AmqpConnection connection = new(connectionSettings, metricsReporter);
-            await connection.OpenAsync()
+            await connection.OpenAsync(cancellationToken)
                 .ConfigureAwait(false);
 
             return connection;
@@ -195,11 +196,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             _connectionSettings.UpdateOAuthPassword(token);
         }
 
-        // TODO cancellation token
-        public override async Task OpenAsync()
+        public async Task OpenAsync(CancellationToken cancellationToken)
         {
-            // TODO cancellation token
-            await OpenConnectionAsync(CancellationToken.None)
+            await OpenConnectionAsync(cancellationToken)
                 .ConfigureAwait(false);
             await base.OpenAsync()
                 .ConfigureAwait(false);
@@ -376,7 +375,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 ConnectionFactory cf;
 
-                if (_connectionSettings.Scheme.Equals("ws", StringComparison.OrdinalIgnoreCase) || _connectionSettings.Scheme.Equals("wss", StringComparison.OrdinalIgnoreCase))
+                if (_connectionSettings.Scheme.Equals("ws", StringComparison.OrdinalIgnoreCase) ||
+                    _connectionSettings.Scheme.Equals("wss", StringComparison.OrdinalIgnoreCase))
                 {
                     cf = new ConnectionFactory(new TransportProvider[] { new WebSocketTransportFactory() });
                 }

@@ -75,6 +75,7 @@ public abstract partial class IntegrationTest : IAsyncLifetime
             {
                 _featureFlags = amqpConnection._featureFlags;
             }
+
             _management = _connection.Management();
         }
     }
@@ -104,6 +105,7 @@ public abstract partial class IntegrationTest : IAsyncLifetime
             }
             catch
             {
+                // ignored
             }
 
             await _management.CloseAsync();
@@ -277,6 +279,7 @@ public abstract partial class IntegrationTest : IAsyncLifetime
 
         var messages = new List<IMessage>();
         SemaphoreSlim messagesSemaphore = new(1, 1);
+
         async Task MessageHandler(IContext cxt, IMessage msg)
         {
             await messagesSemaphore.WaitAsync();
@@ -288,6 +291,7 @@ public abstract partial class IntegrationTest : IAsyncLifetime
                 {
                     allMessagesConsumedTcs.SetResult(true);
                 }
+
                 cxt.Accept();
             }
             catch (Exception ex)
@@ -300,7 +304,8 @@ public abstract partial class IntegrationTest : IAsyncLifetime
             }
         }
 
-        IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder().Queue(_queueName).MessageHandler(MessageHandler);
+        IConsumerBuilder consumerBuilder =
+            _connection.ConsumerBuilder().Queue(_queueName).MessageHandler(MessageHandler);
         streamFilterOptionsLogic(consumerBuilder.Stream().Offset(StreamOffsetSpecification.First).Filter());
 
         using (IConsumer consumer = await consumerBuilder.BuildAndStartAsync())
@@ -337,7 +342,29 @@ public abstract partial class IntegrationTest : IAsyncLifetime
             idx = RandomNext(0, strLen);
             sb.Append(str[idx]);
         }
+
         return sb.ToString();
+    }
+
+    protected async Task WaitForQueueReplicas(string queueName, int expectedReplicas = 2)
+    {
+        try
+        {
+            Assert.NotNull(_connection);
+            Assert.NotNull(_management);
+            if (!IsCluster)
+            {
+                return;
+            }
+
+            IQueueInfo queueInfo = await _management.GetQueueInfoAsync(queueName);
+            Assert.NotNull(queueInfo);
+            await WaitUntilStable(() => queueInfo.Members().Count, expectedReplicas);
+        }
+        catch (Exception)
+        {
+            //ignore
+        }
     }
 
     private string InitTestDisplayName()

@@ -11,3 +11,4 @@ This directory contains examples of how to use the RabbitMQ AMQP 1.0 .NET client
 - Batch Disposition [here](./BatchDispositions)
 - Stream Filter [here](./StreamFilter)
 - AMQP 1.0 over WebSockets [here](./WebSockets) 
+- Affinity node [here](./Affinity/)
