@@ -33,7 +33,7 @@ namespace Tests.Consumer
 
             IQueueSpecification q = _management.Queue(_queueName).Stream().Queue();
             await q.DeclareAsync();
-            await WaitQueueForReplicas(_queueName);
+            await WaitForQueueReplicas(_queueName);
             TaskCompletionSource<IMessage> tcs =
                 new(TaskCreationOptions.RunContinuationsAsynchronously);
             IConsumer consumer = await _connection.ConsumerBuilder()
@@ -87,7 +87,7 @@ namespace Tests.Consumer
                 "SQL filter is not supported by the connection.");
             IQueueSpecification q = _management.Queue(_queueName).Stream().Queue();
             await q.DeclareAsync();
-            await WaitQueueForReplicas(_queueName);
+            await WaitForQueueReplicas(_queueName);
             TaskCompletionSource<IMessage> tcs =
                 new(TaskCreationOptions.RunContinuationsAsynchronously);
             IConsumer consumer = await _connection.ConsumerBuilder()

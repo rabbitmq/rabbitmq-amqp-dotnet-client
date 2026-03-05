@@ -346,7 +346,7 @@ public abstract partial class IntegrationTest : IAsyncLifetime
         return sb.ToString();
     }
 
-    protected async Task WaitQueueForReplicas(string queueName, int expectedReplicas = 2)
+    protected async Task WaitForQueueReplicas(string queueName, int expectedReplicas = 2)
     {
         try
         {

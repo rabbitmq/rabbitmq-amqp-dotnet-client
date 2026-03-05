@@ -33,7 +33,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
 
         IQueueSpecification q = _management.Queue(_queueName).Stream().Queue();
         await q.DeclareAsync();
-        await WaitQueueForReplicas(_queueName);
+        await WaitForQueueReplicas(_queueName);
 
         await PublishAsync(q, messageCount);
 
