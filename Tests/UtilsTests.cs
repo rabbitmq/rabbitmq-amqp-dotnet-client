@@ -80,4 +80,5 @@ public class UtilsTests
         Assert.True(Utils.Is4_1_OrMore(brokerVersion));
         Assert.True(Utils.SupportsFilterExpressions(brokerVersion));
     }
+
 }
