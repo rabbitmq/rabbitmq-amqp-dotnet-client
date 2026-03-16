@@ -14,6 +14,9 @@ using TraceLevel = Amqp.TraceLevel;
 
 namespace RabbitMQ.AMQP.Client.Impl
 {
+    /// <summary>
+    /// Default timeouts and delays used by the consumer implementation.
+    /// </summary>
     static class ConsumerDefaults
     {
         public const int AttachTimeoutSeconds = 5;
@@ -24,7 +27,20 @@ namespace RabbitMQ.AMQP.Client.Impl
 
     /// <summary>
     /// Implementation of <see cref="IConsumer"/>.
+    /// Receives messages from a queue and dispatches them to the configured
+    /// <see cref="ConsumerConfiguration.Handler"/> (see <see cref="IConsumerBuilder.MessageHandler"/>).
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Handler safety:</b> The code passed as <c>configuration.Handler</c> (via
+    /// <see cref="IConsumerBuilder.MessageHandler"/>) runs on the consumer's message-processing loop.
+    /// To keep the consumer safe and predictable:
+    /// </para>
+    /// <list type="bullet">
+    ///   <item><description>Handle all exceptions inside the handler; unhandled exceptions can break the processing loop and stop message delivery.</description></item>
+    ///   <item><description>Always settle each message via <see cref="IContext"/> (Accept, Discard, or Requeue) when using explicit settlement; failing to do so leaves messages unsettled and can exhaust credits.</description></item>
+    /// </list>
+    /// </remarks>
     public class AmqpConsumer : AbstractReconnectLifeCycle, IConsumer
     {
         private enum PauseStatus
@@ -45,6 +61,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         private readonly ConsumerConfiguration _configuration;
         private readonly IMetricsReporter? _metricsReporter;
 
+        /// <summary>
+        /// Creates a consumer for the given connection with the specified configuration.
+        /// </summary>
+        /// <param name="amqpConnection">The connection to use.</param>
+        /// <param name="configuration">Consumer configuration; <see cref="ConsumerConfiguration.Handler"/> must be set and its code must be safe (see class remarks).</param>
+        /// <param name="metricsReporter">Optional metrics reporter.</param>
         internal AmqpConsumer(AmqpConnection amqpConnection, ConsumerConfiguration configuration,
             IMetricsReporter? metricsReporter)
         {
@@ -54,6 +76,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             _amqpConnection.AddConsumer(_id, this);
         }
 
+        /// <summary>
+        /// Opens the consumer: attaches the receiver link, applies filters/listener context, and starts the message-processing loop.
+        /// </summary>
         public override async Task OpenAsync()
         {
             try
@@ -133,6 +158,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        /// <summary>
+        /// Ensures the receiver link was created and attached successfully; throws otherwise.
+        /// </summary>
         private void ValidateReceiverLink()
         {
             if (_receiverLink is null)
@@ -147,6 +175,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        /// <summary>
+        /// Runs the message loop: receives messages and invokes <see cref="ConsumerConfiguration.Handler"/> for each delivery.
+        /// Handler code must be safe (handle exceptions, settle messages, avoid blocking); see class remarks.
+        /// </summary>
         private async Task ProcessMessages()
         {
             try
@@ -190,8 +222,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                     var amqpMessage = new AmqpMessage(nativeMessage);
 
-                    // TODO catch exceptions thrown by handlers,
-                    // then call exception handler?
+                    // Invoke the user handler. Handler code must be safe: catch exceptions,
+                    // settle the message (Accept/Discard/Requeue), and avoid blocking so the loop can continue.
                     if (_configuration.Handler is not null)
                     {
                         await _configuration.Handler(context, amqpMessage)
@@ -259,6 +291,9 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// </summary>
         public long UnsettledMessageCount => _unsettledMessageCounter.Get();
 
+        /// <summary>
+        /// Gets the queue name this consumer is attached to (from the link source address).
+        /// </summary>
         public string Queue
         {
             get
@@ -294,7 +329,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-        // TODO cancellation token
+        /// <summary>
+        /// Closes the consumer and detaches the receiver link.
+        /// </summary>
         public override async Task CloseAsync()
         {
             if (_receiverLink is null)

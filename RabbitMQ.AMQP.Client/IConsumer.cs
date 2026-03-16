@@ -7,11 +7,15 @@ using System.Threading.Tasks;
 
 namespace RabbitMQ.AMQP.Client
 {
-    // TODO cancellation token
     /// <summary>
     /// Delegate to process an incoming message.
     /// </summary>
-    /// <param name="context">The message context.</param>
+    /// <remarks>
+    /// The handler runs on the consumer's message-processing loop. Implementations should be safe:
+    /// handle exceptions, settle each message via <paramref name="context"/> (Accept, Discard, or Requeue),
+    /// and avoid long-running or blocking work so the consumer can continue receiving.
+    /// </remarks>
+    /// <param name="context">The message context; use it to settle the message (Accept, Discard, Requeue).</param>
     /// <param name="message">The message itself.</param>
     /// <returns><see cref="Task"/> that represents the async operation.</returns>
     public delegate Task MessageHandler(IContext context, IMessage message);

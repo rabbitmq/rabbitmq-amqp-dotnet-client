@@ -79,10 +79,10 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// </list>
         /// </para>
         /// </summary>
-        /// <param name="connectionSettings"></param>
-        /// <param name="metricsReporter"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
+        /// <param name="connectionSettings">The connection configuration (address, credentials, recovery, etc.).</param>
+        /// <param name="metricsReporter">Optional metrics reporter for connection and entity metrics.</param>
+        /// <param name="cancellationToken">Token to cancel the connection attempt.</param>
+        /// <returns>A task that completes with an open <see cref="IConnection"/> instance.</returns>
         // TODO to play nicely with IoC containers, we should not have static Create methods
         // TODO rename to CreateAndOpenAsync
         public static async Task<IConnection> CreateAsync(ConnectionSettings connectionSettings,
@@ -183,7 +183,8 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// <summary>
         /// Refresh the OAuth token and update the connection settings.
         /// </summary>
-        /// <param name="token">OAuth token</param>
+        /// <param name="token">The new OAuth token to use for authentication.</param>
+        /// <returns>A task that completes when the token has been updated on the broker and in local settings.</returns>
         public async Task RefreshTokenAsync(string token)
         {
             // here we use the primitive RequestAsync method because we don't want to
@@ -196,6 +197,11 @@ namespace RabbitMQ.AMQP.Client.Impl
             _connectionSettings.UpdateOAuthPassword(token);
         }
 
+        /// <summary>
+        /// Opens the connection to the broker, establishing the underlying AMQP connection and management link.
+        /// </summary>
+        /// <param name="cancellationToken">Token to cancel the open operation.</param>
+        /// <returns>A task that completes when the connection is open and ready for use.</returns>
         public async Task OpenAsync(CancellationToken cancellationToken)
         {
             await OpenConnectionAsync(cancellationToken)
@@ -205,6 +211,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             _featureFlags.Validate();
         }
 
+        /// <summary>
+        /// Closes the connection, all associated publishers and consumers, and releases underlying resources.
+        /// </summary>
+        /// <returns>A task that completes when the connection and all entities are fully closed.</returns>
         public override async Task CloseAsync()
         {
             await _semaphoreClose.WaitAsync()
@@ -247,12 +257,20 @@ namespace RabbitMQ.AMQP.Client.Impl
             OnNewStatus(State.Closed, null);
         }
 
+        /// <summary>
+        /// Returns a string representation of this connection, including settings and current state.
+        /// </summary>
+        /// <returns>A string describing the connection.</returns>
         public override string ToString()
         {
             string info = $"AmqpConnection{{ConnectionSettings='{_connectionSettings}', Status='{State.ToString()}'}}";
             return info;
         }
 
+        /// <summary>
+        /// Releases managed resources associated with the connection, including semaphores and native connection event handlers.
+        /// </summary>
+        /// <param name="disposing">True if called from <see cref="IDisposable.Dispose"/>; false when invoked from the finalizer.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -270,8 +288,16 @@ namespace RabbitMQ.AMQP.Client.Impl
             base.Dispose(disposing);
         }
 
+        /// <summary>
+        /// The underlying Microsoft AMQP.Net Lite connection, or null if not connected.
+        /// </summary>
         internal Connection? NativeConnection => _nativeConnection;
 
+        /// <summary>
+        /// Registers a publisher with this connection. Used by <see cref="AmqpPublisher"/> when created.
+        /// </summary>
+        /// <param name="id">Unique identifier of the publisher.</param>
+        /// <param name="consumer">The publisher instance to register (parameter name is historical).</param>
         // TODO this couples AmqpConnection with AmqpPublisher, yuck
         internal void AddPublisher(Guid id, IPublisher consumer)
         {
@@ -283,6 +309,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        /// <summary>
+        /// Unregisters a publisher from this connection. Called when a publisher is closed.
+        /// </summary>
+        /// <param name="id">Unique identifier of the publisher to remove.</param>
         internal void RemovePublisher(Guid id)
         {
             if (false == _publishersDict.TryRemove(id, out _))
@@ -293,6 +323,11 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        /// <summary>
+        /// Registers a consumer with this connection. Used by <see cref="AmqpConsumer"/> when created.
+        /// </summary>
+        /// <param name="id">Unique identifier of the consumer.</param>
+        /// <param name="consumer">The consumer instance to register.</param>
         // TODO this couples AmqpConnection with AmqpConsumer, yuck
         internal void AddConsumer(Guid id, IConsumer consumer)
         {
@@ -304,6 +339,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        /// <summary>
+        /// Unregisters a consumer from this connection. Called when a consumer is closed.
+        /// </summary>
+        /// <param name="id">Unique identifier of the consumer to remove.</param>
         internal void RemoveConsumer(Guid id)
         {
             if (false == _consumersDict.TryRemove(id, out _))
@@ -327,6 +366,9 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        /// <summary>
+        /// Closes all consumers associated with this connection. Called when the connection is closed.
+        /// </summary>
         // TODO cancellation token, parallel?
         private async Task CloseAllConsumersAsync()
         {
@@ -337,6 +379,11 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        /// <summary>
+        /// Initializes a new connection with the given settings and optional metrics reporter. Does not open the connection.
+        /// </summary>
+        /// <param name="connectionSettings">The connection configuration.</param>
+        /// <param name="metricsReporter">Optional metrics reporter.</param>
         internal AmqpConnection(ConnectionSettings connectionSettings, IMetricsReporter? metricsReporter)
         {
             _connectionSettings = connectionSettings;
@@ -346,6 +393,11 @@ namespace RabbitMQ.AMQP.Client.Impl
                 new AmqpManagement(new AmqpManagementParameters(this).TopologyListener(_recordingTopologyListener));
         }
 
+        /// <summary>
+        /// Establishes the underlying AMQP connection to the broker, including TLS/SASL and management link setup.
+        /// </summary>
+        /// <param name="cancellationToken">Token to cancel the operation.</param>
+        /// <returns>A task that completes when the native connection and management link are open.</returns>
         private async Task OpenConnectionAsync(CancellationToken cancellationToken)
         {
             await _semaphoreOpen.WaitAsync(cancellationToken)
@@ -469,7 +521,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// MaybeRecoverConnection should set a connection state to RECOVERING
         /// and then kick off a task dedicated to recovery
         /// </summary>
-        /// <returns></returns>
+        /// <returns>An async callback to be invoked when the native connection is closed.</returns>
         private ClosedCallback BuildClosedCallback()
         {
             return async (sender, error) =>
@@ -617,6 +669,11 @@ namespace RabbitMQ.AMQP.Client.Impl
             };
         }
 
+        /// <summary>
+        /// Updates the lifecycle state of all entities (publishers, consumers, management) on this connection.
+        /// </summary>
+        /// <param name="state">The new state to apply.</param>
+        /// <param name="error">Optional error associated with the state change.</param>
         private void ChangeEntitiesStatus(State state, Error? error)
         {
             ChangePublishersStatus(state, error);
@@ -624,6 +681,11 @@ namespace RabbitMQ.AMQP.Client.Impl
             _management.ChangeStatus(state, error);
         }
 
+        /// <summary>
+        /// Updates the lifecycle state of all publishers on this connection.
+        /// </summary>
+        /// <param name="state">The new state to apply.</param>
+        /// <param name="error">Optional error associated with the state change.</param>
         private void ChangePublishersStatus(State state, Error? error)
         {
             foreach (IPublisher publisher1 in Publishers)
@@ -633,6 +695,11 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        /// <summary>
+        /// Updates the lifecycle state of all consumers on this connection.
+        /// </summary>
+        /// <param name="state">The new state to apply.</param>
+        /// <param name="error">Optional error associated with the state change.</param>
         private void ChangeConsumersStatus(State state, Error? error)
         {
             foreach (IConsumer consumer1 in Consumers)
@@ -642,6 +709,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        /// <summary>
+        /// Reconnects all publishers and consumers after the connection has been recovered.
+        /// </summary>
+        /// <returns>A task that completes when all entities have been reconnected.</returns>
         private async Task ReconnectEntitiesAsync()
         {
             await ReconnectPublishersAsync()
@@ -650,6 +721,10 @@ namespace RabbitMQ.AMQP.Client.Impl
                 .ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Reconnects all publishers after connection recovery.
+        /// </summary>
+        /// <returns>A task that completes when all publishers have been reconnected.</returns>
         private async Task ReconnectPublishersAsync()
         {
             // TODO this could be done in parallel
@@ -661,6 +736,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        /// <summary>
+        /// Reconnects all consumers after connection recovery.
+        /// </summary>
+        /// <returns>A task that completes when all consumers have been reconnected.</returns>
         private async Task ReconnectConsumersAsync()
         {
             // TODO this could be done in parallel
@@ -672,6 +751,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        /// <summary>
+        /// Processes the broker's connection open properties, populating connection properties and feature flags from the broker version.
+        /// </summary>
+        /// <param name="properties">The fields received in the broker's Open performative.</param>
         private void HandleProperties(Fields properties)
         {
             foreach (KeyValuePair<object, object> kvp in properties)

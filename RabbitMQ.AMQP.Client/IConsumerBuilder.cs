@@ -44,6 +44,13 @@ namespace RabbitMQ.AMQP.Client
         IConsumerBuilder Queue(IQueueSpecification queueSpecification);
         IConsumerBuilder Queue(string? queueName);
 
+        /// <summary>
+        /// Sets the delegate that processes each received message. The handler runs on the consumer's processing loop;
+        /// its code must be safe: handle exceptions, settle each message via <see cref="IContext"/> (Accept/Discard/Requeue),
+        /// and avoid long-running or blocking work so the loop can continue receiving.
+        /// </summary>
+        /// <param name="handler">The message handler delegate.</param>
+        /// <returns>The builder for fluent configuration.</returns>
         IConsumerBuilder MessageHandler(MessageHandler handler);
 
         IConsumerBuilder InitialCredits(int initialCredits);
