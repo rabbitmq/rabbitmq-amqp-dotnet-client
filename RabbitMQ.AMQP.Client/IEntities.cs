@@ -73,7 +73,6 @@ namespace RabbitMQ.AMQP.Client
 
         IQueueSpecification LeaderLocator(LeaderLocatorStrategy strategy);
 
-        // TODO: Add more tests for SingleActiveConsumer
         IQueueSpecification SingleActiveConsumer(bool singleActiveConsumer);
 
         IQueueSpecification Expires(TimeSpan expiration);
