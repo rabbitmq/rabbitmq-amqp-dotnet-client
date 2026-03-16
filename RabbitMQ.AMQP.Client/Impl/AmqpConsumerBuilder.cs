@@ -21,7 +21,10 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public Map Filters { get; set; } = new();
 
-        // TODO is a MessageHandler *really* optional???
+        /// <summary>
+        /// The message handler invoked for each received message. Must be set before building the consumer.
+        /// Handler code must be safe: handle exceptions, settle each message via <see cref="IContext"/>, and avoid blocking.
+        /// </summary>
         public MessageHandler? Handler { get; set; }
 
         public ConsumerSettleStrategy SettleStrategy { get; set; } = ConsumerSettleStrategy.ExplicitSettle;
@@ -57,6 +60,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
+        /// <summary>
+        /// Sets the message handler. The handler runs on the consumer's processing loop; its code must be safe
+        /// (handle exceptions, settle messages when explicit required). See <see cref="AmqpConsumer"/> remarks.
+        /// </summary>
         public IConsumerBuilder MessageHandler(MessageHandler handler)
         {
             _configuration.Handler = handler;
