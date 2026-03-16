@@ -2,6 +2,7 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
 using Xunit;
@@ -89,6 +90,58 @@ namespace Tests
 
             await consumer.CloseAsync();
             consumer.Dispose();
+        }
+
+        [Fact]
+        public async Task TwoConsumersWithSingleActiveConsumer_OnlyFirstConsumerReceivesMessages()
+        {
+            Assert.NotNull(_connection);
+            Assert.NotNull(_management);
+
+            IQueueSpecification queueSpec = _management.Queue().Name(_queueName).SingleActiveConsumer(true);
+            await queueSpec.DeclareAsync();
+
+            const int messageCount = 3;
+            int activeConsumerReceived = 0;
+            int inactiveConsumerReceived = 0;
+            var activeConsumerDone = CreateTaskCompletionSource<bool>();
+
+            // First consumer: becomes the active one and should receive all messages
+            IConsumer activeConsumer = await _connection.ConsumerBuilder()
+                .Queue(queueSpec)
+                .MessageHandler((context, message) =>
+                {
+                    context.Accept();
+                    int received = Interlocked.Increment(ref activeConsumerReceived);
+                    if (received == messageCount)
+                    {
+                        activeConsumerDone.SetResult(true);
+                    }
+                    return Task.CompletedTask;
+                })
+                .BuildAndStartAsync();
+
+            // Second consumer: must remain inactive; with SAC only one consumer is active at a time
+            IConsumer inactiveConsumer = await _connection.ConsumerBuilder()
+                .Queue(queueSpec)
+                .MessageHandler((context, message) =>
+                {
+                    context.Accept();
+                    Interlocked.Increment(ref inactiveConsumerReceived);
+                    return Task.CompletedTask;
+                })
+                .BuildAndStartAsync();
+
+            await PublishAsync(queueSpec, (ulong)messageCount);
+
+            await WhenTcsCompletes(activeConsumerDone);
+            Assert.Equal(messageCount, activeConsumerReceived);
+            Assert.Equal(0, inactiveConsumerReceived);
+
+            await activeConsumer.CloseAsync();
+            activeConsumer.Dispose();
+            await inactiveConsumer.CloseAsync();
+            inactiveConsumer.Dispose();
         }
     }
 }
