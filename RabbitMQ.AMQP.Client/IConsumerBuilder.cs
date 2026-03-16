@@ -46,8 +46,7 @@ namespace RabbitMQ.AMQP.Client
 
         /// <summary>
         /// Sets the delegate that processes each received message. The handler runs on the consumer's processing loop;
-        /// its code must be safe: handle exceptions, settle each message via <see cref="IContext"/> (Accept/Discard/Requeue),
-        /// and avoid long-running or blocking work so the loop can continue receiving.
+        /// its code must be safe: handle exceptions, settle each message via <see cref="IContext"/> (Accept/Discard/Requeue).
         /// </summary>
         /// <param name="handler">The message handler delegate.</param>
         /// <returns>The builder for fluent configuration.</returns>

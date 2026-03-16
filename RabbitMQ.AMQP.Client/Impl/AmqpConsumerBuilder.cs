@@ -62,7 +62,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         /// <summary>
         /// Sets the message handler. The handler runs on the consumer's processing loop; its code must be safe
-        /// (handle exceptions, settle messages, avoid long-running or blocking work). See <see cref="AmqpConsumer"/> remarks.
+        /// (handle exceptions, settle messages when explicit required). See <see cref="AmqpConsumer"/> remarks.
         /// </summary>
         public IConsumerBuilder MessageHandler(MessageHandler handler)
         {
