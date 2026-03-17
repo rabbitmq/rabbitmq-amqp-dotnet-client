@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[0.60.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v0.60.0)]
+
+## 0.60.0 - 2026-17-03
+- [Release 0.60.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v0.60.0)
+
+### Added
+- Implement connection affinity feature by @Gsantomaggio in [#149](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/149)
+- Add cancellation token to the CreateConnectionAsync calls by @Gsantomaggio in [#151](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/151)
+- Add SingleActiveConsumerTest for IQueueSpecification.SingleActiveConsumer by @Gsantomaggio in [#153](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/153)
+- Example single active consumer by @Gsantomaggio in [#154](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/154)
+- Document AmqpConsumer and stress handler safety by @Gsantomaggio in [#155](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/155)
+
+### Fix
+- Use TotalSeconds to set x-max-age by @pterygota in [#148](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/148)
+
+### Contributors
+- @pterygota made their first contribution in [#148](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/148)
+
+
 ## [[0.51.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v0.51.0)]
 
 ## 0.51.0 - 2026-16-02
