@@ -10,4 +10,8 @@
     <ProjectReference Include="Tests/Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="AMQPNetLite" />
+  </ItemGroup>
+
 </Project>
