@@ -130,6 +130,7 @@ RabbitMQ.AMQP.Client.FeatureFlags.IsBrokerCompatible.get -> bool
 RabbitMQ.AMQP.Client.FeatureFlags.IsDirectReplyToSupported.get -> bool
 RabbitMQ.AMQP.Client.FeatureFlags.IsFilterFeatureEnabled.get -> bool
 RabbitMQ.AMQP.Client.FeatureFlags.IsSqlFeatureEnabled.get -> bool
+RabbitMQ.AMQP.Client.FeatureFlags.IsQuorumSingleActiveConsumerFlowStateEnabled.get -> bool
 RabbitMQ.AMQP.Client.FeatureFlags.Validate() -> void
 RabbitMQ.AMQP.Client.IAddressBuilder<T>
 RabbitMQ.AMQP.Client.IAddressBuilder<T>.Exchange(RabbitMQ.AMQP.Client.IExchangeSpecification! exchangeSpec) -> T
@@ -223,6 +224,7 @@ RabbitMQ.AMQP.Client.IConsumerBuilder.ListenerContext
 RabbitMQ.AMQP.Client.IConsumerBuilder.ListenerContext.ListenerContext(RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions! streamOptions) -> void
 RabbitMQ.AMQP.Client.IConsumerBuilder.ListenerContext.StreamOptions.get -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamOptions!
 RabbitMQ.AMQP.Client.IConsumerBuilder.MessageHandler(RabbitMQ.AMQP.Client.MessageHandler! handler) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
+RabbitMQ.AMQP.Client.IConsumerBuilder.SingleActiveConsumerStateChanged(RabbitMQ.AMQP.Client.SingleActiveConsumerStateHandler? handler) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.Queue(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpecification) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.Queue(string? queueName) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.SettleStrategy(RabbitMQ.AMQP.Client.ConsumerSettleStrategy settleStrategy) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
@@ -390,6 +392,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.AmqpConsumerBuilder(RabbitMQ.AMQP.
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.BuildAndStartAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConsumer!>!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.InitialCredits(int initialCredits) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.MessageHandler(RabbitMQ.AMQP.Client.MessageHandler! handler) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
+RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.SingleActiveConsumerStateChanged(RabbitMQ.AMQP.Client.SingleActiveConsumerStateHandler? handler) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.Queue(RabbitMQ.AMQP.Client.IQueueSpecification! queueSpec) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.Queue(string? queueName) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.SettleStrategy(RabbitMQ.AMQP.Client.ConsumerSettleStrategy settleStrategy) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
@@ -754,6 +757,7 @@ RabbitMQ.AMQP.Client.LeaderLocatorStrategy.Balanced = 1 -> RabbitMQ.AMQP.Client.
 RabbitMQ.AMQP.Client.LeaderLocatorStrategy.ClientLocal = 0 -> RabbitMQ.AMQP.Client.LeaderLocatorStrategy
 RabbitMQ.AMQP.Client.LifeCycleCallBack
 RabbitMQ.AMQP.Client.MessageHandler
+RabbitMQ.AMQP.Client.SingleActiveConsumerStateHandler
 RabbitMQ.AMQP.Client.MetricsReporter
 RabbitMQ.AMQP.Client.MetricsReporter.ConnectionClosed() -> void
 RabbitMQ.AMQP.Client.MetricsReporter.ConnectionOpened() -> void

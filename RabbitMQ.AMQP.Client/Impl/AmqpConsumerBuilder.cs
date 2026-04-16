@@ -31,6 +31,19 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         // TODO re-name to ListenerContextAction? Callback?
         public Action<IConsumerBuilder.ListenerContext>? ListenerContext = null;
+
+        /// <summary>
+        /// Set when <see cref="AmqpConsumerBuilder.Queue(IQueueSpecification)"/> is used (vs <c>Queue(string)</c>).
+        /// </summary>
+        public bool QueueConfiguredViaSpecification { get; set; }
+
+        /// <summary>
+        /// Whether the queue specification used <c>x-queue-type</c> quorum (see <see cref="Utils.IsQuorumQueueSpecification"/>).
+        /// Meaningful only when <see cref="QueueConfiguredViaSpecification"/> is true.
+        /// </summary>
+        public bool IsQuorumQueueFromSpecification { get; set; }
+
+        public SingleActiveConsumerStateHandler? SingleActiveConsumerStateChangedHandler { get; set; }
     }
 
     /// <summary>
@@ -51,12 +64,17 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IConsumerBuilder Queue(IQueueSpecification queueSpec)
         {
-            return Queue(queueSpec.QueueName);
+            _configuration.Queue = queueSpec.QueueName;
+            _configuration.QueueConfiguredViaSpecification = true;
+            _configuration.IsQuorumQueueFromSpecification = Utils.IsQuorumQueueSpecification(queueSpec);
+            return this;
         }
 
         public IConsumerBuilder Queue(string? queueName)
         {
             _configuration.Queue = queueName;
+            _configuration.QueueConfiguredViaSpecification = false;
+            _configuration.IsQuorumQueueFromSpecification = false;
             return this;
         }
 
@@ -67,6 +85,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IConsumerBuilder MessageHandler(MessageHandler handler)
         {
             _configuration.Handler = handler;
+            return this;
+        }
+
+        public IConsumerBuilder SingleActiveConsumerStateChanged(SingleActiveConsumerStateHandler? handler)
+        {
+            _configuration.SingleActiveConsumerStateChangedHandler = handler;
             return this;
         }
 
@@ -105,6 +129,23 @@ namespace RabbitMQ.AMQP.Client.Impl
             {
                 throw new NotSupportedException("SQL filter is not supported by the connection. " +
                                                 "RabbitMQ 4.2.0 or later is required.");
+            }
+
+            if (_configuration.SingleActiveConsumerStateChangedHandler is not null)
+            {
+                if (_configuration.SettleStrategy == ConsumerSettleStrategy.DirectReplyTo)
+                {
+                    throw new ConsumerException(
+                        "SingleActiveConsumerStateChanged is not supported with ConsumerSettleStrategy.DirectReplyTo.");
+                }
+
+                if (!_configuration.QueueConfiguredViaSpecification ||
+                    !_configuration.IsQuorumQueueFromSpecification)
+                {
+                    throw new ConsumerException(
+                        "SingleActiveConsumerStateChanged requires Queue(IQueueSpecification) with a quorum queue " +
+                        "(use .Quorum().Queue() or .Type(QueueType.QUORUM)).");
+                }
             }
 
             AmqpConsumer consumer = new(_amqpConnection, _configuration, _metricsReporter);

@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - [Release 0.60.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v0.60.0)
 
 ### Added
+- Quorum single-active-consumer state notifications via AMQP 1.0 FLOW link-state (`rabbitmq:active`): `IConsumerBuilder.SingleActiveConsumerStateChanged` (requires RabbitMQ 4.3+ and a quorum queue from `Queue(IQueueSpecification)`).
 - Implement connection affinity feature by @Gsantomaggio in [#149](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/149)
 - Add cancellation token to the CreateConnectionAsync calls by @Gsantomaggio in [#151](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/151)
 - Add SingleActiveConsumerTest for IQueueSpecification.SingleActiveConsumer by @Gsantomaggio in [#153](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/153)

@@ -20,6 +20,25 @@ namespace RabbitMQ.AMQP.Client
     public delegate Task MessageHandler(IContext context, IMessage message);
 
     /// <summary>
+    /// Notifies that this consumer&apos;s single-active-consumer role on a quorum queue may have changed,
+    /// using the broker&apos;s <c>rabbitmq:active</c> link-state property delivered on AMQP 1.0 FLOW.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The delegate is invoked on AMQP.Net Lite&apos;s I/O thread. Keep work non-blocking; offload to
+    /// <see cref="Task.Run(System.Action)"/> or a channel if you need heavier processing.
+    /// </para>
+    /// <para>
+    /// Requires RabbitMQ 4.3+ with quorum single-active-consumer flow notifications. Configure the consumer with
+    /// <see cref="IConsumerBuilder.Queue(IQueueSpecification)"/> for a quorum queue and
+    /// <see cref="IConsumerBuilder.SingleActiveConsumerStateChanged"/>.
+    /// </para>
+    /// </remarks>
+    /// <param name="consumer">The consumer whose SAC state was reported.</param>
+    /// <param name="isActive"><c>true</c> when this consumer is the active SAC consumer; otherwise <c>false</c>.</param>
+    public delegate void SingleActiveConsumerStateHandler(IConsumer consumer, bool isActive);
+
+    /// <summary>
     /// <para>API to consume messages from a RabbitMQ queue.</para>
     /// <para>Instances are configured and created with a <see cref="IConsumerBuilder"/>.</para>
     /// <para>See <see cref="IConnection.ConsumerBuilder()"/> and <see cref="IConsumerBuilder"/>.</para>

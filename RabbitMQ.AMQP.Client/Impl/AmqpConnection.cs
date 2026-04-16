@@ -779,6 +779,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             _featureFlags.IsDirectReplyToSupported = Utils.Is4_2_OrMore(brokerVersion);
 
             _featureFlags.IsFilterFeatureEnabled = Utils.SupportsFilterExpressions(brokerVersion);
+
+            _featureFlags.IsQuorumSingleActiveConsumerFlowStateEnabled = Utils.Is4_3_OrMore(brokerVersion);
         }
     }
 }
