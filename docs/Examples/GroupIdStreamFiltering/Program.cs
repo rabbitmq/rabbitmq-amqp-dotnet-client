@@ -1,5 +1,13 @@
+// RabbitMQ AMQP 1.0 client: https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client
+// This client is a wrapper over the AMQP.Net Lite library:
+// - It is meant to be used with RabbitMQ 4.x.
+// - It provides an AMQP 1.0 implementation of the RabbitMQ concepts such as exchanges,
+// queues, bindings, publishers, and consumers.
+// - It provides management APIs to manage RabbitMQ topology via AMQP 1.0.
+// - It provides connection recovery and publisher confirms.
+// - It provides tracing and metrics capabilities.
+// RabbitMQ AMQP 1.0 info: https://www.rabbitmq.com/docs/amqp
 // RabbitMQ AMQP 1.0 stream consumer filter on the AMQP "group-id" message property.
-// Requires RabbitMQ 4.x with stream filter expressions (see docs/Examples/StreamFilter).
 //
 // Usage:
 //   dotnet run -- producer <groupId>
@@ -119,7 +127,7 @@ static async Task RunConsumerAsync(IConnection connection, string queueName, str
 
     IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).MessageHandler((context, message) =>
         {
-            
+
             Trace.WriteLine(TraceLevel.Information,
                 $"[Consumer] Body: [{message.BodyAsString()}], group-id: [{message.GroupId()}], offset: [{message.Annotation("x-stream-offset")}]");
             context.Accept();
@@ -127,7 +135,7 @@ static async Task RunConsumerAsync(IConnection connection, string queueName, str
         }
     ).Stream().Offset(StreamOffsetSpecification.First).Filter().GroupId(groupId).Stream()
     .Builder()
-    
+
     // .SubscriptionListener(context =>
     // {
     //    // in case you want to restart from an specific offset   
