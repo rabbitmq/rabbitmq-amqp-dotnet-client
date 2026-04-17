@@ -127,7 +127,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 if (_configuration.SettleStrategy == ConsumerSettleStrategy.DirectReplyTo)
                 {
                     throw new NotSupportedException(
-                        "SingleActiveConsumerStateChanged is not supported with ConsumerSettleStrategy.DirectReplyTo.");
+                        "Single Active Consumer state change notification is not supported with ConsumerSettleStrategy.DirectReplyTo.");
                 }
             }
 
@@ -144,7 +144,7 @@ namespace RabbitMQ.AMQP.Client.Impl
     {
         private readonly IConsumerBuilder _consumerBuilder;
         private SingleActiveConsumerStateHandler? _changedHandler;
-        private ConsumerConfiguration _consumerConfiguration;
+        private readonly ConsumerConfiguration _consumerConfiguration;
 
         internal QuorumOptions(IConsumerBuilder consumerBuilder, ConsumerConfiguration consumerConfiguration)
         {

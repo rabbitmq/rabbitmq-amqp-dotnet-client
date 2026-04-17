@@ -29,7 +29,7 @@ namespace RabbitMQ.AMQP.Client
     /// <see cref="Task.Run(System.Action)"/> or a channel if you need heavier processing.
     /// </para>
     /// <para>
-    /// Requires RabbitMQ 4.3+ with quorum single-active-consumer flow notifications. Configure the consumer with
+    /// Requires RabbitMQ 4.3+ with quorum single-active-consumer flow notifications.
     /// </para>
     /// </remarks>
     /// <param name="consumer">The consumer whose SAC state was reported.</param>

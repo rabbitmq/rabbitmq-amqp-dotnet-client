@@ -52,6 +52,12 @@ namespace RabbitMQ.AMQP.Client
         /// <returns>The builder for fluent configuration.</returns>
         IConsumerBuilder MessageHandler(MessageHandler handler);
 
+        /// <summary>
+        /// Specify the consumer Initial Credits.
+        /// Default value works in most of the cases.  
+        /// </summary>
+        /// <param name="initialCredits"></param>
+        /// <returns></returns>
         IConsumerBuilder InitialCredits(int initialCredits);
 
         /// <summary>
@@ -75,6 +81,9 @@ namespace RabbitMQ.AMQP.Client
 
         Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default);
 
+        /// <summary>
+        ///  Options for consumers of quorum queues.
+        /// </summary>
         public interface IQuorumOptions
         {
             /// <summary>

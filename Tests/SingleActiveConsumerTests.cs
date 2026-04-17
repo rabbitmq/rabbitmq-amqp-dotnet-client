@@ -228,7 +228,8 @@ namespace Tests
                     .MessageHandler((_, _) => Task.CompletedTask)
                     .BuildAndStartAsync());
 
-            Assert.Contains("DirectReplyTo", ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Single Active Consumer state change notification is not supported", ex.Message,
+                StringComparison.OrdinalIgnoreCase);
         }
     }
 }
