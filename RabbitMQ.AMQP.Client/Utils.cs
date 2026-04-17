@@ -320,33 +320,6 @@ namespace RabbitMQ.AMQP.Client
             return VersionCompare(CurrentVersion(brokerVersion), "4.3.0") >= 0;
         }
 
-        /// <summary>
-        /// Returns whether <paramref name="queueSpecification"/> declares a quorum queue via <c>x-queue-type</c>.
-        /// </summary>
-        internal static bool IsQuorumQueueSpecification(IQueueSpecification queueSpecification)
-        {
-            foreach (KeyValuePair<object, object> kv in queueSpecification.QueueArguments)
-            {
-                string key = kv.Key is Symbol sym ? sym.ToString() : kv.Key?.ToString() ?? string.Empty;
-                if (key != "x-queue-type")
-                {
-                    continue;
-                }
-
-                string? type = kv.Value switch
-                {
-                    string s => s,
-                    Symbol sym2 => sym2.ToString(),
-                    _ => kv.Value?.ToString()
-                };
-
-                return type is not null &&
-                       type.Equals(nameof(QueueType.QUORUM), StringComparison.OrdinalIgnoreCase);
-            }
-
-            return false;
-        }
-
         private static string CurrentVersion(string currentVersion)
         {
             // versions built from source: 3.7.0+rc.1.4.gedc5d96
