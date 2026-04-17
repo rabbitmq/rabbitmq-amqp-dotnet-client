@@ -315,9 +315,13 @@ namespace RabbitMQ.AMQP.Client
             return VersionCompare(CurrentVersion(brokerVersion), "4.2.0") >= 0;
         }
 
+        internal static bool Is4_3_OrMore(string brokerVersion)
+        {
+            return VersionCompare(CurrentVersion(brokerVersion), "4.3.0") >= 0;
+        }
+
         private static string CurrentVersion(string currentVersion)
         {
-            // versions built from source: 3.7.0+rc.1.4.gedc5d96
             if (currentVersion.Contains("+"))
             {
                 currentVersion = currentVersion.Substring(0, currentVersion.IndexOf("+"));

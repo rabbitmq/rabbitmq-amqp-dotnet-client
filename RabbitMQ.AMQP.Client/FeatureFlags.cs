@@ -31,6 +31,13 @@ namespace RabbitMQ.AMQP.Client
         /// </summary>
         public bool IsDirectReplyToSupported { get; internal set; } = false;
 
+        /// <summary>
+        /// When <c>true</c>, the broker is expected to expose quorum single-active-consumer state on AMQP 1.0 FLOW
+        /// link-state properties (<c>rabbitmq:active</c>). Requires RabbitMQ 4.3 or later.
+        /// </summary>
+        public bool IsQuorumSingleActiveConsumerFlowStateEnabled { get; internal set; } = false;
+        public bool Is43OrMore { get; internal set; } = false;
+
         public void Validate()
         {
             if (!IsBrokerCompatible)

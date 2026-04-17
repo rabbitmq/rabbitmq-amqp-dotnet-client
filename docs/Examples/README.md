@@ -13,3 +13,6 @@ This directory contains examples of how to use the RabbitMQ AMQP 1.0 .NET client
 - AMQP 1.0 over WebSockets [here](./WebSockets) 
 - Affinity node [here](./Affinity/)
 - Single Active Consumer [here](./SingleActiveConsumer/)
+- PreSettled Consumer [here](./PreSettled/)
+- Stream group id filtering [here](./GroupIdFiltering/) 
+- Quorum queue single active consumer notifications [here](./QQSingleActiveNotification/)

@@ -31,6 +31,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         // TODO re-name to ListenerContextAction? Callback?
         public Action<IConsumerBuilder.ListenerContext>? ListenerContext = null;
+
+        public SingleActiveConsumerStateHandler? SingleActiveConsumerStateChangedHandler { get; set; }
     }
 
     /// <summary>
@@ -51,7 +53,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IConsumerBuilder Queue(IQueueSpecification queueSpec)
         {
-            return Queue(queueSpec.QueueName);
+            _configuration.Queue = queueSpec.QueueName;
+            return this;
         }
 
         public IConsumerBuilder Queue(string? queueName)
@@ -93,6 +96,11 @@ namespace RabbitMQ.AMQP.Client.Impl
             return new ConsumerBuilderStreamOptions(this, _configuration.Filters);
         }
 
+        public IConsumerBuilder.IQuorumOptions Quorum()
+        {
+            return new QuorumOptions(this, _configuration);
+        }
+
         public async Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default)
         {
             if (_configuration.Handler is null)
@@ -107,12 +115,54 @@ namespace RabbitMQ.AMQP.Client.Impl
                                                 "RabbitMQ 4.2.0 or later is required.");
             }
 
+            if (_configuration.SingleActiveConsumerStateChangedHandler is not null)
+            {
+                if (!_amqpConnection._featureFlags.IsQuorumSingleActiveConsumerFlowStateEnabled)
+                {
+                    throw new NotSupportedException(
+                        "Single Active Consumer state change notification is not supported by the connection. " +
+                        "RabbitMQ 4.3.0 or later is required.");
+                }
+
+                if (_configuration.SettleStrategy == ConsumerSettleStrategy.DirectReplyTo)
+                {
+                    throw new NotSupportedException(
+                        "Single Active Consumer state change notification is not supported with ConsumerSettleStrategy.DirectReplyTo.");
+                }
+            }
+
             AmqpConsumer consumer = new(_amqpConnection, _configuration, _metricsReporter);
             // to do: cancellationToken
             await consumer.OpenAsync()
                 .ConfigureAwait(false);
 
             return consumer;
+        }
+    }
+
+    public class QuorumOptions : IConsumerBuilder.IQuorumOptions
+    {
+        private readonly IConsumerBuilder _consumerBuilder;
+        private SingleActiveConsumerStateHandler? _changedHandler;
+        private readonly ConsumerConfiguration _consumerConfiguration;
+
+        internal QuorumOptions(IConsumerBuilder consumerBuilder, ConsumerConfiguration consumerConfiguration)
+        {
+            _consumerBuilder = consumerBuilder;
+            _consumerConfiguration = consumerConfiguration;
+        }
+
+        public IConsumerBuilder.IQuorumOptions SingleActiveConsumerStateChanged(
+            SingleActiveConsumerStateHandler? handler)
+        {
+            _changedHandler = handler;
+            return this;
+        }
+
+        public IConsumerBuilder Builder()
+        {
+            _consumerConfiguration.SingleActiveConsumerStateChangedHandler = _changedHandler;
+            return _consumerBuilder;
         }
     }
 
