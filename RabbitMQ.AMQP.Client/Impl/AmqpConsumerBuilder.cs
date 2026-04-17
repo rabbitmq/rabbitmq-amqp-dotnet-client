@@ -73,12 +73,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
-        public IConsumerBuilder SingleActiveConsumerStateChanged(SingleActiveConsumerStateHandler? handler)
-        {
-            _configuration.SingleActiveConsumerStateChangedHandler = handler;
-            return this;
-        }
-
         public IConsumerBuilder InitialCredits(int initialCredits)
         {
             _configuration.InitialCredits = initialCredits;
