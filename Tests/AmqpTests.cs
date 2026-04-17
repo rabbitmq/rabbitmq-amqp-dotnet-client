@@ -138,18 +138,8 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         Assert.Equal(subject, receivedSubject);
 
         IQueueInfo retrievedQueueInfo1 = await _management.GetQueueInfoAsync(_queueName);
-        try
-        {
-            Assert.Equal((uint)1, retrievedQueueInfo1.ConsumerCount());
-            Assert.Equal((uint)0, retrievedQueueInfo1.MessageCount());
-
-        }
-        catch (Exception e)
-        {
-            System.Console.Out.WriteLine(e);
-            throw;
-        }
-
+        Assert.Equal((uint)1, retrievedQueueInfo1.ConsumerCount());
+        Assert.Equal((uint)0, retrievedQueueInfo1.MessageCount());
         await consumer.CloseAsync();
         consumer.Dispose();
     }
