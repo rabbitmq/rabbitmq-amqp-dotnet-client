@@ -152,7 +152,6 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         Assert.Null(messages[0].Annotation(annotationKey));
         Assert.Null(messages[0].Annotation(annotationKey1));
         Assert.Null(messages[0].Annotation("x-acquired-count"));
-        Assert.Null(messages[0].Annotation("x-acquired-count"));
 
         Assert.Equal(messages[1].Annotation(annotationKey), annotationValue);
         Assert.Equal(messages[1].Annotation(annotationKey1), annotationValue1);
