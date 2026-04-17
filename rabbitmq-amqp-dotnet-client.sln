@@ -49,6 +49,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Affinity", "docs\Examples\A
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SingleActiveConsumer", "docs\Examples\SingleActiveConsumer\SingleActiveConsumer.csproj", "{B2C4D6E8-F0A2-4B6C-8D9E-0F1A2B3C4D5E}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QQSingleActiveNotification", "docs\Examples\QQSingleActiveNotification\QQSingleActiveNotification.csproj", "{F4C8A2E1-9D3B-4C7A-8F2E-1B6D5A9C3E7F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -115,6 +117,10 @@ Global
 		{B2C4D6E8-F0A2-4B6C-8D9E-0F1A2B3C4D5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2C4D6E8-F0A2-4B6C-8D9E-0F1A2B3C4D5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B2C4D6E8-F0A2-4B6C-8D9E-0F1A2B3C4D5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4C8A2E1-9D3B-4C7A-8F2E-1B6D5A9C3E7F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4C8A2E1-9D3B-4C7A-8F2E-1B6D5A9C3E7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4C8A2E1-9D3B-4C7A-8F2E-1B6D5A9C3E7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4C8A2E1-9D3B-4C7A-8F2E-1B6D5A9C3E7F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -133,5 +139,6 @@ Global
 		{917AE9DB-A01D-4BAF-8B9F-3267C2CDA9D5} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 		{7EC63C3F-75EB-42FC-9063-F542160DDF84} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 		{B2C4D6E8-F0A2-4B6C-8D9E-0F1A2B3C4D5E} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
+		{F4C8A2E1-9D3B-4C7A-8F2E-1B6D5A9C3E7F} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 	EndGlobalSection
 EndGlobal

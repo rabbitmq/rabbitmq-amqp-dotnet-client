@@ -52,27 +52,6 @@ namespace RabbitMQ.AMQP.Client
         /// <returns>The builder for fluent configuration.</returns>
         IConsumerBuilder MessageHandler(MessageHandler handler);
 
-        /// <summary>
-        /// Registers a callback for single-active-consumer state on a <b>quorum</b> queue, using FLOW link-state
-        /// (<c>rabbitmq:active</c>) from the broker.
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// The callback runs on AMQP.Net Lite&apos;s I/O thread; do not block. Use only with
-        /// <see cref="Queue(IQueueSpecification)"/> where the specification declares a quorum queue
-        /// (for example <see cref="IQueueSpecification.Quorum"/> or <see cref="IQueueSpecification.Type"/> with
-        /// <see cref="QueueType.QUORUM"/>).
-        /// </para>
-        /// <para>Not compatible with <see cref="ConsumerSettleStrategy.DirectReplyTo"/>.</para>
-        /// </remarks>
-        /// <param name="handler">Delegate invoked when the broker reports SAC state; pass <c>null</c> to clear.</param>
-        /// <returns>The builder for fluent configuration.</returns>
-        /// <exception cref="ConsumerException">
-        /// At <see cref="BuildAndStartAsync"/>: handler is set but the queue is not a quorum queue from specification,
-        /// or Direct Reply-To is selected.
-        /// </exception>
-        IConsumerBuilder SingleActiveConsumerStateChanged(SingleActiveConsumerStateHandler? handler);
-
         IConsumerBuilder InitialCredits(int initialCredits);
 
         /// <summary>
@@ -92,8 +71,35 @@ namespace RabbitMQ.AMQP.Client
         IConsumerBuilder SubscriptionListener(Action<ListenerContext> listenerContext);
 
         IStreamOptions Stream();
+        IQuorumOptions Quorum();
 
         Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default);
+
+        public interface IQuorumOptions
+        {
+            /// <summary>
+            /// Registers a callback for single-active-consumer state on a <b>quorum</b> queue, using FLOW link-state
+            /// (<c>rabbitmq:active</c>) from the broker.
+            /// </summary>
+            /// <remarks>
+            /// <para>
+            /// The callback runs on AMQP.Net Lite&apos;s I/O thread; do not block. Use only with
+            /// <see cref="Queue(IQueueSpecification)"/> where the specification declares a quorum queue
+            /// (for example <see cref="IQueueSpecification.Quorum"/> or <see cref="IQueueSpecification.Type"/> with
+            /// <see cref="QueueType.QUORUM"/>).
+            /// </para>
+            /// <para>Not compatible with <see cref="ConsumerSettleStrategy.DirectReplyTo"/>.</para>
+            /// </remarks>
+            /// <param name="handler">Delegate invoked when the broker reports SAC state; pass <c>null</c> to clear.</param>
+            /// <returns>The builder for fluent configuration.</returns>
+            /// <exception cref="ConsumerException">
+            /// At <see cref="BuildAndStartAsync"/>: handler is set but the queue is not a quorum queue from specification,
+            /// or Direct Reply-To is selected.
+            /// </exception>
+            IQuorumOptions SingleActiveConsumerStateChanged(SingleActiveConsumerStateHandler? handler);
+
+            IConsumerBuilder Builder();
+        }
 
         public interface IStreamOptions
         {

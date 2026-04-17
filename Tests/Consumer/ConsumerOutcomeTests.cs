@@ -67,10 +67,13 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         await WhenTcsCompletes(tcs);
 
         Assert.True(messages.TryDequeue(out IMessage? message0));
-        message0.Annotation("x-delivery-count");
 
         Assert.True(messages.TryDequeue(out IMessage? message1));
-        Assert.Equal(1, (long)message1.Annotation("x-delivery-count"));
+
+        // Notes: x-delivery-count was before 4.3
+        // Assert.Equal(1, (long)message1.Annotation("x-delivery-count"));
+
+        Assert.Equal(1, (long)message1.Annotation("x-acquired-count"));
 
         await WaitUntilStable(async () =>
         {
@@ -84,7 +87,7 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
 
     /// <summary>
     /// The test verifies that a requeued message with annotations will contain the annotations on redelivery.
-    /// The delivered message should contain the custom annotations and x-delivery-count
+    /// The delivered message should contain the custom annotations and x-acquired-count
     /// </summary>
     [Fact]
     public async Task RequeuedMessageWithAnnotationShouldContainAnnotationsOnRedelivery()
@@ -144,11 +147,12 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         Assert.Equal(2, messages.Count);
         Assert.Null(messages[0].Annotation(annotationKey));
         Assert.Null(messages[0].Annotation(annotationKey1));
-        Assert.Null(messages[0].Annotation("x-delivery-count"));
+        Assert.Null(messages[0].Annotation("x-acquired-count"));
+        Assert.Null(messages[0].Annotation("x-acquired-count"));
 
         Assert.Equal(messages[1].Annotation(annotationKey), annotationValue);
         Assert.Equal(messages[1].Annotation(annotationKey1), annotationValue1);
-        Assert.NotNull(messages[1].Annotation("x-delivery-count"));
+        Assert.NotNull(messages[1].Annotation("x-acquired-count"));
 
         using HttpApiClient client = new();
         Queue q = await client.GetQueueAsync(_queueName);

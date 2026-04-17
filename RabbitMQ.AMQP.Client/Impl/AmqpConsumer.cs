@@ -115,6 +115,11 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 void OnAttached(ILink argLink, Attach argAttach)
                 {
+                    if (_configuration.SingleActiveConsumerStateChangedHandler is not null)
+                    {
+                        argLink.OnLinkStateProperties = OnFlowLinkStateProperties;
+                    }
+
                     if (argLink is ReceiverLink link)
                     {
                         attachCompletedTcs.SetResult((link, argAttach));
@@ -144,12 +149,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                 (_receiverLink, _attach) = await attachCompletedTcs.Task.WaitAsync(waitSpan)
                     .ConfigureAwait(false);
                 ValidateReceiverLink();
-
-                if (_configuration.SingleActiveConsumerStateChangedHandler is not null &&
-                    _configuration.IsQuorumQueueFromSpecification)
-                {
-                    _receiverLink.OnLinkStateProperties = OnFlowLinkStateProperties;
-                }
 
                 _receiverLink.SetCredit(_configuration.InitialCredits);
 

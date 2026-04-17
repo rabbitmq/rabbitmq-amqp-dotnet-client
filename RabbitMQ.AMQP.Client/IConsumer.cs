@@ -30,8 +30,6 @@ namespace RabbitMQ.AMQP.Client
     /// </para>
     /// <para>
     /// Requires RabbitMQ 4.3+ with quorum single-active-consumer flow notifications. Configure the consumer with
-    /// <see cref="IConsumerBuilder.Queue(IQueueSpecification)"/> for a quorum queue and
-    /// <see cref="IConsumerBuilder.SingleActiveConsumerStateChanged"/>.
     /// </para>
     /// </remarks>
     /// <param name="consumer">The consumer whose SAC state was reported.</param>

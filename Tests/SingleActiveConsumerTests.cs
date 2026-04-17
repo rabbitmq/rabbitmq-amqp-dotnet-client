@@ -119,6 +119,7 @@ namespace Tests
                     {
                         activeConsumerDone.SetResult(true);
                     }
+
                     return Task.CompletedTask;
                 })
                 .BuildAndStartAsync();
@@ -149,8 +150,8 @@ namespace Tests
         [SkippableFact]
         public async Task QuorumSingleActiveConsumerFlowState_StandbyPromotedWhenActiveCloses()
         {
-            // Skip.IfNot(_featureFlags is { IsQuorumSingleActiveConsumerFlowStateEnabled: true },
-            //     "RabbitMQ 4.3+ required for quorum SAC FLOW link-state (rabbitmq:active).");
+            Skip.IfNot(_featureFlags is { IsQuorumSingleActiveConsumerFlowStateEnabled: true },
+                "RabbitMQ 4.3+ required for quorum SAC FLOW link-state (rabbitmq:active).");
 
             Assert.NotNull(_connection);
             Assert.NotNull(_management);
@@ -166,31 +167,30 @@ namespace Tests
             TaskCompletionSource<bool> secondPromoted = CreateTaskCompletionSource<bool>();
 
             IConsumer first = await _connection.ConsumerBuilder()
-                .Queue(queueSpec)
+                .Queue(queueSpec).Quorum()
                 .SingleActiveConsumerStateChanged((_, isActive) =>
                 {
                     lock (firstConsumerStates)
                     {
                         firstConsumerStates.Add(isActive);
                     }
-                })
+                }).Builder()
                 .MessageHandler((ctx, _) =>
                 {
                     ctx.Accept();
                     return Task.CompletedTask;
                 })
                 .BuildAndStartAsync();
-            
-            await Task.Delay(10500);
+
             IConsumer second = await _connection.ConsumerBuilder()
-                .Queue(queueSpec)
+                .Queue(queueSpec).Quorum()
                 .SingleActiveConsumerStateChanged((_, isActive) =>
                 {
                     if (isActive)
                     {
                         secondPromoted.TrySetResult(true);
                     }
-                })
+                }).Builder()
                 .MessageHandler((ctx, _) =>
                 {
                     ctx.Accept();
@@ -212,29 +212,6 @@ namespace Tests
         }
 
         [Fact]
-        public async Task SingleActiveConsumerStateChanged_ThrowsWhenQueueIsNotQuorum()
-        {
-            Assert.NotNull(_connection);
-            Assert.NotNull(_management);
-
-            IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Type(QueueType.CLASSIC);
-            await queueSpec.DeclareAsync();
-
-            ConsumerException ex = await Assert.ThrowsAsync<ConsumerException>(async () =>
-                await _connection.ConsumerBuilder()
-                    .Queue(queueSpec)
-                    .SingleActiveConsumerStateChanged((_, _) => { })
-                    .MessageHandler((ctx, _) =>
-                    {
-                        ctx.Accept();
-                        return Task.CompletedTask;
-                    })
-                    .BuildAndStartAsync());
-
-            Assert.Contains("quorum", ex.Message, StringComparison.OrdinalIgnoreCase);
-        }
-
-        [Fact]
         public async Task SingleActiveConsumerStateChanged_ThrowsWithDirectReplyTo()
         {
             Assert.NotNull(_connection);
@@ -245,9 +222,9 @@ namespace Tests
 
             ConsumerException ex = await Assert.ThrowsAsync<ConsumerException>(async () =>
                 await _connection.ConsumerBuilder()
-                    .Queue(queueSpec)
+                    .Queue(queueSpec).Quorum()
+                    .SingleActiveConsumerStateChanged((_, _) => { }).Builder()
                     .SettleStrategy(ConsumerSettleStrategy.DirectReplyTo)
-                    .SingleActiveConsumerStateChanged((_, _) => { })
                     .MessageHandler((_, _) => Task.CompletedTask)
                     .BuildAndStartAsync());
 

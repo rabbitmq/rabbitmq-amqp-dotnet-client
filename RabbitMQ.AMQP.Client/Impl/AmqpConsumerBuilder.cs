@@ -32,17 +32,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         // TODO re-name to ListenerContextAction? Callback?
         public Action<IConsumerBuilder.ListenerContext>? ListenerContext = null;
 
-        /// <summary>
-        /// Set when <see cref="AmqpConsumerBuilder.Queue(IQueueSpecification)"/> is used (vs <c>Queue(string)</c>).
-        /// </summary>
-        public bool QueueConfiguredViaSpecification { get; set; }
-
-        /// <summary>
-        /// Whether the queue specification used <c>x-queue-type</c> quorum (see <see cref="Utils.IsQuorumQueueSpecification"/>).
-        /// Meaningful only when <see cref="QueueConfiguredViaSpecification"/> is true.
-        /// </summary>
-        public bool IsQuorumQueueFromSpecification { get; set; }
-
         public SingleActiveConsumerStateHandler? SingleActiveConsumerStateChangedHandler { get; set; }
     }
 
@@ -65,16 +54,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IConsumerBuilder Queue(IQueueSpecification queueSpec)
         {
             _configuration.Queue = queueSpec.QueueName;
-            _configuration.QueueConfiguredViaSpecification = true;
-            _configuration.IsQuorumQueueFromSpecification = Utils.IsQuorumQueueSpecification(queueSpec);
             return this;
         }
 
         public IConsumerBuilder Queue(string? queueName)
         {
             _configuration.Queue = queueName;
-            _configuration.QueueConfiguredViaSpecification = false;
-            _configuration.IsQuorumQueueFromSpecification = false;
             return this;
         }
 
@@ -117,6 +102,11 @@ namespace RabbitMQ.AMQP.Client.Impl
             return new ConsumerBuilderStreamOptions(this, _configuration.Filters);
         }
 
+        public IConsumerBuilder.IQuorumOptions Quorum()
+        {
+            return new QuorumOptions(this, _configuration);
+        }
+
         public async Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default)
         {
             if (_configuration.Handler is null)
@@ -138,14 +128,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                     throw new ConsumerException(
                         "SingleActiveConsumerStateChanged is not supported with ConsumerSettleStrategy.DirectReplyTo.");
                 }
-
-                if (!_configuration.QueueConfiguredViaSpecification ||
-                    !_configuration.IsQuorumQueueFromSpecification)
-                {
-                    throw new ConsumerException(
-                        "SingleActiveConsumerStateChanged requires Queue(IQueueSpecification) with a quorum queue " +
-                        "(use .Quorum().Queue() or .Type(QueueType.QUORUM)).");
-                }
             }
 
             AmqpConsumer consumer = new(_amqpConnection, _configuration, _metricsReporter);
@@ -154,6 +136,32 @@ namespace RabbitMQ.AMQP.Client.Impl
                 .ConfigureAwait(false);
 
             return consumer;
+        }
+    }
+
+    public class QuorumOptions : IConsumerBuilder.IQuorumOptions
+    {
+        private readonly IConsumerBuilder _consumerBuilder;
+        private SingleActiveConsumerStateHandler? _changedHandler;
+        private ConsumerConfiguration _consumerConfiguration;
+
+        internal QuorumOptions(IConsumerBuilder consumerBuilder, ConsumerConfiguration consumerConfiguration)
+        {
+            _consumerBuilder = consumerBuilder;
+            _consumerConfiguration = consumerConfiguration;
+        }
+
+        public IConsumerBuilder.IQuorumOptions SingleActiveConsumerStateChanged(
+            SingleActiveConsumerStateHandler? handler)
+        {
+            _changedHandler = handler;
+            return this;
+        }
+
+        public IConsumerBuilder Builder()
+        {
+            _consumerConfiguration.SingleActiveConsumerStateChangedHandler = _changedHandler;
+            return _consumerBuilder;
         }
     }
 
