@@ -126,6 +126,7 @@ RabbitMQ.AMQP.Client.ExchangeType.HEADERS = 3 -> RabbitMQ.AMQP.Client.ExchangeTy
 RabbitMQ.AMQP.Client.ExchangeType.TOPIC = 2 -> RabbitMQ.AMQP.Client.ExchangeType
 RabbitMQ.AMQP.Client.FeatureFlags
 RabbitMQ.AMQP.Client.FeatureFlags.FeatureFlags() -> void
+RabbitMQ.AMQP.Client.FeatureFlags.Is43OrMore.get -> bool
 RabbitMQ.AMQP.Client.FeatureFlags.IsBrokerCompatible.get -> bool
 RabbitMQ.AMQP.Client.FeatureFlags.IsDirectReplyToSupported.get -> bool
 RabbitMQ.AMQP.Client.FeatureFlags.IsFilterFeatureEnabled.get -> bool

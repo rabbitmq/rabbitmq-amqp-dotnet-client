@@ -322,7 +322,6 @@ namespace RabbitMQ.AMQP.Client
 
         private static string CurrentVersion(string currentVersion)
         {
-            // versions built from source: 3.7.0+rc.1.4.gedc5d96
             if (currentVersion.Contains("+"))
             {
                 currentVersion = currentVersion.Substring(0, currentVersion.IndexOf("+"));

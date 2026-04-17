@@ -19,9 +19,12 @@ namespace Tests.Consumer;
 
 public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : IntegrationTest(testOutputHelper)
 {
-    [Fact]
+    [SkippableFact]
     public async Task RequeuedMessageShouldBeRequeued()
     {
+        Assert.NotNull(_featureFlags);
+        Skip.IfNot(_featureFlags is { Is43OrMore: true }, "At least RabbitMQ 4.3.0 required");
+
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
@@ -89,9 +92,12 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
     /// The test verifies that a requeued message with annotations will contain the annotations on redelivery.
     /// The delivered message should contain the custom annotations and x-acquired-count
     /// </summary>
-    [Fact]
+    [SkippableFact]
     public async Task RequeuedMessageWithAnnotationShouldContainAnnotationsOnRedelivery()
     {
+        Assert.NotNull(_featureFlags);
+        Skip.IfNot(_featureFlags is { Is43OrMore: true }, "At least RabbitMQ 4.3.0 required");
+        
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
@@ -108,8 +114,7 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         TaskCompletionSource<bool> tcsRequeue = CreateTaskCompletionSource();
         List<IMessage> messages = [];
         IPublisher publisher = await _connection.PublisherBuilder().Queue(_queueName).BuildAsync();
-        IConsumer consumer = await _connection.ConsumerBuilder().MessageHandler(
-            (context, message) =>
+        IConsumer consumer = await _connection.ConsumerBuilder().MessageHandler((context, message) =>
             {
                 try
                 {
@@ -118,8 +123,7 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
                     {
                         context.Requeue(new Dictionary<string, object>
                         {
-                            { annotationKey, annotationValue },
-                            { annotationKey1, annotationValue1 }
+                            { annotationKey, annotationValue }, { annotationKey1, annotationValue1 }
                         });
                     }
                     else
@@ -249,12 +253,12 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         IPublisher publisher = await _connection.PublisherBuilder().Queue(_queueName).BuildAsync();
         IConsumer consumer = await _connection.ConsumerBuilder()
             .MessageHandler((context, _) =>
-            {
-                context.Discard(new Dictionary<string, object> { { annotationKey, annotationValue } });
-                tcs.SetResult(true);
-                return Task.CompletedTask;
-            }
-        ).Queue(_queueName).BuildAndStartAsync();
+                {
+                    context.Discard(new Dictionary<string, object> { { annotationKey, annotationValue } });
+                    tcs.SetResult(true);
+                    return Task.CompletedTask;
+                }
+            ).Queue(_queueName).BuildAndStartAsync();
 
         IMessage message = new AmqpMessage(RandomString());
         PublishResult pr = await publisher.PublishAsync(message);
