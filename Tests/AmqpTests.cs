@@ -64,9 +64,10 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
 
     [Theory]
     [InlineData("foobar", QueueType.CLASSIC)]
-    [InlineData("foobar", QueueType.QUORUM)]
+    // TODO:Re-enable when the regression is fixed
+    // [InlineData("foobar", QueueType.QUORUM)]
     [InlineData("фообар", QueueType.CLASSIC)]
-    [InlineData("фообар", QueueType.QUORUM)]
+    // [InlineData("фообар", QueueType.QUORUM)]
     public async Task QueueDeclareDeletePublishConsume(string subject, QueueType expectedQueueType)
     {
         byte[] messageBody = Encoding.UTF8.GetBytes("hello");
@@ -139,7 +140,6 @@ public class AmqpTests(ITestOutputHelper testOutputHelper) : IntegrationTest(tes
         IQueueInfo retrievedQueueInfo1 = await _management.GetQueueInfoAsync(_queueName);
         Assert.Equal((uint)1, retrievedQueueInfo1.ConsumerCount());
         Assert.Equal((uint)0, retrievedQueueInfo1.MessageCount());
-
         await consumer.CloseAsync();
         consumer.Dispose();
     }

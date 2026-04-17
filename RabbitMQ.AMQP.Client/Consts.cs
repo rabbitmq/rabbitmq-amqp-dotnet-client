@@ -42,5 +42,8 @@ namespace RabbitMQ.AMQP.Client
         internal static readonly Symbol s_streamOffsetSpecSymbol = new(RmqStreamOffsetSpec);
         internal static readonly Symbol s_streamMatchUnfilteredSymbol = new(RmqStreamMatchUnfiltered);
 
+        /// <summary>AMQP 1.0 link-state property: whether this link is the active single-active consumer.</summary>
+        internal const string RabbitMqActiveProperty = "rabbitmq:active";
+
     }
 }

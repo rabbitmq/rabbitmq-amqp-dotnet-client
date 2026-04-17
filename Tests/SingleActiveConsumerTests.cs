@@ -2,6 +2,8 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using RabbitMQ.AMQP.Client;
@@ -117,6 +119,7 @@ namespace Tests
                     {
                         activeConsumerDone.SetResult(true);
                     }
+
                     return Task.CompletedTask;
                 })
                 .BuildAndStartAsync();
@@ -142,6 +145,91 @@ namespace Tests
             activeConsumer.Dispose();
             await inactiveConsumer.CloseAsync();
             inactiveConsumer.Dispose();
+        }
+
+        [SkippableFact]
+        public async Task QuorumSingleActiveConsumerFlowState_StandbyPromotedWhenActiveCloses()
+        {
+            Skip.IfNot(_featureFlags is { IsQuorumSingleActiveConsumerFlowStateEnabled: true },
+                "RabbitMQ 4.3+ required for quorum SAC FLOW link-state (rabbitmq:active).");
+
+            Assert.NotNull(_connection);
+            Assert.NotNull(_management);
+
+            IQueueSpecification queueSpec = _management.Queue()
+                .Name(_queueName)
+                .Quorum()
+                .Queue()
+                .SingleActiveConsumer(true);
+            await queueSpec.DeclareAsync();
+
+            var firstConsumerStates = new List<bool>();
+            TaskCompletionSource<bool> secondPromoted = CreateTaskCompletionSource<bool>();
+
+            IConsumer first = await _connection.ConsumerBuilder()
+                .Queue(queueSpec).Quorum()
+                .SingleActiveConsumerStateChanged((_, isActive) =>
+                {
+                    lock (firstConsumerStates)
+                    {
+                        firstConsumerStates.Add(isActive);
+                    }
+                }).Builder()
+                .MessageHandler((ctx, _) =>
+                {
+                    ctx.Accept();
+                    return Task.CompletedTask;
+                })
+                .BuildAndStartAsync();
+
+            IConsumer second = await _connection.ConsumerBuilder()
+                .Queue(queueSpec).Quorum()
+                .SingleActiveConsumerStateChanged((_, isActive) =>
+                {
+                    if (isActive)
+                    {
+                        secondPromoted.TrySetResult(true);
+                    }
+                }).Builder()
+                .MessageHandler((ctx, _) =>
+                {
+                    ctx.Accept();
+                    return Task.CompletedTask;
+                })
+                .BuildAndStartAsync();
+
+            await Task.Delay(500);
+
+            Assert.Contains(true, firstConsumerStates);
+
+            await first.CloseAsync();
+            first.Dispose();
+
+            await WhenTcsCompletes(secondPromoted);
+
+            await second.CloseAsync();
+            second.Dispose();
+        }
+
+        [Fact]
+        public async Task SingleActiveConsumerStateChanged_ThrowsWithDirectReplyTo()
+        {
+            Assert.NotNull(_connection);
+            Assert.NotNull(_management);
+
+            IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Quorum().Queue();
+            await queueSpec.DeclareAsync();
+
+            NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () =>
+                await _connection.ConsumerBuilder()
+                    .Queue(queueSpec).Quorum()
+                    .SingleActiveConsumerStateChanged((_, _) => { }).Builder()
+                    .SettleStrategy(ConsumerSettleStrategy.DirectReplyTo)
+                    .MessageHandler((_, _) => Task.CompletedTask)
+                    .BuildAndStartAsync());
+
+            Assert.Contains("Single Active Consumer state change notification is not supported", ex.Message,
+                StringComparison.OrdinalIgnoreCase);
         }
     }
 }

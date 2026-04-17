@@ -3,12 +3,14 @@
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Amqp;
 using Amqp.Framing;
+using Amqp.Types;
 using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
 
@@ -113,6 +115,11 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 void OnAttached(ILink argLink, Attach argAttach)
                 {
+                    if (_configuration.SingleActiveConsumerStateChangedHandler is not null)
+                    {
+                        argLink.OnLinkStateProperties = OnFlowLinkStateProperties;
+                    }
+
                     if (argLink is ReceiverLink link)
                     {
                         attachCompletedTcs.SetResult((link, argAttach));
@@ -156,6 +163,73 @@ namespace RabbitMQ.AMQP.Client.Impl
             {
                 throw new ConsumerException($"{ToString()} Failed to create receiver link, {e}");
             }
+        }
+
+        private void OnFlowLinkStateProperties(ILink _, Map? properties)
+        {
+            if (properties is null || properties.Count == 0)
+            {
+                return;
+            }
+
+            if (false == TryGetRabbitMqActive(properties, out bool isActive))
+            {
+                return;
+            }
+
+            SingleActiveConsumerStateHandler? handler = _configuration.SingleActiveConsumerStateChangedHandler;
+            if (handler is null)
+            {
+                return;
+            }
+
+            try
+            {
+                handler(this, isActive);
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(TraceLevel.Error,
+                    $"{ToString()} SingleActiveConsumerStateChanged handler threw an exception", ex);
+            }
+        }
+
+        private static bool TryGetRabbitMqActive(Map properties, out bool isActive)
+        {
+            foreach (KeyValuePair<object, object?> kv in properties)
+            {
+                string keyString = kv.Key is Symbol sym ? sym.ToString() : kv.Key?.ToString() ?? string.Empty;
+                if (keyString != Consts.RabbitMqActiveProperty)
+                {
+                    continue;
+                }
+
+                object? value = kv.Value;
+                switch (value)
+                {
+                    case bool b:
+                        isActive = b;
+                        return true;
+                    case byte by:
+                        isActive = by != 0;
+                        return true;
+                    case int i:
+                        isActive = i != 0;
+                        return true;
+                    case long l:
+                        isActive = l != 0;
+                        return true;
+                    case uint u:
+                        isActive = u != 0;
+                        return true;
+                    case ulong ul:
+                        isActive = ul != 0;
+                        return true;
+                }
+            }
+
+            isActive = false;
+            return false;
         }
 
         /// <summary>
@@ -343,6 +417,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
             try
             {
+                _receiverLink.OnLinkStateProperties = null;
                 // TODO global timeout for closing, other async actions?
                 await _receiverLink.CloseAsync(TimeSpan.FromSeconds(ConsumerDefaults.CloseTimeoutSeconds))
                     .ConfigureAwait(false);

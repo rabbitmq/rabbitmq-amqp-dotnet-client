@@ -15,3 +15,4 @@ This directory contains examples of how to use the RabbitMQ AMQP 1.0 .NET client
 - Single Active Consumer [here](./SingleActiveConsumer/)
 - PreSettled Consumer [here](./PreSettled/)
 - Stream group id filtering [here](./GroupIdFiltering/) 
+- Quorum queue single active consumer notifications [here](./QQSingleActiveNotification/)

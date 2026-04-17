@@ -52,6 +52,12 @@ namespace RabbitMQ.AMQP.Client
         /// <returns>The builder for fluent configuration.</returns>
         IConsumerBuilder MessageHandler(MessageHandler handler);
 
+        /// <summary>
+        /// Specify the consumer Initial Credits.
+        /// Default value works in most of the cases.  
+        /// </summary>
+        /// <param name="initialCredits"></param>
+        /// <returns></returns>
         IConsumerBuilder InitialCredits(int initialCredits);
 
         /// <summary>
@@ -71,8 +77,37 @@ namespace RabbitMQ.AMQP.Client
         IConsumerBuilder SubscriptionListener(Action<ListenerContext> listenerContext);
 
         IStreamOptions Stream();
+        IQuorumOptions Quorum();
 
         Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        ///  Options for consumers of quorum queues.
+        /// </summary>
+        public interface IQuorumOptions
+        {
+            /// <summary>
+            /// Registers a callback for single-active-consumer state on a <b>quorum</b> queue, using FLOW link-state
+            /// (<c>rabbitmq:active</c>) from the broker.
+            /// </summary>
+            /// <remarks>
+            /// <para>
+            /// The callback runs on AMQP.Net Lite&apos;s I/O thread; do not block. This callback is intended for use with
+            /// quorum queues, such as when using <see cref="Queue(IQueueSpecification)"/> with a specification that
+            /// declares a quorum queue (for example <see cref="IQueueSpecification.Quorum"/> or
+            /// <see cref="IQueueSpecification.Type"/> with <see cref="QueueType.QUORUM"/>).
+            /// </para>
+            /// <para>Not compatible with <see cref="ConsumerSettleStrategy.DirectReplyTo"/>.</para>
+            /// </remarks>
+            /// <param name="handler">Delegate invoked when the broker reports SAC state; pass <c>null</c> to clear.</param>
+            /// <returns>The builder for fluent configuration.</returns>
+            /// <exception cref="ConsumerException">
+            /// At <see cref="BuildAndStartAsync"/> when <see cref="ConsumerSettleStrategy.DirectReplyTo"/> is selected.
+            /// </exception>
+            IQuorumOptions SingleActiveConsumerStateChanged(SingleActiveConsumerStateHandler? handler);
+
+            IConsumerBuilder Builder();
+        }
 
         public interface IStreamOptions
         {
