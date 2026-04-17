@@ -83,18 +83,17 @@ namespace RabbitMQ.AMQP.Client
             /// </summary>
             /// <remarks>
             /// <para>
-            /// The callback runs on AMQP.Net Lite&apos;s I/O thread; do not block. Use only with
-            /// <see cref="Queue(IQueueSpecification)"/> where the specification declares a quorum queue
-            /// (for example <see cref="IQueueSpecification.Quorum"/> or <see cref="IQueueSpecification.Type"/> with
-            /// <see cref="QueueType.QUORUM"/>).
+            /// The callback runs on AMQP.Net Lite&apos;s I/O thread; do not block. This callback is intended for use with
+            /// quorum queues, such as when using <see cref="Queue(IQueueSpecification)"/> with a specification that
+            /// declares a quorum queue (for example <see cref="IQueueSpecification.Quorum"/> or
+            /// <see cref="IQueueSpecification.Type"/> with <see cref="QueueType.QUORUM"/>).
             /// </para>
             /// <para>Not compatible with <see cref="ConsumerSettleStrategy.DirectReplyTo"/>.</para>
             /// </remarks>
             /// <param name="handler">Delegate invoked when the broker reports SAC state; pass <c>null</c> to clear.</param>
             /// <returns>The builder for fluent configuration.</returns>
             /// <exception cref="ConsumerException">
-            /// At <see cref="BuildAndStartAsync"/>: handler is set but the queue is not a quorum queue from specification,
-            /// or Direct Reply-To is selected.
+            /// At <see cref="BuildAndStartAsync"/> when <see cref="ConsumerSettleStrategy.DirectReplyTo"/> is selected.
             /// </exception>
             IQuorumOptions SingleActiveConsumerStateChanged(SingleActiveConsumerStateHandler? handler);
 
