@@ -36,8 +36,7 @@ namespace RabbitMQ.AMQP.Client
         /// link-state properties (<c>rabbitmq:active</c>). Requires RabbitMQ 4.3 or later.
         /// </summary>
         public bool IsQuorumSingleActiveConsumerFlowStateEnabled { get; internal set; } = false;
-        public bool Is43OrMore{ get; internal set; } = false;
-        
+        public bool Is43OrMore { get; internal set; } = false;
 
         public void Validate()
         {

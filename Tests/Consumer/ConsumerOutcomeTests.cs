@@ -97,7 +97,7 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
     {
         Assert.NotNull(_featureFlags);
         Skip.IfNot(_featureFlags is { Is43OrMore: true }, "At least RabbitMQ 4.3.0 required");
-        
+
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
