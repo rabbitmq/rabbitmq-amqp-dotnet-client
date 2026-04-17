@@ -220,7 +220,7 @@ namespace Tests
             IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Quorum().Queue();
             await queueSpec.DeclareAsync();
 
-            ConsumerException ex = await Assert.ThrowsAsync<ConsumerException>(async () =>
+            NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () =>
                 await _connection.ConsumerBuilder()
                     .Queue(queueSpec).Quorum()
                     .SingleActiveConsumerStateChanged((_, _) => { }).Builder()

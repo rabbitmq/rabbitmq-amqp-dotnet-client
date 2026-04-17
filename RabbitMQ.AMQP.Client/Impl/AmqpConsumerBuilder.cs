@@ -117,9 +117,16 @@ namespace RabbitMQ.AMQP.Client.Impl
 
             if (_configuration.SingleActiveConsumerStateChangedHandler is not null)
             {
+                if (!_amqpConnection._featureFlags.IsQuorumSingleActiveConsumerFlowStateEnabled)
+                {
+                    throw new NotSupportedException(
+                        "Single Active Consumer state change notification is not supported by the connection. " +
+                        "RabbitMQ 4.3.0 or later is required.");
+                }
+
                 if (_configuration.SettleStrategy == ConsumerSettleStrategy.DirectReplyTo)
                 {
-                    throw new ConsumerException(
+                    throw new NotSupportedException(
                         "SingleActiveConsumerStateChanged is not supported with ConsumerSettleStrategy.DirectReplyTo.");
                 }
             }
