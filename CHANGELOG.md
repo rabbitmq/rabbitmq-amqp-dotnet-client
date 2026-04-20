@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[1.0.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.0.0)]
+
+## 1.0.0 - 2026-20-04
+- [Release 1.0.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.0.0)
+
+### Highlights
+- First stable 1.0 release.
+
+### Changed
+- Update AMQP.Net Lite to 2.5.1 by @Gsantomaggio in [#158](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/158)
+- Improve examples by @Gsantomaggio in [#162](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/162)
+
+### Breaking changes
+- Quorum single-active-consumer state notifications are registered with `Quorum().SingleActiveConsumerStateChanged(...)` on the consumer builder by @Gsantomaggio in [#161](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/161). Code that used the previous top-level consumer builder hook (see 0.60.0 notes) must chain `.Quorum()` before setting the handler.
+
+### Documentation
+- Group stream filtering documentation by group id by @Gsantomaggio in [#160](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/160)
+
+### Project
+- Add `.github/release.yml` for release changelog generation by @Gsantomaggio in [#156](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/156)
+
+
 ## [[0.60.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v0.60.0)]
 
 ## 0.60.0 - 2026-17-03
