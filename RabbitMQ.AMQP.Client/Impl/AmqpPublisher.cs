@@ -103,15 +103,6 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-        /// <summary>
-        /// Publishes a message to the broker asynchronously.
-        /// </summary>
-        /// <param name="message"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns>A <see cref="Task"/> representating the await-able result of the publish operation.</returns>
-        /// <exception cref="InvalidOperationException"></exception>
-        /// <exception cref="NotSupportedException"></exception>
-        /// <exception cref="PublisherException"></exception>
         public Task<PublishResult> PublishAsync(IMessage message, CancellationToken cancellationToken = default)
         {
             ThrowIfClosed();

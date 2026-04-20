@@ -13,19 +13,16 @@
 // RabbitMQ AMQP 1.0 info: https://www.rabbitmq.com/docs/amqp
 // RabbitMQ AMQP 1.0 .NET Example - High Availability Client. The example creates provides a guide-line
 // to deal with high availability scenarios by monitoring connection and link states
-// Full path example: https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/tree/main/docs/Examples/HAClient
+// Full path example: https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/tree/main/docs/Examples/ReliableClient
 
-using System.Diagnostics;
-using DotNext.Threading;
+using System.Globalization;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
 
 Trace.TraceLevel = TraceLevel.Information;
-ConsoleTraceListener consoleListener = new();
-Trace.TraceListener = (l, f, a) =>
-    consoleListener.WriteLine($"[{DateTime.Now}] [{l}] - {f}");
+Trace.TraceListener = (l, f, a) => ConsoleEx.WriteTrace(l, f, a);
 
 long messagesReceived = 0;
 long messagesConfirmed = 0;
@@ -38,11 +35,11 @@ Task printStats = Task.Run(() =>
 {
     while (true)
     {
-        Trace.WriteLine(TraceLevel.Information, (
+        ConsoleEx.WriteStats(
             $"[(Confirmed: {Interlocked.Read(ref messagesConfirmed)}, " +
             $"Failed: {Interlocked.Read(ref messagesFailed)}, UnConfirmed: {Interlocked.Read(ref notMessagesConfirmed)} )] " +
             $"[(Received: {Interlocked.Read(ref messagesReceived)})] " +
-            $"(Un/Confirmed+Failed : {messagesConfirmed + messagesFailed + notMessagesConfirmed} ) "));
+            $"(Un/Confirmed+Failed : {messagesConfirmed + messagesFailed + notMessagesConfirmed} ) ");
         Thread.Sleep(1000);
     }
 });
@@ -53,14 +50,13 @@ const string containerId = "HA-Client-Connection";
 ConnectionSettings defaultSettings = ConnectionSettingsBuilder.Create().ContainerId(containerId)
     .Build();
 
+
 IEnvironment environment = AmqpEnvironment.Create(defaultSettings);
 
 IConnection connection = await environment.CreateConnectionAsync();
 
 connection.ChangeState += (sender, fromState, toState, e) =>
-{
-    Trace.WriteLine(TraceLevel.Information, $"Connection State Changed from {fromState} to {toState}");
-};
+    ConsoleEx.WriteLifecycle("Connection", fromState, toState);
 
 Trace.WriteLine(TraceLevel.Information, "Connected");
 
@@ -73,10 +69,10 @@ await queueSpec.DeclareAsync();
 
 IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).BuildAsync();
 
-AsyncManualResetEvent pausePublishing = new(true);
+ManualResetEvent pausePublishing = new(true);
 publisher.ChangeState += (sender, fromState, toState, e) =>
 {
-    Trace.WriteLine(TraceLevel.Information, $"Publisher State Changed, from {fromState} to {toState}");
+    ConsoleEx.WriteLifecycle("Publisher", fromState, toState);
 
     if (toState == State.Open)
     {
@@ -88,18 +84,17 @@ publisher.ChangeState += (sender, fromState, toState, e) =>
     }
 };
 
-IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).InitialCredits(100).MessageHandler((context, message) =>
-    {
-        Interlocked.Increment(ref messagesReceived);
-        context.Accept();
-        return Task.CompletedTask;
-    }
-).BuildAndStartAsync();
+IConsumer consumer = await connection.ConsumerBuilder().Queue(queueName).InitialCredits(100)
+    .MessageHandler((context, message) =>
+        {
+            Interlocked.Increment(ref messagesReceived);
+            context.Accept();
+            return Task.CompletedTask;
+        }
+    ).BuildAndStartAsync();
 
 consumer.ChangeState += (sender, fromState, toState, e) =>
-{
-    Trace.WriteLine(TraceLevel.Information, $"Consumer State Changed, from {fromState} to {toState}");
-};
+    ConsoleEx.WriteLifecycle("Consumer", fromState, toState);
 
 for (int i = 0; i < totalMessagesToSend; i++)
 {
@@ -108,7 +103,7 @@ for (int i = 0; i < totalMessagesToSend; i++)
         // TODO
         // Use a cancellation token for a timeout and for
         // CTRL-C handling
-        await pausePublishing.WaitAsync();
+        pausePublishing.WaitOne(TimeSpan.FromMinutes(1));
         var message = new AmqpMessage($"Hello World_{i}");
         PublishResult pr = await publisher.PublishAsync(message);
         if (pr.Outcome.State == OutcomeState.Accepted)
@@ -132,7 +127,7 @@ for (int i = 0; i < totalMessagesToSend; i++)
 }
 
 Trace.WriteLine(TraceLevel.Information, "Queue Created");
-Console.WriteLine("Press any key to delete the queue and close the connection.");
+ConsoleEx.WritePrompt("Press any key to delete the queue and close the connection.");
 Console.ReadKey();
 
 await publisher.CloseAsync();
@@ -148,3 +143,72 @@ connection.Dispose();
 
 printStats.Dispose();
 Trace.WriteLine(TraceLevel.Information, "Closed");
+
+file static class ConsoleEx
+{
+    private static readonly object s_consoleLock = new();
+
+    public static void WriteTrace(TraceLevel level, string format, object[]? args)
+    {
+        string text = args is { Length: > 0 }
+            ? string.Format(CultureInfo.InvariantCulture, format, args)
+            : format;
+
+        lock (s_consoleLock)
+        {
+            ConsoleColor previous = Console.ForegroundColor;
+            Console.ForegroundColor = level switch
+            {
+                TraceLevel.Error => ConsoleColor.Red,
+                TraceLevel.Warning => ConsoleColor.Yellow,
+                TraceLevel.Information => ConsoleColor.DarkCyan,
+                TraceLevel.Verbose => ConsoleColor.DarkGray,
+                _ => ConsoleColor.Gray
+            };
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [{level}] - {text}");
+            Console.ForegroundColor = previous;
+        }
+    }
+
+    public static void WriteLifecycle(string label, State fromState, State toState)
+    {
+        lock (s_consoleLock)
+        {
+            ConsoleColor previous = Console.ForegroundColor;
+            Console.ForegroundColor = ColorForState(toState);
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [{label}] {fromState} → {toState}");
+            Console.ForegroundColor = previous;
+        }
+    }
+
+    public static void WriteStats(string line)
+    {
+        lock (s_consoleLock)
+        {
+            ConsoleColor previous = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.DarkCyan;
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] [stats] {line}");
+            Console.ForegroundColor = previous;
+        }
+    }
+
+    public static void WritePrompt(string message)
+    {
+        lock (s_consoleLock)
+        {
+            ConsoleColor previous = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine(message);
+            Console.ForegroundColor = previous;
+        }
+    }
+
+    private static ConsoleColor ColorForState(State state) => state switch
+    {
+        State.Open => ConsoleColor.Green,
+        State.Reconnecting => ConsoleColor.Yellow,
+        State.Closing => ConsoleColor.DarkYellow,
+        State.Closed => ConsoleColor.DarkGray,
+        _ => ConsoleColor.Gray
+    };
+}
