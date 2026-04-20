@@ -6,11 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn);CA2007</NoWarn>
+    <RootNamespace>ReliableClient</RootNamespace>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="DotNext.Threading" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../../RabbitMQ.AMQP.Client/RabbitMQ.AMQP.Client.csproj" />

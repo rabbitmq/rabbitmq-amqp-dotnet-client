@@ -2,6 +2,7 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -78,6 +79,16 @@ namespace RabbitMQ.AMQP.Client
     /// </summary>
     public interface IPublisher : ILifeCycle
     {
+        /// <summary>
+        /// Publishes a message to the broker asynchronously.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> representating the await-able result of the publish operation.</returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="NotSupportedException"></exception>
+        /// <exception cref="PublisherException"></exception>
+
         Task<PublishResult> PublishAsync(IMessage message, CancellationToken cancellationToken = default);
     }
 }
