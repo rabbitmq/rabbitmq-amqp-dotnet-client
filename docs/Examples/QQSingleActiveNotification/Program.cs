@@ -102,7 +102,6 @@ static async Task RunProducerAsync(IConnection connection, string name)
         }
     };
 
-
     const int total = 3000;
     for (int i = 0; i < total; i++)
     {
