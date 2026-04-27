@@ -45,5 +45,8 @@ namespace RabbitMQ.AMQP.Client
         /// <summary>AMQP 1.0 link-state property: whether this link is the active single-active consumer.</summary>
         internal const string RabbitMqActiveProperty = "rabbitmq:active";
 
+        /// <summary>AMQP 1.0 attach property: consumer message lock timeout in milliseconds (quorum / JMS queues).</summary>
+        internal const string RabbitMqConsumerTimeoutProperty = "rabbitmq:consumer-timeout";
+
     }
 }

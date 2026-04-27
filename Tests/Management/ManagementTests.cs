@@ -186,6 +186,7 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
             .DeadLetterStrategy(QuorumQueueDeadLetterStrategy.AtLeastOnce)
             .QuorumInitialGroupSize(3)
             .QuorumTargetGroupSize(5)
+            .ConsumerTimeout(TimeSpan.FromMinutes(30))
             .Queue()
             .DeclareAsync();
 
@@ -195,6 +196,7 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         Assert.Equal(3, queueInfo.Arguments()["x-quorum-initial-group-size"]);
         Assert.Equal(5, queueInfo.Arguments()["x-quorum-target-group-size"]);
         Assert.Equal("client-local", queueInfo.Arguments()["x-queue-leader-locator"]);
+        Assert.Equal(1_800_000L, queueInfo.Arguments()["x-consumer-timeout"]);
         // NB: DisposeAsync will delete the queue with name _queueName
     }
 
@@ -282,6 +284,16 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         await Assert.ThrowsAsync<ArgumentException>(() =>
             _management.Queue().Name(_queueName).Quorum()
                 .DeliveryLimit(-1)
+                .Queue().DeclareAsync());
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _management.Queue().Name(_queueName).Quorum()
+                .ConsumerTimeout(TimeSpan.Zero)
+                .Queue().DeclareAsync());
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _management.Queue().Name(_queueName).Jms()
+                .ConsumerTimeout(TimeSpan.FromSeconds(-1))
                 .Queue().DeclareAsync());
     }
 

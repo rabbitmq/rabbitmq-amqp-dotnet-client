@@ -9,6 +9,7 @@ This directory contains examples of how to use the RabbitMQ AMQP 1.0 .NET client
 - OpenTelemetry Integration [here](./OpenTelemetryIntegration/)
 - OAuth2 Example [here](./OAuth2)
 - Batch Disposition [here](./BatchDispositions)
+- Quorum queue consumer timeout (`x-consumer-timeout`) [here](./ConsumerTimeout/)
 - Stream Filter [here](./StreamFilter)
 - AMQP 1.0 over WebSockets [here](./WebSockets) 
 - Affinity node [here](./Affinity/)
