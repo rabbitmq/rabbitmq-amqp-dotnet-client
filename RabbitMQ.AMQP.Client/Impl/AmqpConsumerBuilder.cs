@@ -33,6 +33,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         public Action<IConsumerBuilder.ListenerContext>? ListenerContext = null;
 
         public SingleActiveConsumerStateHandler? SingleActiveConsumerStateChangedHandler { get; set; }
+
+        /// <summary>
+        /// Per-consumer timeout in milliseconds for the AMQP 1.0 attach property <c>rabbitmq:consumer-timeout</c>
+        /// (quorum and JMS queues only). Set via <see cref="IConsumerBuilder.Quorum"/> / <see cref="IConsumerBuilder.Jms"/>.
+        /// </summary>
+        public uint? ConsumerTimeoutMilliseconds { get; set; }
     }
 
     /// <summary>
@@ -101,11 +107,23 @@ namespace RabbitMQ.AMQP.Client.Impl
             return new QuorumOptions(this, _configuration);
         }
 
+        public IConsumerBuilder.IJmsOptions Jms()
+        {
+            return new JmsOptions(this, _configuration);
+        }
+
         public async Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default)
         {
             if (_configuration.Handler is null)
             {
                 throw new ConsumerException("Message handler is not set");
+            }
+
+            if (_configuration.ConsumerTimeoutMilliseconds is not null &&
+                _configuration.SettleStrategy == ConsumerSettleStrategy.DirectReplyTo)
+            {
+                throw new NotSupportedException(
+                    "Consumer timeout is not supported with ConsumerSettleStrategy.DirectReplyTo.");
             }
 
             if (_configuration.Filters[Consts.s_sqlFilterSymbol] is not null &&
@@ -142,14 +160,26 @@ namespace RabbitMQ.AMQP.Client.Impl
 
     public class QuorumOptions : IConsumerBuilder.IQuorumOptions
     {
+        private static readonly TimeSpan s_tenYears = TimeSpan.FromDays(365 * 10);
+
         private readonly IConsumerBuilder _consumerBuilder;
         private SingleActiveConsumerStateHandler? _changedHandler;
+        private uint? _consumerTimeoutMilliseconds;
+        private bool _consumerTimeoutTouched;
         private readonly ConsumerConfiguration _consumerConfiguration;
 
         internal QuorumOptions(IConsumerBuilder consumerBuilder, ConsumerConfiguration consumerConfiguration)
         {
             _consumerBuilder = consumerBuilder;
             _consumerConfiguration = consumerConfiguration;
+        }
+
+        public IConsumerBuilder.IQuorumOptions ConsumerTimeout(TimeSpan timeout)
+        {
+            Utils.ValidatePositive("ConsumerTimeout", (long)timeout.TotalMilliseconds, (long)s_tenYears.TotalMilliseconds);
+            _consumerTimeoutMilliseconds = (uint)timeout.TotalMilliseconds;
+            _consumerTimeoutTouched = true;
+            return this;
         }
 
         public IConsumerBuilder.IQuorumOptions SingleActiveConsumerStateChanged(
@@ -162,6 +192,45 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IConsumerBuilder Builder()
         {
             _consumerConfiguration.SingleActiveConsumerStateChangedHandler = _changedHandler;
+            if (_consumerTimeoutTouched)
+            {
+                _consumerConfiguration.ConsumerTimeoutMilliseconds = _consumerTimeoutMilliseconds;
+            }
+
+            return _consumerBuilder;
+        }
+    }
+
+    public class JmsOptions : IConsumerBuilder.IJmsOptions
+    {
+        private static readonly TimeSpan s_tenYears = TimeSpan.FromDays(365 * 10);
+
+        private readonly IConsumerBuilder _consumerBuilder;
+        private uint? _consumerTimeoutMilliseconds;
+        private bool _consumerTimeoutTouched;
+        private readonly ConsumerConfiguration _consumerConfiguration;
+
+        internal JmsOptions(IConsumerBuilder consumerBuilder, ConsumerConfiguration consumerConfiguration)
+        {
+            _consumerBuilder = consumerBuilder;
+            _consumerConfiguration = consumerConfiguration;
+        }
+
+        public IConsumerBuilder.IJmsOptions ConsumerTimeout(TimeSpan timeout)
+        {
+            Utils.ValidatePositive("ConsumerTimeout", (long)timeout.TotalMilliseconds, (long)s_tenYears.TotalMilliseconds);
+            _consumerTimeoutMilliseconds = (uint)timeout.TotalMilliseconds;
+            _consumerTimeoutTouched = true;
+            return this;
+        }
+
+        public IConsumerBuilder Builder()
+        {
+            if (_consumerTimeoutTouched)
+            {
+                _consumerConfiguration.ConsumerTimeoutMilliseconds = _consumerTimeoutMilliseconds;
+            }
+
             return _consumerBuilder;
         }
     }

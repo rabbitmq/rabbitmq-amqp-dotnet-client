@@ -258,6 +258,12 @@ namespace RabbitMQ.AMQP.Client.Impl
             return new AmqpQuorumSpecification(this);
         }
 
+        public IJmsQueueSpecification Jms()
+        {
+            Type(QueueType.JMS);
+            return new AmqpJmsSpecification(this);
+        }
+
         public IClassicQueueSpecification Classic()
         {
             Type(QueueType.CLASSIC);
@@ -298,9 +304,13 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public async Task<IQueueInfo> DeclareAsync()
         {
-            if (_queueArguments["x-queue-type"] is QueueType.QUORUM or QueueType.STREAM)
+            if (_queueArguments.TryGetValue("x-queue-type", out object? queueTypeArg) &&
+                queueTypeArg is string queueTypeStr &&
+                (string.Equals(queueTypeStr, "quorum", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(queueTypeStr, "stream", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(queueTypeStr, "jms", StringComparison.OrdinalIgnoreCase)))
             {
-                // mandatory arguments for quorum queues and streams
+                // mandatory arguments for quorum queues, streams, and JMS queues
                 Exclusive(false).AutoDelete(false);
             }
 
@@ -450,6 +460,37 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             Utils.ValidatePositive("x-quorum-target-group-size", size);
             _parent._queueArguments["x-quorum-target-group-size"] = size;
+            return this;
+        }
+
+        public IQuorumQueueSpecification ConsumerTimeout(TimeSpan timeout)
+        {
+            Utils.ValidatePositive("ConsumerTimeout", (long)timeout.TotalMilliseconds,
+                (long)_parent._tenYears.TotalMilliseconds);
+            _parent._queueArguments["x-consumer-timeout"] = (long)timeout.TotalMilliseconds;
+            return this;
+        }
+
+        public IQueueSpecification Queue()
+        {
+            return _parent;
+        }
+    }
+
+    public class AmqpJmsSpecification : IJmsQueueSpecification
+    {
+        private readonly AmqpQueueSpecification _parent;
+
+        public AmqpJmsSpecification(AmqpQueueSpecification parent)
+        {
+            _parent = parent;
+        }
+
+        public IJmsQueueSpecification ConsumerTimeout(TimeSpan timeout)
+        {
+            Utils.ValidatePositive("ConsumerTimeout", (long)timeout.TotalMilliseconds,
+                (long)_parent._tenYears.TotalMilliseconds);
+            _parent._queueArguments["x-consumer-timeout"] = (long)timeout.TotalMilliseconds;
             return this;
         }
 

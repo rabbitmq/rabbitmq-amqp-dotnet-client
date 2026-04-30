@@ -79,6 +79,11 @@ namespace RabbitMQ.AMQP.Client
         IStreamOptions Stream();
         IQuorumOptions Quorum();
 
+        /// <summary>
+        ///   JMS-queue consumer options (for example attach properties supported on JMS queue consumers).
+        /// </summary>
+        IJmsOptions Jms();
+
         Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -105,6 +110,25 @@ namespace RabbitMQ.AMQP.Client
             /// At <see cref="BuildAndStartAsync"/> when <see cref="ConsumerSettleStrategy.DirectReplyTo"/> is selected.
             /// </exception>
             IQuorumOptions SingleActiveConsumerStateChanged(SingleActiveConsumerStateHandler? handler);
+
+            /// <summary>
+            ///   Sets the AMQP 1.0 attach property <c>rabbitmq:consumer-timeout</c> (milliseconds) for this consumer.
+            ///   Use with quorum queues (see RabbitMQ consumer timeout documentation).
+            /// </summary>
+            IQuorumOptions ConsumerTimeout(TimeSpan timeout);
+
+            IConsumerBuilder Builder();
+        }
+
+        /// <summary>
+        ///   Options for consumers of JMS queues.
+        /// </summary>
+        public interface IJmsOptions
+        {
+            /// <summary>
+            ///   Sets the AMQP 1.0 attach property <c>rabbitmq:consumer-timeout</c> (milliseconds) for this consumer.
+            /// </summary>
+            IJmsOptions ConsumerTimeout(TimeSpan timeout);
 
             IConsumerBuilder Builder();
         }

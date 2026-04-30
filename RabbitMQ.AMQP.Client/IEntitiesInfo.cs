@@ -10,7 +10,8 @@ namespace RabbitMQ.AMQP.Client
     {
         QUORUM,
         CLASSIC,
-        STREAM
+        STREAM,
+        JMS
     }
 
     public interface IQueueInfo : IEntityInfo
