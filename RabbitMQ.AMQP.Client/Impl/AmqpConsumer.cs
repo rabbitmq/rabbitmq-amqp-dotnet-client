@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amqp;
 using Amqp.Framing;
+using Amqp.Listener;
 using Amqp.Types;
 using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
@@ -110,7 +111,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 {
                     string address = AddressBuilderHelper.AddressBuilder().Queue(_configuration.Queue).Address();
                     Fields? attachProperties = null;
-                    if (_configuration.ConsumerTimeoutMilliseconds is uint consumerTimeoutMs)
+                    if (_configuration.ConsumerTimeoutMilliseconds is { } consumerTimeoutMs)
                     {
                         attachProperties = new Fields
                         {
@@ -125,6 +126,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 void OnAttached(ILink argLink, Attach argAttach)
                 {
+
+                    
                     if (_configuration.SingleActiveConsumerStateChangedHandler is not null)
                     {
                         argLink.OnLinkStateProperties = OnFlowLinkStateProperties;
