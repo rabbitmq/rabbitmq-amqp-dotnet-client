@@ -251,6 +251,10 @@ namespace RabbitMQ.AMQP.Client
             }
         }
 
+        internal static bool IsWebSocketScheme(string scheme) =>
+            scheme.Equals("ws", StringComparison.InvariantCultureIgnoreCase) ||
+            scheme.Equals("wss", StringComparison.InvariantCultureIgnoreCase);
+
         internal static void ValidateMessageAnnotations(Dictionary<string, object> annotations)
         {
             foreach (KeyValuePair<string, object> kvp in annotations)

@@ -46,9 +46,10 @@ namespace RabbitMQ.AMQP.Client
 
         /// <summary>
         /// From creates a new ConnectionSettingsBuilder from an existing ConnectionSettings instance.
-        /// It copies all the properties from the given ConnectionSettings instance to the new ConnectionSettingsBuilder instance.
-        /// It can be used to create a new ConnectionSettings instance that is similar to an existing one,
-        /// but with some properties changed.
+        /// It copies the settings into the builder so you can change some properties and call <see cref="Build"/>.
+        /// For <see cref="ClusterConnectionSettings"/>, the original broker URIs (including virtual host in the path)
+        /// and declaration order are preserved. For WebSocket (<c>ws</c>/<c>wss</c>) transports, the broker URI
+        /// (including the WebSocket resource path) is preserved via <see cref="Uri"/>.
         /// </summary>
         /// <param name="settings"> settings where to start</param>
         /// <returns></returns>
@@ -58,16 +59,7 @@ namespace RabbitMQ.AMQP.Client
             {
                 return new ConnectionSettingsBuilder()
                 {
-                    _uris = clusterConnectionSettings.Addresses.Select(a =>
-                        new UriBuilder()
-                        {
-                            Scheme = a.Scheme,
-                            Host = a.Host,
-                            Port = a.Port,
-                            UserName = a.User,
-                            Password = a.Password,
-                            Path = a.Path
-                        }.Uri).ToList(),
+                    _uris = clusterConnectionSettings.BrokerUris.ToList(),
                     _uriSelector = clusterConnectionSettings.UriSelector,
                     _containerId = clusterConnectionSettings.ContainerId,
                     _saslMechanism = clusterConnectionSettings.SaslMechanism,
@@ -75,6 +67,21 @@ namespace RabbitMQ.AMQP.Client
                     _maxFrameSize = clusterConnectionSettings.MaxFrameSize,
                     _tlsSettings = clusterConnectionSettings.TlsSettings,
                     _oAuth2Options = clusterConnectionSettings.OAuth2Options,
+                    _affinity = settings.Affinity
+                };
+            }
+
+            if (Utils.IsWebSocketScheme(settings.Scheme))
+            {
+                return new ConnectionSettingsBuilder()
+                {
+                    _uri = BuildWebSocketBrokerUri(settings),
+                    _containerId = settings.ContainerId,
+                    _saslMechanism = settings.SaslMechanism,
+                    _recoveryConfiguration = settings.Recovery,
+                    _maxFrameSize = settings.MaxFrameSize,
+                    _tlsSettings = settings.TlsSettings,
+                    _oAuth2Options = settings.OAuth2Options,
                     _affinity = settings.Affinity
                 };
             }
@@ -259,6 +266,34 @@ namespace RabbitMQ.AMQP.Client
             {
                 throw new ArgumentOutOfRangeException("uris", "Do not set both Uri and Uris");
             }
+        }
+
+        private static Uri BuildWebSocketBrokerUri(ConnectionSettings settings)
+        {
+            var ub = new UriBuilder
+            {
+                Scheme = settings.Scheme,
+                Host = settings.Host,
+                Path = string.IsNullOrWhiteSpace(settings.Path) ? "/" : settings.Path,
+            };
+
+            if (settings.Port > 0)
+            {
+                ub.Port = settings.Port;
+            }
+
+            if (settings.OAuth2Options is not null)
+            {
+                ub.UserName = string.Empty;
+                ub.Password = string.Empty;
+            }
+            else
+            {
+                ub.UserName = settings.User ?? string.Empty;
+                ub.Password = settings.Password ?? string.Empty;
+            }
+
+            return ub.Uri;
         }
     }
 
@@ -673,6 +708,12 @@ namespace RabbitMQ.AMQP.Client
         }
 
         internal IUriSelector? UriSelector => _uriSelector;
+
+        /// <summary>
+        /// Original broker URIs in declaration order (used for topology copy / <see cref="ConnectionSettingsBuilder.From"/>).
+        /// </summary>
+        internal IReadOnlyList<Uri> BrokerUris => _uris;
+
         internal override IList<Address> Addresses => _uriToAddress.Values.ToList();
     }
 

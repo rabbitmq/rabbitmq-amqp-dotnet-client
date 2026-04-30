@@ -10,6 +10,9 @@ All notable changes to this project will be documented in this file.
 ### Highlights
 - First stable 1.0 release.
 
+### Fix
+- `ConnectionSettingsBuilder.From` now copies cluster broker URIs in order (with correct virtual host path) instead of rebuilding from resolved addresses, and preserves WebSocket broker URIs including the resource path.
+
 ### Changed
 - Update AMQP.Net Lite to 2.5.1 by @Gsantomaggio in [#158](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/158)
 - Improve examples by @Gsantomaggio in [#162](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/162)
