@@ -313,6 +313,47 @@ public class ConnectionSettingsTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public void ConnectionSettingsBuilderFromRoundTripsClusterSettings()
+    {
+        const string scheme = "amqps";
+        const string host = "rabbitmq-host.foo.baz.com";
+        const string vhost = "/frazzle";
+        string user = RandomString(10);
+        string pass = RandomString(10);
+
+        var uri0 = new Uri($"{scheme}://{user}:{pass}@{host}:5671/%2Ffrazzle");
+        var uri1 = new Uri($"{scheme}://{user}:{pass}@{host}:5681/%2Ffrazzle");
+        var uri2 = new Uri($"{scheme}://{user}:{pass}@{host}:5691/%2Ffrazzle");
+
+        List<Uri> uris = [uri0, uri1, uri2];
+        var selector = new RandomUriSelector();
+        var original = new ClusterConnectionSettings(uris, selector);
+        ConnectionSettings rebuilt = ConnectionSettingsBuilder.From(original).Build();
+
+        Assert.IsType<ClusterConnectionSettings>(rebuilt);
+        Assert.Equal(vhost, rebuilt.VirtualHost);
+        Assert.Equal(original, rebuilt);
+        Assert.Equal(original.GetHashCode(), rebuilt.GetHashCode());
+    }
+
+    [Fact]
+    public void ConnectionSettingsBuilderFromRoundTripsWebSocketBrokerUri()
+    {
+        string user = RandomString(8);
+        string pass = RandomString(8);
+        var uri = new Uri($"wss://{user}:{pass}@localhost:15673/custom-ws-path");
+        var original = new ConnectionSettings(uri);
+        ConnectionSettings copy = ConnectionSettingsBuilder.From(original).Build();
+
+        Assert.Equal(original.Scheme, copy.Scheme);
+        Assert.Equal(original.Host, copy.Host);
+        Assert.Equal(original.Port, copy.Port);
+        Assert.Equal(original.User, copy.User);
+        Assert.Equal(original.Password, copy.Password);
+        Assert.Equal(original.Path, copy.Path);
+    }
+
+    [Fact]
     public void BuilderThrowsWhenUriAndUrisBothSet()
     {
         const string scheme = "amqps";
