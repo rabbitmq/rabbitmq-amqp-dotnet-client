@@ -63,6 +63,9 @@ namespace RabbitMQ.AMQP.Client
                 .Replace("=", "");
         }
 
+        private const string RejectedByQueueInfoKey = "queue";
+        private const string RejectedReason = "reason";
+
         internal static Error? ConvertError(Amqp.Framing.Error? sourceError)
         {
             Error? resultError = null;
@@ -73,6 +76,30 @@ namespace RabbitMQ.AMQP.Client
             }
 
             return resultError;
+        }
+
+        internal static AmqpMessageRejectedException? ConvertToAmqpMessageRejectedException(
+            Amqp.Framing.Error? sourceError)
+        {
+            if (sourceError == null)
+            {
+                return null;
+            }
+
+            string? rejectedBy = null;
+            if (sourceError.Info != null && sourceError.Info.ContainsKey(new Symbol(RejectedByQueueInfoKey)))
+            {
+                rejectedBy = sourceError.Info[new Symbol(RejectedByQueueInfoKey)]?.ToString();
+            }
+
+            string? reason = null;
+            if (sourceError.Info != null && sourceError.Info.ContainsKey(new Symbol(RejectedReason)))
+            {
+                reason = sourceError.Info[new Symbol(RejectedReason)]?.ToString();
+            }
+
+            string message = sourceError.Description ?? "Message has been rejected";
+            return new AmqpMessageRejectedException(message, rejectedBy, reason);
         }
 
         internal static void ValidateNonNegative(string label, long value, long max)

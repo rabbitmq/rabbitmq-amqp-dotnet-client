@@ -143,7 +143,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                         {
                             const OutcomeState publishState = OutcomeState.Rejected;
                             publishOutcome = new PublishOutcome(publishState,
-                                Utils.ConvertError(rejectedOutcome.Error));
+                                Utils.ConvertError(rejectedOutcome.Error),
+                                Utils.ConvertToAmqpMessageRejectedException(rejectedOutcome.Error));
                             _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.REJECTED);
                             break;
                         }

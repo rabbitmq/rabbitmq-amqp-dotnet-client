@@ -40,6 +40,8 @@ override RabbitMQ.AMQP.Client.RecoveryConfiguration.ToString() -> string!
 override RabbitMQ.AMQP.Client.SaslMechanism.Equals(object? obj) -> bool
 override RabbitMQ.AMQP.Client.SaslMechanism.GetHashCode() -> int
 RabbitMQ.AMQP.Client.AffinityUtils
+RabbitMQ.AMQP.Client.AmqpMessageRejectedException.AmqpMessageRejectedException(string? message, string? rejectedBy, string? reason) -> void
+RabbitMQ.AMQP.Client.AmqpMessageRejectedException.Reason.get -> string?
 RabbitMQ.AMQP.Client.BackOffDelayPolicy
 RabbitMQ.AMQP.Client.BackOffDelayPolicy.BackOffDelayPolicy() -> void
 RabbitMQ.AMQP.Client.BackOffDelayPolicy.BackOffDelayPolicy(int maxAttempt) -> void
@@ -800,8 +802,11 @@ RabbitMQ.AMQP.Client.PublisherException
 RabbitMQ.AMQP.Client.PublisherException.PublisherException(string! message) -> void
 RabbitMQ.AMQP.Client.PublisherException.PublisherException(string! message, System.Exception! innerException) -> void
 RabbitMQ.AMQP.Client.PublishOutcome
+RabbitMQ.AMQP.Client.AmqpMessageRejectedException
+RabbitMQ.AMQP.Client.AmqpMessageRejectedException.RejectedBy.get -> string?
 RabbitMQ.AMQP.Client.PublishOutcome.Error.get -> RabbitMQ.AMQP.Client.Error?
-RabbitMQ.AMQP.Client.PublishOutcome.PublishOutcome(RabbitMQ.AMQP.Client.OutcomeState state, RabbitMQ.AMQP.Client.Error? error) -> void
+RabbitMQ.AMQP.Client.PublishOutcome.Exception.get -> RabbitMQ.AMQP.Client.AmqpMessageRejectedException?
+RabbitMQ.AMQP.Client.PublishOutcome.PublishOutcome(RabbitMQ.AMQP.Client.OutcomeState state, RabbitMQ.AMQP.Client.Error? error, RabbitMQ.AMQP.Client.AmqpMessageRejectedException? exception = null) -> void
 RabbitMQ.AMQP.Client.PublishOutcome.State.get -> RabbitMQ.AMQP.Client.OutcomeState
 RabbitMQ.AMQP.Client.PublishResult
 RabbitMQ.AMQP.Client.PublishResult.Message.get -> RabbitMQ.AMQP.Client.IMessage!
