@@ -39,10 +39,12 @@ namespace RabbitMQ.AMQP.Client
     /// </summary>
     public class PublishOutcome
     {
-        public PublishOutcome(OutcomeState state, Error? error)
+        public PublishOutcome(OutcomeState state, Error? error,
+            AmqpMessageRejectedException? exception = null)
         {
             State = state;
             Error = error;
+            Exception = exception;
         }
 
         /// <summary>
@@ -54,6 +56,12 @@ namespace RabbitMQ.AMQP.Client
         /// The <see cref="Error"/>, if any.
         /// </summary>
         public Error? Error { get; }
+
+        /// <summary>
+        /// An <see cref="AmqpMessageRejectedException"/> if the message was rejected and the broker
+        /// provided rejection details (requires RabbitMQ 4.3 or later). <c>null</c> otherwise.
+        /// </summary>
+        public AmqpMessageRejectedException? Exception { get; }
     }
 
     /// <summary>
