@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[1.1.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.1.0)]
+
+## 1.1.0 - 2026-18-05
+- [Release 1.1.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.1.0)
+
+### Enhancements
+- Support `rejected-by` and rejection reason (RabbitMQ 4.3+) by @Gsantomaggio in [#167](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/167)
+
+### Fix
+- Preserve broker URIs in `ConnectionSettingsBuilder.From` by @Gsantomaggio in [#165](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/165)
+
+
 ## [[1.0.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.0.0)]
 
 ## 1.0.0 - 2026-20-04
