@@ -53,6 +53,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QQSingleActiveNotification"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RejectionReason", "docs\Examples\RejectionReason\RejectionReason.csproj", "{A1B2C3D4-E5F6-7A8B-9C0D-E1F2A3B4C5D6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QQDelayedRetry", "docs\Examples\QQDelayedRetry\QQDelayedRetry.csproj", "{2A9A963B-0C00-4B99-AD0B-B187793CB382}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -127,6 +129,10 @@ Global
 		{A1B2C3D4-E5F6-7A8B-9C0D-E1F2A3B4C5D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A1B2C3D4-E5F6-7A8B-9C0D-E1F2A3B4C5D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A1B2C3D4-E5F6-7A8B-9C0D-E1F2A3B4C5D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2A9A963B-0C00-4B99-AD0B-B187793CB382}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2A9A963B-0C00-4B99-AD0B-B187793CB382}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2A9A963B-0C00-4B99-AD0B-B187793CB382}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2A9A963B-0C00-4B99-AD0B-B187793CB382}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -147,5 +153,6 @@ Global
 		{B2C4D6E8-F0A2-4B6C-8D9E-0F1A2B3C4D5E} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 		{F4C8A2E1-9D3B-4C7A-8F2E-1B6D5A9C3E7F} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 		{A1B2C3D4-E5F6-7A8B-9C0D-E1F2A3B4C5D6} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
+		{2A9A963B-0C00-4B99-AD0B-B187793CB382} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 	EndGlobalSection
 EndGlobal

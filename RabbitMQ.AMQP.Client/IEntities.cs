@@ -111,6 +111,38 @@ namespace RabbitMQ.AMQP.Client
         AtLeastOnce
     }
 
+    /// <summary>
+    /// Conditions for delaying a message when it is returned to a quorum queue.
+    /// <para>
+    /// The delay is calculated with linear back-off based on the message's delivery count:
+    /// <c>min(min_delay * delivery_count, max_delay)</c>. A per-message explicit delivery time
+    /// can also be set by adding the <c>x-opt-delivery-time</c> annotation (a Unix timestamp in
+    /// milliseconds) when requeuing a message with annotations.
+    /// </para>
+    /// <para>Delayed retry support for quorum queues is available as of RabbitMQ 4.3.</para>
+    /// </summary>
+    /// <seealso href="https://www.rabbitmq.com/docs/quorum-queues#delayed-retry">Delayed Retry</seealso>
+    public enum QuorumQueueDelayedRetryType
+    {
+        /// <summary>Delayed retry is not applied (default).</summary>
+        Disabled,
+
+        /// <summary>All returned messages are delayed, regardless of whether the delivery count was incremented.</summary>
+        All,
+
+        /// <summary>
+        /// Only messages with an incremented <c>delivery-count</c> are delayed.
+        /// This happens for example when discarding a message via <c>IContext.Discard()</c>.
+        /// </summary>
+        Failed,
+
+        /// <summary>
+        /// Only messages without an incremented <c>delivery-count</c> are delayed.
+        /// This happens for example when requeuing a message via <c>IContext.Requeue()</c>.
+        /// </summary>
+        Returned
+    }
+
     public interface IQuorumQueueSpecification
     {
         IQuorumQueueSpecification DeadLetterStrategy(QuorumQueueDeadLetterStrategy strategy);
@@ -120,6 +152,35 @@ namespace RabbitMQ.AMQP.Client
         IQuorumQueueSpecification QuorumInitialGroupSize(int size);
 
         IQuorumQueueSpecification QuorumTargetGroupSize(int size);
+
+        /// <summary>
+        /// Set the delayed retry type.
+        /// <para>
+        /// Defines the conditions for delaying a message when it is returned to the queue.
+        /// You must also call <see cref="DelayedRetryMin"/> to configure the minimum retry delay.
+        /// </para>
+        /// <para>Delayed retry support for quorum queues requires RabbitMQ 4.3+.</para>
+        /// </summary>
+        /// <param name="type">The delayed retry condition.</param>
+        /// <seealso href="https://www.rabbitmq.com/docs/quorum-queues#delayed-retry">Delayed Retry</seealso>
+        IQuorumQueueSpecification DelayedRetryType(QuorumQueueDelayedRetryType type);
+
+        /// <summary>
+        /// Set the minimum delay for delayed retry (in milliseconds).
+        /// <para>
+        /// The delay grows linearly with the delivery count: <c>min(min * delivery_count, max)</c>.
+        /// </para>
+        /// </summary>
+        /// <param name="min">Minimum retry delay. Must be positive.</param>
+        /// <seealso href="https://www.rabbitmq.com/docs/quorum-queues#delayed-retry">Delayed Retry</seealso>
+        IQuorumQueueSpecification DelayedRetryMin(TimeSpan min);
+
+        /// <summary>
+        /// Set the maximum delay for delayed retry (in milliseconds).
+        /// </summary>
+        /// <param name="max">Maximum retry delay. Must be positive.</param>
+        /// <seealso href="https://www.rabbitmq.com/docs/quorum-queues#delayed-retry">Delayed Retry</seealso>
+        IQuorumQueueSpecification DelayedRetryMax(TimeSpan max);
 
         IQueueSpecification Queue();
     }

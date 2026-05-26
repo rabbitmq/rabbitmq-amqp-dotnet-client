@@ -198,6 +198,33 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
         // NB: DisposeAsync will delete the queue with name _queueName
     }
 
+    [Theory]
+    [InlineData(QuorumQueueDelayedRetryType.All, "all")]
+    [InlineData(QuorumQueueDelayedRetryType.Failed, "failed")]
+    [InlineData(QuorumQueueDelayedRetryType.Returned, "returned")]
+    [InlineData(QuorumQueueDelayedRetryType.Disabled, "disabled")]
+    public async Task DeclareQuorumQueueWithDelayedRetryArguments(
+        QuorumQueueDelayedRetryType retryType, string expectedTypeValue)
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IQueueInfo queueInfo = await _management.Queue()
+            .Name(_queueName)
+            .Quorum()
+            .DelayedRetryType(retryType)
+            .DelayedRetryMin(TimeSpan.FromSeconds(1))
+            .DelayedRetryMax(TimeSpan.FromSeconds(60))
+            .Queue()
+            .DeclareAsync();
+
+        Assert.Equal(_queueName, queueInfo.Name());
+        Assert.Equal(expectedTypeValue, queueInfo.Arguments()["x-delayed-retry-type"]);
+        Assert.Equal(1000L, queueInfo.Arguments()["x-delayed-retry-min"]);
+        Assert.Equal(60000L, queueInfo.Arguments()["x-delayed-retry-max"]);
+        // NB: DisposeAsync will delete the queue with name _queueName
+    }
+
     [Fact]
     public async Task DeclareClassicQueueWithArguments()
     {

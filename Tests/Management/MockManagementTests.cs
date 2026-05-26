@@ -119,4 +119,61 @@ public class MockManagementTests()
            await management.RequestAsync(new Message(), [200]));
         Assert.Equal(State.Closed, management.State);
     }
+
+    [Theory]
+    [InlineData(QuorumQueueDelayedRetryType.Disabled, "disabled")]
+    [InlineData(QuorumQueueDelayedRetryType.All, "all")]
+    [InlineData(QuorumQueueDelayedRetryType.Failed, "failed")]
+    [InlineData(QuorumQueueDelayedRetryType.Returned, "returned")]
+    public void QuorumQueueDelayedRetryTypeSetsCorrectArgument(
+        QuorumQueueDelayedRetryType retryType, string expectedValue)
+    {
+        var management = new TestAmqpManagement();
+        var spec = new AmqpQueueSpecification(management);
+        spec.Quorum().DelayedRetryType(retryType);
+
+        Assert.Equal(expectedValue, spec.QueueArguments["x-delayed-retry-type"]);
+    }
+
+    [Fact]
+    public void QuorumQueueDelayedRetryMinSetsCorrectArgument()
+    {
+        var management = new TestAmqpManagement();
+        var spec = new AmqpQueueSpecification(management);
+        spec.Quorum().DelayedRetryMin(TimeSpan.FromSeconds(1));
+
+        Assert.Equal(1000L, spec.QueueArguments["x-delayed-retry-min"]);
+    }
+
+    [Fact]
+    public void QuorumQueueDelayedRetryMaxSetsCorrectArgument()
+    {
+        var management = new TestAmqpManagement();
+        var spec = new AmqpQueueSpecification(management);
+        spec.Quorum().DelayedRetryMax(TimeSpan.FromSeconds(30));
+
+        Assert.Equal(30000L, spec.QueueArguments["x-delayed-retry-max"]);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void QuorumQueueDelayedRetryMinThrowsForNonPositiveValue(int seconds)
+    {
+        var management = new TestAmqpManagement();
+        var spec = new AmqpQueueSpecification(management);
+        Assert.Throws<ArgumentException>(() =>
+            spec.Quorum().DelayedRetryMin(TimeSpan.FromSeconds(seconds)));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void QuorumQueueDelayedRetryMaxThrowsForNonPositiveValue(int seconds)
+    {
+        var management = new TestAmqpManagement();
+        var spec = new AmqpQueueSpecification(management);
+        Assert.Throws<ArgumentException>(() =>
+            spec.Quorum().DelayedRetryMax(TimeSpan.FromSeconds(seconds)));
+    }
 }
