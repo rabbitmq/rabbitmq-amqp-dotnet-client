@@ -63,7 +63,6 @@ IQueueSpecification queueSpec = management.Queue(queueName)
         .DeliveryLimit(5)                           // dead-letter after 5 attempts
     .Queue();
 
-
 await queueSpec.DeclareAsync();
 Console.WriteLine($"[{Now()}] Queue '{queueName}' declared");
 Console.WriteLine($"[{Now()}] Delayed retry: type=failed, min=2 s, max=10 s, delivery-limit=5");
@@ -84,9 +83,8 @@ IConsumer consumer = await connection.ConsumerBuilder()
         long acquiredCount = 0;
         try
         {
-            acquiredCount = (long)message.Annotation("x-acquired-count"); 
-            
-            
+            acquiredCount = (long)message.Annotation("x-acquired-count");
+
         }
         catch { /* not present on the first delivery */ }
 
@@ -97,7 +95,7 @@ IConsumer consumer = await connection.ConsumerBuilder()
             Console.WriteLine(
                 $"[{Now()}] [Consumer] {msgId} acquired count={acquiredCount} → failing (Requeue). " +
                 $"Next retry in ~2s");
-           
+
             context.Requeue(); // increments acquired-count → triggers delayed retry
         }
         else
