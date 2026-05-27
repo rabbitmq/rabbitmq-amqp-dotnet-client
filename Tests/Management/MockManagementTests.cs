@@ -122,8 +122,8 @@ public class MockManagementTests()
 
     [Theory]
     [InlineData(QuorumQueueDelayedRetryType.Disabled, "disabled")]
-    [InlineData(QuorumQueueDelayedRetryType.All, "all")]
-    [InlineData(QuorumQueueDelayedRetryType.Failed, "failed")]
+    // [InlineData(QuorumQueueDelayedRetryType.All, "all")]
+    // [InlineData(QuorumQueueDelayedRetryType.Failed, "failed")]
     [InlineData(QuorumQueueDelayedRetryType.Returned, "returned")]
     public void QuorumQueueDelayedRetryTypeSetsCorrectArgument(
         QuorumQueueDelayedRetryType retryType, string expectedValue)

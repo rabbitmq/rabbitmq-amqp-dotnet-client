@@ -458,8 +458,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             _parent._queueArguments["x-delayed-retry-type"] = type switch
             {
                 QuorumQueueDelayedRetryType.Disabled => "disabled",
-                QuorumQueueDelayedRetryType.All => "all",
-                QuorumQueueDelayedRetryType.Failed => "failed",
+                // QuorumQueueDelayedRetryType.All => "all",
+                // QuorumQueueDelayedRetryType.Failed => "failed",
                 QuorumQueueDelayedRetryType.Returned => "returned",
                 _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
             };

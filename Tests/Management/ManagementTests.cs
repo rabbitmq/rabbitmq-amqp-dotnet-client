@@ -199,8 +199,8 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
     }
 
     [Theory]
-    [InlineData(QuorumQueueDelayedRetryType.All, "all")]
-    [InlineData(QuorumQueueDelayedRetryType.Failed, "failed")]
+    // [InlineData(QuorumQueueDelayedRetryType.All, "all")]
+    // [InlineData(QuorumQueueDelayedRetryType.Failed, "failed")]
     [InlineData(QuorumQueueDelayedRetryType.Returned, "returned")]
     [InlineData(QuorumQueueDelayedRetryType.Disabled, "disabled")]
     public async Task DeclareQuorumQueueWithDelayedRetryArguments(

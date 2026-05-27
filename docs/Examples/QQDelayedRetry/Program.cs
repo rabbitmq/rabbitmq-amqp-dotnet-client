@@ -15,16 +15,7 @@
 // "x-opt-delivery-time" message annotation (Unix timestamp in milliseconds).
 //
 // Queue arguments used:
-//   x-delayed-retry-type : "failed"   — delay only messages whose delivery-count was incremented
-//   x-delayed-retry-min  : 2000       — 2 s minimum delay
-//   x-delayed-retry-max  : 10000      — 10 s maximum delay (cap)
-//   x-max-delivery-limit : 5          — dead-letter after 5 failed attempts
-//
-// Expected output (approximate):
-//   [Consumer] msg#0 delivery-count=0 → failing (Discard)
-//   [Consumer] msg#0 delivery-count=1 → failing (Discard)   (~2 s later)
-//   [Consumer] msg#0 delivery-count=2 → failing (Discard)   (~4 s later)
-//   [Consumer] msg#0 delivery-count=3 → accepted            (~6 s later)
+//   x-delayed-retry-type : "Returned"   — no delay
 //
 // Run: dotnet run
 
@@ -49,8 +40,6 @@ IConnection connection = await environment.CreateConnectionAsync();
 Console.WriteLine($"[{Now()}] Connected to the broker");
 
 // ── declare queue ─────────────────────────────────────────────────────────────
-// Uses DelayedRetryType.Failed so that only messages whose delivery-count is
-// incremented (i.e. discarded via context.Discard()) are subject to the delay.
 // Messages requeued without failure (context.Requeue()) are not delayed.
 IManagement management = connection.Management();
 const string queueName = "qq-delayed-retry-example";
@@ -59,13 +48,10 @@ IQueueSpecification queueSpec = management.Queue(queueName)
     .Quorum()
         .DelayedRetryType(QuorumQueueDelayedRetryType.Returned)
         .DelayedRetryMin(TimeSpan.FromSeconds(2))   // 2 s base delay
-        .DelayedRetryMax(TimeSpan.FromSeconds(10))  // cap at 10 s
-        .DeliveryLimit(5)                           // dead-letter after 5 attempts
     .Queue();
 
 await queueSpec.DeclareAsync();
 Console.WriteLine($"[{Now()}] Queue '{queueName}' declared");
-Console.WriteLine($"[{Now()}] Delayed retry: type=failed, min=2 s, max=10 s, delivery-limit=5");
 Console.WriteLine();
 
 // ── consumer ──────────────────────────────────────────────────────────────────
@@ -112,7 +98,7 @@ IConsumer consumer = await connection.ConsumerBuilder()
 // ── publisher ─────────────────────────────────────────────────────────────────
 IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).BuildAsync();
 
-const int totalMessages = 1;
+const int totalMessages = 5;
 Console.WriteLine($"[{Now()}] Publishing {totalMessages} messages...");
 Console.WriteLine();
 
