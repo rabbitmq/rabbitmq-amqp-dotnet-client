@@ -38,7 +38,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                 {
                     throw new ConsumerException("Link is closed");
                 }
-
                 _link.Accept(_message);
                 _unsettledMessageCounter.Decrement();
                 _metricsReporter?.ConsumeDisposition(IMetricsReporter.ConsumeDispositionValue.ACCEPTED);

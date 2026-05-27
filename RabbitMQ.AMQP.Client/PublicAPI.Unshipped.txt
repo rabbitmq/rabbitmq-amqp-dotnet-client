@@ -516,6 +516,9 @@ RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.Type(RabbitMQ.AMQP.Client.Queue
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.AmqpQuorumSpecification(RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification! parent) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.DeadLetterStrategy(RabbitMQ.AMQP.Client.QuorumQueueDeadLetterStrategy strategy) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.DelayedRetryMax(System.TimeSpan max) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.DelayedRetryMin(System.TimeSpan min) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.DelayedRetryType(RabbitMQ.AMQP.Client.QuorumQueueDelayedRetryType type) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.DeliveryLimit(int limit) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.QuorumInitialGroupSize(int size) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
@@ -717,6 +720,9 @@ RabbitMQ.AMQP.Client.IQueueSpecification.Stream() -> RabbitMQ.AMQP.Client.IStrea
 RabbitMQ.AMQP.Client.IQueueSpecification.Type(RabbitMQ.AMQP.Client.QueueType queueType) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IQuorumQueueSpecification
 RabbitMQ.AMQP.Client.IQuorumQueueSpecification.DeadLetterStrategy(RabbitMQ.AMQP.Client.QuorumQueueDeadLetterStrategy strategy) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
+RabbitMQ.AMQP.Client.IQuorumQueueSpecification.DelayedRetryMax(System.TimeSpan max) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
+RabbitMQ.AMQP.Client.IQuorumQueueSpecification.DelayedRetryMin(System.TimeSpan min) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
+RabbitMQ.AMQP.Client.IQuorumQueueSpecification.DelayedRetryType(RabbitMQ.AMQP.Client.QuorumQueueDelayedRetryType type) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
 RabbitMQ.AMQP.Client.IQuorumQueueSpecification.DeliveryLimit(int limit) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
 RabbitMQ.AMQP.Client.IQuorumQueueSpecification.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IQuorumQueueSpecification.QuorumInitialGroupSize(int size) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
@@ -819,6 +825,11 @@ RabbitMQ.AMQP.Client.QueueType.STREAM = 2 -> RabbitMQ.AMQP.Client.QueueType
 RabbitMQ.AMQP.Client.QuorumQueueDeadLetterStrategy
 RabbitMQ.AMQP.Client.QuorumQueueDeadLetterStrategy.AtLeastOnce = 1 -> RabbitMQ.AMQP.Client.QuorumQueueDeadLetterStrategy
 RabbitMQ.AMQP.Client.QuorumQueueDeadLetterStrategy.AtMostOnce = 0 -> RabbitMQ.AMQP.Client.QuorumQueueDeadLetterStrategy
+RabbitMQ.AMQP.Client.QuorumQueueDelayedRetryType
+RabbitMQ.AMQP.Client.QuorumQueueDelayedRetryType.All = 1 -> RabbitMQ.AMQP.Client.QuorumQueueDelayedRetryType
+RabbitMQ.AMQP.Client.QuorumQueueDelayedRetryType.Disabled = 0 -> RabbitMQ.AMQP.Client.QuorumQueueDelayedRetryType
+RabbitMQ.AMQP.Client.QuorumQueueDelayedRetryType.Failed = 2 -> RabbitMQ.AMQP.Client.QuorumQueueDelayedRetryType
+RabbitMQ.AMQP.Client.QuorumQueueDelayedRetryType.Returned = 3 -> RabbitMQ.AMQP.Client.QuorumQueueDelayedRetryType
 RabbitMQ.AMQP.Client.RandomUriSelector
 RabbitMQ.AMQP.Client.RandomUriSelector.RandomUriSelector() -> void
 RabbitMQ.AMQP.Client.RandomUriSelector.Select(System.Collections.Generic.ICollection<System.Uri!>! uris) -> System.Uri!
