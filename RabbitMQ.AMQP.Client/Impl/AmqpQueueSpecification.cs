@@ -453,6 +453,33 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
+        public IQuorumQueueSpecification DelayedRetryType(QuorumQueueDelayedRetryType type)
+        {
+            _parent._queueArguments["x-delayed-retry-type"] = type switch
+            {
+                QuorumQueueDelayedRetryType.Disabled => "disabled",
+                // QuorumQueueDelayedRetryType.All => "all",
+                // QuorumQueueDelayedRetryType.Failed => "failed",
+                QuorumQueueDelayedRetryType.Returned => "returned",
+                _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+            };
+            return this;
+        }
+
+        public IQuorumQueueSpecification DelayedRetryMin(TimeSpan min)
+        {
+            Utils.ValidatePositive("x-delayed-retry-min", (long)min.TotalMilliseconds);
+            _parent._queueArguments["x-delayed-retry-min"] = (long)min.TotalMilliseconds;
+            return this;
+        }
+
+        public IQuorumQueueSpecification DelayedRetryMax(TimeSpan max)
+        {
+            Utils.ValidatePositive("x-delayed-retry-max", (long)max.TotalMilliseconds);
+            _parent._queueArguments["x-delayed-retry-max"] = (long)max.TotalMilliseconds;
+            return this;
+        }
+
         public IQueueSpecification Queue()
         {
             return _parent;

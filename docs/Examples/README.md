@@ -16,3 +16,5 @@ This directory contains examples of how to use the RabbitMQ AMQP 1.0 .NET client
 - PreSettled Consumer [here](./PreSettled/)
 - Stream group id filtering [here](./GroupIdFiltering/) 
 - Quorum queue single active consumer notifications [here](./QQSingleActiveNotification/)
+- Rejection reason (rejected-by queue name + reason, requires RabbitMQ 4.3+) [here](./RejectionReason/)
+- Quorum queue delayed retry with linear back-off (requires RabbitMQ 4.3+) [here](./QQDelayedRetry/)

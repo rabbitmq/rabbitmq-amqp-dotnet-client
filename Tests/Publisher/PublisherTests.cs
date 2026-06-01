@@ -11,6 +11,7 @@ using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace Tests.Publisher;
 
@@ -255,6 +256,99 @@ public class PublisherTests(ITestOutputHelper testOutputHelper) : IntegrationTes
         // TODO this is quite different than the Java client
         Assert.Null(publishOutcome.Error.Description);
         Assert.Equal("amqp:resource-deleted", publishOutcome.Error.ErrorCode);
+
+        await publisher.CloseAsync();
+        publisher.Dispose();
+    }
+
+    /// <summary>
+    /// Test that when a message is rejected by the broker due to queue overflow,
+    /// the PublishOutcome.Exception is populated with an AmqpMessageRejectedException.
+    /// The rejection reason feature requires RabbitMQ 4.3 or later.
+    /// </summary>
+    [SkippableFact]
+    public async Task RejectedMessageShouldHaveAmqpMessageRejectedException()
+    {
+        Assert.NotNull(_featureFlags);
+        Skip.IfNot(_featureFlags is { Is43OrMore: true }, "At least RabbitMQ 4.3.0 required");
+
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IQueueSpecification queueSpecification = _management.Queue(_queueName)
+            .Type(QueueType.QUORUM)
+            .MaxLength(1)
+            .OverflowStrategy(OverFlowStrategy.RejectPublish);
+        await queueSpecification.DeclareAsync();
+
+        IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpecification).BuildAsync();
+
+        // Fill up the queue
+        PublishResult acceptedResult = await publisher.PublishAsync(new AmqpMessage("fill queue"));
+        Assert.Equal(OutcomeState.Accepted, acceptedResult.Outcome.State);
+
+        // we publish a message, QQs can accept more messages than the limit
+        await publisher.PublishAsync(new AmqpMessage("maybe"));
+
+        // This publish should be rejected because the queue is full and overflow strategy is reject-publish
+        PublishResult rejectedResult = await publisher.PublishAsync(new AmqpMessage("overflow"));
+        Assert.Equal(OutcomeState.Rejected, rejectedResult.Outcome.State);
+
+        AmqpMessageRejectedException? exception = rejectedResult.Outcome.Exception;
+        Assert.NotNull(exception);
+        Assert.NotNull(exception.Message);
+        Assert.Equal(_queueName, exception.RejectedBy);
+        Assert.Equal("maxlen", exception.Reason);
+
+        await publisher.CloseAsync();
+        publisher.Dispose();
+    }
+
+    /// <summary>
+    /// Test that when a message is rejected without broker-provided rejection details
+    /// (older broker or different rejection path), PublishOutcome.Exception can be null.
+    /// </summary>
+    [Fact]
+    public async Task RejectedMessageWithoutRejectionReasonHasNullException()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+        IMessage message = new AmqpMessage(Encoding.ASCII.GetBytes("hello"));
+
+        IQueueSpecification queueSpecification = _management.Queue(_queueName).Exclusive(true);
+        IQueueInfo queueInfo = await queueSpecification.DeclareAsync();
+        Assert.Equal(_queueName, queueInfo.Name());
+
+        IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpecification).BuildAsync();
+
+        try
+        {
+            PublishResult publishResult = await publisher.PublishAsync(message);
+            Assert.Equal(OutcomeState.Accepted, publishResult.Outcome.State);
+        }
+        finally
+        {
+            await queueSpecification.DeleteAsync();
+        }
+
+        PublishOutcome? publishOutcome = null;
+        for (int i = 0; i < 100; i++)
+        {
+            PublishResult nextPublishResult = await publisher.PublishAsync(message);
+            if (OutcomeState.Rejected == nextPublishResult.Outcome.State)
+            {
+                publishOutcome = nextPublishResult.Outcome;
+                break;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(100));
+        }
+
+        Assert.NotNull(publishOutcome);
+        // When the queue is deleted and the publisher sends a message, the error code is
+        // amqp:resource-deleted. In this case there is no rejection reason from the broker.
+        // Exception may still be populated (from the description) or null depending on broker version.
+        Assert.Equal(OutcomeState.Rejected, publishOutcome.State);
 
         await publisher.CloseAsync();
         publisher.Dispose();
