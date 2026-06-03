@@ -85,6 +85,11 @@ namespace RabbitMQ.AMQP.Client
 
         IQuorumQueueSpecification Quorum();
 
+        /// <summary>
+        ///   Configures a JMS queue (<c>x-queue-type: jms</c>). Requires a broker that supports the JMS queue type.
+        /// </summary>
+        IJmsQueueSpecification Jms();
+
         IClassicQueueSpecification Classic();
 
         Task<ulong> PurgeAsync();
@@ -159,6 +164,11 @@ namespace RabbitMQ.AMQP.Client
         IQuorumQueueSpecification QuorumTargetGroupSize(int size);
 
         /// <summary>
+        ///   Sets the <c>x-consumer-timeout</c> queue argument (milliseconds).
+        /// </summary>
+        IQuorumQueueSpecification ConsumerTimeout(TimeSpan timeout);
+
+        /// <summary>
         /// Set the delayed retry type.
         /// <para>
         /// Defines the conditions for delaying a message when it is returned to the queue.
@@ -186,6 +196,19 @@ namespace RabbitMQ.AMQP.Client
         /// <param name="max">Maximum retry delay. Must be positive.</param>
         /// <seealso href="https://www.rabbitmq.com/docs/quorum-queues#delayed-retry">Delayed Retry</seealso>
         IQuorumQueueSpecification DelayedRetryMax(TimeSpan max);
+
+        IQueueSpecification Queue();
+    }
+
+    /// <summary>
+    ///   Optional arguments for JMS queues (<c>x-queue-type: jms</c>).
+    /// </summary>
+    public interface IJmsQueueSpecification
+    {
+        /// <summary>
+        ///   Sets the <c>x-consumer-timeout</c> queue argument (milliseconds).
+        /// </summary>
+        IJmsQueueSpecification ConsumerTimeout(TimeSpan timeout);
 
         IQueueSpecification Queue();
     }
