@@ -10,7 +10,7 @@
 // For quorum queues you can set:
 // - Queue argument x-consumer-timeout (via IQueueSpecification.Quorum().ConsumerTimeout(...))
 // - Per-consumer attach property rabbitmq:consumer-timeout (via IConsumerBuilder.Quorum().ConsumerTimeout(...).Builder())
-// See: https://www.rabbitmq.com/docs/consumers#consumer-timeout
+// See: https://www.rabbitmq.com/blog/2026/04/23/rabbitmq-4.3-release#consumer-timeouts
 //
 // This sample declares a quorum queue with a queue-level timeout, attaches a consumer with its own consumer-level
 // timeout (highest precedence when both are set), and settles messages immediately so the timeout is not hit.
@@ -58,6 +58,9 @@ int secondsToWait = 4;
 IConsumer consumer = await connection.ConsumerBuilder()
     .Queue(queueSpec)
     .Quorum()
+    // There are different ways to configure the consumer timeout, 
+    // see https://www.rabbitmq.com/blog/2026/04/23/rabbitmq-4.3-release#consumer-timeouts
+    
     .ConsumerTimeout(attachConsumerTimeout)
     .OnDeliveryRelease((context, message) =>
     {
