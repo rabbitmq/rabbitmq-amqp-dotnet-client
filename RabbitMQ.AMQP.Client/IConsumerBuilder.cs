@@ -117,6 +117,8 @@ namespace RabbitMQ.AMQP.Client
             /// </summary>
             IQuorumOptions ConsumerTimeout(TimeSpan timeout);
 
+            IQuorumOptions OnDeliveryRelease(OnDeliveryRelease onDeliveryRelease);
+
             IConsumerBuilder Builder();
         }
 

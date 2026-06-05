@@ -9,6 +9,7 @@ using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using Amqp;
+using Amqp.Handler;
 
 namespace RabbitMQ.AMQP.Client
 {
@@ -67,7 +68,7 @@ namespace RabbitMQ.AMQP.Client
                     _maxFrameSize = clusterConnectionSettings.MaxFrameSize,
                     _tlsSettings = clusterConnectionSettings.TlsSettings,
                     _oAuth2Options = clusterConnectionSettings.OAuth2Options,
-                    _affinity = settings.Affinity
+                    _affinity = settings.Affinity,
                 };
             }
 
@@ -82,7 +83,7 @@ namespace RabbitMQ.AMQP.Client
                     _maxFrameSize = settings.MaxFrameSize,
                     _tlsSettings = settings.TlsSettings,
                     _oAuth2Options = settings.OAuth2Options,
-                    _affinity = settings.Affinity
+                    _affinity = settings.Affinity,
                 };
             }
 
@@ -231,9 +232,10 @@ namespace RabbitMQ.AMQP.Client
         {
             // TODO this should do something similar to consolidate in the Java code
             ValidateUris();
+            ConnectionSettings settings;
             if (_uri is not null)
             {
-                return new ConnectionSettings(_uri,
+                settings = new ConnectionSettings(_uri,
                     _containerId, _saslMechanism,
                     _recoveryConfiguration,
                     _maxFrameSize,
@@ -241,23 +243,26 @@ namespace RabbitMQ.AMQP.Client
                     _oAuth2Options,
                     _affinity);
             }
-
-            if (_uris is not null)
+            else if (_uris is not null)
             {
-                return new ClusterConnectionSettings(_uris,
+                settings = new ClusterConnectionSettings(_uris,
                     _uriSelector,
                     _containerId, _saslMechanism,
                     _recoveryConfiguration,
                     _maxFrameSize,
                     _tlsSettings, _oAuth2Options, _affinity);
             }
+            else
+            {
+                settings = new ConnectionSettings(_scheme, _host, _port, _user,
+                    _password, _virtualHost,
+                    _containerId, _saslMechanism,
+                    _recoveryConfiguration,
+                    _maxFrameSize,
+                    _tlsSettings, _oAuth2Options, _affinity);
+            }
 
-            return new ConnectionSettings(_scheme, _host, _port, _user,
-                _password, _virtualHost,
-                _containerId, _saslMechanism,
-                _recoveryConfiguration,
-                _maxFrameSize,
-                _tlsSettings, _oAuth2Options, _affinity);
+            return settings;
         }
 
         private void ValidateUris()
@@ -312,6 +317,7 @@ namespace RabbitMQ.AMQP.Client
         private readonly IRecoveryConfiguration _recoveryConfiguration = new RecoveryConfiguration();
         private readonly IAffinity? _affinity = null;
         private readonly string _webSocketPath = "/";
+        private IHandler? _nativeHandler;
 
         public ConnectionSettings(Uri uri,
             string? containerId = null,
@@ -456,6 +462,11 @@ namespace RabbitMQ.AMQP.Client
         public IRecoveryConfiguration Recovery => _recoveryConfiguration;
 
         public IAffinity? Affinity => _affinity;
+
+        internal void SetNativeHandler(IHandler? handler)
+        {
+            _nativeHandler = handler;
+        }
 
         internal virtual Address Address => _address;
         internal OAuth2Options? OAuth2Options => _oAuth2Options;

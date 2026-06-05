@@ -39,6 +39,8 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// (quorum and JMS queues only). Set via <see cref="IConsumerBuilder.Quorum"/> / <see cref="IConsumerBuilder.Jms"/>.
         /// </summary>
         public uint? ConsumerTimeoutMilliseconds { get; set; }
+
+        public OnDeliveryRelease? OnDeliveryRelease { get; set; }
     }
 
     /// <summary>
@@ -179,6 +181,12 @@ namespace RabbitMQ.AMQP.Client.Impl
             Utils.ValidatePositive("ConsumerTimeout", (long)timeout.TotalMilliseconds, (long)s_tenYears.TotalMilliseconds);
             _consumerTimeoutMilliseconds = (uint)timeout.TotalMilliseconds;
             _consumerTimeoutTouched = true;
+            return this;
+        }
+
+        public IConsumerBuilder.IQuorumOptions OnDeliveryRelease(OnDeliveryRelease onDeliveryRelease)
+        {
+            _consumerConfiguration.OnDeliveryRelease = onDeliveryRelease;
             return this;
         }
 

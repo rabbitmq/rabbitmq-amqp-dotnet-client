@@ -202,6 +202,7 @@ RabbitMQ.AMQP.Client.IConsumerBuilder.IJmsOptions.ConsumerTimeout(System.TimeSpa
 RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions
 RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions.ConsumerTimeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions!
+RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions.OnDeliveryRelease(RabbitMQ.AMQP.Client.OnDeliveryRelease! onDeliveryRelease) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions!
 RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions.SingleActiveConsumerStateChanged(RabbitMQ.AMQP.Client.SingleActiveConsumerStateHandler? handler) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions!
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions.AbsoluteExpiryTime(System.DateTime absoluteExpiryTime) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions!
@@ -335,6 +336,7 @@ RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue
 RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue.ACCEPTED = 0 -> RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue
 RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue.DISCARDED = 1 -> RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue
 RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue.REQUEUED = 2 -> RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue
+RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue.UNLOCK = 3 -> RabbitMQ.AMQP.Client.IMetricsReporter.ConsumeDispositionValue
 RabbitMQ.AMQP.Client.IMetricsReporter.ConsumerClosed() -> void
 RabbitMQ.AMQP.Client.IMetricsReporter.ConsumerOpened() -> void
 RabbitMQ.AMQP.Client.IMetricsReporter.PublishDisposition(RabbitMQ.AMQP.Client.IMetricsReporter.PublishDispositionValue disposition) -> void
@@ -631,6 +633,7 @@ RabbitMQ.AMQP.Client.Impl.JmsOptions.ConsumerTimeout(System.TimeSpan timeout) ->
 RabbitMQ.AMQP.Client.Impl.QuorumOptions
 RabbitMQ.AMQP.Client.Impl.QuorumOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.QuorumOptions.ConsumerTimeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions!
+RabbitMQ.AMQP.Client.Impl.QuorumOptions.OnDeliveryRelease(RabbitMQ.AMQP.Client.OnDeliveryRelease! onDeliveryRelease) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions!
 RabbitMQ.AMQP.Client.Impl.QuorumOptions.SingleActiveConsumerStateChanged(RabbitMQ.AMQP.Client.SingleActiveConsumerStateHandler? handler) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions!
 RabbitMQ.AMQP.Client.Impl.RequesterAddressBuilder
 RabbitMQ.AMQP.Client.Impl.RequesterAddressBuilder.Requester() -> RabbitMQ.AMQP.Client.IRequesterBuilder!
@@ -793,6 +796,7 @@ RabbitMQ.AMQP.Client.LeaderLocatorStrategy.Balanced = 1 -> RabbitMQ.AMQP.Client.
 RabbitMQ.AMQP.Client.LeaderLocatorStrategy.ClientLocal = 0 -> RabbitMQ.AMQP.Client.LeaderLocatorStrategy
 RabbitMQ.AMQP.Client.LifeCycleCallBack
 RabbitMQ.AMQP.Client.MessageHandler
+RabbitMQ.AMQP.Client.OnDeliveryRelease
 RabbitMQ.AMQP.Client.SingleActiveConsumerStateHandler
 RabbitMQ.AMQP.Client.MetricsReporter
 RabbitMQ.AMQP.Client.MetricsReporter.ConnectionClosed() -> void

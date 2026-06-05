@@ -18,6 +18,7 @@
 using System.Diagnostics;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
+using IConnection = RabbitMQ.AMQP.Client.IConnection;
 using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
 
@@ -33,13 +34,15 @@ const string containerId = "consumer-timeout-example-connection";
 IEnvironment environment = AmqpEnvironment.Create(
     ConnectionSettingsBuilder.Create().ContainerId(containerId).Build());
 
-IConnection connection = await environment.CreateConnectionAsync();
+IConnection connection = await environment
+    .CreateConnectionAsync(ConnectionSettingsBuilder.Create().Build())
+    .ConfigureAwait(false);
 Trace.WriteLine(TraceLevel.Information, $"Connected to the broker {connection} successfully");
 
 IManagement management = connection.Management();
 const string queueName = "q_amqp10-consumer-timeout-example";
 
-// TimeSpan queueConsumerTimeout = TimeSpan.FromMinutes(3);
+//TimeSpan queueConsumerTimeout = TimeSpan.FromSeconds(3);
 TimeSpan attachConsumerTimeout = TimeSpan.FromSeconds(3);
 
 IQueueSpecification queueSpec = management.Queue(queueName)
@@ -47,26 +50,45 @@ IQueueSpecification queueSpec = management.Queue(queueName)
     // .ConsumerTimeout(queueConsumerTimeout)
     .Queue();
 
-IQueueInfo queueInfo = await queueSpec.DeclareAsync();
-// Trace.WriteLine(TraceLevel.Information,
-//     $"Queue declared with x-consumer-timeout={queueInfo.Arguments()["x-consumer-timeout"]} ms (queue default).");
+await queueSpec.DeclareAsync();
 
 IPublisher publisher = await connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
 
+int secondsToWait = 4;
 IConsumer consumer = await connection.ConsumerBuilder()
     .Queue(queueSpec)
     .Quorum()
     .ConsumerTimeout(attachConsumerTimeout)
-    .Builder()
+    .OnDeliveryRelease((context, message) =>
+    {
+        Trace.WriteLine(TraceLevel.Information,
+            $"[Consumer] Message: {message.BodyAsString()} released by consumer. Going to unlock the consumer");
 
+        // Here we unlock the consumer from the consumer timeout state.
+        // In this example, only one time has to raise the timeout, then we reset the secondsToWait to 0 to avoid
+        // hitting the timeout for subsequent messages.
+        context.Accept();
+        return Task.CompletedTask;
+    }).Builder()
     .MessageHandler(async (context, message) =>
     {
         Trace.WriteLine(TraceLevel.Information,
-            $"[Consumer] Message: {message.BodyAsString()} received; settling within consumer timeout");
-        await Task.Delay(TimeSpan.FromSeconds(4));
-        Trace.WriteLine(TraceLevel.Information,
-            $"[Consumer] Message: {message.BodyAsString()} after delay");
-        context.Accept();
+            $"[Consumer] Message: {message.BodyAsString()} received; going to wait for {secondsToWait} seconds before accepting the message to trigger the consumer timeout");
+        await Task.Delay(TimeSpan.FromSeconds(secondsToWait));
+        secondsToWait =
+            0; // only delay the first message to trigger the timeout, then reset to 0 for subsequent messages
+
+        // In the first iteration the context.Accept() is ignored since id requeued due to timeout,
+        // but in the second iteration it works as expected since the timeout is not hit.
+        try
+        {
+            context.Accept();
+            Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.BodyAsString()} accepted");
+        }
+        catch (Exception e)
+        {
+            Trace.WriteLine(TraceLevel.Error, $"[Consumer] Failed to accept message: {e.Message}");
+        }
     })
     .BuildAndStartAsync();
 
