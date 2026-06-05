@@ -60,7 +60,7 @@ IConsumer consumer = await connection.ConsumerBuilder()
     .Quorum()
     // There are different ways to configure the consumer timeout, 
     // see https://www.rabbitmq.com/blog/2026/04/23/rabbitmq-4.3-release#consumer-timeouts
-    
+
     .ConsumerTimeout(attachConsumerTimeout)
     .OnDeliveryRelease((context, message) =>
     {

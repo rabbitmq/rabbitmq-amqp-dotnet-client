@@ -149,7 +149,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                     throw new NotSupportedException(
                         "Single Active Consumer state change notification is not supported with ConsumerSettleStrategy.DirectReplyTo.");
                 }
-                
+
                 if (_configuration.OnDeliveryRelease is not null)
                 {
                     if (!_amqpConnection._featureFlags.IsConsumerTimeoutSupported)
