@@ -158,8 +158,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             await EnsureReceiverLinkAsync()
                 .ConfigureAwait(false);
 
-            // TODO do something with this task?
-            _ = Task.Run(ProcessResponses);
+            BeginProcessingResponses();
 
             _managementSession.AddClosedCallback(OnManagementSessionClosed);
 
@@ -435,48 +434,56 @@ namespace RabbitMQ.AMQP.Client.Impl
             _managementSessionClosedTcs.TrySetResult(true);
         }
 
-        private async Task ProcessResponses()
+        protected void BeginProcessingResponses()
         {
-            try
-            {
-                while (_managementSession?.IsClosed == false &&
-                       _amqpManagementParameters.IsNativeConnectionClosed == false)
+            _ = Task.Run(ProcessResponsesAsync).ContinueWith(
+                t =>
                 {
-                    if (_receiverLink == null)
+                    if (State == State.Closed || State == State.Closing)
                     {
+                        return;
+                    }
+
+                    Exception? inner = t.Exception?.InnerException;
+                    Trace.WriteLine(TraceLevel.Error,
+                        $"{ToString()} management session receiver faulted: {inner}");
+                    OnNewStatus(State.Closed,
+                        new Error("management.session.faulted", inner?.Message ?? "unexpected error"));
+                },
+                System.Threading.CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted,
+                TaskScheduler.Default);
+        }
+
+        protected virtual async Task ProcessResponsesAsync()
+        {
+            while (_managementSession?.IsClosed == false &&
+                   _amqpManagementParameters.IsNativeConnectionClosed == false)
+            {
+                if (_receiverLink == null)
+                {
+                    continue;
+                }
+
+                TimeSpan timeout = TimeSpan.FromSeconds(59);
+                using (Message msg = await _receiverLink.ReceiveAsync(timeout).ConfigureAwait(false))
+                {
+                    if (msg == null)
+                    {
+                        // this is not a problem, it is just a timeout.
+                        // the timeout is set to 60 seconds.
+                        // For the moment I'd trace it at some point we can remove it
+                        Trace.WriteLine(TraceLevel.Verbose,
+                            $"{ToString()} - Timeout {timeout.Seconds} s.. waiting for message.");
                         continue;
                     }
 
-                    TimeSpan timeout = TimeSpan.FromSeconds(59);
-                    using (Message msg = await _receiverLink.ReceiveAsync(timeout).ConfigureAwait(false))
-                    {
-                        if (msg == null)
-                        {
-                            // this is not a problem, it is just a timeout. 
-                            // the timeout is set to 60 seconds. 
-                            // For the moment I'd trace it at some point we can remove it
-                            Trace.WriteLine(TraceLevel.Verbose,
-                                $"{ToString()} - Timeout {timeout.Seconds} s.. waiting for message.");
-                            continue;
-                        }
-
-                        _receiverLink.Accept(msg);
-                        HandleResponseMessage(msg);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                // TODO this is a serious situation that should be thrown
-                // up to the client application
-                if (_receiverLink?.IsClosed == false)
-                {
-                    Trace.WriteLine(TraceLevel.Error,
-                        $"Receiver link error in management session {e}. Receiver link closed: {_receiverLink?.IsClosed}");
+                    _receiverLink.Accept(msg);
+                    HandleResponseMessage(msg);
                 }
             }
 
-            Trace.WriteLine(TraceLevel.Verbose, "ProcessResponses Task closed");
+            Trace.WriteLine(TraceLevel.Verbose, "ProcessResponsesAsync task closed");
         }
 
         private async Task EnsureReceiverLinkAsync()
