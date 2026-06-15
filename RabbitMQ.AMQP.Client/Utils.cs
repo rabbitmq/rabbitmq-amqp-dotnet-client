@@ -392,7 +392,10 @@ namespace RabbitMQ.AMQP.Client
             if (i < vals1.Length && i < vals2.Length)
             {
                 if (!int.TryParse(vals1[i], out int val1) || !int.TryParse(vals2[i], out int val2))
+                {
                     return -1; // treat unparseable segment as older than the target
+                }
+
                 return val1.CompareTo(val2);
             }
 
