@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Amqp;
 using Amqp.Framing;
+using Amqp.Handler;
 using Amqp.Types;
 using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
@@ -109,8 +110,18 @@ namespace RabbitMQ.AMQP.Client.Impl
                 else
                 {
                     string address = AddressBuilderHelper.AddressBuilder().Queue(_configuration.Queue).Address();
+                    Fields? attachProperties = null;
+                    if (_configuration.ConsumerTimeoutMilliseconds is { } consumerTimeoutMs)
+                    {
+                        attachProperties = new Fields
+                        {
+                            { new Symbol(Consts.RabbitMqConsumerTimeoutProperty), consumerTimeoutMs }
+                        };
+                    }
+
                     attach = Utils.CreateAttach(address, DeliveryMode.AtLeastOnce, _id,
-                        _configuration.Filters, _configuration.SettleStrategy == ConsumerSettleStrategy.PreSettled);
+                        _configuration.Filters, _configuration.SettleStrategy == ConsumerSettleStrategy.PreSettled,
+                        attachProperties);
                 }
 
                 void OnAttached(ILink argLink, Attach argAttach)
@@ -149,6 +160,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                 (_receiverLink, _attach) = await attachCompletedTcs.Task.WaitAsync(waitSpan)
                     .ConfigureAwait(false);
                 ValidateReceiverLink();
+
+                _amqpConnection.RegisterConsumerDeliveryHandler(_id.ToString(), this);
 
                 _receiverLink.SetCredit(_configuration.InitialCredits);
 
@@ -366,6 +379,29 @@ namespace RabbitMQ.AMQP.Client.Impl
         public long UnsettledMessageCount => _unsettledMessageCounter.Get();
 
         /// <summary>
+        /// Invoked by <see cref="ConnectionHandler"/> when the broker changes the delivery state of a message
+        /// on this consumer's receiver link (e.g. <c>RELEASED</c> due to a consumer-timeout on a quorum queue).
+        /// Decrements the unsettled-message counter so the consumer stays consistent.
+        /// </summary>
+        internal void OnDeliveryStateChanged(ReceiverLink receiverLink, IDelivery delivery)
+        {
+            Trace.WriteLine(TraceLevel.Verbose,
+                $"{ToString()} delivery state changed by broker: {delivery.State}");
+
+            if (_configuration.OnDeliveryRelease is not null && delivery.State is Released)
+            {
+                IContext context = _configuration.SettleStrategy switch
+                {
+                    ConsumerSettleStrategy.PreSettled => new PreSettledDeliveryContext(),
+                    _ => new TimeoutDeliveryContext(receiverLink, delivery.Message, _unsettledMessageCounter,
+                        _metricsReporter)
+                };
+
+                _configuration.OnDeliveryRelease?.Invoke(context, new AmqpMessage(delivery.Message));
+            }
+        }
+
+        /// <summary>
         /// Gets the queue name this consumer is attached to (from the link source address).
         /// </summary>
         public string Queue
@@ -430,6 +466,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
             _receiverLink = null;
             OnNewStatus(State.Closed, null);
+            _amqpConnection.UnregisterConsumerDeliveryHandler(_id.ToString());
             _amqpConnection.RemoveConsumer(_id);
         }
 

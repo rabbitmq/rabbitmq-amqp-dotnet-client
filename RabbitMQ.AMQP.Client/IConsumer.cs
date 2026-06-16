@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Amqp.Handler;
 
 namespace RabbitMQ.AMQP.Client
 {
@@ -35,6 +36,14 @@ namespace RabbitMQ.AMQP.Client
     /// <param name="consumer">The consumer whose SAC state was reported.</param>
     /// <param name="isActive"><c>true</c> when this consumer is the active SAC consumer; otherwise <c>false</c>.</param>
     public delegate void SingleActiveConsumerStateHandler(IConsumer consumer, bool isActive);
+
+    /// <summary>
+    /// Raised when the delivery is released by the broker (AMQP 1.0 <c>released</c> outcome)
+    /// and the message is requeued to be delivered again.
+    /// For example: Consumer timeout feature in RabbitMQ 4.3+ can trigger this when a message
+    /// is not settled within the configured timeout.
+    /// </summary>
+    public delegate Task DeliveryReleaseHandler(IContext context, IMessage message);
 
     /// <summary>
     /// <para>API to consume messages from a RabbitMQ queue.</para>
