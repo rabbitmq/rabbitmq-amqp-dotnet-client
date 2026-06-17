@@ -759,17 +759,20 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             foreach (KeyValuePair<object, object> kvp in properties)
             {
-                string key = (Symbol)kvp.Key;
-                string value = string.Empty;
-                if (kvp.Value is not null)
+                if (kvp.Key is Symbol keySymbol)
                 {
-                    value = (string)kvp.Value;
+                    _connectionProperties[(string)keySymbol] = kvp.Value as string ?? string.Empty;
                 }
-
-                _connectionProperties[key] = value;
             }
 
-            string brokerVersion = (string)_connectionProperties["version"];
+            if (!_connectionProperties.TryGetValue("version", out object? versionObj) ||
+                versionObj is not string brokerVersion)
+            {
+                Trace.WriteLine(TraceLevel.Warning,
+                    $"{ToString()} broker did not advertise a version; feature flags left at defaults.");
+                return;
+            }
+
             _featureFlags.IsBrokerCompatible = Utils.Is4_0_OrMore(brokerVersion);
 
             // check if the broker supports filter expressions

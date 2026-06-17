@@ -391,8 +391,11 @@ namespace RabbitMQ.AMQP.Client
             // compare first non-equal ordinal number
             if (i < vals1.Length && i < vals2.Length)
             {
-                int val1 = int.Parse(vals1[i]);
-                int val2 = int.Parse(vals2[i]);
+                if (!int.TryParse(vals1[i], out int val1) || !int.TryParse(vals2[i], out int val2))
+                {
+                    return -1; // treat unparseable segment as older than the target
+                }
+
                 return val1.CompareTo(val2);
             }
 
