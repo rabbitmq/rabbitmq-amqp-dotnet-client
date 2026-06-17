@@ -3,6 +3,7 @@
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Amqp.Framing;
 using RabbitMQ.AMQP.Client;
@@ -118,6 +119,79 @@ public class MockManagementTests()
         await Assert.ThrowsAsync<AmqpNotOpenException>(async () =>
            await management.RequestAsync(new Message(), [200]));
         Assert.Equal(State.Closed, management.State);
+    }
+
+    // ---- ProcessResponsesAsync fault-propagation tests ----
+
+    public class TestAmqpManagementFaultingSession : AmqpManagement
+    {
+        public TestAmqpManagementFaultingSession() : base(new AmqpManagementParameters(null!))
+        {
+            State = State.Open;
+        }
+
+        protected override Task ProcessResponsesAsync()
+            => Task.FromException(new InvalidOperationException("simulated receiver link fault"));
+
+        public void StartProcessing() => BeginProcessingResponses();
+
+        internal protected override async Task InternalSendAsync(Message message, TimeSpan timeout)
+            => await Task.Delay(1);
+    }
+
+    public class TestAmqpManagementCleanSession : AmqpManagement
+    {
+        public TestAmqpManagementCleanSession() : base(new AmqpManagementParameters(null!))
+        {
+            State = State.Open;
+        }
+
+        protected override Task ProcessResponsesAsync() => Task.CompletedTask;
+
+        public void StartProcessing() => BeginProcessingResponses();
+
+        internal protected override async Task InternalSendAsync(Message message, TimeSpan timeout)
+            => await Task.Delay(1);
+    }
+
+    [Fact]
+    public async Task ProcessingSessionFault_TransitionsManagementToClosed()
+    {
+        var management = new TestAmqpManagementFaultingSession();
+        var stateChangeTcs = Utils.CreateTaskCompletionSource<State>();
+        management.ChangeState += (_, _, newState, _) => stateChangeTcs.TrySetResult(newState);
+
+        management.StartProcessing();
+
+        State arrived = await stateChangeTcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(State.Closed, arrived);
+    }
+
+    [Fact]
+    public async Task ProcessingSessionFault_FiresChangeStateWithError()
+    {
+        var management = new TestAmqpManagementFaultingSession();
+        var errorTcs = Utils.CreateTaskCompletionSource<RabbitMQ.AMQP.Client.Error?>();
+        management.ChangeState += (_, _, _, error) => errorTcs.TrySetResult(error);
+
+        management.StartProcessing();
+
+        RabbitMQ.AMQP.Client.Error? error = await errorTcs.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.NotNull(error);
+    }
+
+    [Fact]
+    public async Task ProcessingSessionCleanExit_DoesNotChangeState()
+    {
+        var management = new TestAmqpManagementCleanSession();
+        bool stateChanged = false;
+        management.ChangeState += (_, _, _, _) => stateChanged = true;
+
+        management.StartProcessing();
+
+        await Task.Delay(200);
+        Assert.False(stateChanged);
+        Assert.Equal(State.Open, management.State);
     }
 
     [Theory]
