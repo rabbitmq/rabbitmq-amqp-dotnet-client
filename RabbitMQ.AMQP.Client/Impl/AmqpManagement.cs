@@ -439,7 +439,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             _ = Task.Run(ProcessResponsesAsync).ContinueWith(
                 t =>
                 {
-                    if (State == State.Closed || State == State.Closing)
+                    if (State is State.Closed or State.Closing)
                     {
                         return;
                     }
@@ -458,29 +458,31 @@ namespace RabbitMQ.AMQP.Client.Impl
         protected virtual async Task ProcessResponsesAsync()
         {
             while (_managementSession?.IsClosed == false &&
-                   _amqpManagementParameters.IsNativeConnectionClosed == false)
+                   !_amqpManagementParameters.IsNativeConnectionClosed)
             {
                 if (_receiverLink == null)
                 {
+                    // this should never happen
+                    Trace.WriteLine(TraceLevel.Error, $"{ToString()} - Receiver link is null, skipping receive");
+                    // avoid the CPU 100% until the _receiverLink is not null
+                    await Task.Delay(200).ConfigureAwait(false);
                     continue;
                 }
 
                 TimeSpan timeout = TimeSpan.FromSeconds(59);
-                using (Message msg = await _receiverLink.ReceiveAsync(timeout).ConfigureAwait(false))
+                using Message msg = await _receiverLink.ReceiveAsync(timeout).ConfigureAwait(false);
+                if (msg == null)
                 {
-                    if (msg == null)
-                    {
-                        // this is not a problem, it is just a timeout.
-                        // the timeout is set to 60 seconds.
-                        // For the moment I'd trace it at some point we can remove it
-                        Trace.WriteLine(TraceLevel.Verbose,
-                            $"{ToString()} - Timeout {timeout.Seconds} s.. waiting for message.");
-                        continue;
-                    }
-
-                    _receiverLink.Accept(msg);
-                    HandleResponseMessage(msg);
+                    // this is not a problem, it is just a timeout.
+                    // the timeout is set to 60 seconds.
+                    // For the moment I'd trace it at some point we can remove it
+                    Trace.WriteLine(TraceLevel.Verbose,
+                        $"{ToString()} - Timeout {timeout.Seconds} s.. waiting for message.");
+                    continue;
                 }
+
+                _receiverLink.Accept(msg);
+                HandleResponseMessage(msg);
             }
 
             Trace.WriteLine(TraceLevel.Verbose, "ProcessResponsesAsync task closed");
