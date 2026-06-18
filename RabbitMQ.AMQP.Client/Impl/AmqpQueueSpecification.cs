@@ -298,11 +298,13 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public async Task<IQueueInfo> DeclareAsync()
         {
-            if (_queueArguments["x-queue-type"] is QueueType.QUORUM or QueueType.STREAM)
+            if (Utils.IsQuorum(_queueArguments) || Utils.IsStream(_queueArguments))
             {
                 // mandatory arguments for quorum queues and streams
                 Exclusive(false).AutoDelete(false);
             }
+
+            Utils.ValidateRetryParameters(_queueArguments);
 
             if (string.IsNullOrWhiteSpace(_queueName))
             {
@@ -434,8 +436,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IQuorumQueueSpecification DeliveryLimit(int limit)
         {
-            Utils.ValidatePositive("x-max-delivery-limit", limit);
-            _parent._queueArguments["x-max-delivery-limit"] = limit;
+            Utils.ValidatePositive("x-delivery-limit", limit);
+            _parent._queueArguments["x-delivery-limit"] = limit;
             return this;
         }
 
@@ -458,8 +460,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             _parent._queueArguments["x-delayed-retry-type"] = type switch
             {
                 QuorumQueueDelayedRetryType.Disabled => "disabled",
-                // QuorumQueueDelayedRetryType.All => "all",
-                // QuorumQueueDelayedRetryType.Failed => "failed",
+                QuorumQueueDelayedRetryType.All => "all",
+                QuorumQueueDelayedRetryType.Failed => "failed",
                 QuorumQueueDelayedRetryType.Returned => "returned",
                 _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
             };

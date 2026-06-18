@@ -131,14 +131,12 @@ namespace RabbitMQ.AMQP.Client
         // We will make it available in a future releases
 
         /// <summary>All returned messages are delayed, regardless of whether the delivery count was incremented.</summary>
-        [Obsolete("This status is not ready to use.", true)]
         All,
 
         /// <summary>
         /// Only messages with an incremented <c>delivery-count</c> are delayed.
-        /// This happens for example when discarding a message via <c>IContext.Discard()</c>.
+        /// This happens for example when discarding a message via <c>IContext.DelayedRetry()</c>.
         /// </summary>
-        [Obsolete("This status is not ready to use.", true)]
         Failed,
 
         /// <summary>
