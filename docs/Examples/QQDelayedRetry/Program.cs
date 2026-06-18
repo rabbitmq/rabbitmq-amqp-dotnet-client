@@ -18,6 +18,8 @@
 //   x-delayed-retry-type : "Returned"   — no delay
 //
 // Run: dotnet run
+// Full path example: https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/tree/main/docs/Examples/QQDelayedRetry/
+
 
 using System.Diagnostics;
 using System.Globalization;

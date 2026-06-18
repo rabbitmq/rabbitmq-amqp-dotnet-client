@@ -20,12 +20,13 @@
 //
 // Note: Full delay support via x-delayed-retry-type=failed requires a future client
 // release that enables QuorumQueueDelayedRetryType.Failed. This example shows the
-// redelivery behavior on a plain quorum queue (messages are re-enqueued immediately).
+// redelivery behavior on a plain quorum queue.
 //
 // Queue arguments used:
-//   x-quorum-delivery-limit : 4  — dead-letter after 4 failed deliveries
+//   x-quorum-delivery-limit : 5 — dead-letter after 5 failed deliveries
 //
 // Run: dotnet run
+// Full path example: https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/tree/main/docs/Examples/QQDelayedRetryContext/
 
 using System.Diagnostics;
 using System.Globalization;
