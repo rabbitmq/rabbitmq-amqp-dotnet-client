@@ -190,7 +190,7 @@ public class ManagementTests(ITestOutputHelper testOutputHelper) : IntegrationTe
             .DeclareAsync();
 
         Assert.Equal(_queueName, queueInfo.Name());
-        Assert.Equal(12, queueInfo.Arguments()["x-max-delivery-limit"]);
+        Assert.Equal(12, queueInfo.Arguments()["x-delivery-limit"]);
         Assert.Equal("at-least-once", queueInfo.Arguments()["x-dead-letter-strategy"]);
         Assert.Equal(3, queueInfo.Arguments()["x-quorum-initial-group-size"]);
         Assert.Equal(5, queueInfo.Arguments()["x-quorum-target-group-size"]);

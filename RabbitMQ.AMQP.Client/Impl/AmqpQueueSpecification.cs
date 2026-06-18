@@ -298,14 +298,14 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public async Task<IQueueInfo> DeclareAsync()
         {
-            if (_queueArguments["x-queue-type"] is QueueType.QUORUM or QueueType.STREAM)
+            if (Utils.IsQuorum(_queueArguments) || Utils.IsStream(_queueArguments))
             {
                 // mandatory arguments for quorum queues and streams
                 Exclusive(false).AutoDelete(false);
             }
 
             Utils.ValidateRetryParameters(_queueArguments);
-            
+
             if (string.IsNullOrWhiteSpace(_queueName))
             {
                 // If the name is not set, generate a random name
