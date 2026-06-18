@@ -54,14 +54,14 @@ const string queueName = "qq-delayed-retry-context-example";
 const int minTime = 5;
 const int maxTime = 10;
 
-// A delivery limit of 4 means the message is dead-lettered after 4 failed
-// deliveries (i.e., after 4 calls to DelayedRetry()).
 IQueueSpecification queueSpec = management.Queue(queueName)
     .Type(QueueType.QUORUM)
     .Quorum()
     .DelayedRetryType(QuorumQueueDelayedRetryType.Failed)
+    // DelayedRetryMin and Max requires DelayedRetryType
     .DelayedRetryMin(TimeSpan.FromSeconds(minTime))
     .DelayedRetryMax(TimeSpan.FromSeconds(maxTime))
+    // DeliveryLimit can be used even without DelayedRetry
     .DeliveryLimit(5)
     .Queue();
 
@@ -78,16 +78,7 @@ IConsumer consumer = await connection.ConsumerBuilder()
     .Queue(queueName)
     .MessageHandler((context, message) =>
     {
-        long deliveryCount = 0;
-        try
-        {
-            deliveryCount = (long)message.DeliveryCount();
-        }
-        catch
-        {
-            /* not present on first delivery */
-        }
-
+        long deliveryCount = message.DeliveryCount();
         string msgId = message.BodyAsString();
 
         switch (deliveryCount)
