@@ -147,6 +147,46 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        public void DelayedRetry()
+        {
+            try
+            {
+                if (_link.IsClosed)
+                {
+                    throw new ConsumerException("Link is closed");
+                }
+
+                _link.Modify(_message, true, false, null);
+                _unsettledMessageCounter.Decrement();
+                _metricsReporter?.ConsumeDisposition(IMetricsReporter.ConsumeDispositionValue.REQUEUED);
+            }
+            finally
+            {
+                _message.Dispose();
+            }
+        }
+
+        public void DelayedRetry(TimeSpan delay)
+        {
+            try
+            {
+                if (_link.IsClosed)
+                {
+                    throw new ConsumerException("Link is closed");
+                }
+
+                long deliveryTimeMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + (long)delay.TotalMilliseconds;
+                Fields annotations = new() { [new Symbol("x-opt-delivery-time")] = deliveryTimeMs };
+                _link.Modify(_message, true, false, annotations);
+                _unsettledMessageCounter.Decrement();
+                _metricsReporter?.ConsumeDisposition(IMetricsReporter.ConsumeDispositionValue.REQUEUED);
+            }
+            finally
+            {
+                _message.Dispose();
+            }
+        }
+
         public IBatchContext Batch()
         {
             if (_link.IsClosed)
@@ -280,6 +320,50 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        ///<summary>
+        /// Requeue all messages in the batch context with broker-side delayed-retry back-off.
+        /// Contexts are cleared after the operation.
+        /// </summary>
+        public void DelayedRetry()
+        {
+            _semaphore.Wait();
+            try
+            {
+                foreach (var context in _contexts)
+                {
+                    context.DelayedRetry();
+                }
+
+                _contexts.Clear();
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        ///<summary>
+        /// Requeue all messages in the batch context with an explicit per-message delivery delay.
+        /// Contexts are cleared after the operation.
+        /// </summary>
+        public void DelayedRetry(TimeSpan delay)
+        {
+            _semaphore.Wait();
+            try
+            {
+                foreach (var context in _contexts)
+                {
+                    context.DelayedRetry(delay);
+                }
+
+                _contexts.Clear();
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
         public IBatchContext Batch() => this;
 
         ///<summary>
@@ -321,6 +405,16 @@ namespace RabbitMQ.AMQP.Client.Impl
         public void Requeue(Dictionary<string, object> annotations)
         {
             throw new InvalidOperationException("Cannot requeue a pre-settled delivery context.");
+        }
+
+        public void DelayedRetry()
+        {
+            throw new InvalidOperationException("Cannot delayed-retry a pre-settled delivery context.");
+        }
+
+        public void DelayedRetry(TimeSpan delay)
+        {
+            throw new InvalidOperationException("Cannot delayed-retry a pre-settled delivery context.");
         }
 
         public IBatchContext Batch()

@@ -250,4 +250,132 @@ public class MockManagementTests()
         Assert.Throws<ArgumentException>(() =>
             spec.Quorum().DelayedRetryMax(TimeSpan.FromSeconds(seconds)));
     }
+
+    // ---- DeclareAsync delayed-retry argument validation tests ----
+    // Validation rule: if any of x-delayed-retry-min, x-delayed-retry-max, or
+    // x-delayed-redelivery-max is set, x-delayed-retry-type must also be set.
+
+    /// <summary>
+    /// Setting x-delayed-retry-min without x-delayed-retry-type must throw.
+    /// </summary>
+    [Fact]
+    public async Task DeclareAsync_ThrowsInvalidOperationException_WhenDelayedRetryMinSetWithoutType()
+    {
+        var management = new TestAmqpManagement();
+        var spec = new AmqpQueueSpecification(management);
+        spec.Quorum().DelayedRetryMin(TimeSpan.FromSeconds(1)).Queue().Name("test-queue");
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await spec.DeclareAsync());
+
+        Assert.Contains("x-delayed-retry-type", ex.Message);
+    }
+
+    /// <summary>
+    /// Setting x-delayed-retry-max without x-delayed-retry-type must throw.
+    /// </summary>
+    [Fact]
+    public async Task DeclareAsync_ThrowsInvalidOperationException_WhenDelayedRetryMaxSetWithoutType()
+    {
+        var management = new TestAmqpManagement();
+        var spec = new AmqpQueueSpecification(management);
+        spec.Quorum().DelayedRetryMax(TimeSpan.FromSeconds(30)).Queue().Name("test-queue");
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await spec.DeclareAsync());
+
+        Assert.Contains("x-delayed-retry-type", ex.Message);
+    }
+
+    /// <summary>
+    /// Setting x-delayed-redelivery-max without x-delayed-retry-type must throw.
+    /// </summary>
+    [Fact]
+    public async Task DeclareAsync_ThrowsInvalidOperationException_WhenDelayedRedeliveryMaxSetWithoutType()
+    {
+        var management = new TestAmqpManagement();
+        var spec = new AmqpQueueSpecification(management);
+        // x-delayed-redelivery-max has no dedicated builder method; set it directly.
+        spec.Name("test-queue");
+        spec.QueueArguments["x-delayed-redelivery-max"] = 5000L;
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await spec.DeclareAsync());
+
+        Assert.Contains("x-delayed-retry-type", ex.Message);
+    }
+
+    /// <summary>
+    /// Setting x-delayed-retry-min together with x-delayed-retry-type must pass
+    /// validation. The test confirms this by observing AmqpNotOpenException (thrown
+    /// by the closed management when RequestAsync is reached) rather than
+    /// InvalidOperationException (which would indicate a validation failure).
+    /// </summary>
+    [Fact]
+    public async Task DeclareAsync_PassesValidation_WhenDelayedRetryMinSetWithType()
+    {
+        var management = new TestAmqpManagement();
+        var spec = new AmqpQueueSpecification(management);
+        spec.Quorum()
+            .DelayedRetryType(QuorumQueueDelayedRetryType.Returned)
+            .DelayedRetryMin(TimeSpan.FromSeconds(1))
+            .Queue()
+            .Name("test-queue");
+
+        // Validation passes → reaches RequestAsync → management is closed → AmqpNotOpenException
+        await Assert.ThrowsAsync<AmqpNotOpenException>(async () => await spec.DeclareAsync());
+    }
+
+    /// <summary>
+    /// Setting x-delayed-retry-max together with x-delayed-retry-type must pass validation.
+    /// </summary>
+    [Fact]
+    public async Task DeclareAsync_PassesValidation_WhenDelayedRetryMaxSetWithType()
+    {
+        var management = new TestAmqpManagement();
+        var spec = new AmqpQueueSpecification(management);
+        spec.Quorum()
+            .DelayedRetryType(QuorumQueueDelayedRetryType.Returned)
+            .DelayedRetryMax(TimeSpan.FromSeconds(30))
+            .Queue()
+            .Name("test-queue");
+
+        await Assert.ThrowsAsync<AmqpNotOpenException>(async () => await spec.DeclareAsync());
+    }
+
+    /// <summary>
+    /// Setting x-delayed-redelivery-max together with x-delayed-retry-type must pass validation.
+    /// </summary>
+    [Fact]
+    public async Task DeclareAsync_PassesValidation_WhenDelayedRedeliveryMaxSetWithType()
+    {
+        var management = new TestAmqpManagement();
+        var spec = new AmqpQueueSpecification(management);
+        spec.Quorum()
+            .DelayedRetryType(QuorumQueueDelayedRetryType.Returned)
+            .Queue()
+            .Name("test-queue");
+        spec.QueueArguments["x-delayed-redelivery-max"] = 5000L;
+
+        await Assert.ThrowsAsync<AmqpNotOpenException>(async () => await spec.DeclareAsync());
+    }
+
+    /// <summary>
+    /// Setting all three delayed retry arguments with a type must pass validation.
+    /// </summary>
+    [Fact]
+    public async Task DeclareAsync_PassesValidation_WhenAllDelayedRetryArgumentsSetWithType()
+    {
+        var management = new TestAmqpManagement();
+        var spec = new AmqpQueueSpecification(management);
+        spec.Quorum()
+            .DelayedRetryType(QuorumQueueDelayedRetryType.Returned)
+            .DelayedRetryMin(TimeSpan.FromSeconds(1))
+            .DelayedRetryMax(TimeSpan.FromSeconds(30))
+            .Queue()
+            .Name("test-queue");
+        spec.QueueArguments["x-delayed-redelivery-max"] = 5000L;
+
+        await Assert.ThrowsAsync<AmqpNotOpenException>(async () => await spec.DeclareAsync());
+    }
 }

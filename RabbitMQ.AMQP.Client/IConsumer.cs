@@ -2,6 +2,7 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -141,6 +142,38 @@ namespace RabbitMQ.AMQP.Client
         /// <param name="annotations">Message annotations to combine with existing ones.</param>
         ///</summary>
         void Requeue(Dictionary<string, object> annotations);
+
+        /// <summary>
+        /// <para>
+        ///   Requeue the message with the broker-side delayed-retry back-off
+        ///   (AMQP 1.0 <c>modified{delivery-failed = true, undeliverable-here = false}</c> outcome).
+        /// </para>
+        /// <para>
+        ///   Requires the queue to be configured with <c>x-delayed-retry-type = failed</c>
+        ///   (or <c>all</c>) and RabbitMQ 4.3 or later. The broker will apply the linear back-off
+        ///   delay configured on the queue before redelivering the message.
+        /// </para>
+        /// </summary>
+        void DelayedRetry();
+
+        /// <summary>
+        /// <para>
+        ///   Requeue the message with an explicit per-message delivery delay
+        ///   (AMQP 1.0 <c>modified{delivery-failed = true, undeliverable-here = false}</c> outcome),
+        ///   overriding the queue-level back-off for this specific delivery.
+        /// </para>
+        /// <para>
+        ///   The <paramref name="delay"/> is sent to the broker as the
+        ///   <c>x-opt-delivery-time</c> message annotation (absolute Unix timestamp in
+        ///   milliseconds = <c>DateTimeOffset.UtcNow + delay</c>).
+        /// </para>
+        /// <para>
+        ///   Requires the queue to be configured with <c>x-delayed-retry-type = failed</c>
+        ///   (or <c>all</c>) and RabbitMQ 4.3 or later.
+        /// </para>
+        /// <param name="delay">How long from now the broker should wait before redelivering.</param>
+        /// </summary>
+        void DelayedRetry(TimeSpan delay);
 
         /// <summary>
         /// Create a batch context to accumulate message contexts and settle them at once.
