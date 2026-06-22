@@ -7,19 +7,9 @@
 //
 // This example demonstrates the IContext disposition methods for delayed retries:
 //
-//   context.DelayedRetry()
-//     Sends AMQP 1.0 modified{delivery-failed=true, undeliverable-here=false}.
-//     Increments the broker's delivery-count for this message, which is used for
-//     dead-letter routing (delivery limit) and, when the queue is configured with
-//     x-delayed-retry-type=failed, for linear back-off redelivery delays.
-//
+//   context.Requeue(Annotations, true)
 //   context.DelayedRetry(TimeSpan delay, true)
-//     Same AMQP disposition, but also sets the x-opt-delivery-time message
-//     annotation (absolute Unix timestamp in milliseconds = DateTimeOffset.UtcNow + delay)
-//     so the broker waits exactly `delay` before redelivering this specific message.
-//     delivery failed true will increase the delivery count,
-//     so the queue-level delay will also be applied if configured with x-delayed-retry-type=failed.
-//
+// 
 // Note: Full delay support via x-delayed-retry-type=failed requires a future client
 // release that enables QuorumQueueDelayedRetryType.Failed. This example shows the
 // redelivery behavior on a plain quorum queue.
