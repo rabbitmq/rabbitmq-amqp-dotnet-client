@@ -149,7 +149,7 @@ namespace RabbitMQ.AMQP.Client
         /// <summary>
         /// <para>
         ///   Requeue the message with an explicit per-message delivery delay
-        ///   (AMQP 1.0 <c>modified{delivery-failed = true/fals, undeliverable-here = false}</c> outcome),
+        ///   (AMQP 1.0 <c>modified{delivery-failed = true/false, undeliverable-here = false}</c> outcome),
         ///   overriding the queue-level back-off for this specific delivery.
         /// </para>
         /// <para>
