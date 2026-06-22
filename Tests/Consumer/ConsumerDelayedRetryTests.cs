@@ -14,7 +14,7 @@ using Xunit.Abstractions;
 namespace Tests.Consumer;
 
 /// <summary>
-/// Integration tests for IContext.DelayedRetry() and IContext.DelayedRetry(TimeSpan).
+/// Integration tests and IContext.DelayedRetry(TimeSpan,true).
 ///
 /// Both methods send the AMQP 1.0 modified{delivery-failed=true, undeliverable-here=false}
 /// outcome. This increments the broker-side delivery-count, causing the message to be
@@ -42,7 +42,7 @@ public class ConsumerDelayedRetryTests(ITestOutputHelper testOutputHelper) : Int
         IQueueSpecification queueSpec = _management.Queue(_queueName).Type(QueueType.QUORUM);
         await queueSpec.DeclareAsync();
 
-        int deliveryCount = 0;
+        int recvs = 0;
         TaskCompletionSource<bool> tcs = CreateTaskCompletionSource();
         List<IMessage> received = [];
 
@@ -53,9 +53,9 @@ public class ConsumerDelayedRetryTests(ITestOutputHelper testOutputHelper) : Int
                 try
                 {
                     received.Add(message);
-                    if (Interlocked.Increment(ref deliveryCount) == 1)
+                    if (Interlocked.Increment(ref recvs) == 1)
                     {
-                        context.DelayedRetry(TimeSpan.FromSeconds(1), true);
+                        context.DelayedRetry(TimeSpan.FromSeconds(1));
                     }
                     else
                     {
