@@ -329,7 +329,7 @@ namespace RabbitMQ.AMQP.Client
 
         internal static void ValidateMessageAnnotationKey(string key)
         {
-            if (false == key.StartsWith("x-"))
+            if (!key.StartsWith("x-"))
             {
                 throw new ArgumentOutOfRangeException($"Message annotation key must start with 'x-': {key}");
             }

@@ -140,26 +140,16 @@ namespace RabbitMQ.AMQP.Client
         ///   AMQP 1.0 <c>modified</c> outcome.</a>
         /// </para>
         /// <param name="annotations">Message annotations to combine with existing ones.</param>
+        /// <param name="deliveryFailed"> sets the deliveryFailed in link.Modify(..) function. RabbitMQ considers it as
+        /// failed. Delivery Count will be increased.
+        /// </param>
         ///</summary>
-        void Requeue(Dictionary<string, object> annotations);
-
-        /// <summary>
-        /// <para>
-        ///   Requeue the message with the broker-side delayed-retry back-off
-        ///   (AMQP 1.0 <c>modified{delivery-failed = true, undeliverable-here = false}</c> outcome).
-        /// </para>
-        /// <para>
-        ///   Requires the queue to be configured with <c>x-delayed-retry-type = failed</c>
-        ///   (or <c>all</c>) and RabbitMQ 4.3 or later. The broker will apply the linear back-off
-        ///   delay configured on the queue before redelivering the message.
-        /// </para>
-        /// </summary>
-        void DelayedRetry();
+        void Requeue(Dictionary<string, object> annotations, bool deliveryFailed = false);
 
         /// <summary>
         /// <para>
         ///   Requeue the message with an explicit per-message delivery delay
-        ///   (AMQP 1.0 <c>modified{delivery-failed = true, undeliverable-here = false}</c> outcome),
+        ///   (AMQP 1.0 <c>modified{delivery-failed = true/fals, undeliverable-here = false}</c> outcome),
         ///   overriding the queue-level back-off for this specific delivery.
         /// </para>
         /// <para>
@@ -168,12 +158,17 @@ namespace RabbitMQ.AMQP.Client
         ///   milliseconds = <c>DateTimeOffset.UtcNow + delay</c>).
         /// </para>
         /// <para>
-        ///   Requires the queue to be configured with <c>x-delayed-retry-type = failed</c>
+        ///   Requires the queue to be configured with <c>x-delayed-retry-type</c>
         ///   (or <c>all</c>) and RabbitMQ 4.3 or later.
         /// </para>
         /// <param name="delay">How long from now the broker should wait before redelivering.</param>
+        /// <param name="deliveryFailed"> sets the deliveryFailed in link.Modify(..) function. RabbitMQ considers it as
+        /// failed. Delivery Count will be increased.
+        /// </param>
+        /// This method is a helper, It is like Requeue with annotations,
+        /// but it adds the x-opt-delivery-time annotation for you based on the delay parameter.
         /// </summary>
-        void DelayedRetry(TimeSpan delay);
+        void DelayedRetry(TimeSpan delay, bool deliveryFailed = false);
 
         /// <summary>
         /// Create a batch context to accumulate message contexts and settle them at once.

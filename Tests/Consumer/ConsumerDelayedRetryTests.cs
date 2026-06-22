@@ -55,7 +55,7 @@ public class ConsumerDelayedRetryTests(ITestOutputHelper testOutputHelper) : Int
                     received.Add(message);
                     if (Interlocked.Increment(ref deliveryCount) == 1)
                     {
-                        context.DelayedRetry();
+                        context.DelayedRetry(TimeSpan.FromSeconds(1), true);
                     }
                     else
                     {
@@ -185,7 +185,7 @@ public class ConsumerDelayedRetryTests(ITestOutputHelper testOutputHelper) : Int
             .Queue(queueSpec)
             .MessageHandler((context, _) =>
             {
-                context.DelayedRetry();
+                context.DelayedRetry(TimeSpan.FromMilliseconds(200), true);
                 return Task.CompletedTask;
             })
             .BuildAndStartAsync();
@@ -248,7 +248,7 @@ public class ConsumerDelayedRetryTests(ITestOutputHelper testOutputHelper) : Int
             {
                 try
                 {
-                    context.DelayedRetry();
+                    context.DelayedRetry(TimeSpan.FromMilliseconds(200), true);
                 }
                 catch (InvalidOperationException ex)
                 {
@@ -346,7 +346,7 @@ public class ConsumerDelayedRetryTests(ITestOutputHelper testOutputHelper) : Int
                         if (batch.Count() == batchSize)
                         {
                             batchFired = true;
-                            batch.DelayedRetry();
+                            batch.DelayedRetry(TimeSpan.FromMilliseconds(200), true);
                         }
                     }
                     else
