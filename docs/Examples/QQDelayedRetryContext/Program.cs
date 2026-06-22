@@ -63,8 +63,6 @@ IQueueSpecification queueSpec = management.Queue(queueName)
     // DelayedRetryMin and Max requires DelayedRetryType
     .DelayedRetryMin(TimeSpan.FromSeconds(minTime))
     .DelayedRetryMax(TimeSpan.FromSeconds(maxTime))
-    // DeliveryLimit can be used even without DelayedRetry
-    .DeliveryLimit(5)
     .Queue();
 
 await queueSpec.DeclareAsync();
@@ -88,7 +86,6 @@ IConsumer consumer = await connection.ConsumerBuilder()
             case 0:
                 // Override the delivery time for this specific message.
                 // The broker will wait at least 7 seconds before redelivering.
-
                 Console.WriteLine(
                     $"[{Now()}] {msgId} delivery-count={deliveryCount} → per message DelayedRetry: 7s ");
                 context.DelayedRetry(TimeSpan.FromSeconds(7), true);
@@ -108,7 +105,6 @@ IConsumer consumer = await connection.ConsumerBuilder()
 
                 // deliveryFailed true will increate the delivery count
                 // AnnotationsHelper.Empty() passes an empty annotation dictionary, you can pass your own custom annotation 
-                // so the queue-level delay will be applied.
                 context.Requeue(AnnotationsHelper.Empty(), true);
                 break;
 
