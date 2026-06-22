@@ -7,17 +7,9 @@
 //
 // This example demonstrates the IContext disposition methods for delayed retries:
 //
-//   context.DelayedRetry()
-//     Sends AMQP 1.0 modified{delivery-failed=true, undeliverable-here=false}.
-//     Increments the broker's delivery-count for this message, which is used for
-//     dead-letter routing (delivery limit) and, when the queue is configured with
-//     x-delayed-retry-type=failed, for linear back-off redelivery delays.
-//
-//   context.DelayedRetry(TimeSpan delay)
-//     Same AMQP disposition, but also sets the x-opt-delivery-time message
-//     annotation (absolute Unix timestamp in milliseconds = DateTimeOffset.UtcNow + delay)
-//     so the broker waits exactly `delay` before redelivering this specific message.
-//
+//   context.Requeue(Annotations, true)
+//   context.DelayedRetry(TimeSpan delay, true)
+// 
 // Note: Full delay support via x-delayed-retry-type=failed requires a future client
 // release that enables QuorumQueueDelayedRetryType.Failed. This example shows the
 // redelivery behavior on a plain quorum queue.
@@ -51,7 +43,7 @@ Console.WriteLine($"[{Now()}] Connected to the broker");
 // ── declare queue ─────────────────────────────────────────────────────────────
 IManagement management = connection.Management();
 const string queueName = "qq-delayed-retry-context-example";
-const int minTime = 5;
+const int minTime = 1;
 const int maxTime = 10;
 
 IQueueSpecification queueSpec = management.Queue(queueName)
@@ -61,8 +53,6 @@ IQueueSpecification queueSpec = management.Queue(queueName)
     // DelayedRetryMin and Max requires DelayedRetryType
     .DelayedRetryMin(TimeSpan.FromSeconds(minTime))
     .DelayedRetryMax(TimeSpan.FromSeconds(maxTime))
-    // DeliveryLimit can be used even without DelayedRetry
-    .DeliveryLimit(5)
     .Queue();
 
 await queueSpec.DeclareAsync();
@@ -71,8 +61,8 @@ Console.WriteLine();
 
 // ── consumer ──────────────────────────────────────────────────────────────────
 // Message processing strategy per acquired-count:
-//   0  → context.DelayedRetry()                    – signal delivery failure
-//   1  → context.DelayedRetry(TimeSpan.FromSeconds(2)) – explicit override delay
+//   0  → context.context.Requeue(AnnotationsHelper.Empty(), true);  – signal delivery failure
+//   1  → context.DelayedRetry(TimeSpan.FromSeconds(2),true)  – explicit override delay
 //   2+ → context.Accept()                           – done
 IConsumer consumer = await connection.ConsumerBuilder()
     .Queue(queueName)
@@ -86,14 +76,14 @@ IConsumer consumer = await connection.ConsumerBuilder()
             case 0:
                 // Override the delivery time for this specific message.
                 // The broker will wait at least 7 seconds before redelivering.
-
                 Console.WriteLine(
                     $"[{Now()}] {msgId} delivery-count={deliveryCount} → per message DelayedRetry: 7s ");
-                context.DelayedRetry(TimeSpan.FromSeconds(7));
+                context.DelayedRetry(TimeSpan.FromSeconds(7), true);
                 break;
 
             case 1:
             case 2:
+            case 3:
                 // Signal to the broker that delivery failed.
                 // With x-delayed-retry-type=failed this also applies the queue's
                 // linear back-off delay before the next redelivery.
@@ -101,8 +91,11 @@ IConsumer consumer = await connection.ConsumerBuilder()
                 // delay =  min(delayed-retry-min * delivery-count, delayed-retry-max)
                 int delay = Math.Min(minTime * (int)deliveryCount, maxTime);
                 Console.WriteLine(
-                    $"[{Now()}] {msgId} delivery-count={deliveryCount} → queue configuration DelayedRetry: {delay}s)");
-                context.DelayedRetry();
+                    $"[{Now()}] {msgId} delivery-count={deliveryCount} → queue configuration DelayedRetry: ~{delay}s)");
+
+                // deliveryFailed true will increate the delivery count
+                // AnnotationsHelper.Empty() passes an empty annotation dictionary, you can pass your own custom annotation 
+                context.Requeue(AnnotationsHelper.Empty(), true);
                 break;
 
             default:
@@ -119,7 +112,7 @@ IConsumer consumer = await connection.ConsumerBuilder()
 // ── publisher ─────────────────────────────────────────────────────────────────
 IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).BuildAsync();
 
-const int totalMessages = 2;
+const int totalMessages = 1;
 Console.WriteLine($"[{Now()}] Publishing {totalMessages} messages …");
 Console.WriteLine();
 
