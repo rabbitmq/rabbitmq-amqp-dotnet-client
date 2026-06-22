@@ -5,13 +5,7 @@
 // RabbitMQ AMQP 1.0 client: https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client
 // Quorum Queue Delayed Retry (RabbitMQ 4.3+)
 //
-// When a consumer discards a message (increments its delivery count), the broker
-// will delay redelivery using linear back-off:
-//
-//   delay = min(min_delay * delivery_count, max_delay)
-//
-// This prevents a fast retry storm when processing fails transiently.
-// A per-message explicit delivery time can also be set via the
+// per-message explicit delivery time can also be set via the
 // "x-opt-delivery-time" message annotation (Unix timestamp in milliseconds).
 //
 // Queue arguments used:
