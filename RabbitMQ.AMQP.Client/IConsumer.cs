@@ -140,7 +140,7 @@ namespace RabbitMQ.AMQP.Client
         ///   AMQP 1.0 <c>modified</c> outcome.</a>
         /// </para>
         /// <param name="annotations">Message annotations to combine with existing ones.</param>
-        /// <param name="deliveryFailed"> sets the deliveryFailed in link.Modify(..) function. RabbitMQ considers it as
+        /// <param name="deliveryFailed"> sets the deliveryFailed in link.Modify(..) function. When true: RabbitMQ considers it as
         /// failed. Delivery Count will be increased.
         /// </param>
         ///</summary>
@@ -162,7 +162,7 @@ namespace RabbitMQ.AMQP.Client
         ///   (or <c>all</c>) and RabbitMQ 4.3 or later.
         /// </para>
         /// <param name="delay">How long from now the broker should wait before redelivering.</param>
-        /// <param name="deliveryFailed"> sets the deliveryFailed in link.Modify(..) function. RabbitMQ considers it as
+        /// <param name="deliveryFailed"> sets the deliveryFailed in link.Modify(..) function. When true: RabbitMQ considers it as
         /// failed. Delivery Count will be increased.
         /// </param>
         /// This method is a helper, It is like Requeue with annotations,
