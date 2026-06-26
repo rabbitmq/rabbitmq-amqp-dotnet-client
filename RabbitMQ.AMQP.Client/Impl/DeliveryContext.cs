@@ -323,41 +323,44 @@ namespace RabbitMQ.AMQP.Client.Impl
 
     public class PreSettledDeliveryContext : IContext
     {
+        // Accept is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
         public void Accept()
         {
             throw new InvalidOperationException("Cannot accept a pre-settled delivery context.");
         }
-
+        
+        // Discard is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
         public void Discard()
         {
             throw new InvalidOperationException("Cannot discard a pre-settled delivery context.");
         }
 
+        // Discard with annotations is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
         public void Discard(Dictionary<string, object> annotations)
         {
             throw new InvalidOperationException("Cannot discard a pre-settled delivery context.");
         }
 
+        // Requeue is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
         public void Requeue()
         {
             throw new InvalidOperationException("Cannot requeue a pre-settled delivery context.");
         }
-
+        
+        // Requeue with annotations is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
         public void Requeue(Dictionary<string, object> annotations, bool deliveryFailed = false)
         {
             throw new InvalidOperationException("Cannot requeue a pre-settled delivery context.");
         }
 
-        public void DelayedRetry(bool deliveryFailed = false)
-        {
-            throw new InvalidOperationException("Cannot delayed-retry a pre-settled delivery context.");
-        }
 
+        // DelayRetry is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
         public void DelayedRetry(TimeSpan delay, bool deliveryFailed = false)
         {
             throw new InvalidOperationException("Cannot delayed-retry a pre-settled delivery context.");
         }
 
+        // Batch is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
         public IBatchContext Batch()
         {
             throw new InvalidOperationException("Cannot create a batch context from a pre-settled delivery context.");

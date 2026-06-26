@@ -7,12 +7,9 @@
 //
 // This example demonstrates the IContext disposition methods for delayed retries:
 //
-//   context.Requeue(Annotations, true)
-//   context.DelayedRetry(TimeSpan delay, true)
+//   context.Requeue(Annotations, true) <-- signal delivery failure, apply queue's linear back-off delay depends on DelayedRetryType and DelayedRetryMin/Max 
+//   context.DelayedRetry(Delay, true) <-- signal delivery failure, apply explicit delay for this specific message, does not require DelayedRetryType
 // 
-// Note: Full delay support via x-delayed-retry-type=failed requires a future client
-// release that enables QuorumQueueDelayedRetryType.Failed. This example shows the
-// redelivery behavior on a plain quorum queue.
 //
 // Queue arguments used:
 //   x-quorum-delivery-limit : 5 — dead-letter after 5 failed deliveries
@@ -76,6 +73,7 @@ IConsumer consumer = await connection.ConsumerBuilder()
             case 0:
                 // Override the delivery time for this specific message.
                 // The broker will wait at least 7 seconds before redelivering.
+                // DelayedRetry does not require x-delayed-retry-type=xxx, but it does require a quorum queue.
                 Console.WriteLine(
                     $"[{Now()}] {msgId} delivery-count={deliveryCount} → per message DelayedRetry: 7s ");
                 context.DelayedRetry(TimeSpan.FromSeconds(7), true);

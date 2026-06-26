@@ -93,17 +93,9 @@ namespace RabbitMQ.AMQP.Client
         ///   it or dead-letter it if it is configured.
         /// </para>
         /// <para>
-        ///   Application-specific annotation keys must start with the <c>x-opt-</c> prefix.
-        /// </para>
-        /// <para>
-        ///   Annotation keys that the broker understands start with <c>x-</c>, but not with
-        ///   <c>x-opt-</c>. This maps to the AMQP 1.0 <c>modified{delivery-failed = false,
+        ///   Annotation keys that the broker understands start with <c>x-</c>
+        /// This maps to the AMQP 1.0 <c>modified{delivery-failed = false,
         ///   undeliverable-here = false}</c> outcome.
-        /// </para>
-        /// <para>
-        ///   The annotations can be used only with Quorum queues, see
-        ///   <a href="https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-modified">
-        ///   AMQP 1.0 <c>modified</c> outcome.</a>
         /// </para>
         /// <param name="annotations">Message annotations to combine with existing ones.</param>
         ///</summary>
@@ -127,15 +119,11 @@ namespace RabbitMQ.AMQP.Client
         ///   deliver it to the same or a different consumer.
         /// </para>
         /// <para>
-        ///   Application-specific annotation keys must start with the <c>x-opt-</c> prefix.
-        /// </para>
-        /// <para>
-        ///   Annotation keys that the broker understands start with <c>x-</c>, but not with
-        ///   <c>x-opt-</c>. This maps to the AMQP 1.0 <c>modified{delivery-failed = false,
+        ///   Annotation keys that the broker understands start with <c>x-</c>.
+        ///   This maps to the AMQP 1.0 <c>modified{delivery-failed = false,
         ///   undeliverable-here = false}</c> outcome.
         /// </para>
         /// <para>
-        ///   The annotations can be used only with Quorum queues, see
         ///   <a href="https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-modified">
         ///   AMQP 1.0 <c>modified</c> outcome.</a>
         /// </para>
@@ -157,16 +145,13 @@ namespace RabbitMQ.AMQP.Client
         ///   <c>x-opt-delivery-time</c> message annotation (absolute Unix timestamp in
         ///   milliseconds = <c>DateTimeOffset.UtcNow + delay</c>).
         /// </para>
-        /// <para>
-        ///   Requires the queue to be configured with <c>x-delayed-retry-type</c>
-        ///   (or <c>all</c>) and RabbitMQ 4.3 or later.
-        /// </para>
         /// <param name="delay">How long from now the broker should wait before redelivering.</param>
         /// <param name="deliveryFailed"> sets the deliveryFailed in link.Modify(..) function. When true: RabbitMQ considers it as
         /// failed. Delivery Count will be increased.
         /// </param>
         /// This method is a helper, It is like Requeue with annotations,
         /// but it adds the x-opt-delivery-time annotation for you based on the delay parameter.
+        /// Only Quorum queues support this feature, and the queue doesn't need configured with a delayed retry type (returned or failed).
         /// </summary>
         void DelayedRetry(TimeSpan delay, bool deliveryFailed = false);
 
