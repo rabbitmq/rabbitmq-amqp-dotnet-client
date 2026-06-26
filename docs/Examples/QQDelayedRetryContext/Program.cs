@@ -57,10 +57,10 @@ Console.WriteLine($"[{Now()}] Queue '{queueName}' declared (delivery-limit=4)");
 Console.WriteLine();
 
 // ── consumer ──────────────────────────────────────────────────────────────────
-// Message processing strategy per acquired-count:
-//   0  → context.context.Requeue(AnnotationsHelper.Empty(), true);  – signal delivery failure
-//   1  → context.DelayedRetry(TimeSpan.FromSeconds(2),true)  – explicit override delay
-//   2+ → context.Accept()                           – done
+// Message processing strategy per delivery-count:
+//   0     → context.DelayedRetry(TimeSpan.FromSeconds(7), true)  – per-message explicit delay override
+//   1,2,3 → context.Requeue(AnnotationsHelper.Empty(), true)     – queue-level linear back-off delay
+//   4+    → context.Accept()                                      – done
 IConsumer consumer = await connection.ConsumerBuilder()
     .Queue(queueName)
     .MessageHandler((context, message) =>

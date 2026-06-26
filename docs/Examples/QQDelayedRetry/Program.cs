@@ -9,7 +9,7 @@
 // "x-opt-delivery-time" message annotation (Unix timestamp in milliseconds).
 //
 // Queue arguments used:
-//   x-delayed-retry-type : "Returned"   — no delay
+//   x-delayed-retry-type : "Returned"   — delay applied when x-acquired-count is incremented (context.Requeue())
 //
 // Run: dotnet run
 // Full path example: https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/tree/main/docs/Examples/QQDelayedRetry/

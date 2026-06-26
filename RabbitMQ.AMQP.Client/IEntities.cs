@@ -137,9 +137,9 @@ namespace RabbitMQ.AMQP.Client
         Failed,
 
         /// <summary>
-        /// Only messages with incremented <c>xacquired-count</c> are delayed.
+        /// Only messages with an incremented <c>x-acquired-count</c> are delayed.
         /// This happens for example when requeuing a message via <c>IContext.Requeue()</c>
-        /// or /// or <c>IContext.Requeue(annotation, false)</c>.
+        /// or <c>IContext.Requeue(annotation, false)</c>.
         /// </summary>
         Returned
     }
