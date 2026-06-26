@@ -328,7 +328,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             throw new InvalidOperationException("Cannot accept a pre-settled delivery context.");
         }
-        
+
         // Discard is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
         public void Discard()
         {
@@ -346,13 +346,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             throw new InvalidOperationException("Cannot requeue a pre-settled delivery context.");
         }
-        
+
         // Requeue with annotations is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
         public void Requeue(Dictionary<string, object> annotations, bool deliveryFailed = false)
         {
             throw new InvalidOperationException("Cannot requeue a pre-settled delivery context.");
         }
-
 
         // DelayRetry is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
         public void DelayedRetry(TimeSpan delay, bool deliveryFailed = false)

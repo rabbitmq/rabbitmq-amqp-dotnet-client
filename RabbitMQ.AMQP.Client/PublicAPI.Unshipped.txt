@@ -610,7 +610,6 @@ RabbitMQ.AMQP.Client.Impl.MessageAddressBuilder.MessageAddressBuilder(RabbitMQ.A
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Accept() -> void
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Batch() -> RabbitMQ.AMQP.Client.IBatchContext!
-RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.DelayedRetry(bool deliveryFailed = false) -> void
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.DelayedRetry(System.TimeSpan delay, bool deliveryFailed = false) -> void
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Discard() -> void
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Discard(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> void
