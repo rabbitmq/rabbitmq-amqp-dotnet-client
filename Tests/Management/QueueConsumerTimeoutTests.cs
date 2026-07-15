@@ -61,7 +61,7 @@ public class QueueConsumerTimeoutTests(ITestOutputHelper testOutputHelper) : Int
 
         Dictionary<object, object> args = spec.QueueArguments;
         Assert.Equal("quorum", args["x-queue-type"]);
-        Assert.Equal(7, args["x-max-delivery-limit"]);
+        Assert.Equal(7, args["x-delivery-limit"]);
         Assert.Equal(4, args["x-quorum-target-group-size"]);
         Assert.Equal(500L, args["x-consumer-timeout"]);
     }
