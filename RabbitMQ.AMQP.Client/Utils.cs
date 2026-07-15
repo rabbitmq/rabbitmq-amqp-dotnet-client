@@ -134,6 +134,43 @@ namespace RabbitMQ.AMQP.Client
             }
         }
 
+        /// <summary>
+        /// x-delayed-retry-type is required if any of x-delayed-retry-min, x-delayed-retry-max, or x-delayed-redelivery-max is set.
+        /// </summary>
+        /// <param name="queueArguments"></param>
+        /// <exception cref="InvalidOperationException"></exception>
+        internal static void ValidateRetryParameters(Map queueArguments)
+        {
+            if (!IsQuorum(queueArguments))
+            {
+                return;
+            }
+
+            if (queueArguments["x-delayed-retry-min"] is null
+                && queueArguments["x-delayed-retry-max"] is null)
+            {
+                return;
+            }
+
+            if (queueArguments["x-delayed-retry-type"] is null)
+            {
+                throw new InvalidOperationException(
+                    "x-delayed-retry-min, x-delayed-retry-max, and x-delivery-limit require x-delayed-retry-type to be set");
+            }
+        }
+
+        internal static bool IsQuorum(Map queueArguments)
+        {
+            return string.Compare(queueArguments["x-queue-type"]?.ToString(), nameof(QueueType.QUORUM),
+                StringComparison.OrdinalIgnoreCase) == 0;
+        }
+
+        internal static bool IsStream(Map queueArguments)
+        {
+            return string.Compare(queueArguments["x-queue-type"]?.ToString(), nameof(QueueType.STREAM),
+                StringComparison.OrdinalIgnoreCase) == 0;
+        }
+
         internal static void ValidatePositive(string label, long value)
         {
             if (value <= 0)
@@ -294,7 +331,7 @@ namespace RabbitMQ.AMQP.Client
 
         internal static void ValidateMessageAnnotationKey(string key)
         {
-            if (false == key.StartsWith("x-"))
+            if (!key.StartsWith("x-"))
             {
                 throw new ArgumentOutOfRangeException($"Message annotation key must start with 'x-': {key}");
             }
@@ -393,8 +430,11 @@ namespace RabbitMQ.AMQP.Client
             // compare first non-equal ordinal number
             if (i < vals1.Length && i < vals2.Length)
             {
-                int val1 = int.Parse(vals1[i]);
-                int val2 = int.Parse(vals2[i]);
+                if (!int.TryParse(vals1[i], out int val1) || !int.TryParse(vals2[i], out int val2))
+                {
+                    return -1; // treat unparseable segment as older than the target
+                }
+
                 return val1.CompareTo(val2);
             }
 

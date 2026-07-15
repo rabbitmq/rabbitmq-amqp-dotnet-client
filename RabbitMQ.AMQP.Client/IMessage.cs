@@ -105,6 +105,7 @@ namespace RabbitMQ.AMQP.Client
         public IMessage Durable(bool durable);
 
         public bool Durable();
+        public uint DeliveryCount();
 
         IMessageAddressBuilder ToAddress();
     }

@@ -38,6 +38,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 {
                     throw new ConsumerException("Link is closed");
                 }
+
                 _link.Accept(_message);
                 _unsettledMessageCounter.Decrement();
                 _metricsReporter?.ConsumeDisposition(IMetricsReporter.ConsumeDispositionValue.ACCEPTED);
@@ -120,7 +121,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
-        public void Requeue(Dictionary<string, object> annotations)
+        public void Requeue(Dictionary<string, object> annotations, bool deliveryFailed = false)
         {
             try
             {
@@ -137,7 +138,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                     messageAnnotations.Add(new Symbol(kvp.Key), kvp.Value);
                 }
 
-                _link.Modify(_message, false, false, messageAnnotations);
+                _link.Modify(_message, deliveryFailed, false, messageAnnotations);
                 _unsettledMessageCounter.Decrement();
                 _metricsReporter?.ConsumeDisposition(IMetricsReporter.ConsumeDispositionValue.REQUEUED);
             }
@@ -147,14 +148,16 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
         }
 
+        public void DelayedRetry(TimeSpan delay, bool deliveryFailed = false)
+        {
+            long deliveryTimeMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + (long)delay.TotalMilliseconds;
+            Dictionary<string, object> annotations = new() { ["x-opt-delivery-time"] = deliveryTimeMs };
+            Requeue(annotations, deliveryFailed);
+        }
+
         public IBatchContext Batch()
         {
-            if (_link.IsClosed)
-            {
-                throw new ConsumerException("Link is closed");
-            }
-
-            return new BatchDeliveryContext();
+            return _link.IsClosed ? throw new ConsumerException("Link is closed") : new BatchDeliveryContext();
         }
     }
 
@@ -262,14 +265,36 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// Requeue all messages in the batch context with annotations
         /// Contexts are cleared after the operation.
         /// </summary>
-        public void Requeue(Dictionary<string, object> annotations)
+        public void Requeue(Dictionary<string, object> annotations, bool deliveryFailed = false)
         {
             _semaphore.Wait();
             try
             {
                 foreach (var context in _contexts)
                 {
-                    context.Requeue(annotations);
+                    context.Requeue(annotations, deliveryFailed);
+                }
+
+                _contexts.Clear();
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        ///<summary>
+        /// Requeue all messages in the batch context with an explicit per-message delivery delay.
+        /// Contexts are cleared after the operation.
+        /// </summary>
+        public void DelayedRetry(TimeSpan delay, bool deliveryFailed = false)
+        {
+            _semaphore.Wait();
+            try
+            {
+                foreach (var context in _contexts)
+                {
+                    context.DelayedRetry(delay, deliveryFailed);
                 }
 
                 _contexts.Clear();
@@ -298,37 +323,50 @@ namespace RabbitMQ.AMQP.Client.Impl
 
     public class PreSettledDeliveryContext : IContext
     {
+        // Accept is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
         public void Accept()
         {
             throw new InvalidOperationException("Cannot accept a pre-settled delivery context.");
         }
 
+        // Discard is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
         public void Discard()
         {
             throw new InvalidOperationException("Cannot discard a pre-settled delivery context.");
         }
 
+        // Discard with annotations is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
         public void Discard(Dictionary<string, object> annotations)
         {
             throw new InvalidOperationException("Cannot discard a pre-settled delivery context.");
         }
 
+        // Requeue is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
         public void Requeue()
         {
             throw new InvalidOperationException("Cannot requeue a pre-settled delivery context.");
         }
 
-        public void Requeue(Dictionary<string, object> annotations)
+        // Requeue with annotations is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
+        public void Requeue(Dictionary<string, object> annotations, bool deliveryFailed = false)
         {
             throw new InvalidOperationException("Cannot requeue a pre-settled delivery context.");
         }
 
+        // DelayRetry is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
+        public void DelayedRetry(TimeSpan delay, bool deliveryFailed = false)
+        {
+            throw new InvalidOperationException("Cannot delayed-retry a pre-settled delivery context.");
+        }
+
+        // Batch is not allowed on a pre-settled delivery context, as the message has already been settled by the broker.
         public IBatchContext Batch()
         {
             throw new InvalidOperationException("Cannot create a batch context from a pre-settled delivery context.");
         }
     }
 
+<<<<<<< HEAD
     internal class TimeoutDeliveryContext : IContext
     {
         private readonly IReceiverLink _link;
@@ -375,5 +413,13 @@ namespace RabbitMQ.AMQP.Client.Impl
         public void Requeue(Dictionary<string, object> annotations) => throw new InvalidOperationException("Cannot requeue a timed out delivery context. Only Accept is valid value");
 
         public IBatchContext Batch() => throw new InvalidOperationException("Cannot create a batch context from a timed out delivery context.");
+=======
+    public static class AnnotationsHelper
+    {
+        public static Dictionary<string, object> Empty()
+        {
+            return new Dictionary<string, object>();
+        }
+>>>>>>> origin/main
     }
 }

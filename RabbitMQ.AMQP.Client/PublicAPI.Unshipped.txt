@@ -247,10 +247,11 @@ RabbitMQ.AMQP.Client.IConsumerBuilder.SubscriptionListener(System.Action<RabbitM
 RabbitMQ.AMQP.Client.IContext
 RabbitMQ.AMQP.Client.IContext.Accept() -> void
 RabbitMQ.AMQP.Client.IContext.Batch() -> RabbitMQ.AMQP.Client.IBatchContext!
+RabbitMQ.AMQP.Client.IContext.DelayedRetry(System.TimeSpan delay, bool deliveryFailed = false) -> void
 RabbitMQ.AMQP.Client.IContext.Discard() -> void
 RabbitMQ.AMQP.Client.IContext.Discard(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> void
 RabbitMQ.AMQP.Client.IContext.Requeue() -> void
-RabbitMQ.AMQP.Client.IContext.Requeue(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> void
+RabbitMQ.AMQP.Client.IContext.Requeue(System.Collections.Generic.Dictionary<string!, object!>! annotations, bool deliveryFailed = false) -> void
 RabbitMQ.AMQP.Client.IEntityInfo
 RabbitMQ.AMQP.Client.IEntityInfoSpecification<T>
 RabbitMQ.AMQP.Client.IEntityInfoSpecification<T>.DeclareAsync() -> System.Threading.Tasks.Task<T>!
@@ -304,6 +305,7 @@ RabbitMQ.AMQP.Client.IMessage.CorrelationId() -> object!
 RabbitMQ.AMQP.Client.IMessage.CorrelationId(object! id) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IMessage.CreationTime() -> System.DateTime
 RabbitMQ.AMQP.Client.IMessage.CreationTime(System.DateTime creationTime) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.IMessage.DeliveryCount() -> uint
 RabbitMQ.AMQP.Client.IMessage.Durable() -> bool
 RabbitMQ.AMQP.Client.IMessage.Durable(bool durable) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IMessage.GroupId() -> string!
@@ -466,6 +468,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpMessage.CorrelationId() -> object!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.CorrelationId(object! id) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.CreationTime() -> System.DateTime
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.CreationTime(System.DateTime creationTime) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.Impl.AmqpMessage.DeliveryCount() -> uint
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.Durable() -> bool
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.Durable(bool durable) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.GroupId() -> string!
@@ -573,16 +576,18 @@ RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.InitialClusterSize(int initial
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.MaxAge(System.TimeSpan maxAge) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.MaxSegmentSizeBytes(RabbitMQ.AMQP.Client.ByteCapacity! maxSegmentSize) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AnnotationsHelper
 RabbitMQ.AMQP.Client.Impl.BatchDeliveryContext
 RabbitMQ.AMQP.Client.Impl.BatchDeliveryContext.Accept() -> void
 RabbitMQ.AMQP.Client.Impl.BatchDeliveryContext.Add(RabbitMQ.AMQP.Client.IContext! context) -> void
 RabbitMQ.AMQP.Client.Impl.BatchDeliveryContext.Batch() -> RabbitMQ.AMQP.Client.IBatchContext!
 RabbitMQ.AMQP.Client.Impl.BatchDeliveryContext.BatchDeliveryContext() -> void
 RabbitMQ.AMQP.Client.Impl.BatchDeliveryContext.Count() -> int
+RabbitMQ.AMQP.Client.Impl.BatchDeliveryContext.DelayedRetry(System.TimeSpan delay, bool deliveryFailed = false) -> void
 RabbitMQ.AMQP.Client.Impl.BatchDeliveryContext.Discard() -> void
 RabbitMQ.AMQP.Client.Impl.BatchDeliveryContext.Discard(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> void
 RabbitMQ.AMQP.Client.Impl.BatchDeliveryContext.Requeue() -> void
-RabbitMQ.AMQP.Client.Impl.BatchDeliveryContext.Requeue(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> void
+RabbitMQ.AMQP.Client.Impl.BatchDeliveryContext.Requeue(System.Collections.Generic.Dictionary<string!, object!>! annotations, bool deliveryFailed = false) -> void
 RabbitMQ.AMQP.Client.Impl.BindingSpecification
 RabbitMQ.AMQP.Client.Impl.BindingSpecification.ArgsToMap() -> Amqp.Types.Map!
 RabbitMQ.AMQP.Client.Impl.BindingSpecification.BindingSpecification() -> void
@@ -624,14 +629,19 @@ RabbitMQ.AMQP.Client.Impl.MessageAddressBuilder.MessageAddressBuilder(RabbitMQ.A
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Accept() -> void
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Batch() -> RabbitMQ.AMQP.Client.IBatchContext!
+RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.DelayedRetry(System.TimeSpan delay, bool deliveryFailed = false) -> void
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Discard() -> void
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Discard(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> void
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.PreSettledDeliveryContext() -> void
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Requeue() -> void
+<<<<<<< HEAD
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Requeue(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> void
 RabbitMQ.AMQP.Client.Impl.JmsOptions
 RabbitMQ.AMQP.Client.Impl.JmsOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.JmsOptions.ConsumerTimeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IJmsOptions!
+=======
+RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Requeue(System.Collections.Generic.Dictionary<string!, object!>! annotations, bool deliveryFailed = false) -> void
+>>>>>>> origin/main
 RabbitMQ.AMQP.Client.Impl.QuorumOptions
 RabbitMQ.AMQP.Client.Impl.QuorumOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.QuorumOptions.ConsumerTimeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions!
@@ -913,6 +923,7 @@ static RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.From(RabbitMQ.AMQP.Client.
 static RabbitMQ.AMQP.Client.Impl.AddressBuilderHelper.AddressBuilder() -> RabbitMQ.AMQP.Client.Impl.AddressBuilder!
 static RabbitMQ.AMQP.Client.Impl.AmqpConnection.CreateAsync(RabbitMQ.AMQP.Client.ConnectionSettings! connectionSettings, RabbitMQ.AMQP.Client.IMetricsReporter? metricsReporter = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConnection!>!
 static RabbitMQ.AMQP.Client.Impl.AmqpEnvironment.Create(RabbitMQ.AMQP.Client.ConnectionSettings! connectionSettings, RabbitMQ.AMQP.Client.IMetricsReporter? metricsReporter = null) -> RabbitMQ.AMQP.Client.IEnvironment!
+static RabbitMQ.AMQP.Client.Impl.AnnotationsHelper.Empty() -> System.Collections.Generic.Dictionary<string!, object!>!
 static RabbitMQ.AMQP.Client.InternalBugException.CreateAndThrow(string! message) -> void
 static readonly RabbitMQ.AMQP.Client.SaslMechanism.Anonymous -> RabbitMQ.AMQP.Client.SaslMechanism!
 static readonly RabbitMQ.AMQP.Client.SaslMechanism.External -> RabbitMQ.AMQP.Client.SaslMechanism!

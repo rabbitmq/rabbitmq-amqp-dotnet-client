@@ -81,4 +81,25 @@ public class UtilsTests
         Assert.True(Utils.SupportsFilterExpressions(brokerVersion));
     }
 
+    [Theory]
+    [InlineData("4.x.0")]
+    [InlineData("4..0")]
+    [InlineData("x.0.0")]
+    [InlineData("4.0.x")]
+    public void BrokerVersionWithNonNumericSegment_DoesNotThrow(string malformedVersion)
+    {
+        var ex = Record.Exception(() => Utils.Is4_0_OrMore(malformedVersion));
+        Assert.Null(ex);
+    }
+
+    [Theory]
+    [InlineData("4.x.0")]
+    [InlineData("4..0")]
+    [InlineData("x.0.0")]
+    [InlineData("4.0.x")]
+    public void BrokerVersionWithNonNumericSegment_TreatedAsNotCompatible(string malformedVersion)
+    {
+        Assert.False(Utils.Is4_0_OrMore(malformedVersion));
+    }
+
 }

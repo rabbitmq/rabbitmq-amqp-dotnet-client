@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[1.2.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.2.0)]
+
+## 1.2.0 - 2026-15-06
+- [Release 1.2.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.2.0)
+
+### Enhancements
+- Support quorum queue delayed retry (RabbitMQ 4.3+) by @Gsantomaggio in [#168](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/168)
+
+
 ## [[1.1.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.1.0)]
 
 ## 1.1.0 - 2026-18-05

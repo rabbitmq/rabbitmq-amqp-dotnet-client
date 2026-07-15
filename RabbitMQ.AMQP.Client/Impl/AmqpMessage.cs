@@ -307,6 +307,11 @@ namespace RabbitMQ.AMQP.Client.Impl
             return NativeMessage.Header.Durable;
         }
 
+        public uint DeliveryCount()
+        {
+            return NativeMessage.Header.DeliveryCount;
+        }
+
         public IMessageAddressBuilder ToAddress()
         {
             return new MessageAddressBuilder(this);

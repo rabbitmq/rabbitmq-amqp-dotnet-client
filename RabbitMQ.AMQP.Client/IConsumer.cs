@@ -2,6 +2,7 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Amqp.Handler;
@@ -101,17 +102,9 @@ namespace RabbitMQ.AMQP.Client
         ///   it or dead-letter it if it is configured.
         /// </para>
         /// <para>
-        ///   Application-specific annotation keys must start with the <c>x-opt-</c> prefix.
-        /// </para>
-        /// <para>
-        ///   Annotation keys that the broker understands start with <c>x-</c>, but not with
-        ///   <c>x-opt-</c>. This maps to the AMQP 1.0 <c>modified{delivery-failed = false,
+        ///   Annotation keys that the broker understands start with <c>x-</c>
+        /// This maps to the AMQP 1.0 <c>modified{delivery-failed = false,
         ///   undeliverable-here = false}</c> outcome.
-        /// </para>
-        /// <para>
-        ///   The annotations can be used only with Quorum queues, see
-        ///   <a href="https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-modified">
-        ///   AMQP 1.0 <c>modified</c> outcome.</a>
         /// </para>
         /// <param name="annotations">Message annotations to combine with existing ones.</param>
         ///</summary>
@@ -135,21 +128,41 @@ namespace RabbitMQ.AMQP.Client
         ///   deliver it to the same or a different consumer.
         /// </para>
         /// <para>
-        ///   Application-specific annotation keys must start with the <c>x-opt-</c> prefix.
-        /// </para>
-        /// <para>
-        ///   Annotation keys that the broker understands start with <c>x-</c>, but not with
-        ///   <c>x-opt-</c>. This maps to the AMQP 1.0 <c>modified{delivery-failed = false,
+        ///   Annotation keys that the broker understands start with <c>x-</c>.
+        ///   This maps to the AMQP 1.0 <c>modified{delivery-failed = false,
         ///   undeliverable-here = false}</c> outcome.
         /// </para>
         /// <para>
-        ///   The annotations can be used only with Quorum queues, see
         ///   <a href="https://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-modified">
         ///   AMQP 1.0 <c>modified</c> outcome.</a>
         /// </para>
         /// <param name="annotations">Message annotations to combine with existing ones.</param>
+        /// <param name="deliveryFailed"> sets the deliveryFailed in link.Modify(..) function. When true: RabbitMQ considers it as
+        /// failed. Delivery Count will be increased.
+        /// </param>
         ///</summary>
-        void Requeue(Dictionary<string, object> annotations);
+        void Requeue(Dictionary<string, object> annotations, bool deliveryFailed = false);
+
+        /// <summary>
+        /// <para>
+        ///   Requeue the message with an explicit per-message delivery delay
+        ///   (AMQP 1.0 <c>modified{delivery-failed = true/false, undeliverable-here = false}</c> outcome),
+        ///   overriding the queue-level back-off for this specific delivery.
+        /// </para>
+        /// <para>
+        ///   The <paramref name="delay"/> is sent to the broker as the
+        ///   <c>x-opt-delivery-time</c> message annotation (absolute Unix timestamp in
+        ///   milliseconds = <c>DateTimeOffset.UtcNow + delay</c>).
+        /// </para>
+        /// <param name="delay">How long from now the broker should wait before redelivering.</param>
+        /// <param name="deliveryFailed"> sets the deliveryFailed in link.Modify(..) function. When true: RabbitMQ considers it as
+        /// failed. Delivery Count will be increased.
+        /// </param>
+        /// This method is a helper, It is like Requeue with annotations,
+        /// but it adds the x-opt-delivery-time annotation for you based on the delay parameter.
+        /// Only Quorum queues support this feature, and the queue doesn't need configured with a delayed retry type (returned or failed).
+        /// </summary>
+        void DelayedRetry(TimeSpan delay, bool deliveryFailed = false);
 
         /// <summary>
         /// Create a batch context to accumulate message contexts and settle them at once.

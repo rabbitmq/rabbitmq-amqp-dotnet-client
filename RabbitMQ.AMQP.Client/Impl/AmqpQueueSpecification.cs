@@ -304,15 +304,21 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public async Task<IQueueInfo> DeclareAsync()
         {
+<<<<<<< HEAD
             if (_queueArguments.TryGetValue("x-queue-type", out object? queueTypeArg) &&
                 queueTypeArg is string queueTypeStr &&
                 (string.Equals(queueTypeStr, "quorum", StringComparison.OrdinalIgnoreCase) ||
                  string.Equals(queueTypeStr, "stream", StringComparison.OrdinalIgnoreCase) ||
                  string.Equals(queueTypeStr, "jms", StringComparison.OrdinalIgnoreCase)))
+=======
+            if (Utils.IsQuorum(_queueArguments) || Utils.IsStream(_queueArguments))
+>>>>>>> origin/main
             {
                 // mandatory arguments for quorum queues, streams, and JMS queues
                 Exclusive(false).AutoDelete(false);
             }
+
+            Utils.ValidateRetryParameters(_queueArguments);
 
             if (string.IsNullOrWhiteSpace(_queueName))
             {
@@ -444,8 +450,8 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IQuorumQueueSpecification DeliveryLimit(int limit)
         {
-            Utils.ValidatePositive("x-max-delivery-limit", limit);
-            _parent._queueArguments["x-max-delivery-limit"] = limit;
+            Utils.ValidatePositive("x-delivery-limit", limit);
+            _parent._queueArguments["x-delivery-limit"] = limit;
             return this;
         }
 
@@ -468,8 +474,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             _parent._queueArguments["x-delayed-retry-type"] = type switch
             {
                 QuorumQueueDelayedRetryType.Disabled => "disabled",
-                // QuorumQueueDelayedRetryType.All => "all",
-                // QuorumQueueDelayedRetryType.Failed => "failed",
+                QuorumQueueDelayedRetryType.All => "all",
+                QuorumQueueDelayedRetryType.Failed => "failed",
                 QuorumQueueDelayedRetryType.Returned => "returned",
                 _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
             };

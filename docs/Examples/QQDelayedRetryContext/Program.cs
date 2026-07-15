@@ -3,16 +3,19 @@
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
 // RabbitMQ AMQP 1.0 client: https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client
-// Quorum Queue Delayed Retry (RabbitMQ 4.3+)
+// Quorum Queue Delayed Retry via IContext (RabbitMQ 4.3+)
 //
-// per-message explicit delivery time can also be set via the
-// "x-opt-delivery-time" message annotation (Unix timestamp in milliseconds).
+// This example demonstrates the IContext disposition methods for delayed retries:
+//
+//   context.Requeue(Annotations, true) <-- signal delivery failure, apply queue's linear back-off delay depends on DelayedRetryType and DelayedRetryMin/Max 
+//   context.DelayedRetry(Delay, true) <-- signal delivery failure, apply explicit delay for this specific message, does not require DelayedRetryType
+// 
 //
 // Queue arguments used:
-//   x-delayed-retry-type : "Returned"   — delay applied when x-acquired-count is incremented (context.Requeue())
+//   x-quorum-delivery-limit : 5 — dead-letter after 5 failed deliveries
 //
 // Run: dotnet run
-// Full path example: https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/tree/main/docs/Examples/QQDelayedRetry/
+// Full path example: https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/tree/main/docs/Examples/QQDelayedRetryContext/
 
 using System.Diagnostics;
 using System.Globalization;
@@ -22,68 +25,82 @@ using Trace = Amqp.Trace;
 using TraceLevel = Amqp.TraceLevel;
 
 // ── tracing ──────────────────────────────────────────────────────────────────
-Trace.TraceLevel = TraceLevel.Warning; // suppress low-level AMQP frames
+Trace.TraceLevel = TraceLevel.Warning;
 ConsoleTraceListener consoleListener = new();
 Trace.TraceListener = (l, f, a) =>
     consoleListener.WriteLine(string.Format(CultureInfo.InvariantCulture, f, a ?? []));
 
 // ── connect ───────────────────────────────────────────────────────────────────
 IEnvironment environment = AmqpEnvironment.Create(
-    ConnectionSettingsBuilder.Create().ContainerId("qq-delayed-retry-example").Build());
+    ConnectionSettingsBuilder.Create().ContainerId("qq-delayed-retry-context-example").Build());
 
 IConnection connection = await environment.CreateConnectionAsync();
 Console.WriteLine($"[{Now()}] Connected to the broker");
 
 // ── declare queue ─────────────────────────────────────────────────────────────
-// Messages requeued without failure (context.Requeue()) are not delayed.
 IManagement management = connection.Management();
-const string queueName = "qq-delayed-retry-example";
+const string queueName = "qq-delayed-retry-context-example";
+const int minTime = 1;
+const int maxTime = 10;
 
 IQueueSpecification queueSpec = management.Queue(queueName)
+    .Type(QueueType.QUORUM)
     .Quorum()
-        .DelayedRetryType(QuorumQueueDelayedRetryType.Returned)
-        .DelayedRetryMin(TimeSpan.FromSeconds(2))   // 2 s base delay
+    .DelayedRetryType(QuorumQueueDelayedRetryType.Failed)
+    // DelayedRetryMin and Max requires DelayedRetryType
+    .DelayedRetryMin(TimeSpan.FromSeconds(minTime))
+    .DelayedRetryMax(TimeSpan.FromSeconds(maxTime))
     .Queue();
 
 await queueSpec.DeclareAsync();
-Console.WriteLine($"[{Now()}] Queue '{queueName}' declared");
+Console.WriteLine($"[{Now()}] Queue '{queueName}' declared (delivery-limit=4)");
 Console.WriteLine();
 
 // ── consumer ──────────────────────────────────────────────────────────────────
-// Accept a message only on the 4th delivery (acquired-count >= 3).
-// On earlier deliveries, call context.Requeue() which sends a Modified outcome
-// with the acquired-count incremented, triggering the delayed retry.
-const int acceptOnAcquiredCount = 3;
-
+// Message processing strategy per delivery-count:
+//   0     → context.DelayedRetry(TimeSpan.FromSeconds(7), true)  – per-message explicit delay override
+//   1,2,3 → context.Requeue(AnnotationsHelper.Empty(), true)     – queue-level linear back-off delay
+//   4+    → context.Accept()                                      – done
 IConsumer consumer = await connection.ConsumerBuilder()
     .Queue(queueName)
     .MessageHandler((context, message) =>
     {
-        Console.WriteLine("+++++++++++++++++++++++++++++++++++");
-        // RabbitMQ 4.3+ sets "x-acquired-count" on redeliveries.
-        long acquiredCount = 0;
-        try
-        {
-            acquiredCount = (long)message.Annotation("x-acquired-count");
-
-        }
-        catch { /* not present on the first delivery */ }
-
+        long deliveryCount = message.DeliveryCount();
         string msgId = message.BodyAsString();
 
-        if (acquiredCount < acceptOnAcquiredCount)
+        switch (deliveryCount)
         {
-            Console.WriteLine(
-                $"[{Now()}] [Consumer] {msgId} acquired count={acquiredCount} → failing (Requeue). " +
-                $"Next retry in ~2s");
+            case 0:
+                // Override the delivery time for this specific message.
+                // The broker will wait at least 7 seconds before redelivering.
+                // DelayedRetry does not require x-delayed-retry-type=xxx, but it does require a quorum queue.
+                Console.WriteLine(
+                    $"[{Now()}] {msgId} delivery-count={deliveryCount} → per message DelayedRetry: 7s ");
+                context.DelayedRetry(TimeSpan.FromSeconds(7), true);
+                break;
 
-            context.Requeue(); // increments acquired-count → triggers delayed retry
-        }
-        else
-        {
-            Console.WriteLine(
-                $"[{Now()}] [Consumer] {msgId} acquired-count={acquiredCount} → accepted ✓");
-            context.Accept();
+            case 1:
+            case 2:
+            case 3:
+                // Signal to the broker that delivery failed.
+                // With x-delayed-retry-type=failed this also applies the queue's
+                // linear back-off delay before the next redelivery.
+                // server side calculation:
+                // delay =  min(delayed-retry-min * delivery-count, delayed-retry-max)
+                int delay = Math.Min(minTime * (int)deliveryCount, maxTime);
+                Console.WriteLine(
+                    $"[{Now()}] {msgId} delivery-count={deliveryCount} → queue configuration DelayedRetry: ~{delay}s)");
+
+                // deliveryFailed true will increate the delivery count
+                // AnnotationsHelper.Empty() passes an empty annotation dictionary, you can pass your own custom annotation 
+                context.Requeue(AnnotationsHelper.Empty(), true);
+                break;
+
+            default:
+                Console.WriteLine(
+                    $"[{Now()}] {msgId} delivery-count={deliveryCount} → Accept ✓");
+                context.Accept();
+                break;
         }
 
         return Task.CompletedTask;
@@ -93,8 +110,8 @@ IConsumer consumer = await connection.ConsumerBuilder()
 // ── publisher ─────────────────────────────────────────────────────────────────
 IPublisher publisher = await connection.PublisherBuilder().Queue(queueName).BuildAsync();
 
-const int totalMessages = 5;
-Console.WriteLine($"[{Now()}] Publishing {totalMessages} messages...");
+const int totalMessages = 1;
+Console.WriteLine($"[{Now()}] Publishing {totalMessages} messages …");
 Console.WriteLine();
 
 for (int i = 0; i < totalMessages; i++)
@@ -102,12 +119,12 @@ for (int i = 0; i < totalMessages; i++)
     var message = new AmqpMessage($"msg#{i}");
     PublishResult pr = await publisher.PublishAsync(message);
     Console.WriteLine(pr.Outcome.State == OutcomeState.Accepted
-        ? $"[{Now()}] [Publisher] msg#{i} confirmed by broker"
+        ? $"[{Now()}] [Publisher] msg#{i} confirmed"
         : $"[{Now()}] [Publisher] msg#{i} outcome: {pr.Outcome.State}");
 }
 
 Console.WriteLine();
-Console.WriteLine($"[{Now()}] Publishing done. Waiting for retries to complete...");
+Console.WriteLine($"[{Now()}] Waiting for retries to complete …");
 Console.WriteLine("Press Enter to delete the queue and exit.");
 Console.ReadLine();
 

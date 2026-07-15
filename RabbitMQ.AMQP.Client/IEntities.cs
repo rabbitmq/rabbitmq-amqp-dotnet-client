@@ -131,24 +131,20 @@ namespace RabbitMQ.AMQP.Client
     {
         /// <summary>Delayed retry is not applied (default).</summary>
         Disabled,
-
-        // All and Failed are not ready yet.
-        // We will make it available in a future releases
-
         /// <summary>All returned messages are delayed, regardless of whether the delivery count was incremented.</summary>
-        [Obsolete("This status is not ready to use.", true)]
         All,
 
         /// <summary>
         /// Only messages with an incremented <c>delivery-count</c> are delayed.
-        /// This happens for example when discarding a message via <c>IContext.Discard()</c>.
+        /// This happens for example when discarding a message via <c>IContext.DelayedRetry(delay, true)</c>.
+        /// or <c>IContext.Requeue(annotation, true)</c>.
         /// </summary>
-        [Obsolete("This status is not ready to use.", true)]
         Failed,
 
         /// <summary>
-        /// Only messages without an incremented <c>delivery-count</c> are delayed.
-        /// This happens for example when requeuing a message via <c>IContext.Requeue()</c>.
+        /// Only messages with an incremented <c>x-acquired-count</c> are delayed.
+        /// This happens for example when requeuing a message via <c>IContext.Requeue()</c>
+        /// or <c>IContext.Requeue(annotation, false)</c>.
         /// </summary>
         Returned
     }
