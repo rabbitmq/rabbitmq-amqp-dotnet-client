@@ -171,6 +171,12 @@ namespace RabbitMQ.AMQP.Client
                 StringComparison.OrdinalIgnoreCase) == 0;
         }
 
+        internal static bool IsJms(Map queueArguments)
+        {
+            return string.Compare(queueArguments["x-queue-type"]?.ToString(), nameof(QueueType.JMS),
+                StringComparison.OrdinalIgnoreCase) == 0;
+        }
+
         internal static void ValidatePositive(string label, long value)
         {
             if (value <= 0)

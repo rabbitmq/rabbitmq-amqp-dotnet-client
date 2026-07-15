@@ -304,15 +304,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public async Task<IQueueInfo> DeclareAsync()
         {
-<<<<<<< HEAD
-            if (_queueArguments.TryGetValue("x-queue-type", out object? queueTypeArg) &&
-                queueTypeArg is string queueTypeStr &&
-                (string.Equals(queueTypeStr, "quorum", StringComparison.OrdinalIgnoreCase) ||
-                 string.Equals(queueTypeStr, "stream", StringComparison.OrdinalIgnoreCase) ||
-                 string.Equals(queueTypeStr, "jms", StringComparison.OrdinalIgnoreCase)))
-=======
-            if (Utils.IsQuorum(_queueArguments) || Utils.IsStream(_queueArguments))
->>>>>>> origin/main
+            if (Utils.IsQuorum(_queueArguments) || Utils.IsStream(_queueArguments) || Utils.IsJms(_queueArguments))
             {
                 // mandatory arguments for quorum queues, streams, and JMS queues
                 Exclusive(false).AutoDelete(false);

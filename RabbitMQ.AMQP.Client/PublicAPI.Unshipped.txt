@@ -634,14 +634,10 @@ RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Discard() -> void
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Discard(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> void
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.PreSettledDeliveryContext() -> void
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Requeue() -> void
-<<<<<<< HEAD
-RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Requeue(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> void
+RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Requeue(System.Collections.Generic.Dictionary<string!, object!>! annotations, bool deliveryFailed = false) -> void
 RabbitMQ.AMQP.Client.Impl.JmsOptions
 RabbitMQ.AMQP.Client.Impl.JmsOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.JmsOptions.ConsumerTimeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IJmsOptions!
-=======
-RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Requeue(System.Collections.Generic.Dictionary<string!, object!>! annotations, bool deliveryFailed = false) -> void
->>>>>>> origin/main
 RabbitMQ.AMQP.Client.Impl.QuorumOptions
 RabbitMQ.AMQP.Client.Impl.QuorumOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.Impl.QuorumOptions.ConsumerTimeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions!

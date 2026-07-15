@@ -366,7 +366,6 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
     }
 
-<<<<<<< HEAD
     internal class TimeoutDeliveryContext : IContext
     {
         private readonly IReceiverLink _link;
@@ -410,16 +409,18 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public void Requeue() => throw new InvalidOperationException("Cannot requeue a timed out delivery context. Only Accept is valid value");
 
-        public void Requeue(Dictionary<string, object> annotations) => throw new InvalidOperationException("Cannot requeue a timed out delivery context. Only Accept is valid value");
+        public void Requeue(Dictionary<string, object> annotations, bool deliveryFailed = false) => throw new InvalidOperationException("Cannot requeue a timed out delivery context. Only Accept is valid value");
+
+        public void DelayedRetry(TimeSpan delay, bool deliveryFailed = false) => throw new InvalidOperationException("Cannot delayed-retry a timed out delivery context. Only Accept is valid value");
 
         public IBatchContext Batch() => throw new InvalidOperationException("Cannot create a batch context from a timed out delivery context.");
-=======
+    }
+
     public static class AnnotationsHelper
     {
         public static Dictionary<string, object> Empty()
         {
             return new Dictionary<string, object>();
         }
->>>>>>> origin/main
     }
 }
