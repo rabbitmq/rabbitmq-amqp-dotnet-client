@@ -380,7 +380,7 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         /// <summary>
         /// Invoked by <see cref="ConnectionHandler"/> when the broker changes the delivery state of a message
-        /// on this consumer's receiver link (e.g. <c>RELEASED</c> due to a consumer-timeout on a quorum queue).
+        /// on this consumer's receiver link (e.g. <c>RELEASED</c> due to a consumer-timeout on a quorum or jms queue).
         /// Decrements the unsettled-message counter so the consumer stays consistent.
         /// </summary>
         internal void OnDeliveryStateChanged(ReceiverLink receiverLink, IDelivery delivery)

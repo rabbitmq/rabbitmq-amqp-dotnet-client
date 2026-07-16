@@ -161,6 +161,12 @@ namespace RabbitMQ.AMQP.Client
 
         /// <summary>
         ///   Sets the <c>x-consumer-timeout</c> queue argument (milliseconds).
+        /// <para>
+        /// Defines the consumer timeout per queue.
+        /// If the consumer doesn't handle a message within the timeout, the consumer is considered blocked.
+        /// See the ITimeout interface for more details. The In the event OnDeliveryRelease is called.
+        /// See the documentation: https://www.rabbitmq.com/blog/2026/04/23/rabbitmq-4.3-release#consumer-timeouts
+        /// </para>
         /// </summary>
         IQuorumQueueSpecification ConsumerTimeout(TimeSpan timeout);
 

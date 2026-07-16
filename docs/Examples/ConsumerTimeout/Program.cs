@@ -9,7 +9,7 @@
 // Consumer timeouts limit how long a consumer may hold a message without settling it (accept / reject / release).
 // For quorum queues you can set:
 // - Queue argument x-consumer-timeout (via IQueueSpecification.Quorum().ConsumerTimeout(...))
-// - Per-consumer attach property rabbitmq:consumer-timeout (via IConsumerBuilder.Quorum().ConsumerTimeout(...).Builder())
+// - Per-consumer attach property rabbitmq:consumer-timeout (via IConsumerBuilder.Quorum().Timeout().Set(...).Builder().Builder())
 // See: https://www.rabbitmq.com/blog/2026/04/23/rabbitmq-4.3-release#consumer-timeouts
 //
 // This sample declares a quorum queue with a queue-level timeout, attaches a consumer with its own consumer-level
@@ -42,12 +42,13 @@ Trace.WriteLine(TraceLevel.Information, $"Connected to the broker {connection} s
 IManagement management = connection.Management();
 const string queueName = "q_amqp10-consumer-timeout-example";
 
-//TimeSpan queueConsumerTimeout = TimeSpan.FromSeconds(3);
+// TimeSpan queueConsumerTimeout = TimeSpan.FromSeconds(3);
 TimeSpan attachConsumerTimeout = TimeSpan.FromSeconds(3);
 
 IQueueSpecification queueSpec = management.Queue(queueName)
     .Quorum()
-    // .ConsumerTimeout(queueConsumerTimeout)
+    // .ConsumerTimeout(queueConsumerTimeout) // There are different ways to configure the consumer timeout:
+    // see https://www.rabbitmq.com/blog/2026/04/23/rabbitmq-4.3-release#consumer-timeouts
     .Queue();
 
 await queueSpec.DeclareAsync();
@@ -55,38 +56,47 @@ await queueSpec.DeclareAsync();
 IPublisher publisher = await connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
 
 int secondsToWait = 4;
-IConsumer consumer = await connection.ConsumerBuilder()
+IConsumerBuilder.IQuorumTimeout quorumTimeout = connection.ConsumerBuilder()
     .Queue(queueSpec)
     .Quorum()
-    // There are different ways to configure the consumer timeout, 
+    // There are different ways to configure the consumer timeout,
     // see https://www.rabbitmq.com/blog/2026/04/23/rabbitmq-4.3-release#consumer-timeouts
+    .Timeout();
 
-    .ConsumerTimeout(attachConsumerTimeout)
-    .OnDeliveryRelease((context, message) =>
-    {
-        Trace.WriteLine(TraceLevel.Information,
-            $"[Consumer] Message: {message.BodyAsString()} released by consumer. Going to unlock the consumer");
+quorumTimeout.Set(attachConsumerTimeout);
+quorumTimeout.OnDeliveryRelease((context, message) =>
+{
+    // Here we unlock the consumer from the consumer timeout state.
+    // In this example, only one time has to raise the timeout, then we reset the secondsToWait to 0 to avoid
+    // hitting the timeout for subsequent messages.
+    context.Accept();
+    Trace.WriteLine(TraceLevel.Information,
+        $"[Consumer] Message: {message.BodyAsString()} released by consumer. Consumer unlocked!");
 
-        // Here we unlock the consumer from the consumer timeout state.
-        // In this example, only one time has to raise the timeout, then we reset the secondsToWait to 0 to avoid
-        // hitting the timeout for subsequent messages.
-        context.Accept();
-        return Task.CompletedTask;
-    }).Builder()
+    return Task.CompletedTask;
+});
+
+IConsumer consumer = await quorumTimeout.Builder()
+    .Builder()
     .MessageHandler(async (context, message) =>
     {
-        Trace.WriteLine(TraceLevel.Information,
-            $"[Consumer] Message: {message.BodyAsString()} received; going to wait for {secondsToWait} seconds before accepting the message to trigger the consumer timeout");
-        await Task.Delay(TimeSpan.FromSeconds(secondsToWait));
-        secondsToWait =
-            0; // only delay the first message to trigger the timeout, then reset to 0 for subsequent messages
+        if (secondsToWait > 0)
+        {
+            Trace.WriteLine(TraceLevel.Information,
+                $"[Consumer] Message: {message.BodyAsString()} received; going to wait for {secondsToWait} seconds before accepting the message to trigger the consumer timeout");
+            await Task.Delay(TimeSpan.FromSeconds(secondsToWait));
+            secondsToWait =
+                0; // only delay the first message to trigger the timeout, then reset to 0 for subsequent messages
+            return;
+        }
 
         // In the first iteration the context.Accept() is ignored since id requeued due to timeout,
         // but in the second iteration it works as expected since the timeout is not hit.
         try
         {
             context.Accept();
-            Trace.WriteLine(TraceLevel.Information, $"[Consumer] Message: {message.BodyAsString()} accepted");
+            Trace.WriteLine(TraceLevel.Information,
+                $"[Consumer] Message: {message.BodyAsString()} consumed and accepted");
         }
         catch (Exception e)
         {

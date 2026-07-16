@@ -125,10 +125,12 @@ public class QueueConsumerTimeoutTests(ITestOutputHelper testOutputHelper) : Int
 
         await queueSpec.DeclareAsync();
 
-        IConsumer consumer = await _connection.ConsumerBuilder()
+        IConsumerBuilder.IQuorumTimeout qt = _connection.ConsumerBuilder()
             .Queue(queueSpec)
             .Quorum()
-            .ConsumerTimeout(TimeSpan.FromMinutes(2))
+            .Timeout();
+        qt.Set(TimeSpan.FromMinutes(2));
+        IConsumer consumer = await qt.Builder()
             .Builder()
             .MessageHandler((context, message) =>
             {
@@ -150,10 +152,14 @@ public class QueueConsumerTimeoutTests(ITestOutputHelper testOutputHelper) : Int
         IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Quorum().Queue();
         await queueSpec.DeclareAsync();
 
+        IConsumerBuilder.IQuorumTimeout qt2 = _connection.ConsumerBuilder()
+            .Queue(queueSpec)
+            .Quorum()
+            .Timeout();
+        qt2.Set(TimeSpan.FromMinutes(1));
         NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () =>
-            await _connection.ConsumerBuilder()
-                .Queue(queueSpec).Quorum()
-                .ConsumerTimeout(TimeSpan.FromMinutes(1)).Builder()
+            await qt2.Builder()
+                .Builder()
                 .SettleStrategy(ConsumerSettleStrategy.DirectReplyTo)
                 .MessageHandler((_, _) => Task.CompletedTask)
                 .BuildAndStartAsync());
@@ -184,16 +190,18 @@ public class QueueConsumerTimeoutTests(ITestOutputHelper testOutputHelper) : Int
         TaskCompletionSource<IMessage> releaseTcs =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        IConsumer consumer = await _connection.ConsumerBuilder()
+        IConsumerBuilder.IQuorumTimeout qt3 = _connection.ConsumerBuilder()
             .Queue(queueSpec)
             .Quorum()
-            .ConsumerTimeout(consumerTimeout)
-            .OnDeliveryRelease((context, message) =>
-            {
-                context.Accept();
-                releaseTcs.TrySetResult(message);
-                return Task.CompletedTask;
-            })
+            .Timeout();
+        qt3.Set(consumerTimeout);
+        qt3.OnDeliveryRelease((context, message) =>
+        {
+            context.Accept();
+            releaseTcs.TrySetResult(message);
+            return Task.CompletedTask;
+        });
+        IConsumer consumer = await qt3.Builder()
             .Builder()
             .MessageHandler(async (context, message) =>
             {
@@ -256,17 +264,19 @@ public class QueueConsumerTimeoutTests(ITestOutputHelper testOutputHelper) : Int
 
         bool timeoutTriggered = false;
 
-        IConsumer consumer = await _connection.ConsumerBuilder()
+        IConsumerBuilder.IQuorumTimeout qt4 = _connection.ConsumerBuilder()
             .Queue(queueSpec)
             .Quorum()
-            .ConsumerTimeout(consumerTimeout)
-            .OnDeliveryRelease((context, _) =>
-            {
-                context.Accept();
-                timeoutTriggered = true;
-                releaseTcs.TrySetResult(true);
-                return Task.CompletedTask;
-            })
+            .Timeout();
+        qt4.Set(consumerTimeout);
+        qt4.OnDeliveryRelease((context, _) =>
+        {
+            context.Accept();
+            timeoutTriggered = true;
+            releaseTcs.TrySetResult(true);
+            return Task.CompletedTask;
+        });
+        IConsumer consumer = await qt4.Builder()
             .Builder()
             .MessageHandler(async (context, message) =>
             {

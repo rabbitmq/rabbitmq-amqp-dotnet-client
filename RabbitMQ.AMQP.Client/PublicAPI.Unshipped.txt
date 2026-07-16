@@ -197,15 +197,18 @@ RabbitMQ.AMQP.Client.IConsumer.Unpause() -> void
 RabbitMQ.AMQP.Client.IConsumer.UnsettledMessageCount.get -> long
 RabbitMQ.AMQP.Client.IConsumerBuilder
 RabbitMQ.AMQP.Client.IConsumerBuilder.BuildAndStartAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IConsumer!>!
+RabbitMQ.AMQP.Client.IConsumerBuilder.IJmsOptions.Timeout() -> RabbitMQ.AMQP.Client.IConsumerBuilder.IJmsTimeout!
+RabbitMQ.AMQP.Client.IConsumerBuilder.IJmsTimeout
+RabbitMQ.AMQP.Client.IConsumerBuilder.IJmsTimeout.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder.IJmsOptions!
 RabbitMQ.AMQP.Client.IConsumerBuilder.InitialCredits(int initialCredits) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
 RabbitMQ.AMQP.Client.IConsumerBuilder.IJmsOptions
 RabbitMQ.AMQP.Client.IConsumerBuilder.IJmsOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
-RabbitMQ.AMQP.Client.IConsumerBuilder.IJmsOptions.ConsumerTimeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IJmsOptions!
 RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions
 RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
-RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions.ConsumerTimeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions!
-RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions.OnDeliveryRelease(RabbitMQ.AMQP.Client.DeliveryReleaseHandler! deliveryReleaseHandler) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions!
 RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions.SingleActiveConsumerStateChanged(RabbitMQ.AMQP.Client.SingleActiveConsumerStateHandler? handler) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions!
+RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions.Timeout() -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumTimeout!
+RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumTimeout
+RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumTimeout.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions!
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions.AbsoluteExpiryTime(System.DateTime absoluteExpiryTime) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions!
 RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions.ContentEncoding(string! contentEncoding) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IStreamFilterOptions!
@@ -637,12 +640,19 @@ RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Requeue() -> void
 RabbitMQ.AMQP.Client.Impl.PreSettledDeliveryContext.Requeue(System.Collections.Generic.Dictionary<string!, object!>! annotations, bool deliveryFailed = false) -> void
 RabbitMQ.AMQP.Client.Impl.JmsOptions
 RabbitMQ.AMQP.Client.Impl.JmsOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
-RabbitMQ.AMQP.Client.Impl.JmsOptions.ConsumerTimeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IJmsOptions!
+RabbitMQ.AMQP.Client.Impl.JmsOptions.Timeout() -> RabbitMQ.AMQP.Client.IConsumerBuilder.IJmsTimeout!
+RabbitMQ.AMQP.Client.Impl.JmsTimeout
+RabbitMQ.AMQP.Client.Impl.JmsTimeout.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder.IJmsOptions!
+RabbitMQ.AMQP.Client.Impl.JmsTimeout.OnDeliveryRelease(RabbitMQ.AMQP.Client.DeliveryReleaseHandler! deliveryReleaseHandler) -> RabbitMQ.AMQP.Client.ITimeout!
+RabbitMQ.AMQP.Client.Impl.JmsTimeout.Set(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.ITimeout!
 RabbitMQ.AMQP.Client.Impl.QuorumOptions
 RabbitMQ.AMQP.Client.Impl.QuorumOptions.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder!
-RabbitMQ.AMQP.Client.Impl.QuorumOptions.ConsumerTimeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions!
-RabbitMQ.AMQP.Client.Impl.QuorumOptions.OnDeliveryRelease(RabbitMQ.AMQP.Client.DeliveryReleaseHandler! deliveryReleaseHandler) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions!
 RabbitMQ.AMQP.Client.Impl.QuorumOptions.SingleActiveConsumerStateChanged(RabbitMQ.AMQP.Client.SingleActiveConsumerStateHandler? handler) -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions!
+RabbitMQ.AMQP.Client.Impl.QuorumOptions.Timeout() -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumTimeout!
+RabbitMQ.AMQP.Client.Impl.QuorumTimeout
+RabbitMQ.AMQP.Client.Impl.QuorumTimeout.Builder() -> RabbitMQ.AMQP.Client.IConsumerBuilder.IQuorumOptions!
+RabbitMQ.AMQP.Client.Impl.QuorumTimeout.OnDeliveryRelease(RabbitMQ.AMQP.Client.DeliveryReleaseHandler! deliveryReleaseHandler) -> RabbitMQ.AMQP.Client.ITimeout!
+RabbitMQ.AMQP.Client.Impl.QuorumTimeout.Set(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.ITimeout!
 RabbitMQ.AMQP.Client.Impl.RequesterAddressBuilder
 RabbitMQ.AMQP.Client.Impl.RequesterAddressBuilder.Requester() -> RabbitMQ.AMQP.Client.IRequesterBuilder!
 RabbitMQ.AMQP.Client.Impl.RequesterAddressBuilder.RequesterAddressBuilder(RabbitMQ.AMQP.Client.Impl.AmqpRequesterBuilder! builder) -> void
@@ -797,6 +807,9 @@ RabbitMQ.AMQP.Client.IStreamSpecification.InitialClusterSize(int initialClusterS
 RabbitMQ.AMQP.Client.IStreamSpecification.MaxAge(System.TimeSpan maxAge) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.IStreamSpecification.MaxSegmentSizeBytes(RabbitMQ.AMQP.Client.ByteCapacity! maxSegmentSize) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.IStreamSpecification.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
+RabbitMQ.AMQP.Client.ITimeout
+RabbitMQ.AMQP.Client.ITimeout.OnDeliveryRelease(RabbitMQ.AMQP.Client.DeliveryReleaseHandler! deliveryReleaseHandler) -> RabbitMQ.AMQP.Client.ITimeout!
+RabbitMQ.AMQP.Client.ITimeout.Set(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.ITimeout!
 RabbitMQ.AMQP.Client.IUriSelector
 RabbitMQ.AMQP.Client.IUriSelector.Select(System.Collections.Generic.ICollection<System.Uri!>! uris) -> System.Uri!
 RabbitMQ.AMQP.Client.LeaderLocatorStrategy

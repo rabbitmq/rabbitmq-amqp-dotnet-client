@@ -38,6 +38,23 @@ namespace RabbitMQ.AMQP.Client
         PreSettled,
     }
 
+    public interface ITimeout
+    {
+        /// <summary>
+        ///   Sets the AMQP 1.0 attach property <c>rabbitmq:consumer-timeout</c> (milliseconds) for this consumer.
+        ///   Use with quorum or Jms queues  (see RabbitMQ consumer timeout documentation).
+        /// </summary>
+        ITimeout Set(TimeSpan timeout);
+
+        /// <summary>
+        ///  Raised when the consumer is blocked due to timeout.
+        ///  The client has to manage the message and send the Accept() to the server. 
+        /// </summary>
+        /// <param name="deliveryReleaseHandler"></param>
+        /// <returns></returns>
+        ITimeout OnDeliveryRelease(DeliveryReleaseHandler deliveryReleaseHandler);
+    }
+
     // TODO IAddressBuilder<IConsumerBuilder>?
     public interface IConsumerBuilder
     {
@@ -86,6 +103,11 @@ namespace RabbitMQ.AMQP.Client
 
         Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default);
 
+        public interface IQuorumTimeout : ITimeout
+        {
+            IQuorumOptions Builder();
+        }
+
         /// <summary>
         ///  Options for consumers of quorum queues.
         /// </summary>
@@ -111,15 +133,14 @@ namespace RabbitMQ.AMQP.Client
             /// </exception>
             IQuorumOptions SingleActiveConsumerStateChanged(SingleActiveConsumerStateHandler? handler);
 
-            /// <summary>
-            ///   Sets the AMQP 1.0 attach property <c>rabbitmq:consumer-timeout</c> (milliseconds) for this consumer.
-            ///   Use with quorum queues (see RabbitMQ consumer timeout documentation).
-            /// </summary>
-            IQuorumOptions ConsumerTimeout(TimeSpan timeout);
-
-            IQuorumOptions OnDeliveryRelease(DeliveryReleaseHandler deliveryReleaseHandler);
+            IQuorumTimeout Timeout();
 
             IConsumerBuilder Builder();
+        }
+
+        public interface IJmsTimeout : ITimeout
+        {
+            IJmsOptions Builder();
         }
 
         /// <summary>
@@ -127,10 +148,7 @@ namespace RabbitMQ.AMQP.Client
         /// </summary>
         public interface IJmsOptions
         {
-            /// <summary>
-            ///   Sets the AMQP 1.0 attach property <c>rabbitmq:consumer-timeout</c> (milliseconds) for this consumer.
-            /// </summary>
-            IJmsOptions ConsumerTimeout(TimeSpan timeout);
+            IJmsTimeout Timeout();
 
             IConsumerBuilder Builder();
         }

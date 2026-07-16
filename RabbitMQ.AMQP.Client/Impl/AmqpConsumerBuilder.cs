@@ -169,10 +169,70 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
     }
 
-    public class QuorumOptions : IConsumerBuilder.IQuorumOptions
+    public class QuorumTimeout : IConsumerBuilder.IQuorumTimeout
     {
         private static readonly TimeSpan s_tenYears = TimeSpan.FromDays(365 * 10);
+        private readonly QuorumOptions _quorumOptions;
+        private readonly ConsumerConfiguration _consumerConfiguration;
 
+        internal QuorumTimeout(QuorumOptions quorumOptions, ConsumerConfiguration consumerConfiguration)
+        {
+            _quorumOptions = quorumOptions;
+            _consumerConfiguration = consumerConfiguration;
+        }
+
+        public ITimeout Set(TimeSpan timeout)
+        {
+            Utils.ValidatePositive("ConsumerTimeout", (long)timeout.TotalMilliseconds, (long)s_tenYears.TotalMilliseconds);
+            _quorumOptions.ApplyTimeout((uint)timeout.TotalMilliseconds);
+            return this;
+        }
+
+        public ITimeout OnDeliveryRelease(DeliveryReleaseHandler deliveryReleaseHandler)
+        {
+            _consumerConfiguration.OnDeliveryRelease = deliveryReleaseHandler;
+            return this;
+        }
+
+        public IConsumerBuilder.IQuorumOptions Builder()
+        {
+            return _quorumOptions;
+        }
+    }
+
+    public class JmsTimeout : IConsumerBuilder.IJmsTimeout
+    {
+        private static readonly TimeSpan s_tenYears = TimeSpan.FromDays(365 * 10);
+        private readonly JmsOptions _jmsOptions;
+        private readonly ConsumerConfiguration _consumerConfiguration;
+
+        internal JmsTimeout(JmsOptions jmsOptions, ConsumerConfiguration consumerConfiguration)
+        {
+            _jmsOptions = jmsOptions;
+            _consumerConfiguration = consumerConfiguration;
+        }
+
+        public ITimeout Set(TimeSpan timeout)
+        {
+            Utils.ValidatePositive("ConsumerTimeout", (long)timeout.TotalMilliseconds, (long)s_tenYears.TotalMilliseconds);
+            _jmsOptions.ApplyTimeout((uint)timeout.TotalMilliseconds);
+            return this;
+        }
+
+        public ITimeout OnDeliveryRelease(DeliveryReleaseHandler deliveryReleaseHandler)
+        {
+            _consumerConfiguration.OnDeliveryRelease = deliveryReleaseHandler;
+            return this;
+        }
+
+        public IConsumerBuilder.IJmsOptions Builder()
+        {
+            return _jmsOptions;
+        }
+    }
+
+    public class QuorumOptions : IConsumerBuilder.IQuorumOptions
+    {
         private readonly IConsumerBuilder _consumerBuilder;
         private SingleActiveConsumerStateHandler? _changedHandler;
         private uint? _consumerTimeoutMilliseconds;
@@ -185,18 +245,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             _consumerConfiguration = consumerConfiguration;
         }
 
-        public IConsumerBuilder.IQuorumOptions ConsumerTimeout(TimeSpan timeout)
+        internal void ApplyTimeout(uint milliseconds)
         {
-            Utils.ValidatePositive("ConsumerTimeout", (long)timeout.TotalMilliseconds, (long)s_tenYears.TotalMilliseconds);
-            _consumerTimeoutMilliseconds = (uint)timeout.TotalMilliseconds;
+            _consumerTimeoutMilliseconds = milliseconds;
             _consumerTimeoutTouched = true;
-            return this;
-        }
-
-        public IConsumerBuilder.IQuorumOptions OnDeliveryRelease(DeliveryReleaseHandler deliveryReleaseHandler)
-        {
-            _consumerConfiguration.OnDeliveryRelease = deliveryReleaseHandler;
-            return this;
         }
 
         public IConsumerBuilder.IQuorumOptions SingleActiveConsumerStateChanged(
@@ -204,6 +256,11 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             _changedHandler = handler;
             return this;
+        }
+
+        public IConsumerBuilder.IQuorumTimeout Timeout()
+        {
+            return new QuorumTimeout(this, _consumerConfiguration);
         }
 
         public IConsumerBuilder Builder()
@@ -220,8 +277,6 @@ namespace RabbitMQ.AMQP.Client.Impl
 
     public class JmsOptions : IConsumerBuilder.IJmsOptions
     {
-        private static readonly TimeSpan s_tenYears = TimeSpan.FromDays(365 * 10);
-
         private readonly IConsumerBuilder _consumerBuilder;
         private uint? _consumerTimeoutMilliseconds;
         private bool _consumerTimeoutTouched;
@@ -233,12 +288,15 @@ namespace RabbitMQ.AMQP.Client.Impl
             _consumerConfiguration = consumerConfiguration;
         }
 
-        public IConsumerBuilder.IJmsOptions ConsumerTimeout(TimeSpan timeout)
+        internal void ApplyTimeout(uint milliseconds)
         {
-            Utils.ValidatePositive("ConsumerTimeout", (long)timeout.TotalMilliseconds, (long)s_tenYears.TotalMilliseconds);
-            _consumerTimeoutMilliseconds = (uint)timeout.TotalMilliseconds;
+            _consumerTimeoutMilliseconds = milliseconds;
             _consumerTimeoutTouched = true;
-            return this;
+        }
+
+        public IConsumerBuilder.IJmsTimeout Timeout()
+        {
+            return new JmsTimeout(this, _consumerConfiguration);
         }
 
         public IConsumerBuilder Builder()
