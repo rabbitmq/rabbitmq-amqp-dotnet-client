@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[1.3.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.3.0)]
+
+## 1.3.0 - 2026-20-07
+- [Release 1.3.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.3.0)
+
+### Enhancements
+- Handle invalid server version responses by @MirahImage in [#170](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/170)
+- Handle management errors by @MirahImage in [#171](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/171)
+- Add `IContext.DelayedRetry()` and `DelayedRetry(TimeSpan)` for quorum queues by @Gsantomaggio in [#172](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/172)
+
+### Fix
+- Correct delayed-retry documentation inaccuracies by @Gsantomaggio in [#174](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/174)
+
+
 ## [[1.2.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.2.0)]
 
 ## 1.2.0 - 2026-15-06
