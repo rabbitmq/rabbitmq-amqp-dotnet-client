@@ -572,7 +572,7 @@ namespace RabbitMQ.AMQP.Client
             }
             else
             {
-                return null;
+                return _tlsSettings;
             }
         }
 
