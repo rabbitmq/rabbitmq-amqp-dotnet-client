@@ -283,6 +283,7 @@ RabbitMQ.AMQP.Client.IMessage.AbsoluteExpiryTime() -> System.DateTime
 RabbitMQ.AMQP.Client.IMessage.AbsoluteExpiryTime(System.DateTime absoluteExpiryTime) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IMessage.Annotation(string! key) -> object!
 RabbitMQ.AMQP.Client.IMessage.Annotation(string! key, object! value) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.IMessage.AnnotationTryGetValue(string! key, out object? value) -> bool
 RabbitMQ.AMQP.Client.IMessage.Body() -> byte[]!
 RabbitMQ.AMQP.Client.IMessage.Body(object! body) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IMessage.BodyAsString() -> string!
@@ -307,6 +308,7 @@ RabbitMQ.AMQP.Client.IMessage.Properties() -> System.Collections.Generic.IDictio
 RabbitMQ.AMQP.Client.IMessage.Property(string! key) -> object!
 RabbitMQ.AMQP.Client.IMessage.Property(string! key, object! value) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IMessage.PropertySymbol(string! key, string! value) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.IMessage.PropertyTryGetValue(string! key, out object? value) -> bool
 RabbitMQ.AMQP.Client.IMessage.ReplyTo() -> string!
 RabbitMQ.AMQP.Client.IMessage.ReplyTo(string! replyTo) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.IMessage.ReplyToGroupId() -> string!
@@ -440,6 +442,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpMessage.AmqpMessage(byte[]! body) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.AmqpMessage(string! body) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.Annotation(string! key) -> object!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.Annotation(string! key, object! value) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.Impl.AmqpMessage.AnnotationTryGetValue(string! key, out object? value) -> bool
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.Body() -> byte[]!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.Body(object! body) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.BodyAsString() -> string!
@@ -465,6 +468,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpMessage.Properties() -> System.Collections.Generic
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.Property(string! key) -> object!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.Property(string! key, object! value) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.PropertySymbol(string! key, string! value) -> RabbitMQ.AMQP.Client.IMessage!
+RabbitMQ.AMQP.Client.Impl.AmqpMessage.PropertyTryGetValue(string! key, out object? value) -> bool
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.ReplyTo() -> string!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.ReplyTo(string! id) -> RabbitMQ.AMQP.Client.IMessage!
 RabbitMQ.AMQP.Client.Impl.AmqpMessage.ReplyToGroupId() -> string!
