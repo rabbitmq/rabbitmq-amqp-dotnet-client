@@ -56,27 +56,25 @@ await queueSpec.DeclareAsync();
 IPublisher publisher = await connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
 
 int secondsToWait = 4;
-IConsumerBuilder.IQuorumTimeout quorumTimeout = connection.ConsumerBuilder()
+IConsumer consumer = await connection.ConsumerBuilder()
     .Queue(queueSpec)
     .Quorum()
     // There are different ways to configure the consumer timeout,
     // see https://www.rabbitmq.com/blog/2026/04/23/rabbitmq-4.3-release#consumer-timeouts
-    .Timeout();
+    .Timeout()
+    .Set(attachConsumerTimeout)
+    .OnDeliveryRelease((context, message) =>
+    {
+        // Here we unlock the consumer from the consumer timeout state.
+        // In this example, only one time has to raise the timeout, then we reset the secondsToWait to 0 to avoid
+        // hitting the timeout for subsequent messages.
+        context.Accept();
+        Trace.WriteLine(TraceLevel.Information,
+            $"[Consumer] Message: {message.BodyAsString()} released by consumer. Consumer unlocked!");
 
-quorumTimeout.Set(attachConsumerTimeout);
-quorumTimeout.OnDeliveryRelease((context, message) =>
-{
-    // Here we unlock the consumer from the consumer timeout state.
-    // In this example, only one time has to raise the timeout, then we reset the secondsToWait to 0 to avoid
-    // hitting the timeout for subsequent messages.
-    context.Accept();
-    Trace.WriteLine(TraceLevel.Information,
-        $"[Consumer] Message: {message.BodyAsString()} released by consumer. Consumer unlocked!");
-
-    return Task.CompletedTask;
-});
-
-IConsumer consumer = await quorumTimeout.Builder()
+        return Task.CompletedTask;
+    })
+    .Quorum()
     .Builder()
     .MessageHandler(async (context, message) =>
     {

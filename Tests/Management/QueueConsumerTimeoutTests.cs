@@ -130,7 +130,7 @@ public class QueueConsumerTimeoutTests(ITestOutputHelper testOutputHelper) : Int
             .Quorum()
             .Timeout();
         qt.Set(TimeSpan.FromMinutes(2));
-        IConsumer consumer = await qt.Builder()
+        IConsumer consumer = await qt.Quorum()
             .Builder()
             .MessageHandler((context, message) =>
             {
@@ -158,7 +158,7 @@ public class QueueConsumerTimeoutTests(ITestOutputHelper testOutputHelper) : Int
             .Timeout();
         qt2.Set(TimeSpan.FromMinutes(1));
         NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () =>
-            await qt2.Builder()
+            await qt2.Quorum()
                 .Builder()
                 .SettleStrategy(ConsumerSettleStrategy.DirectReplyTo)
                 .MessageHandler((_, _) => Task.CompletedTask)
@@ -201,7 +201,7 @@ public class QueueConsumerTimeoutTests(ITestOutputHelper testOutputHelper) : Int
             releaseTcs.TrySetResult(message);
             return Task.CompletedTask;
         });
-        IConsumer consumer = await qt3.Builder()
+        IConsumer consumer = await qt3.Quorum()
             .Builder()
             .MessageHandler(async (context, message) =>
             {
@@ -276,7 +276,7 @@ public class QueueConsumerTimeoutTests(ITestOutputHelper testOutputHelper) : Int
             releaseTcs.TrySetResult(true);
             return Task.CompletedTask;
         });
-        IConsumer consumer = await qt4.Builder()
+        IConsumer consumer = await qt4.Quorum()
             .Builder()
             .MessageHandler(async (context, message) =>
             {

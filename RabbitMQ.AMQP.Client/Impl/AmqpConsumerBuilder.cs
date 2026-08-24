@@ -181,20 +181,20 @@ namespace RabbitMQ.AMQP.Client.Impl
             _consumerConfiguration = consumerConfiguration;
         }
 
-        public ITimeout Set(TimeSpan timeout)
+        public IConsumerBuilder.IQuorumTimeout Set(TimeSpan timeout)
         {
             Utils.ValidatePositive("ConsumerTimeout", (long)timeout.TotalMilliseconds, (long)s_tenYears.TotalMilliseconds);
             _quorumOptions.ApplyTimeout((uint)timeout.TotalMilliseconds);
             return this;
         }
 
-        public ITimeout OnDeliveryRelease(DeliveryReleaseHandler deliveryReleaseHandler)
+        public IConsumerBuilder.IQuorumTimeout OnDeliveryRelease(DeliveryReleaseHandler deliveryReleaseHandler)
         {
             _consumerConfiguration.OnDeliveryRelease = deliveryReleaseHandler;
             return this;
         }
 
-        public IConsumerBuilder.IQuorumOptions Builder()
+        public IConsumerBuilder.IQuorumOptions Quorum()
         {
             return _quorumOptions;
         }
@@ -212,20 +212,20 @@ namespace RabbitMQ.AMQP.Client.Impl
             _consumerConfiguration = consumerConfiguration;
         }
 
-        public ITimeout Set(TimeSpan timeout)
+        public IConsumerBuilder.IJmsTimeout Set(TimeSpan timeout)
         {
             Utils.ValidatePositive("ConsumerTimeout", (long)timeout.TotalMilliseconds, (long)s_tenYears.TotalMilliseconds);
             _jmsOptions.ApplyTimeout((uint)timeout.TotalMilliseconds);
             return this;
         }
 
-        public ITimeout OnDeliveryRelease(DeliveryReleaseHandler deliveryReleaseHandler)
+        public IConsumerBuilder.IJmsTimeout OnDeliveryRelease(DeliveryReleaseHandler deliveryReleaseHandler)
         {
             _consumerConfiguration.OnDeliveryRelease = deliveryReleaseHandler;
             return this;
         }
 
-        public IConsumerBuilder.IJmsOptions Builder()
+        public IConsumerBuilder.IJmsOptions Jms()
         {
             return _jmsOptions;
         }
