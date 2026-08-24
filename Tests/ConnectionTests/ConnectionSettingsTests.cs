@@ -83,12 +83,14 @@ public class ConnectionSettingsTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public void ConnectionSettingsViaBuilderWithSslOptions()
     {
+        TlsSettings tlsSettings = new(SslProtocols.Tls12);
         ConnectionSettings connectionSettings = ConnectionSettingsBuilder.Create()
             .Host("localhost")
             .VirtualHost("v1")
             .User("guest-t")
             .Password("guest-w")
             .Scheme("amqps")
+            .TlsSettings(tlsSettings)
             .Build();
 
         Assert.True(connectionSettings.UseSsl);
@@ -98,6 +100,7 @@ public class ConnectionSettingsTests(ITestOutputHelper testOutputHelper)
         Assert.Equal("guest-w", connectionSettings.Password);
         Assert.Equal("v1", connectionSettings.VirtualHost);
         Assert.Equal("amqps", connectionSettings.Scheme);
+        Assert.Same(tlsSettings, connectionSettings.TlsSettings);
     }
 
     [Fact]
