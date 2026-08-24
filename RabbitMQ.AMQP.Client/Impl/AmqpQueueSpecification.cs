@@ -258,6 +258,12 @@ namespace RabbitMQ.AMQP.Client.Impl
             return new AmqpQuorumSpecification(this);
         }
 
+        public IJmsQueueSpecification Jms()
+        {
+            Type(QueueType.JMS);
+            return new AmqpJmsSpecification(this);
+        }
+
         public IClassicQueueSpecification Classic()
         {
             Type(QueueType.CLASSIC);
@@ -298,9 +304,9 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public async Task<IQueueInfo> DeclareAsync()
         {
-            if (Utils.IsQuorum(_queueArguments) || Utils.IsStream(_queueArguments))
+            if (Utils.IsQuorum(_queueArguments) || Utils.IsStream(_queueArguments) || Utils.IsJms(_queueArguments))
             {
-                // mandatory arguments for quorum queues and streams
+                // mandatory arguments for quorum queues, streams, and JMS queues
                 Exclusive(false).AutoDelete(false);
             }
 
@@ -479,6 +485,37 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             Utils.ValidatePositive("x-delayed-retry-max", (long)max.TotalMilliseconds);
             _parent._queueArguments["x-delayed-retry-max"] = (long)max.TotalMilliseconds;
+            return this;
+        }
+
+        public IQuorumQueueSpecification ConsumerTimeout(TimeSpan timeout)
+        {
+            Utils.ValidatePositive("ConsumerTimeout", (long)timeout.TotalMilliseconds,
+                (long)_parent._tenYears.TotalMilliseconds);
+            _parent._queueArguments["x-consumer-timeout"] = (long)timeout.TotalMilliseconds;
+            return this;
+        }
+
+        public IQueueSpecification Queue()
+        {
+            return _parent;
+        }
+    }
+
+    public class AmqpJmsSpecification : IJmsQueueSpecification
+    {
+        private readonly AmqpQueueSpecification _parent;
+
+        public AmqpJmsSpecification(AmqpQueueSpecification parent)
+        {
+            _parent = parent;
+        }
+
+        public IJmsQueueSpecification ConsumerTimeout(TimeSpan timeout)
+        {
+            Utils.ValidatePositive("ConsumerTimeout", (long)timeout.TotalMilliseconds,
+                (long)_parent._tenYears.TotalMilliseconds);
+            _parent._queueArguments["x-consumer-timeout"] = (long)timeout.TotalMilliseconds;
             return this;
         }
 

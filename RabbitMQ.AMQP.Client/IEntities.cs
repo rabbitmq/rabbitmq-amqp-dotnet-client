@@ -85,6 +85,11 @@ namespace RabbitMQ.AMQP.Client
 
         IQuorumQueueSpecification Quorum();
 
+        /// <summary>
+        ///   Configures a JMS queue (<c>x-queue-type: jms</c>). Requires a broker that supports the JMS queue type.
+        /// </summary>
+        IJmsQueueSpecification Jms();
+
         IClassicQueueSpecification Classic();
 
         Task<ulong> PurgeAsync();
@@ -155,6 +160,17 @@ namespace RabbitMQ.AMQP.Client
         IQuorumQueueSpecification QuorumTargetGroupSize(int size);
 
         /// <summary>
+        ///   Sets the <c>x-consumer-timeout</c> queue argument (milliseconds).
+        /// <para>
+        /// Defines the consumer timeout per queue.
+        /// If the consumer doesn't handle a message within the timeout, the consumer is considered blocked.
+        /// See the ITimeout interface for more details. The In the event OnDeliveryRelease is called.
+        /// See the documentation: https://www.rabbitmq.com/blog/2026/04/23/rabbitmq-4.3-release#consumer-timeouts
+        /// </para>
+        /// </summary>
+        IQuorumQueueSpecification ConsumerTimeout(TimeSpan timeout);
+
+        /// <summary>
         /// Set the delayed retry type.
         /// <para>
         /// Defines the conditions for delaying a message when it is returned to the queue.
@@ -182,6 +198,19 @@ namespace RabbitMQ.AMQP.Client
         /// <param name="max">Maximum retry delay. Must be positive.</param>
         /// <seealso href="https://www.rabbitmq.com/docs/quorum-queues#delayed-retry">Delayed Retry</seealso>
         IQuorumQueueSpecification DelayedRetryMax(TimeSpan max);
+
+        IQueueSpecification Queue();
+    }
+
+    /// <summary>
+    ///   Optional arguments for JMS queues (<c>x-queue-type: jms</c>).
+    /// </summary>
+    public interface IJmsQueueSpecification
+    {
+        /// <summary>
+        ///   Sets the <c>x-consumer-timeout</c> queue argument (milliseconds).
+        /// </summary>
+        IJmsQueueSpecification ConsumerTimeout(TimeSpan timeout);
 
         IQueueSpecification Queue();
     }

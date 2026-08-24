@@ -10,7 +10,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Amqp;
-using Amqp.Framing;
 using Amqp.Sasl;
 using Amqp.Types;
 
@@ -56,6 +55,14 @@ namespace RabbitMQ.AMQP.Client.Impl
         /// See <see cref="AmqpConsumer"/>
         /// </summary>
         private readonly ConcurrentDictionary<Guid, IConsumer> _consumersDict = new();
+
+        /// <summary>
+        /// Internal handler that routes <see cref="Amqp.Handler.EventId.DeliveryStateChanged"/> events
+        /// from amqpnetlite to the appropriate <see cref="AmqpConsumer"/> instance.
+        /// Consumers register and unregister themselves via <see cref="RegisterConsumerDeliveryHandler"/>
+        /// and <see cref="UnregisterConsumerDeliveryHandler"/>.
+        /// </summary>
+        internal readonly ConnectionHandler _connectionHandler = new();
 
         private readonly TaskCompletionSource<bool> _connectionClosedTcs =
             Utils.CreateTaskCompletionSource<bool>();
@@ -354,6 +361,24 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
 
         /// <summary>
+        /// Registers a consumer for <see cref="Amqp.Handler.EventId.DeliveryStateChanged"/> event routing.
+        /// Called from <see cref="AmqpConsumer.OpenAsync"/> after the receiver link is attached.
+        /// </summary>
+        internal void RegisterConsumerDeliveryHandler(string linkName, AmqpConsumer consumer)
+        {
+            _connectionHandler.RegisterConsumer(linkName, consumer);
+        }
+
+        /// <summary>
+        /// Unregisters a consumer from <see cref="Amqp.Handler.EventId.DeliveryStateChanged"/> event routing.
+        /// Called from <see cref="AmqpConsumer.CloseAsync"/>.
+        /// </summary>
+        internal void UnregisterConsumerDeliveryHandler(string linkName)
+        {
+            _connectionHandler.UnregisterConsumer(linkName);
+        }
+
+        /// <summary>
         /// Closes all the publishers. It is called when the connection is closed.
         /// </summary>
         // TODO cancellation token, parallel?
@@ -410,21 +435,6 @@ namespace RabbitMQ.AMQP.Client.Impl
                     return;
                 }
 
-                var open = new Open
-                {
-                    // Note: no need to set cf.AMQP.HostName
-                    HostName = $"vhost:{_connectionSettings.VirtualHost}",
-                    // Note: no need to set cf.AMQP.ContainerId
-                    ContainerId = _connectionSettings.ContainerId,
-                    Properties = new Fields() { [new Symbol("connection_name")] = _connectionSettings.ContainerId, }
-                };
-
-                if (_connectionSettings.MaxFrameSize > uint.MinValue)
-                {
-                    // Note: when set here, there is no need to set cf.AMQP.MaxFrameSize
-                    open.MaxFrameSize = _connectionSettings.MaxFrameSize;
-                }
-
                 ConnectionFactory cf;
 
                 if (_connectionSettings.Scheme.Equals("ws", StringComparison.OrdinalIgnoreCase) ||
@@ -435,6 +445,25 @@ namespace RabbitMQ.AMQP.Client.Impl
                 else
                 {
                     cf = new ConnectionFactory();
+                }
+
+                // Note: cf.AMQP.HostName / ContainerId / MaxFrameSize are used by the factory to
+                // build the AMQP OPEN frame when no explicit Open object is provided.
+                cf.AMQP.HostName = $"vhost:{_connectionSettings.VirtualHost}";
+                cf.AMQP.ContainerId = _connectionSettings.ContainerId;
+
+                if (_connectionSettings.MaxFrameSize > uint.MinValue)
+                {
+                    cf.AMQP.MaxFrameSize = (int)_connectionSettings.MaxFrameSize;
+                }
+
+                if (_connectionSettings.SaslMechanism == SaslMechanism.Anonymous)
+                {
+                    cf.SASL.Profile = SaslProfile.Anonymous;
+                }
+                else if (_connectionSettings.SaslMechanism == SaslMechanism.External)
+                {
+                    cf.SASL.Profile = SaslProfile.External;
                 }
 
                 if (_connectionSettings is { UseSsl: true, TlsSettings: not null })
@@ -460,26 +489,28 @@ namespace RabbitMQ.AMQP.Client.Impl
                     }
                 }
 
-                if (_connectionSettings.SaslMechanism == SaslMechanism.Anonymous)
-                {
-                    cf.SASL.Profile = SaslProfile.Anonymous;
-                }
-                else if (_connectionSettings.SaslMechanism == SaslMechanism.External)
-                {
-                    cf.SASL.Profile = SaslProfile.External;
-                }
-
-                void OnOpened(Amqp.IConnection connection, Open openOnOpened)
-                {
-                    HandleProperties(openOnOpened.Properties);
-                    Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is open");
-                    OnNewStatus(State.Open, null);
-                }
+                string connectionName = _connectionSettings.ContainerId;
+                var amqpConnectionHandler = new AmqpConnectionHandler(
+                    onLocalOpen: (open) =>
+                    {
+                        // Inject the connection_name property into the outgoing OPEN frame.
+                        open.Properties ??= new Fields() { };
+                        open.Properties[new Symbol("connection_name")] = connectionName;
+                    },
+                    onRemoteOpen: (remoteOpen) =>
+                    {
+                        HandleProperties(remoteOpen.Properties);
+                        Trace.WriteLine(TraceLevel.Verbose, $"{ToString()} is open");
+                        OnNewStatus(State.Open, null);
+                    },
+                    internalHandler: _connectionHandler);
 
                 try
                 {
                     Address address = _connectionSettings.Address;
-                    _nativeConnection = await cf.CreateAsync(address: address, open: open, onOpened: OnOpened)
+                    _nativeConnection = await cf.CreateAsync(address: address,
+                            cancellationToken: CancellationToken.None,
+                            handler: amqpConnectionHandler)
                         .ConfigureAwait(false);
                 }
                 catch (Exception ex)
@@ -784,6 +815,7 @@ namespace RabbitMQ.AMQP.Client.Impl
             _featureFlags.IsFilterFeatureEnabled = Utils.SupportsFilterExpressions(brokerVersion);
 
             _featureFlags.IsQuorumSingleActiveConsumerFlowStateEnabled = Utils.Is4_3_OrMore(brokerVersion);
+            _featureFlags.IsConsumerTimeoutSupported = Utils.Is4_3_OrMore(brokerVersion);
             _featureFlags.Is43OrMore = Utils.Is4_3_OrMore(brokerVersion);
         }
     }

@@ -19,7 +19,9 @@ namespace RabbitMQ.AMQP.Client
         {
             ACCEPTED,
             DISCARDED,
-            REQUEUED
+            REQUEUED,
+            UNLOCK,
+
         };
 
         void ConnectionOpened();

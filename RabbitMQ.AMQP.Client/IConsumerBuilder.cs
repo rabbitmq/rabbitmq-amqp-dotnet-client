@@ -79,7 +79,32 @@ namespace RabbitMQ.AMQP.Client
         IStreamOptions Stream();
         IQuorumOptions Quorum();
 
+        /// <summary>
+        ///   JMS-queue consumer options (for example attach properties supported on JMS queue consumers).
+        /// </summary>
+        IJmsOptions Jms();
+
         Task<IConsumer> BuildAndStartAsync(CancellationToken cancellationToken = default);
+
+        public interface IQuorumTimeout
+        {
+            /// <summary>
+            ///   Sets the AMQP 1.0 attach property <c>rabbitmq:consumer-timeout</c> (milliseconds) for this consumer.
+            ///   See: https://www.rabbitmq.com/blog/2026/04/23/rabbitmq-4.3-release#consumer-timeouts
+            /// </summary>
+            IQuorumTimeout Set(TimeSpan timeout);
+
+            /// <summary>
+            ///  Raised when the consumer is blocked due to timeout.
+            ///  The client has to manage the message and send the Accept() to the server. 
+            /// </summary>
+            /// <param name="deliveryReleaseHandler"></param>
+            /// <returns></returns>
+            IQuorumTimeout OnDeliveryRelease(DeliveryReleaseHandler deliveryReleaseHandler);
+
+            IQuorumOptions Quorum();
+
+        }
 
         /// <summary>
         ///  Options for consumers of quorum queues.
@@ -105,6 +130,38 @@ namespace RabbitMQ.AMQP.Client
             /// At <see cref="BuildAndStartAsync"/> when <see cref="ConsumerSettleStrategy.DirectReplyTo"/> is selected.
             /// </exception>
             IQuorumOptions SingleActiveConsumerStateChanged(SingleActiveConsumerStateHandler? handler);
+
+            IQuorumTimeout Timeout();
+
+            IConsumerBuilder Builder();
+        }
+
+        public interface IJmsTimeout
+        {
+            /// <summary>
+            ///   Sets the AMQP 1.0 attach property <c>rabbitmq:consumer-timeout</c> (milliseconds) for this consumer.
+            ///   See: https://www.rabbitmq.com/blog/2026/04/23/rabbitmq-4.3-release#consumer-timeouts
+            /// </summary>
+            IJmsTimeout Set(TimeSpan timeout);
+
+            /// <summary>
+            ///  Raised when the consumer is blocked due to timeout.
+            ///  The client has to manage the message and send the Accept() to the server. 
+            /// </summary>
+            /// <param name="deliveryReleaseHandler"></param>
+            /// <returns></returns>
+            IJmsTimeout OnDeliveryRelease(DeliveryReleaseHandler deliveryReleaseHandler);
+
+            IJmsOptions Jms();
+
+        }
+
+        /// <summary>
+        ///   Options for consumers of JMS queues.
+        /// </summary>
+        public interface IJmsOptions
+        {
+            IJmsTimeout Timeout();
 
             IConsumerBuilder Builder();
         }

@@ -171,6 +171,12 @@ namespace RabbitMQ.AMQP.Client
                 StringComparison.OrdinalIgnoreCase) == 0;
         }
 
+        internal static bool IsJms(Map queueArguments)
+        {
+            return string.Compare(queueArguments["x-queue-type"]?.ToString(), nameof(QueueType.JMS),
+                StringComparison.OrdinalIgnoreCase) == 0;
+        }
+
         internal static void ValidatePositive(string label, long value)
         {
             if (value <= 0)
@@ -217,7 +223,8 @@ namespace RabbitMQ.AMQP.Client
         }
 
         internal static Attach CreateAttach(string? address,
-            DeliveryMode deliveryMode, Guid linkId, Map? sourceFilter = null, bool preSettled = false)
+            DeliveryMode deliveryMode, Guid linkId, Map? sourceFilter = null, bool preSettled = false,
+            Fields? attachProperties = null)
         {
             SenderSettleMode sndSettleMode;
             ReceiverSettleMode rcvSettleMode;
@@ -241,6 +248,7 @@ namespace RabbitMQ.AMQP.Client
                 SndSettleMode = sndSettleMode,
                 RcvSettleMode = rcvSettleMode,
                 LinkName = linkId.ToString(),
+                Properties = attachProperties,
                 // Role = true,
                 Target = new Target()
                 {
@@ -256,7 +264,7 @@ namespace RabbitMQ.AMQP.Client
                     Timeout = 0,
                     Dynamic = false,
                     Durable = 0,
-                    FilterSet = sourceFilter
+                    FilterSet = sourceFilter,
                 }
             };
             return attach;
