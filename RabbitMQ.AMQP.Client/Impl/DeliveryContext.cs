@@ -366,6 +366,56 @@ namespace RabbitMQ.AMQP.Client.Impl
         }
     }
 
+    internal class TimeoutDeliveryContext : IContext
+    {
+        private readonly IReceiverLink _link;
+        private readonly Message _message;
+        private readonly UnsettledMessageCounter _unsettledMessageCounter;
+        private readonly IMetricsReporter? _metricsReporter;
+        public TimeoutDeliveryContext(IReceiverLink link, Message message, UnsettledMessageCounter unsettledMessageCounter,
+            IMetricsReporter? metricsReporter)
+        {
+            _link = link;
+            _message = message;
+            _unsettledMessageCounter = unsettledMessageCounter;
+            _metricsReporter = metricsReporter;
+        }
+
+        /// <summary>
+        /// <para>Accept the message (AMQP 1.0 <c>accepted</c> outcome).</para>
+        /// <para>In this case unlock the consumer form the timeout state</para>
+        /// </summary>
+        public void Accept()
+        {
+            try
+            {
+                if (_link.IsClosed)
+                {
+                    throw new ConsumerException("Link is closed");
+                }
+                _link.Accept(_message);
+                _unsettledMessageCounter.Decrement();
+                _metricsReporter?.ConsumeDisposition(IMetricsReporter.ConsumeDispositionValue.UNLOCK);
+            }
+            finally
+            {
+                _message.Dispose();
+            }
+        }
+
+        public void Discard() => throw new InvalidOperationException("Cannot discard a timed out delivery context. Only Accept is valid value");
+
+        public void Discard(Dictionary<string, object> annotations) => throw new InvalidOperationException("Cannot discard a timed out delivery context. Only Accept is valid value");
+
+        public void Requeue() => throw new InvalidOperationException("Cannot requeue a timed out delivery context. Only Accept is valid value");
+
+        public void Requeue(Dictionary<string, object> annotations, bool deliveryFailed = false) => throw new InvalidOperationException("Cannot requeue a timed out delivery context. Only Accept is valid value");
+
+        public void DelayedRetry(TimeSpan delay, bool deliveryFailed = false) => throw new InvalidOperationException("Cannot delayed-retry a timed out delivery context. Only Accept is valid value");
+
+        public IBatchContext Batch() => throw new InvalidOperationException("Cannot create a batch context from a timed out delivery context.");
+    }
+
     public static class AnnotationsHelper
     {
         public static Dictionary<string, object> Empty()

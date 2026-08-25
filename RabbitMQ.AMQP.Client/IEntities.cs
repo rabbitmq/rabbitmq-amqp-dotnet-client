@@ -85,7 +85,17 @@ namespace RabbitMQ.AMQP.Client
 
         IQuorumQueueSpecification Quorum();
 
+        /// <summary>
+        ///   Configures a JMS queue (<c>x-queue-type: jms</c>). Requires a broker that supports the JMS queue type.
+        /// </summary>
+        IJmsQueueSpecification Jms();
+
         IClassicQueueSpecification Classic();
+
+        /// <summary>
+        ///   Configures a delayed queue (<c>x-queue-type: delayed</c>). Requires Tanzu RabbitMQ 4.x or later.
+        /// </summary>
+        IDelayedQueueSpecification Delayed();
 
         Task<ulong> PurgeAsync();
     }
@@ -155,6 +165,17 @@ namespace RabbitMQ.AMQP.Client
         IQuorumQueueSpecification QuorumTargetGroupSize(int size);
 
         /// <summary>
+        ///   Sets the <c>x-consumer-timeout</c> queue argument (milliseconds).
+        /// <para>
+        /// Defines the consumer timeout per queue.
+        /// If the consumer doesn't handle a message within the timeout, the consumer is considered blocked.
+        /// See the ITimeout interface for more details. The In the event OnDeliveryRelease is called.
+        /// See the documentation: https://www.rabbitmq.com/blog/2026/04/23/rabbitmq-4.3-release#consumer-timeouts
+        /// </para>
+        /// </summary>
+        IQuorumQueueSpecification ConsumerTimeout(TimeSpan timeout);
+
+        /// <summary>
         /// Set the delayed retry type.
         /// <para>
         /// Defines the conditions for delaying a message when it is returned to the queue.
@@ -186,6 +207,19 @@ namespace RabbitMQ.AMQP.Client
         IQueueSpecification Queue();
     }
 
+    /// <summary>
+    ///   Optional arguments for JMS queues (<c>x-queue-type: jms</c>).
+    /// </summary>
+    public interface IJmsQueueSpecification
+    {
+        /// <summary>
+        ///   Sets the <c>x-consumer-timeout</c> queue argument (milliseconds).
+        /// </summary>
+        IJmsQueueSpecification ConsumerTimeout(TimeSpan timeout);
+
+        IQueueSpecification Queue();
+    }
+
     public enum ClassicQueueMode
     {
         Default,
@@ -208,6 +242,56 @@ namespace RabbitMQ.AMQP.Client
         IClassicQueueSpecification Mode(ClassicQueueMode mode);
 
         IClassicQueueSpecification Version(ClassicQueueVersion version);
+
+        IQueueSpecification Queue();
+    }
+
+    /// <summary>
+    ///   Optional arguments for delayed queues (<c>x-queue-type: delayed</c>).
+    ///   Delayed queues are only available on Tanzu RabbitMQ 4.x or later.
+    /// </summary>
+    /// <seealso href="https://www.rabbitmq.com/docs/quorum-queues">Quorum Queues</seealso>
+    public interface IDelayedQueueSpecification
+    {
+        IDelayedQueueSpecification DeadLetterStrategy(QuorumQueueDeadLetterStrategy strategy);
+
+        IDelayedQueueSpecification DeliveryLimit(int limit);
+
+        IDelayedQueueSpecification QuorumInitialGroupSize(int size);
+
+        IDelayedQueueSpecification QuorumTargetGroupSize(int size);
+
+        /// <summary>
+        ///   Sets the destination queue for the automatic shovel (<c>x-shovel-destination</c>).
+        ///   Setting this applies default values for the remaining shovel arguments, which can be
+        ///   overridden by calling the other <c>Shovel*</c> methods afterwards.
+        /// </summary>
+        IDelayedQueueSpecification ShovelDestination(string destinationQueue);
+
+        /// <summary>
+        ///   Sets the routing key used by the shovel when forwarding messages (<c>x-shovel-destination-key</c>).
+        /// </summary>
+        IDelayedQueueSpecification ShovelDestinationRoutingKey(string routingKey);
+
+        /// <summary>
+        ///   Sets the AMQP URI of the broker the shovel forwards messages to (<c>x-shovel-destination-uri</c>).
+        /// </summary>
+        IDelayedQueueSpecification ShovelDestinationUri(string uri);
+
+        /// <summary>
+        ///   Sets the messaging protocol used by the shovel (<c>x-shovel-protocol</c>).
+        /// </summary>
+        IDelayedQueueSpecification ShovelProtocol(string protocol);
+
+        /// <summary>
+        ///   Sets the number of messages the shovel fetches per round-trip (<c>x-shovel-prefetch-count</c>).
+        /// </summary>
+        IDelayedQueueSpecification ShovelPrefetch(int prefetch);
+
+        /// <summary>
+        ///   Sets the acknowledgement mode used by the shovel (<c>x-shovel-ack-mode</c>).
+        /// </summary>
+        IDelayedQueueSpecification ShovelAcknowledgement(string ackMode);
 
         IQueueSpecification Queue();
     }

@@ -55,6 +55,7 @@ Example code demonstrating library usage:
 - `GettingStarted`
 - `Affinity`
 - `BatchDispositions`
+- `ConsumerTimeout` (quorum queue `x-consumer-timeout`)
 - `HAClient`
 - `OAuth2`
 - `OpenTelemetryIntegration`
