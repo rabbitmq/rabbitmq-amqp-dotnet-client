@@ -259,6 +259,18 @@ RabbitMQ.AMQP.Client.IContext.Discard() -> void
 RabbitMQ.AMQP.Client.IContext.Discard(System.Collections.Generic.Dictionary<string!, object!>! annotations) -> void
 RabbitMQ.AMQP.Client.IContext.Requeue() -> void
 RabbitMQ.AMQP.Client.IContext.Requeue(System.Collections.Generic.Dictionary<string!, object!>! annotations, bool deliveryFailed = false) -> void
+RabbitMQ.AMQP.Client.IDelayedQueueSpecification
+RabbitMQ.AMQP.Client.IDelayedQueueSpecification.DeadLetterStrategy(RabbitMQ.AMQP.Client.QuorumQueueDeadLetterStrategy strategy) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.IDelayedQueueSpecification.DeliveryLimit(int limit) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.IDelayedQueueSpecification.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
+RabbitMQ.AMQP.Client.IDelayedQueueSpecification.QuorumInitialGroupSize(int size) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.IDelayedQueueSpecification.QuorumTargetGroupSize(int size) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.IDelayedQueueSpecification.ShovelAcknowledgement(string! ackMode) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.IDelayedQueueSpecification.ShovelDestination(string! destinationQueue) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.IDelayedQueueSpecification.ShovelDestinationRoutingKey(string! routingKey) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.IDelayedQueueSpecification.ShovelDestinationUri(string! uri) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.IDelayedQueueSpecification.ShovelPrefetch(int prefetch) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.IDelayedQueueSpecification.ShovelProtocol(string! protocol) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
 RabbitMQ.AMQP.Client.IEntityInfo
 RabbitMQ.AMQP.Client.IEntityInfoSpecification<T>
 RabbitMQ.AMQP.Client.IEntityInfoSpecification<T>.DeclareAsync() -> System.Threading.Tasks.Task<T>!
@@ -519,6 +531,7 @@ RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.AmqpQueueSpecification(RabbitMQ
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.Arguments(System.Collections.Generic.Dictionary<object!, object!>! queueArguments) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.AutoDelete(bool isAutoDelete) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.Classic() -> RabbitMQ.AMQP.Client.IClassicQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.Delayed() -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.DeadLetterExchange(string! dlx) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.DeadLetterRoutingKey(string! dlrk) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.DeclareAsync() -> System.Threading.Tasks.Task<RabbitMQ.AMQP.Client.IQueueInfo!>!
@@ -541,6 +554,19 @@ RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.Quorum() -> RabbitMQ.AMQP.Clien
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.SingleActiveConsumer(bool singleActiveConsumer) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.Stream() -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification.Type(RabbitMQ.AMQP.Client.QueueType queueType) -> RabbitMQ.AMQP.Client.IQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpDelayedSpecification
+RabbitMQ.AMQP.Client.Impl.AmqpDelayedSpecification.AmqpDelayedSpecification(RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification! parent) -> void
+RabbitMQ.AMQP.Client.Impl.AmqpDelayedSpecification.DeadLetterStrategy(RabbitMQ.AMQP.Client.QuorumQueueDeadLetterStrategy strategy) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpDelayedSpecification.DeliveryLimit(int limit) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpDelayedSpecification.Queue() -> RabbitMQ.AMQP.Client.IQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpDelayedSpecification.QuorumInitialGroupSize(int size) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpDelayedSpecification.QuorumTargetGroupSize(int size) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpDelayedSpecification.ShovelAcknowledgement(string! ackMode) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpDelayedSpecification.ShovelDestination(string! destinationQueue) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpDelayedSpecification.ShovelDestinationRoutingKey(string! routingKey) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpDelayedSpecification.ShovelDestinationUri(string! uri) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpDelayedSpecification.ShovelPrefetch(int prefetch) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpDelayedSpecification.ShovelProtocol(string! protocol) -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.AmqpQuorumSpecification(RabbitMQ.AMQP.Client.Impl.AmqpQueueSpecification! parent) -> void
 RabbitMQ.AMQP.Client.Impl.AmqpQuorumSpecification.ConsumerTimeout(System.TimeSpan timeout) -> RabbitMQ.AMQP.Client.IQuorumQueueSpecification!
@@ -743,6 +769,7 @@ RabbitMQ.AMQP.Client.IQueueSpecification
 RabbitMQ.AMQP.Client.IQueueSpecification.Arguments(System.Collections.Generic.Dictionary<object!, object!>! queueArguments) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IQueueSpecification.AutoDelete(bool isAutoDelete) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IQueueSpecification.Classic() -> RabbitMQ.AMQP.Client.IClassicQueueSpecification!
+RabbitMQ.AMQP.Client.IQueueSpecification.Delayed() -> RabbitMQ.AMQP.Client.IDelayedQueueSpecification!
 RabbitMQ.AMQP.Client.IQueueSpecification.DeadLetterExchange(string! dlx) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IQueueSpecification.DeadLetterRoutingKey(string! dlrk) -> RabbitMQ.AMQP.Client.IQueueSpecification!
 RabbitMQ.AMQP.Client.IQueueSpecification.Exclusive(bool isExclusive) -> RabbitMQ.AMQP.Client.IQueueSpecification!
@@ -866,6 +893,7 @@ RabbitMQ.AMQP.Client.PublishResult.Outcome.get -> RabbitMQ.AMQP.Client.PublishOu
 RabbitMQ.AMQP.Client.PublishResult.PublishResult(RabbitMQ.AMQP.Client.IMessage! message, RabbitMQ.AMQP.Client.PublishOutcome! outcome) -> void
 RabbitMQ.AMQP.Client.QueueType
 RabbitMQ.AMQP.Client.QueueType.CLASSIC = 1 -> RabbitMQ.AMQP.Client.QueueType
+RabbitMQ.AMQP.Client.QueueType.DELAYED = 4 -> RabbitMQ.AMQP.Client.QueueType
 RabbitMQ.AMQP.Client.QueueType.JMS = 3 -> RabbitMQ.AMQP.Client.QueueType
 RabbitMQ.AMQP.Client.QueueType.QUORUM = 0 -> RabbitMQ.AMQP.Client.QueueType
 RabbitMQ.AMQP.Client.QueueType.STREAM = 2 -> RabbitMQ.AMQP.Client.QueueType

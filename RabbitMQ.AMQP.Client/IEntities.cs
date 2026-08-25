@@ -92,6 +92,11 @@ namespace RabbitMQ.AMQP.Client
 
         IClassicQueueSpecification Classic();
 
+        /// <summary>
+        ///   Configures a delayed queue (<c>x-queue-type: delayed</c>). Requires Tanzu RabbitMQ 4.x or later.
+        /// </summary>
+        IDelayedQueueSpecification Delayed();
+
         Task<ulong> PurgeAsync();
     }
 
@@ -237,6 +242,56 @@ namespace RabbitMQ.AMQP.Client
         IClassicQueueSpecification Mode(ClassicQueueMode mode);
 
         IClassicQueueSpecification Version(ClassicQueueVersion version);
+
+        IQueueSpecification Queue();
+    }
+
+    /// <summary>
+    ///   Optional arguments for delayed queues (<c>x-queue-type: delayed</c>).
+    ///   Delayed queues are only available on Tanzu RabbitMQ 4.x or later.
+    /// </summary>
+    /// <seealso href="https://www.rabbitmq.com/docs/quorum-queues">Quorum Queues</seealso>
+    public interface IDelayedQueueSpecification
+    {
+        IDelayedQueueSpecification DeadLetterStrategy(QuorumQueueDeadLetterStrategy strategy);
+
+        IDelayedQueueSpecification DeliveryLimit(int limit);
+
+        IDelayedQueueSpecification QuorumInitialGroupSize(int size);
+
+        IDelayedQueueSpecification QuorumTargetGroupSize(int size);
+
+        /// <summary>
+        ///   Sets the destination queue for the automatic shovel (<c>x-shovel-destination</c>).
+        ///   Setting this applies default values for the remaining shovel arguments, which can be
+        ///   overridden by calling the other <c>Shovel*</c> methods afterwards.
+        /// </summary>
+        IDelayedQueueSpecification ShovelDestination(string destinationQueue);
+
+        /// <summary>
+        ///   Sets the routing key used by the shovel when forwarding messages (<c>x-shovel-destination-key</c>).
+        /// </summary>
+        IDelayedQueueSpecification ShovelDestinationRoutingKey(string routingKey);
+
+        /// <summary>
+        ///   Sets the AMQP URI of the broker the shovel forwards messages to (<c>x-shovel-destination-uri</c>).
+        /// </summary>
+        IDelayedQueueSpecification ShovelDestinationUri(string uri);
+
+        /// <summary>
+        ///   Sets the messaging protocol used by the shovel (<c>x-shovel-protocol</c>).
+        /// </summary>
+        IDelayedQueueSpecification ShovelProtocol(string protocol);
+
+        /// <summary>
+        ///   Sets the number of messages the shovel fetches per round-trip (<c>x-shovel-prefetch-count</c>).
+        /// </summary>
+        IDelayedQueueSpecification ShovelPrefetch(int prefetch);
+
+        /// <summary>
+        ///   Sets the acknowledgement mode used by the shovel (<c>x-shovel-ack-mode</c>).
+        /// </summary>
+        IDelayedQueueSpecification ShovelAcknowledgement(string ackMode);
 
         IQueueSpecification Queue();
     }
