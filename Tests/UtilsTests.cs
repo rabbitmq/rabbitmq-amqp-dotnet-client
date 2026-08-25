@@ -82,6 +82,16 @@ public class UtilsTests
     }
 
     [Theory]
+    [InlineData("tanzu+rabbitmq.v4.3.0.dev.1.2065.gce35d08")]
+    public void TanzuBrokerVersionIsExtractedCorrectly(string brokerVersion)
+    {
+        Assert.True(Utils.Is4_0_OrMore(brokerVersion));
+        Assert.True(Utils.Is4_1_OrMore(brokerVersion));
+        Assert.True(Utils.Is4_2_OrMore(brokerVersion));
+        Assert.True(Utils.Is4_3_OrMore(brokerVersion));
+    }
+
+    [Theory]
     [InlineData("4.x.0")]
     [InlineData("4..0")]
     [InlineData("x.0.0")]

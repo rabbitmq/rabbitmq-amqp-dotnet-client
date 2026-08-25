@@ -270,6 +270,12 @@ namespace RabbitMQ.AMQP.Client.Impl
             return new AmqpClassicSpecification(this);
         }
 
+        public IDelayedQueueSpecification Delayed()
+        {
+            Type(QueueType.DELAYED);
+            return new AmqpDelayedSpecification(this);
+        }
+
         public async Task<ulong> PurgeAsync()
         {
             if (_queueName is null)
@@ -560,6 +566,108 @@ namespace RabbitMQ.AMQP.Client.Impl
                 ClassicQueueVersion.V2 => 2,
                 _ => throw new ArgumentOutOfRangeException(nameof(version), version, null)
             };
+            return this;
+        }
+
+        public IQueueSpecification Queue()
+        {
+            return _parent;
+        }
+    }
+
+    public class AmqpDelayedSpecification : IDelayedQueueSpecification
+    {
+        // Default values applied to the automatic-shovel arguments when ShovelDestination
+        // is set but the individual shovel fields are left at their default values.
+        // See the Tanzu RabbitMQ delayed queue documentation for details.
+        internal const string DefaultShovelDestinationUri = "amqp://";
+        internal const string DefaultShovelProtocol = "amqp091";
+        internal const int DefaultShovelPrefetch = 50;
+        internal const string DefaultShovelAcknowledgement = "on-confirm";
+
+        private readonly AmqpQueueSpecification _parent;
+
+        public AmqpDelayedSpecification(AmqpQueueSpecification parent)
+        {
+            _parent = parent;
+        }
+
+        public IDelayedQueueSpecification DeadLetterStrategy(QuorumQueueDeadLetterStrategy strategy)
+        {
+            _parent._queueArguments["x-dead-letter-strategy"] = strategy switch
+            {
+                QuorumQueueDeadLetterStrategy.AtMostOnce => "at-most-once",
+                QuorumQueueDeadLetterStrategy.AtLeastOnce => "at-least-once",
+                _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, null)
+            };
+            return this;
+        }
+
+        public IDelayedQueueSpecification DeliveryLimit(int limit)
+        {
+            Utils.ValidatePositive("x-delivery-limit", limit);
+            _parent._queueArguments["x-delivery-limit"] = limit;
+            return this;
+        }
+
+        public IDelayedQueueSpecification QuorumInitialGroupSize(int size)
+        {
+            Utils.ValidatePositive("x-quorum-initial-group-size", size);
+            _parent._queueArguments["x-quorum-initial-group-size"] = size;
+            return this;
+        }
+
+        public IDelayedQueueSpecification QuorumTargetGroupSize(int size)
+        {
+            Utils.ValidatePositive("x-quorum-target-group-size", size);
+            _parent._queueArguments["x-quorum-target-group-size"] = size;
+            return this;
+        }
+
+        public IDelayedQueueSpecification ShovelDestination(string destinationQueue)
+        {
+            if (string.IsNullOrWhiteSpace(destinationQueue))
+            {
+                throw new ArgumentException("Shovel destination queue name must not be null or empty",
+                    nameof(destinationQueue));
+            }
+
+            _parent._queueArguments["x-shovel-destination"] = destinationQueue;
+            _parent._queueArguments["x-shovel-destination-uri"] = DefaultShovelDestinationUri;
+            _parent._queueArguments["x-shovel-protocol"] = DefaultShovelProtocol;
+            _parent._queueArguments["x-shovel-prefetch-count"] = DefaultShovelPrefetch;
+            _parent._queueArguments["x-shovel-ack-mode"] = DefaultShovelAcknowledgement;
+            return this;
+        }
+
+        public IDelayedQueueSpecification ShovelDestinationRoutingKey(string routingKey)
+        {
+            _parent._queueArguments["x-shovel-destination-key"] = routingKey;
+            return this;
+        }
+
+        public IDelayedQueueSpecification ShovelDestinationUri(string uri)
+        {
+            _parent._queueArguments["x-shovel-destination-uri"] = uri;
+            return this;
+        }
+
+        public IDelayedQueueSpecification ShovelProtocol(string protocol)
+        {
+            _parent._queueArguments["x-shovel-protocol"] = protocol;
+            return this;
+        }
+
+        public IDelayedQueueSpecification ShovelPrefetch(int prefetch)
+        {
+            Utils.ValidatePositive("x-shovel-prefetch-count", prefetch);
+            _parent._queueArguments["x-shovel-prefetch-count"] = prefetch;
+            return this;
+        }
+
+        public IDelayedQueueSpecification ShovelAcknowledgement(string ackMode)
+        {
+            _parent._queueArguments["x-shovel-ack-mode"] = ackMode;
             return this;
         }
 

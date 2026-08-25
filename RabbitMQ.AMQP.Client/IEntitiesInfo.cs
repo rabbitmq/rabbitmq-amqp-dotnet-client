@@ -11,7 +11,8 @@ namespace RabbitMQ.AMQP.Client
         QUORUM,
         CLASSIC,
         STREAM,
-        JMS
+        JMS,
+        DELAYED
     }
 
     public interface IQueueInfo : IEntityInfo

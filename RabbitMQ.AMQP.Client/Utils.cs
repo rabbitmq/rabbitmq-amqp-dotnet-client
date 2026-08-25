@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 using Amqp.Framing;
@@ -396,8 +397,19 @@ namespace RabbitMQ.AMQP.Client
             return VersionCompare(CurrentVersion(brokerVersion), "4.3.0") >= 0;
         }
 
+        // Tanzu RabbitMQ dev/snapshot builds embed the real version after a "v" marker
+        // in the build-metadata segment, e.g. "tanzu+rabbitmq.v4.3.0.dev.1.2065.gce35d08" -> "4.3.0"
+        private static readonly Regex s_tanzuVersionRegex =
+            new Regex(@"\+.*v(\d+(?:\.\d+)+)", RegexOptions.Compiled);
+
         private static string CurrentVersion(string currentVersion)
         {
+            Match tanzuMatch = s_tanzuVersionRegex.Match(currentVersion);
+            if (tanzuMatch.Success)
+            {
+                return tanzuMatch.Groups[1].Value;
+            }
+
             if (currentVersion.Contains("+"))
             {
                 currentVersion = currentVersion.Substring(0, currentVersion.IndexOf("+"));
