@@ -4,15 +4,42 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using System.Threading.Tasks;
 using Amqp;
 using Amqp.Handler;
 
 namespace RabbitMQ.AMQP.Client
 {
+    /// <summary>
+    /// Produces the connected, plain (not encrypted) duplex stream a connection will run on, in place
+    /// of the socket the library would otherwise open itself.
+    /// <para>
+    ///   This is the seam for reaching a broker that is not directly dialable - most commonly a socket
+    ///   tunnelled through an HTTP CONNECT proxy. TLS is <em>not</em> the factory's job: when the scheme
+    ///   is <c>amqps</c> the library negotiates TLS over the returned stream using
+    ///   <see cref="ConnectionSettings.TlsSettings"/>, and validates the broker certificate against
+    ///   <see cref="ConnectionSettings.Host"/>. The certificate is therefore checked against the
+    ///   broker's real name, not against the address the factory had to dial.
+    /// </para>
+    /// <para>
+    ///   The factory is invoked once per connection attempt, including every recovery attempt, so it
+    ///   must return a freshly connected stream each time. Ownership of the stream passes to the
+    ///   connection, which disposes it when the connection closes.
+    /// </para>
+    /// </summary>
+    /// <param name="host">The broker host from the connection settings, unresolved.</param>
+    /// <param name="port">The broker port from the connection settings.</param>
+    /// <param name="cancellationToken">Token to cancel establishing the transport.</param>
+    /// <returns>A task whose result is a connected duplex stream to <paramref name="host"/>.</returns>
+    public delegate Task<Stream> ConnectionTransportFactory(string host, int port,
+        CancellationToken cancellationToken);
+
     public interface IUriSelector
     {
         Uri Select(ICollection<Uri> uris);
@@ -44,6 +71,7 @@ namespace RabbitMQ.AMQP.Client
         private List<Uri>? _uris;
         private IUriSelector? _uriSelector;
         private OAuth2Options? _oAuth2Options;
+        private ConnectionTransportFactory? _transportFactory;
 
         /// <summary>
         /// From creates a new ConnectionSettingsBuilder from an existing ConnectionSettings instance.
@@ -69,6 +97,7 @@ namespace RabbitMQ.AMQP.Client
                     _tlsSettings = clusterConnectionSettings.TlsSettings,
                     _oAuth2Options = clusterConnectionSettings.OAuth2Options,
                     _affinity = settings.Affinity,
+                    _transportFactory = settings.TransportFactory,
                 };
             }
 
@@ -84,6 +113,7 @@ namespace RabbitMQ.AMQP.Client
                     _tlsSettings = settings.TlsSettings,
                     _oAuth2Options = settings.OAuth2Options,
                     _affinity = settings.Affinity,
+                    _transportFactory = settings.TransportFactory,
                 };
             }
 
@@ -102,6 +132,7 @@ namespace RabbitMQ.AMQP.Client
                 _affinity = settings.Affinity,
                 _tlsSettings = settings.TlsSettings,
                 _oAuth2Options = settings.OAuth2Options,
+                _transportFactory = settings.TransportFactory,
             };
         }
 
@@ -228,6 +259,18 @@ namespace RabbitMQ.AMQP.Client
             return this;
         }
 
+        /// <summary>
+        /// Supplies the transport the connection will run on, instead of letting the library open a
+        /// socket to <see cref="Host"/>:<see cref="Port"/> itself. See
+        /// <see cref="ConnectionTransportFactory"/>. Only the <c>amqp</c> and <c>amqps</c> schemes
+        /// support this.
+        /// </summary>
+        public ConnectionSettingsBuilder TransportFactory(ConnectionTransportFactory? transportFactory)
+        {
+            _transportFactory = transportFactory;
+            return this;
+        }
+
         public ConnectionSettings Build()
         {
             // TODO this should do something similar to consolidate in the Java code
@@ -261,6 +304,8 @@ namespace RabbitMQ.AMQP.Client
                     _maxFrameSize,
                     _tlsSettings, _oAuth2Options, _affinity);
             }
+
+            settings.TransportFactory = _transportFactory;
 
             return settings;
         }
@@ -460,6 +505,14 @@ namespace RabbitMQ.AMQP.Client
         public SaslMechanism SaslMechanism => _saslMechanism;
         public TlsSettings? TlsSettings => _tlsSettings;
         public IRecoveryConfiguration Recovery => _recoveryConfiguration;
+
+        /// <summary>
+        /// When set, the connection runs on the stream this factory returns instead of on a socket the
+        /// library opens to <see cref="Host"/>:<see cref="Port"/>. See
+        /// <see cref="ConnectionTransportFactory"/> for what the factory must and must not do.
+        /// Not part of connection identity, so it is excluded from <see cref="Equals(object?)"/>.
+        /// </summary>
+        public ConnectionTransportFactory? TransportFactory { get; set; }
 
         public IAffinity? Affinity => _affinity;
 
