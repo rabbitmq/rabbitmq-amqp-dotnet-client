@@ -455,8 +455,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                         new StreamTransportProvider(_connectionSettings, cancellationToken)
                     });
                 }
-                else if (_connectionSettings.Scheme.Equals("ws", StringComparison.OrdinalIgnoreCase) ||
-                    _connectionSettings.Scheme.Equals("wss", StringComparison.OrdinalIgnoreCase))
+                else if (Utils.IsWebSocketScheme(_connectionSettings.Scheme))
                 {
                     cf = new ConnectionFactory(new TransportProvider[] { new WebSocketTransportFactory() });
                 }
