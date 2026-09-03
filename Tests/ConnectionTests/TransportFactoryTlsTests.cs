@@ -147,7 +147,10 @@ public class TransportFactoryTlsTests
     private sealed class TlsLoopbackBroker : IDisposable
     {
         private readonly TcpListener _listener;
+
+        /// <summary>Borrowed, not owned: the test that created it disposes it.</summary>
         private readonly X509Certificate2 _serverCertificate;
+
         private readonly Task _handshakeTask;
 
         private TcpClient? _client;

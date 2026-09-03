@@ -30,7 +30,7 @@ public class TransportFactoryBrokerTests(ITestOutputHelper testOutputHelper)
             .TransportFactory((host, port, cancellationToken) =>
             {
                 Interlocked.Increment(ref transportFactoryInvocations);
-                return DialAsync(host, port);
+                return DialAsync(host, port, cancellationToken);
             })
             .Build();
 
@@ -109,7 +109,7 @@ public class TransportFactoryBrokerTests(ITestOutputHelper testOutputHelper)
             .TransportFactory((host, port, cancellationToken) =>
             {
                 Interlocked.Increment(ref transportFactoryInvocations);
-                return DialAsync(host, port);
+                return DialAsync(host, port, cancellationToken);
             })
             .Build();
 
@@ -148,10 +148,15 @@ public class TransportFactoryBrokerTests(ITestOutputHelper testOutputHelper)
     /// Opens a plain socket to the host and port the settings named. This is what an application does
     /// in the ordinary case; a proxied application would establish its tunnel here instead.
     /// </summary>
-    private static async Task<Stream> DialAsync(string host, int port)
+    private static async Task<Stream> DialAsync(string host, int port,
+        CancellationToken cancellationToken)
     {
         var tcpClient = new TcpClient();
+#if NET6_0_OR_GREATER
+        await tcpClient.ConnectAsync(host, port, cancellationToken);
+#else
         await tcpClient.ConnectAsync(host, port);
+#endif
 
         // TcpClient.GetStream() hands the socket to the stream, and the stream to the connection,
         // which disposes it when it closes.
