@@ -81,6 +81,8 @@ RabbitMQ.AMQP.Client.ConnectionSettings.Recovery.get -> RabbitMQ.AMQP.Client.IRe
 RabbitMQ.AMQP.Client.ConnectionSettings.SaslMechanism.get -> RabbitMQ.AMQP.Client.SaslMechanism!
 RabbitMQ.AMQP.Client.ConnectionSettings.Scheme.get -> string!
 RabbitMQ.AMQP.Client.ConnectionSettings.TlsSettings.get -> RabbitMQ.AMQP.Client.TlsSettings?
+RabbitMQ.AMQP.Client.ConnectionSettings.TransportFactory.get -> RabbitMQ.AMQP.Client.ConnectionTransportFactory?
+RabbitMQ.AMQP.Client.ConnectionSettings.TransportFactory.set -> void
 RabbitMQ.AMQP.Client.ConnectionSettings.User.get -> string?
 RabbitMQ.AMQP.Client.ConnectionSettings.UseSsl.get -> bool
 RabbitMQ.AMQP.Client.ConnectionSettings.VirtualHost.get -> string!
@@ -100,11 +102,13 @@ RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.RecoveryConfiguration(RabbitMQ.AM
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.SaslMechanism(RabbitMQ.AMQP.Client.SaslMechanism! saslMechanism) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.Scheme(string! scheme) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.TlsSettings(RabbitMQ.AMQP.Client.TlsSettings! tlsSettings) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
+RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.TransportFactory(RabbitMQ.AMQP.Client.ConnectionTransportFactory? transportFactory) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.Uri(System.Uri! uri) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.Uris(System.Collections.Generic.IEnumerable<System.Uri!>! uris) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.UriSelector(RabbitMQ.AMQP.Client.IUriSelector! uriSelector) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.User(string! user) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
 RabbitMQ.AMQP.Client.ConnectionSettingsBuilder.VirtualHost(string! virtualHost) -> RabbitMQ.AMQP.Client.ConnectionSettingsBuilder!
+RabbitMQ.AMQP.Client.ConnectionTransportFactory
 RabbitMQ.AMQP.Client.Consts
 RabbitMQ.AMQP.Client.ConsumerException
 RabbitMQ.AMQP.Client.ConsumerException.ConsumerException(string! message) -> void
