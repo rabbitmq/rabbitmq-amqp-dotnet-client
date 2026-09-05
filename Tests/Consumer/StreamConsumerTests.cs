@@ -48,6 +48,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
 
         long expectedMessageCount = messageCount;
         long receivedCount = 0;
+
         async Task MessageHandler(IContext cxt, IMessage msg)
         {
             await offsetsSemaphore.WaitAsync();
@@ -137,6 +138,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
         TaskCompletionSource<bool> tcs = CreateTaskCompletionSource();
         long firstOffset = -1;
         long receivedCount = 0;
+
         Task MessageHandler(IContext cxt, IMessage msg)
         {
             try
@@ -144,6 +146,9 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
                 cxt.Accept();
 
                 Interlocked.CompareExchange(ref firstOffset, (long)msg.Annotation("x-stream-offset"), -1);
+                Assert.True(msg.AnnotationTryGetValue("x-stream-offset", out object? offsetObj));
+                Assert.True(offsetObj is long);
+                Assert.True((long)offsetObj >= 0);
 
                 if (Interlocked.Increment(ref receivedCount) == messageCount)
                 {
@@ -206,6 +211,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
 
         TaskCompletionSource<bool> tcs = CreateTaskCompletionSource();
         long receivedCount = 0;
+
         Task MessageHandler(IContext cxt, IMessage msg)
         {
             try
@@ -257,10 +263,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
         Assert.NotNull(_connection);
         Assert.NotNull(_management);
 
-        Assert.ThrowsAny<ArgumentOutOfRangeException>(() =>
-        {
-            _connection.ConsumerBuilder().Stream().Offset("foo");
-        });
+        Assert.ThrowsAny<ArgumentOutOfRangeException>(() => { _connection.ConsumerBuilder().Stream().Offset("foo"); });
     }
 
     /// <summary>
@@ -287,8 +290,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
 
         int totalConsumed = 0;
         IConsumer consumer = await _connection.ConsumerBuilder()
-            .Queue(_queueName).InitialCredits(10).MessageHandler(
-                (context, message) =>
+            .Queue(_queueName).InitialCredits(10).MessageHandler((context, message) =>
                 {
                     try
                     {
@@ -309,6 +311,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
                             tcs.SetException(ex);
                         }
                     }
+
                     return Task.CompletedTask;
                 }
             ).Stream().Offset(StreamOffsetSpecification.First).Builder().BuildAndStartAsync();
@@ -344,8 +347,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
         int totalConsumed = 0;
         IConsumer consumer = await _connection.ConsumerBuilder()
             .Queue(_queueName).Stream().FilterMatchUnfiltered(true).Offset(StreamOffsetSpecification.First).Builder()
-            .InitialCredits(10).MessageHandler(
-                (context, message) =>
+            .InitialCredits(10).MessageHandler((context, message) =>
                 {
                     try
                     {
@@ -360,10 +362,10 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
                     {
                         tcs.SetException(ex);
                     }
+
                     return Task.CompletedTask;
                 }
-            ).Stream().Builder().SubscriptionListener(
-                ctx => { ctx.StreamOptions.Offset(5); }
+            ).Stream().Builder().SubscriptionListener(ctx => { ctx.StreamOptions.Offset(5); }
             ).BuildAndStartAsync();
 
         await WhenTcsCompletes(tcs);
@@ -396,8 +398,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
         int totalConsumed = 0;
         int startFrom = 2;
         IConsumer consumer = await _connection.ConsumerBuilder()
-            .Queue(_queueName).InitialCredits(10).MessageHandler(
-                (context, message) =>
+            .Queue(_queueName).InitialCredits(10).MessageHandler((context, message) =>
                 {
                     try
                     {
@@ -418,12 +419,13 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
                             tcs.SetException(ex);
                         }
                     }
+
                     return Task.CompletedTask;
                 }
             ).Stream()
-            .Offset(StreamOffsetSpecification.First) // in this case this value is ignored because of the listener will replace it
-            .Builder().SubscriptionListener(
-                ctx =>
+            .Offset(StreamOffsetSpecification
+                .First) // in this case this value is ignored because of the listener will replace it
+            .Builder().SubscriptionListener(ctx =>
                 {
                     // Here we simulate a listener that changes the offset after the connection is killed
                     // Like loading the offset from an external storage
@@ -484,6 +486,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
 
         long receivedCount = 0;
         Exception? messageHandlerEx = null;
+
         Task MessageHandler(IContext cxt, IMessage msg)
         {
             try
@@ -497,6 +500,7 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
             {
                 messageHandlerEx = ex;
             }
+
             return Task.CompletedTask;
         }
 
@@ -594,18 +598,29 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
         foreach (IMessage m in msgs)
         {
             Assert.Equal(expected0, (bool)m.Property("foo"));
+            Assert.True(m.PropertyTryGetValue("foo", out object? fooObj));
+            Assert.NotNull(fooObj);
+            Assert.Equal(expected0, (bool)fooObj);
         }
 
         msgs = await ConsumeAsync(messageCount, options => options.Property("foo", expected1));
         foreach (IMessage m in msgs)
         {
             Assert.Equal(expected1, (int)m.Property("foo"));
+            Assert.True(m.PropertyTryGetValue("foo", out object? fooObj));
+            Assert.NotNull(fooObj);
+            Assert.Equal(expected1, (int)fooObj);
         }
 
         msgs = await ConsumeAsync(messageCount, options => options.Property("foo", expected2));
         foreach (IMessage m in msgs)
         {
             Assert.Equal(expected2, (double)m.Property("foo"));
+            Assert.True(m.PropertyTryGetValue("foo", out object? fooObj));
+            Assert.NotNull(fooObj);
+            Assert.Equal(expected2, (double)fooObj);
+            Assert.False(m.PropertyTryGetValue("the one that does not exist", out object? notExistObj));
+            Assert.Null(notExistObj);
         }
 
         /*
@@ -661,7 +676,8 @@ public class StreamConsumerTests(ITestOutputHelper testOutputHelper) : Integrati
             Assert.Equal(expected8symbol, m.Property("foo"));
         }
 
-        msgs = await ConsumeAsync(messageCount, options => options.Property("foo", expected6).Property("k1", expected1));
+        msgs = await ConsumeAsync(messageCount,
+            options => options.Property("foo", expected6).Property("k1", expected1));
         foreach (IMessage m in msgs)
         {
             Assert.Equal(expected6, (string)m.Property("foo"));
