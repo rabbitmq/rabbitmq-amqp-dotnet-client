@@ -88,12 +88,16 @@ namespace RabbitMQ.AMQP.Client
 
         // Application properties of the message (azure/amqpnetlite/src/Framing/ApplicationProperties.cs)
         public object Property(string key);
+        public bool PropertyTryGetValue(string key, out object? value);
         public IMessage Property(string key, object value);
+
         public IMessage PropertySymbol(string key, string value);
         public IDictionary<object, object> Properties();
 
         // Message annotations
         public object Annotation(string key);
+        public bool AnnotationTryGetValue(string key, out object? value);
+
         public IMessage Annotation(string key, object value);
 
         public byte[] Body();

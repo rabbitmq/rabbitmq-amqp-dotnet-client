@@ -11,7 +11,7 @@ using TraceLevel = Amqp.TraceLevel;
 
 // ---- Configuration ----
 const int total = 5_000_000;
-const int tasksSize = 200;
+const int tasksSize = 1;
 bool enableConsumer = true;
 // -----------------------
 

@@ -236,6 +236,18 @@ namespace RabbitMQ.AMQP.Client.Impl
             return NativeMessage.ApplicationProperties[key];
         }
 
+        public bool PropertyTryGetValue(string key, out object? value)
+        {
+            if (NativeMessage.ApplicationProperties?[key] is null)
+            {
+                value = null;
+                return false;
+            }
+
+            value = NativeMessage.ApplicationProperties[key];
+            return true;
+        }
+
         public IDictionary<object, object> Properties()
         {
             ThrowIfApplicationPropertiesNotSet();
@@ -249,6 +261,17 @@ namespace RabbitMQ.AMQP.Client.Impl
             Utils.ValidateMessageAnnotationKey(key);
             NativeMessage.MessageAnnotations[new Symbol(key)] = value;
             return this;
+        }
+
+        public bool AnnotationTryGetValue(string key, out object? value)
+        {
+            if (NativeMessage.MessageAnnotations?[new Symbol(key)] is null)
+            {
+                value = null;
+                return false;
+            }
+            value = NativeMessage.MessageAnnotations[new Symbol(key)];
+            return true;
         }
 
         public object Annotation(string key)
