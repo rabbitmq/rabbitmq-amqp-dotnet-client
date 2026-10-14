@@ -184,7 +184,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IConsumerBuilder.IQuorumTimeout Set(TimeSpan timeout)
         {
             Utils.ValidatePositive("ConsumerTimeout", (long)timeout.TotalMilliseconds, (long)s_tenYears.TotalMilliseconds);
-            _quorumOptions.ApplyTimeout((uint)timeout.TotalMilliseconds);
+            _consumerConfiguration.ConsumerTimeoutMilliseconds = (uint)timeout.TotalMilliseconds;
             return this;
         }
 
@@ -215,7 +215,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         public IConsumerBuilder.IJmsTimeout Set(TimeSpan timeout)
         {
             Utils.ValidatePositive("ConsumerTimeout", (long)timeout.TotalMilliseconds, (long)s_tenYears.TotalMilliseconds);
-            _jmsOptions.ApplyTimeout((uint)timeout.TotalMilliseconds);
+            _consumerConfiguration.ConsumerTimeoutMilliseconds = (uint)timeout.TotalMilliseconds;
             return this;
         }
 
@@ -234,9 +234,6 @@ namespace RabbitMQ.AMQP.Client.Impl
     public class QuorumOptions : IConsumerBuilder.IQuorumOptions
     {
         private readonly IConsumerBuilder _consumerBuilder;
-        private SingleActiveConsumerStateHandler? _changedHandler;
-        private uint? _consumerTimeoutMilliseconds;
-        private bool _consumerTimeoutTouched;
         private readonly ConsumerConfiguration _consumerConfiguration;
 
         internal QuorumOptions(IConsumerBuilder consumerBuilder, ConsumerConfiguration consumerConfiguration)
@@ -245,16 +242,10 @@ namespace RabbitMQ.AMQP.Client.Impl
             _consumerConfiguration = consumerConfiguration;
         }
 
-        internal void ApplyTimeout(uint milliseconds)
-        {
-            _consumerTimeoutMilliseconds = milliseconds;
-            _consumerTimeoutTouched = true;
-        }
-
         public IConsumerBuilder.IQuorumOptions SingleActiveConsumerStateChanged(
             SingleActiveConsumerStateHandler? handler)
         {
-            _changedHandler = handler;
+            _consumerConfiguration.SingleActiveConsumerStateChangedHandler = handler;
             return this;
         }
 
@@ -265,12 +256,6 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IConsumerBuilder Builder()
         {
-            _consumerConfiguration.SingleActiveConsumerStateChangedHandler = _changedHandler;
-            if (_consumerTimeoutTouched)
-            {
-                _consumerConfiguration.ConsumerTimeoutMilliseconds = _consumerTimeoutMilliseconds;
-            }
-
             return _consumerBuilder;
         }
     }
@@ -278,20 +263,12 @@ namespace RabbitMQ.AMQP.Client.Impl
     public class JmsOptions : IConsumerBuilder.IJmsOptions
     {
         private readonly IConsumerBuilder _consumerBuilder;
-        private uint? _consumerTimeoutMilliseconds;
-        private bool _consumerTimeoutTouched;
         private readonly ConsumerConfiguration _consumerConfiguration;
 
         internal JmsOptions(IConsumerBuilder consumerBuilder, ConsumerConfiguration consumerConfiguration)
         {
             _consumerBuilder = consumerBuilder;
             _consumerConfiguration = consumerConfiguration;
-        }
-
-        internal void ApplyTimeout(uint milliseconds)
-        {
-            _consumerTimeoutMilliseconds = milliseconds;
-            _consumerTimeoutTouched = true;
         }
 
         public IConsumerBuilder.IJmsTimeout Timeout()
@@ -301,11 +278,6 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         public IConsumerBuilder Builder()
         {
-            if (_consumerTimeoutTouched)
-            {
-                _consumerConfiguration.ConsumerTimeoutMilliseconds = _consumerTimeoutMilliseconds;
-            }
-
             return _consumerBuilder;
         }
     }
