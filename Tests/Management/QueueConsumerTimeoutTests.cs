@@ -238,6 +238,32 @@ public class QueueConsumerTimeoutTests(ITestOutputHelper testOutputHelper) : Int
         }
     }
 
+    [Fact]
+    public async Task OnDeliveryRelease_throws_when_connection_does_not_support_consumer_timeout()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+        Assert.NotNull(_featureFlags);
+
+        IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Quorum().Queue();
+        await queueSpec.DeclareAsync();
+
+        _featureFlags.IsConsumerTimeoutSupported = false;
+
+        NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () =>
+            await _connection.ConsumerBuilder()
+                .Queue(queueSpec)
+                .Quorum()
+                .Timeout()
+                .OnDeliveryRelease((_, _) => Task.CompletedTask)
+                .Quorum()
+                .Builder()
+                .MessageHandler((_, _) => Task.CompletedTask)
+                .BuildAndStartAsync());
+
+        Assert.Contains("RabbitMQ 4.3.0 or later is required", ex.Message, StringComparison.Ordinal);
+    }
+
     /// <summary>
     /// Verifies that the consumer timeout and the OnDeliveryRelease callback apply when the quorum
     /// options are configured as a separate statement, without returning through
