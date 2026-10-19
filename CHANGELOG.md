@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [[1.4.1](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.4.1)]
+
+## 1.4.1 - 2026-19-10
+- [Release 1.4.1](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.4.1)
+
+### Fix
+- Apply consumer quorum and JMS options without `Builder()` by @Demivan in [#187](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/187)
+- Check consumer timeout support for `OnDeliveryRelease` without SAC by @Demivan in [#188](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/188)
+
+### Contributors
+- @Demivan made their first contribution in [#187](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/187)
+
+
+## [[1.4.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.4.0)]
+
+## 1.4.0 - 2026-09-09
+- [Release 1.4.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.4.0)
+
+### Enhancements
+- Add consumer timeout support for quorum queues in the JMS client by @Gsantomaggio in [#169](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/169)
+- Add `DelayedQueue` queue type support by @Gsantomaggio in [#178](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/178)
+- Allow the application to supply the connection transport by @VadimVolue in [#180](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/180)
+
+### Fix
+- `InitTlsSettings` preserves existing TlsSettings by @philipfalkner in [#176](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/176)
+
+### Changed
+- Bump Azure dependency by @Gsantomaggio in [#182](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/182)
+
+### Contributors
+- @philipfalkner made their first contribution in [#176](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/176)
+- @VadimVolue made their first contribution in [#180](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/pull/180)
+
+
 ## [[1.3.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.3.0)]
 
 ## 1.3.0 - 2026-20-07
