@@ -54,6 +54,8 @@ namespace RabbitMQ.AMQP.Client.Impl
         protected readonly TaskCompletionSource<bool> _managementSessionClosedTcs =
             Utils.CreateTaskCompletionSource<bool>();
 
+        internal FeatureFlags FeatureFlags => _amqpManagementParameters.Connection._featureFlags;
+
         internal AmqpManagement(AmqpManagementParameters amqpManagementParameters)
         {
             _amqpManagementParameters = amqpManagementParameters;

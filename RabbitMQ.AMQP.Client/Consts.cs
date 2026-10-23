@@ -15,6 +15,11 @@ namespace RabbitMQ.AMQP.Client
         public const string Messages = "messages";
 
         /// <summary>
+        /// Maximum value accepted for <c>x-stream-initial-offset</c>: 2^62 - 1.
+        /// </summary>
+        public const long MaxStreamInitialOffset = (1L << 62) - 1;
+
+        /// <summary>
         /// <code>uint.MinValue</code> means "no limit"
         /// </summary>
         public const uint DefaultMaxFrameSize = uint.MinValue; // NOTE: Azure/amqpnetlite uses 256 * 1024

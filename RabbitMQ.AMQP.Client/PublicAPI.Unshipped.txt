@@ -972,3 +972,8 @@ static readonly RabbitMQ.AMQP.Client.SaslMechanism.External -> RabbitMQ.AMQP.Cli
 static readonly RabbitMQ.AMQP.Client.SaslMechanism.Plain -> RabbitMQ.AMQP.Client.SaslMechanism!
 virtual RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.Dispose(bool disposing) -> void
 virtual RabbitMQ.AMQP.Client.Impl.AbstractLifeCycle.OpenAsync() -> System.Threading.Tasks.Task!
+RabbitMQ.AMQP.Client.FeatureFlags.Is44OrMore.get -> bool
+RabbitMQ.AMQP.Client.FeatureFlags.IsStreamInitialOffsetSupported.get -> bool
+RabbitMQ.AMQP.Client.IStreamSpecification.InitialOffset(long initialOffset) -> RabbitMQ.AMQP.Client.IStreamSpecification!
+RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.InitialOffset(long initialOffset) -> RabbitMQ.AMQP.Client.IStreamSpecification!
+const RabbitMQ.AMQP.Client.Consts.MaxStreamInitialOffset = 4611686018427387903 -> long

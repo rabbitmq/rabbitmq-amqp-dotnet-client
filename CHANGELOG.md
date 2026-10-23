@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Enhancements
+- Support `x-stream-initial-offset` for stream queues via `IStreamSpecification.InitialOffset(long)` (requires RabbitMQ 4.4+). Adds `FeatureFlags.Is44OrMore` and `FeatureFlags.IsStreamInitialOffsetSupported`. Ported from [rabbitmq-amqp-go-client#128](https://github.com/rabbitmq/rabbitmq-amqp-go-client/pull/128)
+
 ## [[1.4.1](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.4.1)]
 
 ## 1.4.1 - 2026-19-10
