@@ -61,6 +61,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QQDelayedRetryContext", "do
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DelayedQueue", "docs\Examples\DelayedQueue\DelayedQueue.csproj", "{8FB8DA7F-F0AA-40B6-A8C3-3F6A96FB42C5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StreamInitialOffset", "docs\Examples\StreamInitialOffset\StreamInitialOffset.csproj", "{3E5A1B7C-6D2F-4A8E-9B04-7C1D2E3F4A5B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -151,6 +153,10 @@ Global
 		{8FB8DA7F-F0AA-40B6-A8C3-3F6A96FB42C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8FB8DA7F-F0AA-40B6-A8C3-3F6A96FB42C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8FB8DA7F-F0AA-40B6-A8C3-3F6A96FB42C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3E5A1B7C-6D2F-4A8E-9B04-7C1D2E3F4A5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3E5A1B7C-6D2F-4A8E-9B04-7C1D2E3F4A5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3E5A1B7C-6D2F-4A8E-9B04-7C1D2E3F4A5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3E5A1B7C-6D2F-4A8E-9B04-7C1D2E3F4A5B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -175,5 +181,6 @@ Global
 		{C9B7D8E1-4A5F-48C3-9E2B-6D1F0A8E4C7B} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 		{51A4867C-1AC6-4A60-AD11-87D4F99239AD} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 		{8FB8DA7F-F0AA-40B6-A8C3-3F6A96FB42C5} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
+		{3E5A1B7C-6D2F-4A8E-9B04-7C1D2E3F4A5B} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 	EndGlobalSection
 EndGlobal

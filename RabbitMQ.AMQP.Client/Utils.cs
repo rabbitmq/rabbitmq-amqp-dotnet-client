@@ -397,6 +397,11 @@ namespace RabbitMQ.AMQP.Client
             return VersionCompare(CurrentVersion(brokerVersion), "4.3.0") >= 0;
         }
 
+        internal static bool Is4_4_OrMore(string brokerVersion)
+        {
+            return VersionCompare(CurrentVersion(brokerVersion), "4.4.0") >= 0;
+        }
+
         // Tanzu RabbitMQ dev/snapshot builds embed the real version after a "v" marker
         // in the build-metadata segment, e.g. "tanzu+rabbitmq.v4.3.0.dev.1.2065.gce35d08" -> "4.3.0"
         private static readonly Regex s_tanzuVersionRegex =

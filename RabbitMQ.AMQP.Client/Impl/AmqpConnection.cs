@@ -834,6 +834,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             _featureFlags.IsQuorumSingleActiveConsumerFlowStateEnabled = Utils.Is4_3_OrMore(brokerVersion);
             _featureFlags.IsConsumerTimeoutSupported = Utils.Is4_3_OrMore(brokerVersion);
             _featureFlags.Is43OrMore = Utils.Is4_3_OrMore(brokerVersion);
+            _featureFlags.Is44OrMore = Utils.Is4_4_OrMore(brokerVersion);
+            _featureFlags.IsStreamInitialOffsetSupported = Utils.Is4_4_OrMore(brokerVersion);
         }
     }
 }
