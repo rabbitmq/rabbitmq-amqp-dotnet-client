@@ -469,74 +469,70 @@ public class BasicConsumerTests(ITestOutputHelper testOutputHelper) : Integratio
         int lowPriorityReceivedCount = 0;
         int highPriorityReceivedCount = 0;
         int receivedCount = 0;
+        TaskCompletionSource<bool> allMessagesReceivedTcs = CreateTaskCompletionSource();
 
         IQueueSpecification queueSpecification = _management.Queue(_queueName).Exclusive(true);
-        IQueueInfo queueInfo = await queueSpecification.DeclareAsync();
+        await queueSpecification.DeclareAsync();
 
-        TaskCompletionSource<bool> allMessagesReceivedTcs = CreateTaskCompletionSource();
-        IConsumerBuilder lowPriorityConsumerBuilder = _connection.ConsumerBuilder()
-            .Queue(queueSpecification)
-            // .Priority(1) TODO
-            .MessageHandler((IContext cxt, IMessage msg) =>
+        MessageHandler CreateHandler(Action onMessage, int expected)
+        {
+            return (cxt, _) =>
             {
-                try
+                cxt.Accept();
+                onMessage();
+                if (Interlocked.Increment(ref receivedCount) == expected)
                 {
-                    cxt.Accept();
-                    Interlocked.Increment(ref lowPriorityReceivedCount);
-                    if (Interlocked.Increment(ref receivedCount) == messageCount)
-                    {
-                        allMessagesReceivedTcs.SetResult(true);
-                    }
+                    allMessagesReceivedTcs.TrySetResult(true);
                 }
-                catch (Exception ex)
-                {
-                    allMessagesReceivedTcs.SetException(ex);
-                }
-                return Task.CompletedTask;
-            });
-        IConsumer lowPriorityConsumer = await lowPriorityConsumerBuilder.BuildAndStartAsync();
 
-        IConsumerBuilder highPriorityConsumerBuilder = _connection.ConsumerBuilder()
+                return Task.CompletedTask;
+            };
+        }
+
+        IConsumer lowPriorityConsumer = await _connection.ConsumerBuilder()
             .Queue(queueSpecification)
-            // .Priority(5) TODO
-            .MessageHandler((IContext cxt, IMessage msg) =>
-            {
-                try
-                {
-                    cxt.Accept();
-                    Interlocked.Increment(ref highPriorityReceivedCount);
-                    if (Interlocked.Increment(ref receivedCount) == messageCount)
-                    {
-                        allMessagesReceivedTcs.SetResult(true);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    allMessagesReceivedTcs.SetException(ex);
-                }
-                return Task.CompletedTask;
-            });
-        IConsumer highPriorityConsumer = await highPriorityConsumerBuilder.BuildAndStartAsync();
+            .Priority(1)
+            .MessageHandler(CreateHandler(() => Interlocked.Increment(ref lowPriorityReceivedCount), messageCount))
+            .BuildAndStartAsync();
 
+        IConsumer highPriorityConsumer = await _connection.ConsumerBuilder()
+            .Queue(queueSpecification)
+            .Priority(5)
+            .MessageHandler(CreateHandler(() => Interlocked.Increment(ref highPriorityReceivedCount), messageCount))
+            .BuildAndStartAsync();
+
+        // both consumers have enough credits: the high priority one gets everything
         await PublishAsync(queueSpecification, messageCount);
-
         await WhenTcsCompletes(allMessagesReceivedTcs);
 
-        await lowPriorityConsumer.CloseAsync();
+        Assert.Equal(0, Volatile.Read(ref lowPriorityReceivedCount));
+        Assert.Equal(messageCount, Volatile.Read(ref highPriorityReceivedCount));
+
+        // once the high priority consumer is gone, the low priority one gets the messages
         await highPriorityConsumer.CloseAsync();
-        lowPriorityConsumer.Dispose();
         highPriorityConsumer.Dispose();
+
+        allMessagesReceivedTcs = CreateTaskCompletionSource();
+        Interlocked.Exchange(ref receivedCount, 0);
+        await PublishAsync(queueSpecification, messageCount);
+        await WhenTcsCompletes(allMessagesReceivedTcs);
+
+        Assert.Equal(messageCount, Volatile.Read(ref lowPriorityReceivedCount));
+        Assert.Equal(messageCount, Volatile.Read(ref highPriorityReceivedCount));
+
+        await lowPriorityConsumer.CloseAsync();
+        lowPriorityConsumer.Dispose();
     }
-    /*
-     * TODO
-    assertThat(lowCount).hasValue(0);
-    assertThat(highCount).hasValue(messageCount);
-    highPriorityConsumer.close();
-    consumeSync.reset(messageCount);
-    publish.run();
-    Assertions.assertThat(consumeSync).completes();
-    assertThat(lowCount).hasValue(messageCount);
-    assertThat(highCount).hasValue(messageCount);
-    lowPriorityConsumer.close();
-    */
+
+    [Fact]
+    public async Task ConsumerPriorityWithDirectReplyToShouldThrow()
+    {
+        Assert.NotNull(_connection);
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => _connection.ConsumerBuilder()
+            .Priority(1)
+            .SettleStrategy(ConsumerSettleStrategy.DirectReplyTo)
+            .MessageHandler((_, _) => Task.CompletedTask)
+            .BuildAndStartAsync());
+    }
 }

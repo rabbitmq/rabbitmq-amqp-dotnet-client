@@ -41,6 +41,12 @@ namespace RabbitMQ.AMQP.Client.Impl
         public uint? ConsumerTimeoutMilliseconds { get; set; }
 
         public DeliveryReleaseHandler? OnDeliveryRelease { get; set; }
+
+        /// <summary>
+        /// Consumer priority sent in the AMQP 1.0 attach property <c>rabbitmq:priority</c>.
+        /// Set via <see cref="IConsumerBuilder.Priority(int)"/>.
+        /// </summary>
+        public int? Priority { get; set; }
     }
 
     /// <summary>
@@ -93,6 +99,12 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
+        public IConsumerBuilder Priority(int priority)
+        {
+            _configuration.Priority = priority;
+            return this;
+        }
+
         public IConsumerBuilder SubscriptionListener(Action<IConsumerBuilder.ListenerContext> context)
         {
             _configuration.ListenerContext = context;
@@ -126,6 +138,13 @@ namespace RabbitMQ.AMQP.Client.Impl
             {
                 throw new NotSupportedException(
                     "Consumer timeout is not supported with ConsumerSettleStrategy.DirectReplyTo.");
+            }
+
+            if (_configuration.Priority is not null &&
+                _configuration.SettleStrategy == ConsumerSettleStrategy.DirectReplyTo)
+            {
+                throw new NotSupportedException(
+                    "Consumer priority is not supported with ConsumerSettleStrategy.DirectReplyTo.");
             }
 
             if (_configuration.Filters[Consts.s_sqlFilterSymbol] is not null &&

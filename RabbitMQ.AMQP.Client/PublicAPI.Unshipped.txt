@@ -977,3 +977,5 @@ RabbitMQ.AMQP.Client.FeatureFlags.IsStreamInitialOffsetSupported.get -> bool
 RabbitMQ.AMQP.Client.IStreamSpecification.InitialOffset(long initialOffset) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 RabbitMQ.AMQP.Client.Impl.AmqpStreamSpecification.InitialOffset(long initialOffset) -> RabbitMQ.AMQP.Client.IStreamSpecification!
 const RabbitMQ.AMQP.Client.Consts.MaxStreamInitialOffset = 4611686018427387903 -> long
+RabbitMQ.AMQP.Client.IConsumerBuilder.Priority(int priority) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
+RabbitMQ.AMQP.Client.Impl.AmqpConsumerBuilder.Priority(int priority) -> RabbitMQ.AMQP.Client.IConsumerBuilder!
