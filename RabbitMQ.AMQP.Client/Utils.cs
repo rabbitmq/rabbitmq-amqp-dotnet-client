@@ -223,6 +223,27 @@ namespace RabbitMQ.AMQP.Client
             return a;
         }
 
+        internal static Fields? CreateConsumerAttachProperties(uint? consumerTimeoutMilliseconds, int? priority)
+        {
+            if (consumerTimeoutMilliseconds is null && priority is null)
+            {
+                return null;
+            }
+
+            var properties = new Fields();
+            if (consumerTimeoutMilliseconds is { } timeoutMs)
+            {
+                properties.Add(new Symbol(Consts.RabbitMqConsumerTimeoutProperty), timeoutMs);
+            }
+
+            if (priority is { } consumerPriority)
+            {
+                properties.Add(new Symbol(Consts.RabbitMqPriorityProperty), consumerPriority);
+            }
+
+            return properties;
+        }
+
         internal static Attach CreateAttach(string? address,
             DeliveryMode deliveryMode, Guid linkId, Map? sourceFilter = null, bool preSettled = false,
             Fields? attachProperties = null)

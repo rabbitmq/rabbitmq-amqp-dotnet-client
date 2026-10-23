@@ -135,4 +135,33 @@ public class UtilsTests
         Assert.False(Utils.Is4_4_OrMore(brokerVersion));
     }
 
+    [Fact]
+    public void ConsumerAttachPropertiesAreNullWhenNothingIsSet()
+    {
+        Assert.Null(Utils.CreateConsumerAttachProperties(null, null));
+    }
+
+    [Theory]
+    [InlineData(5)]
+    [InlineData(0)]
+    [InlineData(-3)]
+    public void ConsumerAttachPropertiesContainPriorityAsInt(int priority)
+    {
+        Amqp.Types.Fields? properties = Utils.CreateConsumerAttachProperties(null, priority);
+        Assert.NotNull(properties);
+        Assert.Single(properties);
+        object? value = properties[new Amqp.Types.Symbol("rabbitmq:priority")];
+        Assert.IsType<int>(value);
+        Assert.Equal(priority, value);
+    }
+
+    [Fact]
+    public void ConsumerAttachPropertiesContainTimeoutAndPriority()
+    {
+        Amqp.Types.Fields? properties = Utils.CreateConsumerAttachProperties(1000u, 7);
+        Assert.NotNull(properties);
+        Assert.Equal(2, properties.Count);
+        Assert.Equal(1000u, properties[new Amqp.Types.Symbol("rabbitmq:consumer-timeout")]);
+        Assert.Equal(7, properties[new Amqp.Types.Symbol("rabbitmq:priority")]);
+    }
 }

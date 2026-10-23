@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Enhancements
+- Support consumer priority via `IConsumerBuilder.Priority(int)` (AMQP 1.0 attach property `rabbitmq:priority`). Consumers with a higher priority receive messages first. See [#183](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues/183)
 - Support `x-stream-initial-offset` for stream queues via `IStreamSpecification.InitialOffset(long)` (requires RabbitMQ 4.4+). Adds `FeatureFlags.Is44OrMore` and `FeatureFlags.IsStreamInitialOffsetSupported`. Ported from [rabbitmq-amqp-go-client#128](https://github.com/rabbitmq/rabbitmq-amqp-go-client/pull/128)
 
 ## [[1.4.1](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.4.1)]

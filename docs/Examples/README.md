@@ -22,3 +22,4 @@ This directory contains examples of how to use the RabbitMQ AMQP 1.0 .NET client
 - Quorum queue delayed retry with back-off via DelayedRetry() and Requeue(...) (requires RabbitMQ 4.3+) [here](./QQDelayedRetryContext/)
 - Delayed queue (`x-queue-type: delayed`, requires Tanzu RabbitMQ 4.x+) [here](./DelayedQueue/)
 - Stream initial offset (`x-stream-initial-offset`, requires RabbitMQ 4.4+) [here](./StreamInitialOffset/)
+- Consumer priority (`rabbitmq:priority`) [here](./ConsumerPriority/)

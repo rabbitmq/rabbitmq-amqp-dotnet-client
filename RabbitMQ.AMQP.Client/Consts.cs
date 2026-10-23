@@ -53,5 +53,8 @@ namespace RabbitMQ.AMQP.Client
         /// <summary>AMQP 1.0 attach property: consumer message lock timeout in milliseconds (quorum / JMS queues).</summary>
         internal const string RabbitMqConsumerTimeoutProperty = "rabbitmq:consumer-timeout";
 
+        /// <summary>AMQP 1.0 attach property: consumer priority (signed 32-bit integer).</summary>
+        internal const string RabbitMqPriorityProperty = "rabbitmq:priority";
+
     }
 }
