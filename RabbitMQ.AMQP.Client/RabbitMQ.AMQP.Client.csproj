@@ -32,6 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AMQPNetLite" />
     <PackageReference Include="AMQPNetLite.Core" />
     <PackageReference Include="AMQPNetLite.WebSockets" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" />
