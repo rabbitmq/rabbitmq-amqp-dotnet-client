@@ -156,6 +156,10 @@ public class ConsumerOutcomeTests(ITestOutputHelper testOutputHelper) : Integrat
         Assert.Equal(messages[1].Annotation(annotationKey), annotationValue);
         Assert.Equal(messages[1].Annotation(annotationKey1), annotationValue1);
         Assert.NotNull(messages[1].Annotation("x-acquired-count"));
+        Assert.True(messages[1].AnnotationTryGetValue("x-acquired-count", out object? acquiredCount));
+        Assert.Equal(1L, acquiredCount);
+        Assert.False(messages[1].AnnotationTryGetValue("it does not exist", out object? doesNotExist));
+        Assert.Null(doesNotExist);
 
         using HttpApiClient client = new();
         Queue q = await client.GetQueueAsync(_queueName);
