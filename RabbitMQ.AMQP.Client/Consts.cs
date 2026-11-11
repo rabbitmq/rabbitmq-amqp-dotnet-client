@@ -15,6 +15,11 @@ namespace RabbitMQ.AMQP.Client
         public const string Messages = "messages";
 
         /// <summary>
+        /// Maximum value accepted for <c>x-stream-initial-offset</c>: 2^62 - 1.
+        /// </summary>
+        public const long MaxStreamInitialOffset = (1L << 62) - 1;
+
+        /// <summary>
         /// <code>uint.MinValue</code> means "no limit"
         /// </summary>
         public const uint DefaultMaxFrameSize = uint.MinValue; // NOTE: Azure/amqpnetlite uses 256 * 1024
@@ -47,6 +52,9 @@ namespace RabbitMQ.AMQP.Client
 
         /// <summary>AMQP 1.0 attach property: consumer message lock timeout in milliseconds (quorum / JMS queues).</summary>
         internal const string RabbitMqConsumerTimeoutProperty = "rabbitmq:consumer-timeout";
+
+        /// <summary>AMQP 1.0 attach property: consumer priority (signed 32-bit integer).</summary>
+        internal const string RabbitMqPriorityProperty = "rabbitmq:priority";
 
     }
 }

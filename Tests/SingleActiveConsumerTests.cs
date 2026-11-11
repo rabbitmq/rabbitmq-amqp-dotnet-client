@@ -211,6 +211,50 @@ namespace Tests
             second.Dispose();
         }
 
+        [SkippableFact]
+        public async Task SingleActiveConsumerStateChanged_SurvivesLaterQuorumOptions()
+        {
+            Skip.IfNot(_featureFlags is { IsQuorumSingleActiveConsumerFlowStateEnabled: true },
+                "RabbitMQ 4.3+ required for quorum SAC FLOW link-state (rabbitmq:active).");
+
+            Assert.NotNull(_connection);
+            Assert.NotNull(_management);
+
+            IQueueSpecification queueSpec = _management.Queue()
+                .Name(_queueName)
+                .Quorum()
+                .Queue()
+                .SingleActiveConsumer(true);
+            await queueSpec.DeclareAsync();
+
+            TaskCompletionSource<bool> activated = CreateTaskCompletionSource<bool>();
+
+            IConsumer consumer = await _connection.ConsumerBuilder()
+                .Queue(queueSpec)
+                .Quorum()
+                .SingleActiveConsumerStateChanged((_, isActive) =>
+                {
+                    if (isActive)
+                    {
+                        activated.TrySetResult(true);
+                    }
+                }).Builder()
+                .Quorum()
+                .Timeout().Set(TimeSpan.FromMinutes(1))
+                .Quorum().Builder()
+                .MessageHandler((ctx, _) =>
+                {
+                    ctx.Accept();
+                    return Task.CompletedTask;
+                })
+                .BuildAndStartAsync();
+
+            await WhenTcsCompletes(activated);
+
+            await consumer.CloseAsync();
+            consumer.Dispose();
+        }
+
         [Fact]
         public async Task SingleActiveConsumerStateChanged_ThrowsWithDirectReplyTo()
         {

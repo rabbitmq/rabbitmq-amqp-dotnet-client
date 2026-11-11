@@ -110,14 +110,8 @@ namespace RabbitMQ.AMQP.Client.Impl
                 else
                 {
                     string address = AddressBuilderHelper.AddressBuilder().Queue(_configuration.Queue).Address();
-                    Fields? attachProperties = null;
-                    if (_configuration.ConsumerTimeoutMilliseconds is { } consumerTimeoutMs)
-                    {
-                        attachProperties = new Fields
-                        {
-                            { new Symbol(Consts.RabbitMqConsumerTimeoutProperty), consumerTimeoutMs }
-                        };
-                    }
+                    Fields? attachProperties = Utils.CreateConsumerAttachProperties(
+                        _configuration.ConsumerTimeoutMilliseconds, _configuration.Priority);
 
                     attach = Utils.CreateAttach(address, DeliveryMode.AtLeastOnce, _id,
                         _configuration.Filters, _configuration.SettleStrategy == ConsumerSettleStrategy.PreSettled,

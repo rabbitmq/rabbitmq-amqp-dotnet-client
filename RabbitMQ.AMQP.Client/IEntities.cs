@@ -110,6 +110,15 @@ namespace RabbitMQ.AMQP.Client
 
         public IStreamSpecification FileSizePerChunk(ByteCapacity fileSizePerChunk);
 
+        /// <summary>
+        /// Set the offset from which the stream starts (<c>x-stream-initial-offset</c>).
+        /// The first message published to the stream gets this offset.
+        /// Requires RabbitMQ 4.4 or later; declaring the queue against an older broker
+        /// throws <see cref="System.NotSupportedException"/>.
+        /// </summary>
+        /// <param name="initialOffset">A value between 0 and 2^62 - 1 (inclusive).</param>
+        public IStreamSpecification InitialOffset(long initialOffset);
+
         public IQueueSpecification Queue();
     }
 

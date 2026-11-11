@@ -223,6 +223,27 @@ namespace RabbitMQ.AMQP.Client
             return a;
         }
 
+        internal static Fields? CreateConsumerAttachProperties(uint? consumerTimeoutMilliseconds, int? priority)
+        {
+            if (consumerTimeoutMilliseconds is null && priority is null)
+            {
+                return null;
+            }
+
+            var properties = new Fields();
+            if (consumerTimeoutMilliseconds is { } timeoutMs)
+            {
+                properties.Add(new Symbol(Consts.RabbitMqConsumerTimeoutProperty), timeoutMs);
+            }
+
+            if (priority is { } consumerPriority)
+            {
+                properties.Add(new Symbol(Consts.RabbitMqPriorityProperty), consumerPriority);
+            }
+
+            return properties;
+        }
+
         internal static Attach CreateAttach(string? address,
             DeliveryMode deliveryMode, Guid linkId, Map? sourceFilter = null, bool preSettled = false,
             Fields? attachProperties = null)
@@ -395,6 +416,11 @@ namespace RabbitMQ.AMQP.Client
         internal static bool Is4_3_OrMore(string brokerVersion)
         {
             return VersionCompare(CurrentVersion(brokerVersion), "4.3.0") >= 0;
+        }
+
+        internal static bool Is4_4_OrMore(string brokerVersion)
+        {
+            return VersionCompare(CurrentVersion(brokerVersion), "4.4.0") >= 0;
         }
 
         // Tanzu RabbitMQ dev/snapshot builds embed the real version after a "v" marker

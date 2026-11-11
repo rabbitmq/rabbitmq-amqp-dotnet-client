@@ -437,8 +437,25 @@ namespace RabbitMQ.AMQP.Client.Impl
 
                 ConnectionFactory cf;
 
-                if (_connectionSettings.Scheme.Equals("ws", StringComparison.OrdinalIgnoreCase) ||
-                    _connectionSettings.Scheme.Equals("wss", StringComparison.OrdinalIgnoreCase))
+                if (_connectionSettings.TransportFactory is not null)
+                {
+                    if (Utils.IsWebSocketScheme(_connectionSettings.Scheme))
+                    {
+                        throw new ConnectionException(
+                            $"{ToString()} a transport factory cannot be used with the " +
+                            $"'{_connectionSettings.Scheme}' scheme.");
+                    }
+
+                    // The application hands us a connected byte stream; TLS, SASL and the AMQP open
+                    // are still ours. Note that AMQP.Net Lite does not apply the factory's TCP or SSL
+                    // settings to a custom transport provider, so StreamTransportProvider reads
+                    // TlsSettings from the connection settings directly.
+                    cf = new ConnectionFactory(new TransportProvider[]
+                    {
+                        new StreamTransportProvider(_connectionSettings, cancellationToken)
+                    });
+                }
+                else if (Utils.IsWebSocketScheme(_connectionSettings.Scheme))
                 {
                     cf = new ConnectionFactory(new TransportProvider[] { new WebSocketTransportFactory() });
                 }
@@ -817,6 +834,8 @@ namespace RabbitMQ.AMQP.Client.Impl
             _featureFlags.IsQuorumSingleActiveConsumerFlowStateEnabled = Utils.Is4_3_OrMore(brokerVersion);
             _featureFlags.IsConsumerTimeoutSupported = Utils.Is4_3_OrMore(brokerVersion);
             _featureFlags.Is43OrMore = Utils.Is4_3_OrMore(brokerVersion);
+            _featureFlags.Is44OrMore = Utils.Is4_4_OrMore(brokerVersion);
+            _featureFlags.IsStreamInitialOffsetSupported = Utils.Is4_4_OrMore(brokerVersion);
         }
     }
 }

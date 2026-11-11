@@ -43,6 +43,17 @@ namespace RabbitMQ.AMQP.Client
         public bool IsConsumerTimeoutSupported { get; internal set; } = false;
         public bool Is43OrMore { get; internal set; } = false;
 
+        /// <summary>
+        /// Check if the broker is RabbitMQ 4.4 or later.
+        /// </summary>
+        public bool Is44OrMore { get; internal set; } = false;
+
+        /// <summary>
+        /// Check if the stream initial offset (<c>x-stream-initial-offset</c>) is supported.
+        /// Available in RabbitMQ 4.4 and later.
+        /// </summary>
+        public bool IsStreamInitialOffsetSupported { get; internal set; } = false;
+
         public void Validate()
         {
             if (!IsBrokerCompatible)

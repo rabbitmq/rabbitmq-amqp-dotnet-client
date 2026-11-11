@@ -9,7 +9,7 @@
 // Consumer timeouts limit how long a consumer may hold a message without settling it (accept / reject / release).
 // For quorum queues you can set:
 // - Queue argument x-consumer-timeout (via IQueueSpecification.Quorum().ConsumerTimeout(...))
-// - Per-consumer attach property rabbitmq:consumer-timeout (via IConsumerBuilder.Quorum().Timeout().Set(...).Builder().Builder())
+// - Per-consumer attach property rabbitmq:consumer-timeout (via IConsumerBuilder.Quorum().Timeout().Set(...))
 // See: https://www.rabbitmq.com/blog/2026/04/23/rabbitmq-4.3-release#consumer-timeouts
 //
 // This sample declares a quorum queue with a queue-level timeout, attaches a consumer with its own consumer-level

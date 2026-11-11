@@ -318,6 +318,14 @@ namespace RabbitMQ.AMQP.Client.Impl
 
             Utils.ValidateRetryParameters(_queueArguments);
 
+            if (_queueArguments.ContainsKey("x-stream-initial-offset") &&
+                !_management.FeatureFlags.IsStreamInitialOffsetSupported)
+            {
+                throw new NotSupportedException(
+                    "Stream initial offset (x-stream-initial-offset) is not supported by this broker. " +
+                    "It requires RabbitMQ 4.4 or later.");
+            }
+
             if (string.IsNullOrWhiteSpace(_queueName))
             {
                 // If the name is not set, generate a random name
@@ -417,6 +425,13 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             Utils.ValidatePositive("x-stream-file-size-per-chunk", fileSizePerChunk);
             _parent._queueArguments["x-stream-file-size-per-chunk"] = (long)fileSizePerChunk;
+            return this;
+        }
+
+        public IStreamSpecification InitialOffset(long initialOffset)
+        {
+            Utils.ValidateNonNegative("x-stream-initial-offset", initialOffset, Consts.MaxStreamInitialOffset);
+            _parent._queueArguments["x-stream-initial-offset"] = initialOffset;
             return this;
         }
 

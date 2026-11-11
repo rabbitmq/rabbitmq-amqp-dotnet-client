@@ -112,4 +112,56 @@ public class UtilsTests
         Assert.False(Utils.Is4_0_OrMore(malformedVersion));
     }
 
+    [Theory]
+    [InlineData("4.4.0")]
+    [InlineData("4.4.0-alpha.1")]
+    [InlineData("4.4.2")]
+    [InlineData("4.5.0")]
+    [InlineData("5.0.0")]
+    [InlineData("tanzu+rabbitmq.v4.4.0.dev.1.2065.gce35d08")]
+    public void BrokerVersionIsParsedAndComparedCorrectly_4_4_0_AndLater(string brokerVersion)
+    {
+        Assert.True(Utils.Is4_4_OrMore(brokerVersion));
+    }
+
+    [Theory]
+    [InlineData("4.0.6")]
+    [InlineData("4.2.6")]
+    [InlineData("4.3.0")]
+    [InlineData("4.3.9")]
+    [InlineData("tanzu+rabbitmq.v4.3.0.dev.1.2065.gce35d08")]
+    public void BrokerVersionIsParsedAndComparedCorrectly_Before_4_4_0(string brokerVersion)
+    {
+        Assert.False(Utils.Is4_4_OrMore(brokerVersion));
+    }
+
+    [Fact]
+    public void ConsumerAttachPropertiesAreNullWhenNothingIsSet()
+    {
+        Assert.Null(Utils.CreateConsumerAttachProperties(null, null));
+    }
+
+    [Theory]
+    [InlineData(5)]
+    [InlineData(0)]
+    [InlineData(-3)]
+    public void ConsumerAttachPropertiesContainPriorityAsInt(int priority)
+    {
+        Amqp.Types.Fields? properties = Utils.CreateConsumerAttachProperties(null, priority);
+        Assert.NotNull(properties);
+        Assert.Single(properties);
+        object? value = properties[new Amqp.Types.Symbol("rabbitmq:priority")];
+        Assert.IsType<int>(value);
+        Assert.Equal(priority, value);
+    }
+
+    [Fact]
+    public void ConsumerAttachPropertiesContainTimeoutAndPriority()
+    {
+        Amqp.Types.Fields? properties = Utils.CreateConsumerAttachProperties(1000u, 7);
+        Assert.NotNull(properties);
+        Assert.Equal(2, properties.Count);
+        Assert.Equal(1000u, properties[new Amqp.Types.Symbol("rabbitmq:consumer-timeout")]);
+        Assert.Equal(7, properties[new Amqp.Types.Symbol("rabbitmq:priority")]);
+    }
 }

@@ -238,6 +238,124 @@ public class QueueConsumerTimeoutTests(ITestOutputHelper testOutputHelper) : Int
         }
     }
 
+    [Fact]
+    public async Task OnDeliveryRelease_throws_when_connection_does_not_support_consumer_timeout()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+        Assert.NotNull(_featureFlags);
+
+        IQueueSpecification queueSpec = _management.Queue().Name(_queueName).Quorum().Queue();
+        await queueSpec.DeclareAsync();
+
+        _featureFlags.IsConsumerTimeoutSupported = false;
+
+        NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () =>
+            await _connection.ConsumerBuilder()
+                .Queue(queueSpec)
+                .Quorum()
+                .Timeout()
+                .OnDeliveryRelease((_, _) => Task.CompletedTask)
+                .Quorum()
+                .Builder()
+                .MessageHandler((_, _) => Task.CompletedTask)
+                .BuildAndStartAsync());
+
+        Assert.Contains("RabbitMQ 4.3.0 or later is required", ex.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Verifies that the consumer timeout and the OnDeliveryRelease callback apply when the quorum
+    /// options are configured as a separate statement, without returning through
+    /// <see cref="IConsumerBuilder.IQuorumOptions.Builder"/>.
+    /// </summary>
+    [Fact]
+    public async Task OnDeliveryRelease_callback_is_invoked_when_quorum_options_do_not_return_through_builder()
+    {
+        Assert.NotNull(_connection);
+        Assert.NotNull(_management);
+
+        IQueueSpecification queueSpec = _management.Queue()
+            .Name(_queueName)
+            .Quorum()
+            .Queue();
+
+        await queueSpec.DeclareAsync();
+
+        TaskCompletionSource<IMessage> releaseTcs =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        IConsumerBuilder consumerBuilder = _connection.ConsumerBuilder()
+            .Queue(queueSpec)
+            .MessageHandler(async (context, _) =>
+            {
+                // Hold the message past the consumer timeout so the broker releases it.
+                await Task.Delay(TimeSpan.FromSeconds(5));
+                try
+                {
+                    context.Accept();
+                }
+                catch
+                {
+                    // Expected: the broker has already released the delivery.
+                }
+            });
+        consumerBuilder.Quorum()
+            .Timeout()
+            .Set(TimeSpan.FromSeconds(3))
+            .OnDeliveryRelease((context, message) =>
+            {
+                context.Accept();
+                releaseTcs.TrySetResult(message);
+                return Task.CompletedTask;
+            });
+        IConsumer consumer = await consumerBuilder.BuildAndStartAsync();
+
+        IPublisher publisher = await _connection.PublisherBuilder().Queue(queueSpec).BuildAsync();
+        try
+        {
+            await publisher.PublishAsync(new AmqpMessage("timeout-message"));
+
+            IMessage releasedMessage =
+                await releaseTcs.Task.WaitAsync(TimeSpan.FromSeconds(15));
+
+            Assert.Equal("timeout-message", releasedMessage.BodyAsString());
+        }
+        finally
+        {
+            await publisher.CloseAsync();
+            publisher.Dispose();
+            await consumer.CloseAsync();
+            consumer.Dispose();
+        }
+    }
+
+    [Fact]
+    public void Quorum_timeout_is_applied_without_calling_builder()
+    {
+        Assert.NotNull(_connection);
+
+        ConsumerConfiguration configuration = new();
+        new QuorumOptions(_connection.ConsumerBuilder(), configuration)
+            .Timeout()
+            .Set(TimeSpan.FromSeconds(3));
+
+        Assert.Equal(3_000u, configuration.ConsumerTimeoutMilliseconds);
+    }
+
+    [Fact]
+    public void Jms_timeout_is_applied_without_calling_builder()
+    {
+        Assert.NotNull(_connection);
+
+        ConsumerConfiguration configuration = new();
+        new JmsOptions(_connection.ConsumerBuilder(), configuration)
+            .Timeout()
+            .Set(TimeSpan.FromSeconds(3));
+
+        Assert.Equal(3_000u, configuration.ConsumerTimeoutMilliseconds);
+    }
+
     /// <summary>
     /// Verifies that after OnDeliveryRelease fires and Accept() is called (unlocking the consumer),
     /// the consumer can receive and process subsequent messages normally.

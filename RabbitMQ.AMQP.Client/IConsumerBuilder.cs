@@ -66,6 +66,22 @@ namespace RabbitMQ.AMQP.Client
         IConsumerBuilder SettleStrategy(ConsumerSettleStrategy settleStrategy);
 
         /// <summary>
+        /// Sets the consumer priority (AMQP 1.0 attach property <c>rabbitmq:priority</c>).
+        /// When several consumers are attached to the same queue, the broker delivers messages
+        /// to the consumers with the highest priority first; lower priority consumers receive messages
+        /// only when the higher priority ones have no credit left. Consumers with the same priority share
+        /// the messages round-robin. The default priority is 0 (property not sent).
+        /// Not compatible with <see cref="ConsumerSettleStrategy.DirectReplyTo"/>.
+        /// See: https://www.rabbitmq.com/docs/consumer-priority
+        /// </summary>
+        /// <param name="priority">The consumer priority; higher values mean higher priority. Can be negative.</param>
+        /// <returns>The builder for fluent configuration.</returns>
+        /// <exception cref="NotSupportedException">
+        /// At <see cref="BuildAndStartAsync"/> when <see cref="ConsumerSettleStrategy.DirectReplyTo"/> is selected.
+        /// </exception>
+        IConsumerBuilder Priority(int priority);
+
+        /// <summary>
         /// SubscriptionListener interface callback to add behavior before a subscription is created.
         /// This callback is meant for stream consumers:
         /// it can be used to dynamically set the offset the consumer attaches to in the stream.
