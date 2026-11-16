@@ -10,6 +10,9 @@ jobs:
   call-build-test:
     uses: ./.github/workflows/wf_build-and-test.yaml
   call-publish-nuget:
-    uses: ./.github/workflows/wf_publish-nuget.yaml
+    uses: ./.github/workflows/publish-nuget.yml
     needs: call-build-test
+    permissions:
+      contents: read
+      id-token: write
     secrets: inherit
