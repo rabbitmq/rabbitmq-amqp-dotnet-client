@@ -1,0 +1,70 @@
+name: Publish NuGet
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish RabbitMQ.AMQP.Client
+    runs-on: ubuntu-latest
+    environment: nuget-release
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: >
+          dotnet restore
+          RabbitMQ.AMQP.Client/RabbitMQ.AMQP.Client.csproj
+
+      - name: Build NuGet package
+        run: >
+          dotnet pack -p:GeneratePackageOnBuild=false
+          RabbitMQ.AMQP.Client/RabbitMQ.AMQP.Client.csproj
+          --configuration Release
+          --no-restore
+          --output packages
+
+      - name: Show generated packages
+        run: ls -la packages/
+
+      - name: NuGet Trusted Publishing login
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: team-rabbitmq
+
+      - name: Publish package to NuGet.org
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+        shell: bash
+        run: |
+          shopt -s nullglob
+          packages=(packages/*.nupkg)
+
+          if [ ${#packages[@]} -eq 0 ]; then
+            echo "No NuGet packages found"
+            exit 1
+          fi
+
+          for package in "${packages[@]}"; do
+            dotnet nuget push "$package" \
+              --api-key "$NUGET_API_KEY" \
+              --source https://api.nuget.org/v3/index.json
+          done
