@@ -34,7 +34,7 @@ jobs:
 
       - name: Build NuGet package
         run: >
-          dotnet pack
+          dotnet pack -p:GeneratePackageOnBuild=false
           RabbitMQ.AMQP.Client/RabbitMQ.AMQP.Client.csproj
           --configuration Release
           --no-restore
