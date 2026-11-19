@@ -55,14 +55,23 @@ Example code demonstrating library usage:
 - `GettingStarted`
 - `Affinity`
 - `BatchDispositions`
+- `ConsumerPriority` (`rabbitmq:priority`)
 - `ConsumerTimeout` (quorum queue `x-consumer-timeout`)
-- `HAClient`
+- `DelayedQueue` (`x-queue-type: delayed`, Tanzu RabbitMQ)
+- `GroupIdStreamFiltering`
 - `OAuth2`
 - `OpenTelemetryIntegration`
 - `PerformanceTest`
 - `Presettled`
+- `QQDelayedRetry` / `QQDelayedRetryContext` (quorum queue delayed retry, RabbitMQ 4.3+)
+- `QQDeliveryAfter` (delayed messages via `IMessage.DeliveryAfter`)
+- `QQSingleActiveNotification`
+- `RejectionReason` (RabbitMQ 4.3+)
+- `ReliableClient`
 - `Rpc` (Requester/Responder)
+- `SingleActiveConsumer`
 - `StreamFilter`
+- `StreamInitialOffset` (RabbitMQ 4.4+)
 - `WebSockets`
 
 ## Architecture Patterns
