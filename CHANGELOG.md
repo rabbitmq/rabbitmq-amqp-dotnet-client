@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Enhancements
+- Add `IMessage.DeliveryAfter(TimeSpan)` to publish delayed messages on quorum queues (sets the `x-opt-delivery-time` annotation). See [#193](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues/193)
+
 ## [[1.5.0](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/releases/tag/v1.5.0)]
 
 ## 1.5.0 - 2026-16-11

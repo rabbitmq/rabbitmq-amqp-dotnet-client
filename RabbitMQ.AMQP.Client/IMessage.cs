@@ -96,6 +96,16 @@ namespace RabbitMQ.AMQP.Client
         public object Annotation(string key);
         public IMessage Annotation(string key, object value);
 
+        /// <summary>
+        /// Ask the broker to hold the message back for the given delay before delivering it.
+        /// Sets the <c>x-opt-delivery-time</c> message annotation to now + <paramref name="delay"/>
+        /// (milliseconds since the Unix epoch). Supported by quorum queues.
+        /// See https://www.rabbitmq.com/docs/quorum-queues#delayed-messages
+        /// </summary>
+        /// <param name="delay">The delay; must not be negative.</param>
+        /// <returns>This message instance.</returns>
+        IMessage DeliveryAfter(TimeSpan delay);
+
         public byte[] Body();
 
         public string BodyAsString();
