@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.35013.160
@@ -64,6 +64,12 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StreamInitialOffset", "docs\Examples\StreamInitialOffset\StreamInitialOffset.csproj", "{3E5A1B7C-6D2F-4A8E-9B04-7C1D2E3F4A5B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsumerPriority", "docs\Examples\ConsumerPriority\ConsumerPriority.csproj", "{FCD293EF-EF42-4DE5-9DB1-7A5FC2CDC827}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{51027AD3-0543-4356-B813-68A41B411259}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{BC92011C-C6D1-48B6-B263-1C6E6B11D9E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QQDeliveryAfter", "docs\Examples\QQDeliveryAfter\QQDeliveryAfter.csproj", "{5187F29D-A71D-4A6E-8BBF-F4786AA5B6BA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -163,6 +169,10 @@ Global
 		{FCD293EF-EF42-4DE5-9DB1-7A5FC2CDC827}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3E5A1B7C-6D2F-4A8E-9B04-7C1D2E3F4A5B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FCD293EF-EF42-4DE5-9DB1-7A5FC2CDC827}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5187F29D-A71D-4A6E-8BBF-F4786AA5B6BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5187F29D-A71D-4A6E-8BBF-F4786AA5B6BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5187F29D-A71D-4A6E-8BBF-F4786AA5B6BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5187F29D-A71D-4A6E-8BBF-F4786AA5B6BA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -189,5 +199,7 @@ Global
 		{8FB8DA7F-F0AA-40B6-A8C3-3F6A96FB42C5} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 		{3E5A1B7C-6D2F-4A8E-9B04-7C1D2E3F4A5B} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
 		{FCD293EF-EF42-4DE5-9DB1-7A5FC2CDC827} = {9154A0FB-7B2B-413C-A7F5-11ED2E37E93C}
+		{BC92011C-C6D1-48B6-B263-1C6E6B11D9E9} = {51027AD3-0543-4356-B813-68A41B411259}
+		{5187F29D-A71D-4A6E-8BBF-F4786AA5B6BA} = {BC92011C-C6D1-48B6-B263-1C6E6B11D9E9}
 	EndGlobalSection
 EndGlobal

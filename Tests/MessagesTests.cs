@@ -2,6 +2,7 @@
 // and the Mozilla Public License, version 2.0.
 // Copyright (c) 2017-2024 Broadcom. All Rights Reserved. The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
 
+using System;
 using RabbitMQ.AMQP.Client;
 using RabbitMQ.AMQP.Client.Impl;
 using Xunit;
@@ -23,6 +24,24 @@ public class MessagesTests
         Assert.Equal("ReplyTo_5123", message.ReplyTo());
         Assert.Equal("Subject_9123", message.Subject());
         Assert.Equal("my_body", message.BodyAsString());
+    }
+
+    [Fact]
+    public void DeliveryAfterSetsDeliveryTimeAnnotation()
+    {
+        long before = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        IMessage message = new AmqpMessage("body").DeliveryAfter(TimeSpan.FromSeconds(60));
+        long after = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        long deliveryTime = Assert.IsType<long>(message.Annotation("x-opt-delivery-time"));
+        Assert.InRange(deliveryTime, before + 60_000, after + 60_000);
+    }
+
+    [Fact]
+    public void DeliveryAfterNegativeDelayThrows()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new AmqpMessage("body").DeliveryAfter(TimeSpan.FromSeconds(-1)));
     }
 
     [Fact]

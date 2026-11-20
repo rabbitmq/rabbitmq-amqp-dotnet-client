@@ -23,3 +23,4 @@ This directory contains examples of how to use the RabbitMQ AMQP 1.0 .NET client
 - Delayed queue (`x-queue-type: delayed`, requires Tanzu RabbitMQ 4.x+) [here](./DelayedQueue/)
 - Stream initial offset (`x-stream-initial-offset`, requires RabbitMQ 4.4+) [here](./StreamInitialOffset/)
 - Consumer priority (`rabbitmq:priority`) [here](./ConsumerPriority/)
+- Quorum queue delayed messages via `IMessage.DeliveryAfter(TimeSpan)` (`x-opt-delivery-time`) [here](./QQDeliveryAfter/)

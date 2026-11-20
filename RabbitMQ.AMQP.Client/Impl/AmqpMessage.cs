@@ -251,6 +251,17 @@ namespace RabbitMQ.AMQP.Client.Impl
             return this;
         }
 
+        public IMessage DeliveryAfter(TimeSpan delay)
+        {
+            if (delay < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(delay), "Delay must not be negative.");
+            }
+
+            long deliveryTime = DateTimeOffset.UtcNow.Add(delay).ToUnixTimeMilliseconds();
+            return Annotation("x-opt-delivery-time", deliveryTime);
+        }
+
         public object Annotation(string key)
         {
             ThrowIfAnnotationsNotSet();
