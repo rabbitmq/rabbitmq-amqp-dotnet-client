@@ -109,4 +109,30 @@ public class PublisherCompletesOnceTests
         Assert.Equal(new[] { IMetricsReporter.PublishDispositionValue.REJECTED }, metrics.Dispositions.ToArray());
         Assert.Equal(0, metrics.PublishedCount);
     }
+
+    // Same as above, but Send throws a generic (non-Amqp) exception, which completes the task
+    // via TrySetException. The late callback must still not throw.
+    [Fact]
+    public async Task SendThrowsGenericExceptionThenLateCallbackDoesNotThrow()
+    {
+        var metrics = new RecordingMetricsReporter();
+        OutcomeCallback? captured = null;
+        object? capturedState = null;
+        AmqpPublisher publisher = CreateOpenPublisher((msg, cb, state) =>
+        {
+            captured = cb;
+            capturedState = state;
+            throw new InvalidOperationException("session ended");
+        }, metrics);
+
+        await Assert.ThrowsAsync<PublisherException>(() => publisher.PublishAsync(new AmqpMessage("x")));
+
+        Assert.NotNull(captured);
+        Exception? thrown = Record.Exception(() =>
+            captured!(null!, new Message(), new Released(), capturedState!));
+        Assert.Null(thrown);
+        // the task faulted, so the late callback must not report any metric
+        Assert.Empty(metrics.Dispositions);
+        Assert.Equal(0, metrics.PublishedCount);
+    }
 }
