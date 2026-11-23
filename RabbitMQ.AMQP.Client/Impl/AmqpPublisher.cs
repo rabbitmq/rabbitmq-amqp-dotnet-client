@@ -142,6 +142,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 }
 
                 PublishOutcome publishOutcome;
+                IMetricsReporter.PublishDispositionValue dispositionValue;
                 switch (outcome)
                 {
                     case Rejected rejectedOutcome:
@@ -150,21 +151,21 @@ namespace RabbitMQ.AMQP.Client.Impl
                             publishOutcome = new PublishOutcome(publishState,
                                 Utils.ConvertError(rejectedOutcome.Error),
                                 Utils.ConvertToAmqpMessageRejectedException(rejectedOutcome.Error));
-                            _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.REJECTED);
+                            dispositionValue = IMetricsReporter.PublishDispositionValue.REJECTED;
                             break;
                         }
                     case Released:
                         {
                             const OutcomeState publishState = OutcomeState.Released;
                             publishOutcome = new PublishOutcome(publishState, null);
-                            _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.RELEASED);
+                            dispositionValue = IMetricsReporter.PublishDispositionValue.RELEASED;
                             break;
                         }
                     case Accepted:
                         {
                             const OutcomeState publishState = OutcomeState.Accepted;
                             publishOutcome = new PublishOutcome(publishState, null);
-                            _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.ACCEPTED);
+                            dispositionValue = IMetricsReporter.PublishDispositionValue.ACCEPTED;
                             break;
                         }
                     default:
@@ -173,15 +174,21 @@ namespace RabbitMQ.AMQP.Client.Impl
                         }
                 }
 
-                // TODO cancellation token
-                if (_metricsReporter is not null && stopwatch is not null)
-                {
-                    stopwatch.Stop();
-                    _metricsReporter.Published(stopwatch.Elapsed);
-                }
-
                 var publishResult = new PublishResult(message, publishOutcome);
-                publishResultTcs.TrySetResult(publishResult);
+
+                // The first completion wins and gates all metrics, so the counters
+                // always describe the outcome the returned task carries.
+                if (publishResultTcs.TrySetResult(publishResult))
+                {
+                    _metricsReporter?.PublishDisposition(dispositionValue);
+
+                    // TODO cancellation token
+                    if (_metricsReporter is not null && stopwatch is not null)
+                    {
+                        stopwatch.Stop();
+                        _metricsReporter.Published(stopwatch.Elapsed);
+                    }
+                }
             }
 
             /*
@@ -201,11 +208,13 @@ namespace RabbitMQ.AMQP.Client.Impl
             }
             catch (AmqpException amqpException)
             {
-                stopwatch?.Stop();
-                _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.REJECTED);
                 var publishOutcome = new PublishOutcome(OutcomeState.Rejected, Utils.ConvertError(amqpException.Error));
                 var publishResult = new PublishResult(message, publishOutcome);
-                publishResultTcs.TrySetResult(publishResult);
+                if (publishResultTcs.TrySetResult(publishResult))
+                {
+                    stopwatch?.Stop();
+                    _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.REJECTED);
+                }
             }
             catch (Exception ex)
             {
