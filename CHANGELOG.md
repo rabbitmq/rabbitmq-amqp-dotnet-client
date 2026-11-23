@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fix
+- Fix `AmqpPublisher.PublishAsync` completing its result task twice when a publish races a link detach. It could throw from `PublishAsync` or close the whole connection with `amqp:internal-error`. See [#191](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues/191)
+
 ### Enhancements
 - Add `IMessage.DeliveryAfter(TimeSpan)` to publish delayed messages on quorum queues (sets the `x-opt-delivery-time` annotation). See [#193](https://github.com/rabbitmq/rabbitmq-amqp-dotnet-client/issues/193)
 

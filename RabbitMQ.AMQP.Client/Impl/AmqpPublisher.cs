@@ -25,6 +25,11 @@ namespace RabbitMQ.AMQP.Client.Impl
 
         private SenderLink? _senderLink = null;
 
+        /// <summary>
+        /// Test seam: when set, used instead of <see cref="SenderLink.Send(Message, OutcomeCallback, object)"/>.
+        /// </summary>
+        internal Action<Message, OutcomeCallback, object>? SendOverride { get; set; }
+
         public AmqpPublisher(AmqpConnection connection, string? address, IMetricsReporter? metricsReporter)
         {
             _connection = connection;
@@ -107,7 +112,7 @@ namespace RabbitMQ.AMQP.Client.Impl
         {
             ThrowIfClosed();
 
-            if (_senderLink is null)
+            if (_senderLink is null && SendOverride is null)
             {
                 // TODO create "internal bug" exception type?
                 throw new InvalidOperationException(
@@ -176,7 +181,7 @@ namespace RabbitMQ.AMQP.Client.Impl
                 }
 
                 var publishResult = new PublishResult(message, publishOutcome);
-                publishResultTcs.SetResult(publishResult);
+                publishResultTcs.TrySetResult(publishResult);
             }
 
             /*
@@ -185,7 +190,14 @@ namespace RabbitMQ.AMQP.Client.Impl
              */
             try
             {
-                _senderLink.Send(nativeMessage, OutcomeCallback, this);
+                if (SendOverride is not null)
+                {
+                    SendOverride(nativeMessage, OutcomeCallback, this);
+                }
+                else
+                {
+                    _senderLink!.Send(nativeMessage, OutcomeCallback, this);
+                }
             }
             catch (AmqpException amqpException)
             {
@@ -193,12 +205,12 @@ namespace RabbitMQ.AMQP.Client.Impl
                 _metricsReporter?.PublishDisposition(IMetricsReporter.PublishDispositionValue.REJECTED);
                 var publishOutcome = new PublishOutcome(OutcomeState.Rejected, Utils.ConvertError(amqpException.Error));
                 var publishResult = new PublishResult(message, publishOutcome);
-                publishResultTcs.SetResult(publishResult);
+                publishResultTcs.TrySetResult(publishResult);
             }
             catch (Exception ex)
             {
                 var publisherException = new PublisherException($"{ToString()} Failed to publish message", ex);
-                publishResultTcs.SetException(publisherException);
+                publishResultTcs.TrySetException(publisherException);
             }
 
             return publishResultTcs.Task;
